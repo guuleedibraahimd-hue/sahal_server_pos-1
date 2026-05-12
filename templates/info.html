@@ -1,112 +1,383 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>System Info</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>System Information</title>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
 <style>
-body{
+
+*{
     margin:0;
-    font-family:Arial;
-    background:#e9eef3;
+    padding:0;
+    box-sizing:border-box;
 }
 
-/* 🔥 HEADER */
+body{
+    font-family:Arial, sans-serif;
+    background:#eef2f7;
+}
+
+/* =========================
+🔥 HEADER
+========================= */
 .header{
-    background:#2c5364;
+    background:linear-gradient(135deg,#1d4350,#2c5364);
     color:white;
-    padding:15px;
+    padding:18px;
     text-align:center;
-    font-size:20px;
+    font-size:22px;
     font-weight:bold;
+    position:sticky;
+    top:0;
+    z-index:999;
+    box-shadow:0 2px 10px rgba(0,0,0,0.2);
 }
 
-/* 🔥 SCROLL FEED */
+/* =========================
+🔥 FEED
+========================= */
 .feed{
-    max-width:500px;
+    max-width:650px;
     margin:20px auto;
-    padding:10px;
+    padding:12px;
 }
 
-/* 🔥 CARD */
+/* =========================
+🔥 CARD
+========================= */
 .card{
     background:white;
-    border-radius:15px;
-    padding:15px;
-    margin-bottom:15px;
-    box-shadow:0 4px 12px rgba(0,0,0,0.15);
+    border-radius:18px;
+    padding:18px;
+    margin-bottom:18px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.12);
+    border-left:6px solid #2c5364;
+    transition:0.3s;
+    cursor:grab;
 }
 
-/* 🔥 TITLE */
-.title{
+.card:hover{
+    transform:translateY(-2px);
+}
+
+/* DRAGGING STYLE */
+.dragging{
+    opacity:0.5;
+    transform:scale(1.02);
+}
+
+/* =========================
+🔥 TOP BAR
+========================= */
+.top{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:12px;
+}
+
+.badge{
+    background:#2c5364;
+    color:white;
+    padding:5px 12px;
+    border-radius:30px;
+    font-size:12px;
     font-weight:bold;
-    font-size:16px;
-    margin-bottom:8px;
 }
 
-/* 🔥 CONTENT */
+.drag-icon{
+    color:#777;
+    font-size:20px;
+}
+
+/* =========================
+🔥 TITLE
+========================= */
+.title{
+    font-size:19px;
+    font-weight:bold;
+    color:#222;
+    margin-bottom:10px;
+    line-height:1.5;
+}
+
+/* =========================
+🔥 CONTENT
+========================= */
 .content{
-    font-size:14px;
-    color:#333;
+    font-size:15px;
+    color:#444;
+    line-height:1.8;
+    white-space:pre-wrap;
 }
 
-/* 🔥 IMAGE / VIDEO */
+/* =========================
+🔥 IMAGE & VIDEO
+========================= */
 img, video{
     width:100%;
-    border-radius:10px;
-    margin-top:10px;
+    border-radius:14px;
+    margin-top:15px;
 }
 
-/* 🔥 CLOSE BUTTON */
-.btn{
-    margin-top:10px;
-    padding:10px;
-    width:100%;
-    border:none;
+/* =========================
+🔥 FOOTER
+========================= */
+.footer{
+    margin-top:15px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+}
+
+/* =========================
+🔥 DELETE BUTTON
+========================= */
+.deleteBtn{
     background:#ff3b3b;
     color:white;
+    border:none;
+    padding:10px 15px;
     border-radius:10px;
     cursor:pointer;
+    font-weight:bold;
+    transition:0.3s;
 }
+
+.deleteBtn:hover{
+    background:#d90000;
+}
+
+/* =========================
+🔥 DATE
+========================= */
+.date{
+    color:#777;
+    font-size:13px;
+}
+
+/* =========================
+🔥 EMPTY
+========================= */
+.empty{
+    text-align:center;
+    background:white;
+    padding:30px;
+    border-radius:15px;
+    box-shadow:0 4px 10px rgba(0,0,0,0.1);
+    font-weight:bold;
+    color:#555;
+}
+
 </style>
 </head>
 
 <body>
 
-<div class="header">📢 System Information</div>
+<div class="header">
+    📢 Sahal Server System Information
+</div>
 
 <div class="feed" id="infoList"></div>
 
 <script>
+
+let infoData = [];
+
 fetch("/get_all_info")
-.then(res=>res.json())
-.then(data=>{
+.then(res => res.json())
+.then(data => {
+
     let box = document.getElementById("infoList");
-    box.innerHTML="";
+    box.innerHTML = "";
 
     if(data.length === 0){
-        box.innerHTML = "<center>No info yet</center>";
+        box.innerHTML = `
+        <div class="empty">
+            No Information Added Yet 🚫
+        </div>`;
         return;
     }
 
-    data.reverse().forEach(i=>{
+    infoData = data;
+
+    renderCards();
+});
+
+
+/* =========================
+🔥 RENDER CARDS
+========================= */
+function renderCards(){
+
+    let box = document.getElementById("infoList");
+    box.innerHTML = "";
+
+    infoData.forEach((i,index)=>{
+
         box.innerHTML += `
-        <div class="card">
+        <div class="card" draggable="true" data-index="${index}">
 
-            <div class="title">🏫 ${i.title}</div>
-            <div class="content">${i.content}</div>
+            <div class="top">
+                <div class="badge">
+                    SYSTEM INFO
+                </div>
 
-            ${i.image ? `<img src="/static/info/${i.image}">` : ""}
+                <i class="fas fa-grip-vertical drag-icon"></i>
+            </div>
+
+            <div class="title">
+                🏫 ${i.title}
+            </div>
+
+            <div class="content">
+                ${i.content}
+            </div>
+
+            ${i.image ? `
+            <img src="/static/info/${i.image}">
+            ` : ""}
 
             ${i.video ? `
             <video controls>
                 <source src="/static/info/${i.video}">
-            </video>` : ""}
+            </video>
+            ` : ""}
+
+            <div class="footer">
+
+                <div class="date">
+                    📅 ${i.date || "Today"}
+                </div>
+
+                <button class="deleteBtn"
+                onclick="deleteInfo('${i.id}')">
+                    Delete
+                </button>
+
+            </div>
 
         </div>
         `;
     });
-});
+
+    enableDrag();
+}
+
+/* =========================
+🔥 DELETE
+========================= */
+function deleteInfo(id){
+
+    if(!confirm("Delete this information?")){
+        return;
+    }
+
+    fetch("/delete_info/" + id,{
+        method:"DELETE"
+    })
+    .then(res=>res.json())
+    .then(data=>{
+        location.reload();
+    });
+}
+
+/* =========================
+🔥 DRAG & DROP
+========================= */
+function enableDrag(){
+
+    const cards = document.querySelectorAll(".card");
+    const container = document.getElementById("infoList");
+
+    let draggedCard = null;
+
+    cards.forEach(card=>{
+
+        card.addEventListener("dragstart", ()=>{
+
+            draggedCard = card;
+            card.classList.add("dragging");
+
+        });
+
+        card.addEventListener("dragend", ()=>{
+
+            card.classList.remove("dragging");
+
+            const newOrder = [];
+
+            document.querySelectorAll(".card").forEach(c=>{
+
+                let index = c.getAttribute("data-index");
+                newOrder.push(infoData[index]);
+
+            });
+
+            infoData = newOrder;
+
+            renderCards();
+
+        });
+
+    });
+
+    container.addEventListener("dragover", e=>{
+
+        e.preventDefault();
+
+        const afterElement = getDragAfterElement(container,e.clientY);
+
+        const dragging = document.querySelector(".dragging");
+
+        if(afterElement == null){
+
+            container.appendChild(dragging);
+
+        }else{
+
+            container.insertBefore(dragging,afterElement);
+
+        }
+
+    });
+
+}
+
+/* =========================
+🔥 GET POSITION
+========================= */
+function getDragAfterElement(container,y){
+
+    const draggableElements = [...container.querySelectorAll(".card:not(.dragging)")];
+
+    return draggableElements.reduce((closest,child)=>{
+
+        const box = child.getBoundingClientRect();
+
+        const offset = y - box.top - box.height / 2;
+
+        if(offset < 0 && offset > closest.offset){
+
+            return {
+                offset:offset,
+                element:child
+            };
+
+        }else{
+
+            return closest;
+
+        }
+
+    }, {
+        offset:Number.NEGATIVE_INFINITY
+    }).element;
+}
+
 </script>
 
 </body>
