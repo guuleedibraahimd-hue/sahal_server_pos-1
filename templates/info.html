@@ -20,9 +20,7 @@ body{
     background:#eef2f7;
 }
 
-/* =========================
-🔥 HEADER
-========================= */
+/* HEADER */
 .header{
     background:linear-gradient(135deg,#1d4350,#2c5364);
     color:white;
@@ -33,21 +31,16 @@ body{
     position:sticky;
     top:0;
     z-index:999;
-    box-shadow:0 2px 10px rgba(0,0,0,0.2);
 }
 
-/* =========================
-🔥 FEED
-========================= */
+/* FEED */
 .feed{
     max-width:650px;
     margin:20px auto;
     padding:12px;
 }
 
-/* =========================
-🔥 CARD
-========================= */
+/* CARD */
 .card{
     background:white;
     border-radius:18px;
@@ -55,23 +48,14 @@ body{
     margin-bottom:18px;
     box-shadow:0 4px 14px rgba(0,0,0,0.12);
     border-left:6px solid #2c5364;
-    transition:0.3s;
     cursor:grab;
 }
 
-.card:hover{
-    transform:translateY(-2px);
-}
-
-/* DRAGGING STYLE */
 .dragging{
     opacity:0.5;
-    transform:scale(1.02);
 }
 
-/* =========================
-🔥 TOP BAR
-========================= */
+/* TOP */
 .top{
     display:flex;
     justify-content:space-between;
@@ -93,20 +77,14 @@ body{
     font-size:20px;
 }
 
-/* =========================
-🔥 TITLE
-========================= */
+/* TITLE */
 .title{
     font-size:19px;
     font-weight:bold;
-    color:#222;
     margin-bottom:10px;
-    line-height:1.5;
 }
 
-/* =========================
-🔥 CONTENT
-========================= */
+/* CONTENT */
 .content{
     font-size:15px;
     color:#444;
@@ -114,28 +92,28 @@ body{
     white-space:pre-wrap;
 }
 
-/* =========================
-🔥 IMAGE & VIDEO
-========================= */
+/* MEDIA */
 img, video{
     width:100%;
     border-radius:14px;
     margin-top:15px;
 }
 
-/* =========================
-🔥 FOOTER
-========================= */
+/* FOOTER */
 .footer{
     margin-top:15px;
     display:flex;
     justify-content:space-between;
     align-items:center;
+    gap:10px;
 }
 
-/* =========================
-🔥 DELETE BUTTON
-========================= */
+/* BUTTONS */
+.btns{
+    display:flex;
+    gap:10px;
+}
+
 .deleteBtn{
     background:#ff3b3b;
     color:white;
@@ -144,32 +122,42 @@ img, video{
     border-radius:10px;
     cursor:pointer;
     font-weight:bold;
-    transition:0.3s;
 }
 
-.deleteBtn:hover{
-    background:#d90000;
+.editBtn{
+    background:#007bff;
+    color:white;
+    border:none;
+    padding:10px 15px;
+    border-radius:10px;
+    cursor:pointer;
+    font-weight:bold;
 }
 
-/* =========================
-🔥 DATE
-========================= */
+.saveBtn{
+    background:#28a745;
+    color:white;
+    border:none;
+    padding:12px;
+    width:100%;
+    border-radius:12px;
+    cursor:pointer;
+    font-size:16px;
+    font-weight:bold;
+    margin-bottom:20px;
+}
+
 .date{
     color:#777;
     font-size:13px;
 }
 
-/* =========================
-🔥 EMPTY
-========================= */
 .empty{
     text-align:center;
     background:white;
     padding:30px;
     border-radius:15px;
-    box-shadow:0 4px 10px rgba(0,0,0,0.1);
     font-weight:bold;
-    color:#555;
 }
 
 </style>
@@ -178,10 +166,18 @@ img, video{
 <body>
 
 <div class="header">
-    📢 Sahal Server System Information
+📢 Sahal Server System Information
 </div>
 
-<div class="feed" id="infoList"></div>
+<div class="feed">
+
+<button class="saveBtn" onclick="savePositions()">
+💾 Save New Positions
+</button>
+
+<div id="infoList"></div>
+
+</div>
 
 <script>
 
@@ -192,49 +188,55 @@ fetch("/get_all_info")
 .then(data => {
 
     let box = document.getElementById("infoList");
-    box.innerHTML = "";
 
     if(data.length === 0){
+
         box.innerHTML = `
         <div class="empty">
             No Information Added Yet 🚫
-        </div>`;
+        </div>
+        `;
+
         return;
     }
 
     infoData = data;
 
     renderCards();
+
 });
 
-
-/* =========================
-🔥 RENDER CARDS
-========================= */
+/* RENDER */
 function renderCards(){
 
     let box = document.getElementById("infoList");
+
     box.innerHTML = "";
 
     infoData.forEach((i,index)=>{
 
         box.innerHTML += `
-        <div class="card" draggable="true" data-index="${index}">
+
+        <div class="card"
+        draggable="true"
+        data-id="${i.id}">
 
             <div class="top">
+
                 <div class="badge">
                     SYSTEM INFO
                 </div>
 
                 <i class="fas fa-grip-vertical drag-icon"></i>
+
             </div>
 
             <div class="title">
-                🏫 ${i.title}
+                🏫 ${i.title || ""}
             </div>
 
             <div class="content">
-                ${i.content}
+                ${i.content || ""}
             </div>
 
             ${i.image ? `
@@ -253,23 +255,32 @@ function renderCards(){
                     📅 ${i.date || "Today"}
                 </div>
 
-                <button class="deleteBtn"
-                onclick="deleteInfo('${i.id}')">
-                    Delete
-                </button>
+                <div class="btns">
+
+                    <button class="editBtn"
+                    onclick="editInfo('${i.id}')">
+                        Edit
+                    </button>
+
+                    <button class="deleteBtn"
+                    onclick="deleteInfo('${i.id}')">
+                        Delete
+                    </button>
+
+                </div>
 
             </div>
 
         </div>
+
         `;
     });
 
     enableDrag();
+
 }
 
-/* =========================
-🔥 DELETE
-========================= */
+/* DELETE */
 function deleteInfo(id){
 
     if(!confirm("Delete this information?")){
@@ -283,23 +294,26 @@ function deleteInfo(id){
     .then(data=>{
         location.reload();
     });
+
 }
 
-/* =========================
-🔥 DRAG & DROP
-========================= */
+/* EDIT */
+function editInfo(id){
+
+    window.location.href = "/edit_info/" + id;
+
+}
+
+/* DRAG */
 function enableDrag(){
 
     const cards = document.querySelectorAll(".card");
     const container = document.getElementById("infoList");
 
-    let draggedCard = null;
-
     cards.forEach(card=>{
 
         card.addEventListener("dragstart", ()=>{
 
-            draggedCard = card;
             card.classList.add("dragging");
 
         });
@@ -307,19 +321,6 @@ function enableDrag(){
         card.addEventListener("dragend", ()=>{
 
             card.classList.remove("dragging");
-
-            const newOrder = [];
-
-            document.querySelectorAll(".card").forEach(c=>{
-
-                let index = c.getAttribute("data-index");
-                newOrder.push(infoData[index]);
-
-            });
-
-            infoData = newOrder;
-
-            renderCards();
 
         });
 
@@ -347,9 +348,7 @@ function enableDrag(){
 
 }
 
-/* =========================
-🔥 GET POSITION
-========================= */
+/* POSITION */
 function getDragAfterElement(container,y){
 
     const draggableElements = [...container.querySelectorAll(".card:not(.dragging)")];
@@ -376,6 +375,45 @@ function getDragAfterElement(container,y){
     }, {
         offset:Number.NEGATIVE_INFINITY
     }).element;
+
+}
+
+/* SAVE POSITIONS */
+function savePositions(){
+
+    let positions = [];
+
+    document.querySelectorAll(".card").forEach((card,index)=>{
+
+        positions.push({
+            id: card.dataset.id,
+            position: index
+        });
+
+    });
+
+    fetch("/update_info_positions",{
+
+        method:"POST",
+
+        headers:{
+            "Content-Type":"application/json"
+        },
+
+        body:JSON.stringify({
+            positions:positions
+        })
+
+    })
+
+    .then(res=>res.json())
+
+    .then(data=>{
+
+        alert("Positions updated successfully ✅");
+
+    });
+
 }
 
 </script>

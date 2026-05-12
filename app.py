@@ -5053,13 +5053,21 @@ def show_info():
             data = doc.to_dict()
 
             all_info.append({
+
                 "id": doc.id,
+
                 "title": data.get("title", ""),
+
                 "content": data.get("content", ""),
+
                 "image": data.get("image", ""),
+
                 "video": data.get("video", ""),
+
                 "date": data.get("date", ""),
+
                 "position": data.get("position", 0)
+
             })
 
         return render_template(
@@ -5070,6 +5078,168 @@ def show_info():
     except Exception as e:
 
         return f"ERROR: {str(e)}"
+
+
+# ==========================================
+# 📢 GET ALL INFO JSON
+# ==========================================
+@app.route("/get_all_info")
+def get_all_info():
+
+    try:
+
+        docs = db.collection("system_info") \
+            .order_by("position") \
+            .stream()
+
+        all_info = []
+
+        for doc in docs:
+
+            data = doc.to_dict()
+
+            all_info.append({
+
+                "id": doc.id,
+
+                "title": data.get("title", ""),
+
+                "content": data.get("content", ""),
+
+                "image": data.get("image", ""),
+
+                "video": data.get("video", ""),
+
+                "date": data.get("date", ""),
+
+                "position": data.get("position", 0)
+
+            })
+
+        return jsonify(all_info)
+
+    except Exception as e:
+
+        return jsonify({
+            "error": str(e)
+        })
+
+
+# ==========================================
+# 🗑 DELETE INFO
+# ==========================================
+@app.route("/delete_info/<doc_id>", methods=["DELETE"])
+def delete_info(doc_id):
+
+    try:
+
+        db.collection("system_info") \
+            .document(doc_id) \
+            .delete()
+
+        return jsonify({
+            "success": True
+        })
+
+    except Exception as e:
+
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        })
+
+
+# ==========================================
+# 🔥 UPDATE INFO POSITIONS
+# ==========================================
+@app.route("/update_info_positions", methods=["POST"])
+def update_info_positions():
+
+    try:
+
+        data = request.get_json()
+
+        positions = data.get("positions", [])
+
+        for item in positions:
+
+            db.collection("system_info") \
+                .document(item["id"]) \
+                .update({
+
+                    "position": item["position"]
+
+                })
+
+        return jsonify({
+            "success": True
+        })
+
+    except Exception as e:
+
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        })
+
+
+# ==========================================
+# ✏ EDIT INFO PAGE
+# ==========================================
+@app.route("/edit_info/<doc_id>")
+def edit_info(doc_id):
+
+    try:
+
+        doc = db.collection("system_info") \
+            .document(doc_id) \
+            .get()
+
+        if not doc.exists:
+
+            return "Info not found"
+
+        data = doc.to_dict()
+
+        data["id"] = doc.id
+
+        return render_template(
+            "edit_info.html",
+            info=data
+        )
+
+    except Exception as e:
+
+        return str(e)
+
+
+# ==========================================
+# 💾 UPDATE INFO
+# ==========================================
+@app.route("/update_info/<doc_id>", methods=["POST"])
+def update_info(doc_id):
+
+    try:
+
+        title = request.form.get("title")
+        content = request.form.get("content")
+
+        update_data = {
+
+            "title": title,
+            "content": content
+
+        }
+
+        db.collection("system_info") \
+            .document(doc_id) \
+            .update(update_data)
+
+        return redirect("/info")
+
+    except Exception as e:
+
+        return str(e)
 
 # =======  =======
 if __name__ == "__main__":
