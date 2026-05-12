@@ -16,7 +16,7 @@
 }
 
 body{
-    font-family:Arial, sans-serif;
+    font-family:Arial,sans-serif;
     background:#eef2f7;
 }
 
@@ -31,6 +31,7 @@ body{
     position:sticky;
     top:0;
     z-index:999;
+    box-shadow:0 2px 10px rgba(0,0,0,0.2);
 }
 
 /* FEED */
@@ -38,6 +39,25 @@ body{
     max-width:650px;
     margin:20px auto;
     padding:12px;
+}
+
+/* SAVE BUTTON */
+.saveBtn{
+    background:#28a745;
+    color:white;
+    border:none;
+    padding:14px;
+    width:100%;
+    border-radius:12px;
+    cursor:pointer;
+    font-size:16px;
+    font-weight:bold;
+    margin-bottom:20px;
+    transition:0.2s;
+}
+
+.saveBtn:hover{
+    opacity:0.9;
 }
 
 /* CARD */
@@ -84,7 +104,7 @@ body{
 
 /* TITLE */
 .title{
-    font-size:19px;
+    font-size:20px;
     font-weight:bold;
     margin-bottom:10px;
     color:#222;
@@ -133,27 +153,8 @@ video{
     font-weight:bold;
 }
 
-.editBtn{
-    background:#007bff;
-    color:white;
-    border:none;
-    padding:10px 15px;
-    border-radius:10px;
-    cursor:pointer;
-    font-weight:bold;
-}
-
-.saveBtn{
-    background:#28a745;
-    color:white;
-    border:none;
-    padding:12px;
-    width:100%;
-    border-radius:12px;
-    cursor:pointer;
-    font-size:16px;
-    font-weight:bold;
-    margin-bottom:20px;
+.deleteBtn:hover{
+    background:#d90000;
 }
 
 .date{
@@ -161,6 +162,7 @@ video{
     font-size:13px;
 }
 
+/* EMPTY */
 .empty{
     text-align:center;
     background:white;
@@ -222,7 +224,7 @@ fetch("/get_all_info")
 
     document.getElementById("infoList").innerHTML = `
     <div class="empty">
-        Failed to load information ❌
+        Failed To Load Information ❌
     </div>
     `;
 
@@ -279,11 +281,6 @@ function renderCards(){
 
                 <div class="btns">
 
-                    <button class="editBtn"
-                    onclick="editInfo('${i.id}')">
-                        Edit
-                    </button>
-
                     <button class="deleteBtn"
                     onclick="deleteInfo('${i.id}')">
                         Delete
@@ -328,13 +325,6 @@ function deleteInfo(id){
         }
 
     });
-
-}
-
-/* EDIT */
-function editInfo(id){
-
-    window.location.href = "/edit_info/" + id;
 
 }
 
@@ -386,7 +376,7 @@ function enableDrag(){
 
 }
 
-/* GET POSITION */
+/* POSITION */
 function getDragAfterElement(container, y){
 
     const draggableElements = [
@@ -454,11 +444,11 @@ function savePositions(){
 
         if(data.success){
 
-            alert("Positions updated successfully ✅");
+            alert("Positions Updated Successfully ✅");
 
         }else{
 
-            alert("Failed to update positions ❌");
+            alert("Failed To Update Positions ❌");
 
         }
 
@@ -468,7 +458,7 @@ function savePositions(){
 
         console.log(error);
 
-        alert("Server error ❌");
+        alert("Server Error ❌");
 
     });
 

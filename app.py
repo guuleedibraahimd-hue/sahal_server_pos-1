@@ -5150,19 +5150,24 @@ def get_all_info():
             all_info.append({
 
                 "id": doc.id,
+
                 "title": data.get("title", ""),
+
                 "content": data.get("content", ""),
+
                 "image": data.get("image", ""),
+
                 "video": data.get("video", ""),
+
                 "date": str(data.get("date", "")),
+
                 "position": data.get("position", 0)
 
             })
 
-        # SORT PYTHON SIDE
+        # SORT BY POSITION
         all_info.sort(
-            key=lambda x: x.get("position", 0),
-            reverse=False
+            key=lambda x: x.get("position", 0)
         )
 
         return jsonify(all_info)
