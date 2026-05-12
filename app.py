@@ -4519,42 +4519,84 @@ def teacher_panel():
 # ==========================================
 @app.route("/cashier_panel")
 def cashier_panel():
+
     if not session.get("school"):
         return redirect("/school_login")
 
     return render_template("cashier_panel.html")
 
-# =========================
+
+# ==========================================
 # 🔐 CHECK PANEL PASSWORD
-# =========================
+# ==========================================
 @app.route("/check_panel_password")
 def check_panel_password():
-    try:
-        sid = session.get("school")
-        if not sid:
-            return jsonify({"success": False})
 
-        school = db.collection("schools").document(sid).get().to_dict()
+    try:
+
+        sid = session.get("school")
+
+        if not sid:
+            return jsonify({
+                "success": False,
+                "message": "Session expired"
+            })
+
+        school_doc = db.collection("schools").document(sid).get()
+
+        if not school_doc.exists:
+            return jsonify({
+                "success": False,
+                "message": "School not found"
+            })
+
+        school = school_doc.to_dict()
 
         ptype = request.args.get("type")
         password = request.args.get("pass")
 
+        # =========================
+        # 🔥 GET REAL PASSWORD
+        # =========================
         if ptype == "admin":
-            real = school.get("admin_password")
+            real_password = school.get("admin_password")
+
         elif ptype == "teacher":
-            real = school.get("teacher_password")
+            real_password = school.get("teacher_password")
+
         elif ptype == "cashier":
-            real = school.get("cashier_password")
+            real_password = school.get("cashier_password")
+
         else:
-            return jsonify({"success": False})
+            return jsonify({
+                "success": False,
+                "message": "Invalid panel type"
+            })
 
-        if password == real:
-            return jsonify({"success": True})
+        # =========================
+        # ✅ PASSWORD CORRECT
+        # =========================
+        if password == real_password:
 
-        return jsonify({"success": False})
+            return jsonify({
+                "success": True,
+                "message": "Access granted"
+            })
+
+        # =========================
+        # ❌ WRONG PASSWORD
+        # =========================
+        return jsonify({
+            "success": False,
+            "message": "Wrong password, please check your password"
+        })
 
     except Exception as e:
-        return jsonify({"success": False})
+
+        return jsonify({
+            "success": False,
+            "message": str(e)
+        })
 
 # ==========================================
 # 📄 ADD STUDENT PAGE (FIX)
