@@ -5140,47 +5140,6 @@ def save_info():
         return jsonify({"error": str(e)})
 
 # ==========================================
-# 📥 GET ALL INFO
-# ==========================================
-@app.route("/get_all_info")
-def get_all_info():
-
-    try:
-
-        docs = db.collection("system_info") \
-            .order_by("position") \
-            .stream()
-
-        data = []
-
-        for doc in docs:
-
-            d = doc.to_dict()
-
-            data.append({
-                "id": doc.id,
-                "title": d.get("title", ""),
-                "content": d.get("content", ""),
-                "image": d.get("image", ""),
-                "video": d.get("video", ""),
-                "date": d.get("date", ""),
-                "position": d.get("position", 0)
-            })
-
-        return jsonify(data)
-
-    except Exception as e:
-
-        return jsonify({
-            "error": str(e)
-        })
-
-@app.route("/delete_info/<id>")
-def delete_info(id):
-    db.collection("system_info").document(id).delete()
-    return jsonify({"success": True})
-
-# ==========================================
 # 📢 SHOW ALL SYSTEM INFO PAGE
 # ==========================================
 @app.route("/info")
@@ -5210,7 +5169,7 @@ def show_info():
 
                 "video": data.get("video", ""),
 
-                "date": data.get("date", ""),
+                "date": str(data.get("date", "")),
 
                 "position": data.get("position", 0)
 
@@ -5256,7 +5215,7 @@ def get_all_info():
 
                 "video": data.get("video", ""),
 
-                "date": data.get("date", ""),
+                "date": str(data.get("date", "")),
 
                 "position": data.get("position", 0)
 
@@ -5267,6 +5226,7 @@ def get_all_info():
     except Exception as e:
 
         return jsonify({
+            "success": False,
             "error": str(e)
         })
 
@@ -5387,10 +5347,36 @@ def update_info(doc_id):
 
         return str(e)
 
-# =======  =======
+
+# ==========================================
+# 🚪 LOGOUT
+# ==========================================
+@app.route("/logout")
+def logout():
+
+    session.clear()
+
+    return redirect("/")
+
+
+# ==========================================
+# 🚀 RUN SERVER
+# ==========================================
 if __name__ == "__main__":
+
     init_db()
-    socketio.run(app, host="0.0.0.0", port=5000)
+
+    socketio.run(
+
+        app,
+
+        host="0.0.0.0",
+
+        port=5000,
+
+        debug=True
+
+    )
 
 # ======= RENDER FIX =======
 if __name__ != "__main__":
