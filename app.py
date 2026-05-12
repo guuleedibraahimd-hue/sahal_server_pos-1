@@ -1747,7 +1747,7 @@ def logout_register():
 # =========================
 # 🚪 GLOBAL LOGOUT
 # =========================
-@app.route("/logout")
+@app.route("/logout_reg")
 def logout():
 
     session.clear()
