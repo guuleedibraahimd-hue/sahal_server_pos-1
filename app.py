@@ -3972,21 +3972,12 @@ def get_somali_time():
     return datetime.now(timezone.utc) + timedelta(hours=3)
 
 from datetime import datetime
-import pytz
 
-def get_somali_datetime():
-    tz = pytz.timezone("Africa/Mogadishu")
-    now = datetime.now(tz)
 
-    day = now.strftime("%A")
-    date = now.strftime("%d/%B/%Y")
-    time = now.strftime("%I:%M:%S %p")
+from datetime import datetime, timedelta, timezone
 
-    return {
-        "day_full": f"{day}/{date}",
-        "time": time
-    }
-
+def get_somali_time():
+    return datetime.now(timezone.utc) + timedelta(hours=3)
 # ==========================================
 # 👨‍🏫 ADD TEACHER (WITH SUBJECT & CLASSES)
 # ==========================================
