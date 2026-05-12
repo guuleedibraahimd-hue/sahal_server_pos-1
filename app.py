@@ -1541,7 +1541,7 @@ ADMIN_PASSWORD = "8880"
 REGISTER_PASSWORD = "8880"
 
 # =========================
-# 🔐 ADMIN ROUTE (FINAL)
+# 🔐 ADMIN ROUTE (FINAL CLEAN)
 # =========================
 @app.route("/admin", methods=["GET", "POST"])
 def admin():
@@ -1552,100 +1552,184 @@ def admin():
     if session.get("admin_ok"):
 
         try:
+
             # =========================
             # 📦 LOAD DATA
             # =========================
             restaurants = get_restaurants_firestore()
+
             supermarkets = get_supermarkets_firestore()
+
             orders = get_orders_firestore()
-            schools = get_schools_firestore()  # ✅ FIXED
+
+            schools = get_schools_firestore()
 
             total = len(orders)
 
             # =========================
-            # ⭐ TOP 3 REVIEWS
+            # 🔥 FIX SCHOOL DATES
+            # =========================
+            from datetime import datetime
+
+            for s in schools:
+
+                expiry = s.get("expiry_date")
+
+                try:
+
+                    # haddii string yahay
+                    if isinstance(expiry, str):
+
+                        expiry = datetime.fromisoformat(expiry)
+
+                    # haddii firestore datetime yahay
+                    elif hasattr(expiry, "timestamp"):
+
+                        expiry = expiry
+
+                    else:
+
+                        expiry = datetime.utcnow()
+
+                except:
+
+                    expiry = datetime.utcnow()
+
+                s["expiry_date_fixed"] = expiry
+
+            # =========================
+            # ⭐ TOP REVIEWS
             # =========================
             top_reviews = []
+
             review_docs = db.collection("reviews").stream()
+
             review_count_map = {}
 
             for doc in review_docs:
+
                 item = doc.to_dict()
+
                 rid = item.get("restaurant_id")
 
                 if rid:
+
                     review_count_map[rid] = review_count_map.get(rid, 0) + 1
 
-            # ku dar review count
+            # =========================
+            # 🔥 ADD REVIEW COUNTS
+            # =========================
             for r in restaurants:
+
                 rid = r.get("id")
+
                 r["review_count"] = review_count_map.get(rid, 0)
 
-            # sort top 3
+            # =========================
+            # 🔥 SORT TOP 3
+            # =========================
             top_reviews = sorted(
+
                 restaurants,
+
                 key=lambda x: x.get("review_count", 0),
+
                 reverse=True
+
             )[:3]
 
         except Exception as e:
+
             print("Admin Load Error:", e)
+
             restaurants = []
+
             supermarkets = []
+
             schools = []
+
             orders = []
+
             total = 0
+
             top_reviews = []
 
         # =========================
         # 📤 SEND TO TEMPLATE
         # =========================
         return render_template(
+
             "admin.html",
+
             restaurants=restaurants,
+
             supermarkets=supermarkets,
-            schools=schools,  # ✅ muhiim
+
+            schools=schools,
+
             orders=orders,
+
             total=total,
+
             top_reviews=top_reviews
+
         )
 
     # =========================
     # 🔑 LOGIN PROCESS
     # =========================
     if request.method == "POST":
+
         try:
+
             passwords = get_system_passwords()
+
             real_pass = passwords.get("admin_password")
 
-            if request.form.get("password") != real_pass:
+            entered = request.form.get("password")
+
+            if entered != real_pass:
+
                 return render_template(
+
                     "admin_login.html",
+
                     error="Wrong password ❌"
+
                 )
 
             session["admin_ok"] = True
+
             return redirect("/admin")
 
         except Exception as e:
+
             print("Login Error:", e)
+
             return render_template(
+
                 "admin_login.html",
+
                 error="System error ❌"
+
             )
 
     # =========================
-    # 📄 DEFAULT LOGIN PAGE
+    # 📄 LOGIN PAGE
     # =========================
     return render_template("admin_login.html")
+
 
 # =========================
 # 🔓 LOGOUT ADMIN
 # =========================
 @app.route("/logout_admin")
 def logout_admin():
+
     session.pop("admin_ok", None)
+
     session.pop("register_ok", None)
+
     return redirect("/admin")
 
 
@@ -1654,17 +1738,79 @@ def logout_admin():
 # =========================
 @app.route("/logout_register")
 def logout_register():
+
     session.pop("register_ok", None)
+
     return redirect("/register")
 
 
 # =========================
-# 🔄 CHANGE PASSWORDS
+# 🚪 GLOBAL LOGOUT
 # =========================
+@app.route("/logout")
+def logout():
+
+    session.clear()
+
+    return redirect("/")
+
 
 # =========================
 # 🔐 CHANGE SYSTEM PASSWORDS
 # =========================
+@app.route("/change_system_passwords", methods=["POST"])
+def change_system_passwords():
+
+    try:
+
+        if not session.get("admin_ok"):
+
+            return jsonify({
+                "success": False,
+                "message": "Unauthorized"
+            })
+
+        data = request.get_json()
+
+        admin_pass = data.get("admin_password")
+
+        register_pass = data.get("register_password")
+
+        if not admin_pass or not register_pass:
+
+            return jsonify({
+                "success": False,
+                "message": "Fill all fields"
+            })
+
+        db.collection("system_passwords") \
+            .document("main") \
+            .set({
+
+                "admin_password": admin_pass,
+
+                "register_password": register_pass
+
+            })
+
+        return jsonify({
+
+            "success": True,
+
+            "message": "Passwords updated successfully ✅"
+
+        })
+
+    except Exception as e:
+
+        return jsonify({
+
+            "success": False,
+
+            "message": str(e)
+
+        })
+    
 @app.route("/change_passwords", methods=["POST"])
 def change_passwords():
     new_admin = request.form.get("admin_pass")
