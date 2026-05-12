@@ -5040,7 +5040,7 @@ def receipt_view(rid, table):
             "error": str(e)
         })
 
-      # ==========================================
+# ==========================================
 # 📢 SAVE SYSTEM INFORMATION
 # ==========================================
 
@@ -5053,8 +5053,8 @@ def save_info():
 
     try:
 
-        title = request.form.get("title")
-        content = request.form.get("content")
+        title = request.form.get("title", "")
+        content = request.form.get("content", "")
 
         image = request.files.get("image")
         video = request.files.get("video")
@@ -5096,7 +5096,7 @@ def save_info():
             video.save(video_path)
 
         # ==========================
-        # SAVE TO FIREBASE
+        # SAVE TO FIRESTORE
         # ==========================
         db.collection("system_info").add({
 
@@ -5104,8 +5104,7 @@ def save_info():
             "content": content,
             "image": image_name,
             "video": video_name,
-            "date": datetime.now().strftime("%Y-%m-%d"),
-            "timestamp": datetime.utcnow(),
+            "date": datetime.now().strftime("%Y-%m-%d %H:%M"),
             "position": int(time.time())
 
         })
@@ -5122,59 +5121,18 @@ def save_info():
             "error": str(e)
         })
 
-        return jsonify({"success": True})
-
-    except Exception as e:
-        return jsonify({"error": str(e)})
 
 # ==========================================
-# 📢 SHOW ALL SYSTEM INFO PAGE
+# 📢 SHOW INFO PAGE
 # ==========================================
 @app.route("/info")
 def show_info():
 
-    try:
-
-        docs = db.collection("system_info") \
-            .order_by("position") \
-            .stream()
-
-        all_info = []
-
-        for doc in docs:
-
-            data = doc.to_dict()
-
-            all_info.append({
-
-                "id": doc.id,
-
-                "title": data.get("title", ""),
-
-                "content": data.get("content", ""),
-
-                "image": data.get("image", ""),
-
-                "video": data.get("video", ""),
-
-                "date": str(data.get("date", "")),
-
-                "position": data.get("position", 0)
-
-            })
-
-        return render_template(
-            "info.html",
-            info=all_info
-        )
-
-    except Exception as e:
-
-        return f"ERROR: {str(e)}"
+    return render_template("info.html")
 
 
 # ==========================================
-# 📢 GET ALL INFO JSON
+# 📢 GET ALL INFO
 # ==========================================
 @app.route("/get_all_info")
 def get_all_info():
@@ -5194,17 +5152,11 @@ def get_all_info():
             all_info.append({
 
                 "id": doc.id,
-
                 "title": data.get("title", ""),
-
                 "content": data.get("content", ""),
-
                 "image": data.get("image", ""),
-
                 "video": data.get("video", ""),
-
                 "date": str(data.get("date", "")),
-
                 "position": data.get("position", 0)
 
             })
@@ -5278,7 +5230,7 @@ def update_info_positions():
 
 
 # ==========================================
-# ✏ EDIT INFO PAGE
+# ✏ EDIT INFO
 # ==========================================
 @app.route("/edit_info/<doc_id>")
 def edit_info(doc_id):
@@ -5318,16 +5270,14 @@ def update_info(doc_id):
         title = request.form.get("title")
         content = request.form.get("content")
 
-        update_data = {
-
-            "title": title,
-            "content": content
-
-        }
-
         db.collection("system_info") \
             .document(doc_id) \
-            .update(update_data)
+            .update({
+
+                "title": title,
+                "content": content
+
+            })
 
         return redirect("/info")
 
@@ -5345,26 +5295,6 @@ def logout():
     session.clear()
 
     return redirect("/")
-
-
-# ==========================================
-# 🚀 RUN SERVER
-# ==========================================
-if __name__ == "__main__":
-
-    init_db()
-
-    socketio.run(
-
-        app,
-
-        host="0.0.0.0",
-
-        port=5000,
-
-        debug=True
-
-    )
 
 # ======= RENDER FIX =======
 if __name__ != "__main__":

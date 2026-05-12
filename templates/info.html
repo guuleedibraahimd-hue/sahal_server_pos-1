@@ -49,6 +49,11 @@ body{
     box-shadow:0 4px 14px rgba(0,0,0,0.12);
     border-left:6px solid #2c5364;
     cursor:grab;
+    transition:0.2s;
+}
+
+.card:hover{
+    transform:translateY(-2px);
 }
 
 .dragging{
@@ -82,6 +87,8 @@ body{
     font-size:19px;
     font-weight:bold;
     margin-bottom:10px;
+    color:#222;
+    line-height:1.5;
 }
 
 /* CONTENT */
@@ -93,7 +100,8 @@ body{
 }
 
 /* MEDIA */
-img, video{
+img,
+video{
     width:100%;
     border-radius:14px;
     margin-top:15px;
@@ -106,6 +114,7 @@ img, video{
     justify-content:space-between;
     align-items:center;
     gap:10px;
+    flex-wrap:wrap;
 }
 
 /* BUTTONS */
@@ -158,6 +167,7 @@ img, video{
     padding:30px;
     border-radius:15px;
     font-weight:bold;
+    box-shadow:0 4px 10px rgba(0,0,0,0.1);
 }
 
 </style>
@@ -183,13 +193,14 @@ img, video{
 
 let infoData = [];
 
+/* LOAD INFO */
 fetch("/get_all_info")
 .then(res => res.json())
 .then(data => {
 
     let box = document.getElementById("infoList");
 
-    if(data.length === 0){
+    if(!Array.isArray(data) || data.length === 0){
 
         box.innerHTML = `
         <div class="empty">
@@ -204,6 +215,17 @@ fetch("/get_all_info")
 
     renderCards();
 
+})
+.catch(error => {
+
+    console.log(error);
+
+    document.getElementById("infoList").innerHTML = `
+    <div class="empty">
+        Failed to load information ❌
+    </div>
+    `;
+
 });
 
 /* RENDER */
@@ -213,7 +235,7 @@ function renderCards(){
 
     box.innerHTML = "";
 
-    infoData.forEach((i,index)=>{
+    infoData.forEach((i)=>{
 
         box.innerHTML += `
 
@@ -290,9 +312,21 @@ function deleteInfo(id){
     fetch("/delete_info/" + id,{
         method:"DELETE"
     })
-    .then(res=>res.json())
-    .then(data=>{
-        location.reload();
+
+    .then(res => res.json())
+
+    .then(data => {
+
+        if(data.success){
+
+            location.reload();
+
+        }else{
+
+            alert("Delete failed ❌");
+
+        }
+
     });
 
 }
@@ -304,13 +338,13 @@ function editInfo(id){
 
 }
 
-/* DRAG */
+/* ENABLE DRAG */
 function enableDrag(){
 
     const cards = document.querySelectorAll(".card");
     const container = document.getElementById("infoList");
 
-    cards.forEach(card=>{
+    cards.forEach(card => {
 
         card.addEventListener("dragstart", ()=>{
 
@@ -326,13 +360,17 @@ function enableDrag(){
 
     });
 
-    container.addEventListener("dragover", e=>{
+    container.addEventListener("dragover", e => {
 
         e.preventDefault();
 
-        const afterElement = getDragAfterElement(container,e.clientY);
+        const afterElement = getDragAfterElement(container, e.clientY);
 
         const dragging = document.querySelector(".dragging");
+
+        if(!dragging){
+            return;
+        }
 
         if(afterElement == null){
 
@@ -340,7 +378,7 @@ function enableDrag(){
 
         }else{
 
-            container.insertBefore(dragging,afterElement);
+            container.insertBefore(dragging, afterElement);
 
         }
 
@@ -348,12 +386,14 @@ function enableDrag(){
 
 }
 
-/* POSITION */
-function getDragAfterElement(container,y){
+/* GET POSITION */
+function getDragAfterElement(container, y){
 
-    const draggableElements = [...container.querySelectorAll(".card:not(.dragging)")];
+    const draggableElements = [
+        ...container.querySelectorAll(".card:not(.dragging)")
+    ];
 
-    return draggableElements.reduce((closest,child)=>{
+    return draggableElements.reduce((closest, child)=>{
 
         const box = child.getBoundingClientRect();
 
@@ -362,8 +402,8 @@ function getDragAfterElement(container,y){
         if(offset < 0 && offset > closest.offset){
 
             return {
-                offset:offset,
-                element:child
+                offset: offset,
+                element: child
             };
 
         }else{
@@ -372,7 +412,7 @@ function getDragAfterElement(container,y){
 
         }
 
-    }, {
+    },{
         offset:Number.NEGATIVE_INFINITY
     }).element;
 
@@ -386,8 +426,10 @@ function savePositions(){
     document.querySelectorAll(".card").forEach((card,index)=>{
 
         positions.push({
+
             id: card.dataset.id,
             position: index
+
         });
 
     });
@@ -406,11 +448,27 @@ function savePositions(){
 
     })
 
-    .then(res=>res.json())
+    .then(res => res.json())
 
-    .then(data=>{
+    .then(data => {
 
-        alert("Positions updated successfully ✅");
+        if(data.success){
+
+            alert("Positions updated successfully ✅");
+
+        }else{
+
+            alert("Failed to update positions ❌");
+
+        }
+
+    })
+
+    .catch(error => {
+
+        console.log(error);
+
+        alert("Server error ❌");
 
     });
 
