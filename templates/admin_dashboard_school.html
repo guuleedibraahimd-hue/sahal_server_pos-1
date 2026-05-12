@@ -186,7 +186,7 @@ placeholder="Cashier Password"
 
 <button
 type="button"
-onclick="updatePasswords()"
+id="updateBtn"
 class="btn btn-blue"
 style="margin-top:10px;"
 >
@@ -295,6 +295,9 @@ Update Passwords
 
 <script>
 
+/* BUTTON EVENT */
+document.getElementById("updateBtn").addEventListener("click", updatePasswords);
+
 /* 🔐 UPDATE PASSWORD */
 async function updatePasswords(){
 
@@ -344,13 +347,7 @@ cashier: cashier
 
 });
 
-/* CHECK RESPONSE */
-if(!response.ok){
-
-throw new Error("Server response error");
-
-}
-
+/* JSON */
 const data = await response.json();
 
 console.log(data);
@@ -376,7 +373,7 @@ else{
 
 err.style.display = "block";
 
-err.innerText = data.message || "Update failed";
+err.innerText = data.message || data.error || "Update failed";
 
 }
 
@@ -388,7 +385,7 @@ let err = document.getElementById("errorMsg");
 
 err.style.display = "block";
 
-err.innerText = "Server error. Check Flask route.";
+err.innerText = "Server error: " + error.message;
 
 }
 
