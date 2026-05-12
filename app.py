@@ -1743,18 +1743,6 @@ def logout_register():
 
     return redirect("/register")
 
-
-# =========================
-# 🚪 GLOBAL LOGOUT
-# =========================
-@app.route("/logout_reg")
-def logout():
-
-    session.clear()
-
-    return redirect("/")
-
-
 # =========================
 # 🔐 CHANGE SYSTEM PASSWORDS
 # =========================
