@@ -4230,59 +4230,94 @@ def update_school_passwords():
 
     try:
 
+        # ==========================================
+        # ✅ CHECK SESSION
+        # ==========================================
         sid = session.get("school")
 
         if not sid:
+
             return jsonify({
+
                 "success": False,
                 "message": "Session expired"
+
             }), 401
 
         # ==========================================
-        # 🔥 GET DATA
+        # ✅ GET JSON DATA
         # ==========================================
         data = request.get_json()
 
-        admin_pass = data.get("admin")
-        teacher_pass = data.get("teacher")
-        cashier_pass = data.get("cashier")
+        if not data:
+
+            return jsonify({
+
+                "success": False,
+                "message": "No data received"
+
+            })
+
+        admin_pass = data.get("admin", "").strip()
+        teacher_pass = data.get("teacher", "").strip()
+        cashier_pass = data.get("cashier", "").strip()
 
         # ==========================================
-        # 🔥 VALIDATION
+        # ✅ VALIDATION
         # ==========================================
         if not admin_pass:
+
             return jsonify({
+
                 "success": False,
                 "message": "Admin password required"
+
             })
 
         if not teacher_pass:
+
             return jsonify({
+
                 "success": False,
                 "message": "Teacher password required"
+
             })
 
         if not cashier_pass:
+
             return jsonify({
+
                 "success": False,
                 "message": "Cashier password required"
+
             })
 
         # ==========================================
-        # 🔥 GET OLD PASSWORDS
+        # ✅ GET OLD SCHOOL DATA
         # ==========================================
-        old_doc = db.collection("schools").document(sid).get()
+        school_ref = db.collection("schools").document(sid)
 
-        old_data = old_doc.to_dict() if old_doc.exists else {}
+        school_doc = school_ref.get()
 
-        old_admin = old_data.get("admin_password", "")
-        old_teacher = old_data.get("teacher_password", "")
-        old_cashier = old_data.get("cashier_password", "")
+        if not school_doc.exists:
+
+            return jsonify({
+
+                "success": False,
+                "message": "School not found"
+
+            })
+
+        school_data = school_doc.to_dict()
+
+        old_admin = school_data.get("admin_password", "")
+        old_teacher = school_data.get("teacher_password", "")
+        old_cashier = school_data.get("cashier_password", "")
 
         # ==========================================
-        # 🔥 UPDATE PASSWORDS
+        # ✅ UPDATE PASSWORDS
         # ==========================================
-        db.collection("schools").document(sid).update({
+        school_ref.update({
 
             "admin_password": admin_pass,
             "teacher_password": teacher_pass,
@@ -4293,13 +4328,13 @@ def update_school_passwords():
         })
 
         # ==========================================
-        # 🔥 CREATE PRIVATE UPDATE LOG
+        # ✅ CREATE PRIVATE LOG
         # ==========================================
         db.collection("school_updates").add({
 
-            # SCHOOL
+            # SCHOOL INFO
             "school_id": sid,
-            "school_name": old_data.get("school_name", ""),
+            "school_name": school_data.get("school_name", ""),
 
             # OLD PASSWORDS
             "old_admin_password": old_admin,
@@ -4311,9 +4346,8 @@ def update_school_passwords():
             "new_teacher_password": teacher_pass,
             "new_cashier_password": cashier_pass,
 
-            # INFO
+            # UPDATE INFO
             "type": "password_update",
-
             "updated_by": "school_admin",
 
             "time": get_somali_time(),
@@ -4323,13 +4357,12 @@ def update_school_passwords():
         })
 
         # ==========================================
-        # ✅ SUCCESS
+        # ✅ SUCCESS RESPONSE
         # ==========================================
         return jsonify({
 
             "success": True,
-
-            "message": "Passwords updated successfully"
+            "message": "Passwords updated successfully ✅"
 
         })
 
@@ -4338,7 +4371,6 @@ def update_school_passwords():
         return jsonify({
 
             "success": False,
-
             "message": str(e)
 
         }), 500
