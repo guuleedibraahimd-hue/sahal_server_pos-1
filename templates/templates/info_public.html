@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>System Information</title>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+<style>
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+body{
+    font-family:Arial,sans-serif;
+    background:#eef2f7;
+}
+
+/* HEADER */
+.header{
+    background:linear-gradient(135deg,#1d4350,#2c5364);
+    color:white;
+    padding:18px;
+    text-align:center;
+    font-size:22px;
+    font-weight:bold;
+    position:sticky;
+    top:0;
+    z-index:999;
+    box-shadow:0 2px 10px rgba(0,0,0,0.2);
+}
+
+/* FEED */
+.feed{
+    max-width:700px;
+    margin:20px auto;
+    padding:12px;
+}
+
+/* CARD */
+.card{
+    background:white;
+    border-radius:18px;
+    padding:18px;
+    margin-bottom:18px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.12);
+    border-left:6px solid #2c5364;
+    transition:0.2s;
+}
+
+.card:hover{
+    transform:translateY(-2px);
+}
+
+/* TOP */
+.top{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:12px;
+}
+
+/* BADGE */
+.badge{
+    background:#2c5364;
+    color:white;
+    padding:6px 12px;
+    border-radius:30px;
+    font-size:12px;
+    font-weight:bold;
+}
+
+/* TITLE */
+.title{
+    font-size:22px;
+    font-weight:bold;
+    color:#222;
+    margin-bottom:12px;
+    line-height:1.5;
+}
+
+/* CONTENT */
+.content{
+    font-size:16px;
+    color:#444;
+    line-height:1.9;
+    white-space:pre-wrap;
+    word-wrap:break-word;
+}
+
+/* MEDIA */
+img,
+video{
+    width:100%;
+    border-radius:14px;
+    margin-top:15px;
+}
+
+/* FOOTER */
+.footer{
+    margin-top:18px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    flex-wrap:wrap;
+}
+
+/* DATE */
+.date{
+    color:#777;
+    font-size:13px;
+}
+
+/* EMPTY */
+.empty{
+    text-align:center;
+    background:white;
+    padding:30px;
+    border-radius:15px;
+    font-weight:bold;
+    box-shadow:0 4px 10px rgba(0,0,0,0.1);
+    color:#444;
+}
+
+/* MOBILE */
+@media(max-width:700px){
+
+    .feed{
+        padding:10px;
+    }
+
+    .title{
+        font-size:20px;
+    }
+
+    .content{
+        font-size:15px;
+    }
+
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="header">
+📢 Sahal Server System Information
+</div>
+
+<div class="feed">
+
+<div id="infoList"></div>
+
+</div>
+
+<script>
+
+let infoData = [];
+
+/* LOAD INFO */
+fetch("/get_all_info")
+.then(res => res.json())
+.then(data => {
+
+    let box = document.getElementById("infoList");
+
+    if(!Array.isArray(data) || data.length === 0){
+
+        box.innerHTML = `
+        <div class="empty">
+            No Information Added Yet 🚫
+        </div>
+        `;
+
+        return;
+    }
+
+    infoData = data;
+
+    renderCards();
+
+})
+.catch(error => {
+
+    console.log(error);
+
+    document.getElementById("infoList").innerHTML = `
+    <div class="empty">
+        Failed To Load Information ❌
+    </div>
+    `;
+
+});
+
+/* RENDER */
+function renderCards(){
+
+    let box = document.getElementById("infoList");
+
+    box.innerHTML = "";
+
+    infoData.forEach((i)=>{
+
+        box.innerHTML += `
+
+        <div class="card">
+
+            <div class="top">
+
+                <div class="badge">
+                    SYSTEM INFO
+                </div>
+
+            </div>
+
+            <div class="title">
+                🏫 ${i.title || ""}
+            </div>
+
+            <div class="content">
+                ${i.content || ""}
+            </div>
+
+            ${i.image ? `
+            <img src="/static/info/${i.image}">
+            ` : ""}
+
+            ${i.video ? `
+            <video controls>
+                <source src="/static/info/${i.video}">
+            </video>
+            ` : ""}
+
+            <div class="footer">
+
+                <div class="date">
+                    📅 ${i.date || "Today"}
+                </div>
+
+            </div>
+
+        </div>
+
+        `;
+
+    });
+
+}
+
+</script>
+
+</body>
+</html>

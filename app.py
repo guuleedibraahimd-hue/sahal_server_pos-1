@@ -5041,92 +5041,19 @@ def receipt_view(rid, table):
         })
 
 # ==========================================
-# 📢 SAVE SYSTEM INFORMATION
-# ==========================================
-
-from datetime import datetime
-import time
-import os
-
-@app.route("/save_info", methods=["POST"])
-def save_info():
-
-    try:
-
-        title = request.form.get("title", "")
-        content = request.form.get("content", "")
-
-        image = request.files.get("image")
-        video = request.files.get("video")
-
-        image_name = ""
-        video_name = ""
-
-        # ==========================
-        # CREATE INFO FOLDER
-        # ==========================
-        os.makedirs("static/info", exist_ok=True)
-
-        # ==========================
-        # SAVE IMAGE
-        # ==========================
-        if image and image.filename != "":
-
-            image_name = f"{int(time.time())}_{image.filename}"
-
-            image_path = os.path.join(
-                "static/info",
-                image_name
-            )
-
-            image.save(image_path)
-
-        # ==========================
-        # SAVE VIDEO
-        # ==========================
-        if video and video.filename != "":
-
-            video_name = f"{int(time.time())}_{video.filename}"
-
-            video_path = os.path.join(
-                "static/info",
-                video_name
-            )
-
-            video.save(video_path)
-
-        # ==========================
-        # SAVE TO FIRESTORE
-        # ==========================
-        db.collection("system_info").add({
-
-            "title": title,
-            "content": content,
-            "image": image_name,
-            "video": video_name,
-            "date": datetime.now().strftime("%Y-%m-%d %H:%M"),
-            "position": int(time.time())
-
-        })
-
-        return jsonify({
-            "success": True,
-            "message": "Info saved successfully"
-        })
-
-    except Exception as e:
-
-        return jsonify({
-            "success": False,
-            "error": str(e)
-        })
-
-
-# ==========================================
-# 📢 SHOW INFO PAGE
+# 📢 PUBLIC INFO PAGE (READ ONLY)
 # ==========================================
 @app.route("/info")
 def show_info():
+
+    return render_template("info_public.html")
+
+
+# ==========================================
+# 📢 ADMIN INFO PAGE
+# ==========================================
+@app.route("/admin_info")
+def admin_info():
 
     return render_template("info.html")
 
@@ -5150,22 +5077,15 @@ def get_all_info():
             all_info.append({
 
                 "id": doc.id,
-
                 "title": data.get("title", ""),
-
                 "content": data.get("content", ""),
-
                 "image": data.get("image", ""),
-
                 "video": data.get("video", ""),
-
                 "date": str(data.get("date", "")),
-
                 "position": data.get("position", 0)
 
             })
 
-        # SORT BY POSITION
         all_info.sort(
             key=lambda x: x.get("position", 0)
         )
@@ -5179,8 +5099,9 @@ def get_all_info():
             "error": str(e)
         })
 
+
 # ==========================================
-# 🗑 DELETE INFO
+# 🗑 DELETE INFO (ADMIN ONLY)
 # ==========================================
 @app.route("/delete_info/<doc_id>", methods=["DELETE"])
 def delete_info(doc_id):
@@ -5204,7 +5125,7 @@ def delete_info(doc_id):
 
 
 # ==========================================
-# 🔥 UPDATE INFO POSITIONS
+# 🔥 UPDATE POSITIONS (ADMIN ONLY)
 # ==========================================
 @app.route("/update_info_positions", methods=["POST"])
 def update_info_positions():
@@ -5287,22 +5208,11 @@ def update_info(doc_id):
 
             })
 
-        return redirect("/info")
+        return redirect("/admin_info")
 
     except Exception as e:
 
         return str(e)
-
-
-# ==========================================
-# 🚪 LOGOUT
-# ==========================================
-@app.route("/logout")
-def logout():
-
-    session.clear()
-
-    return redirect("/")
 
 # ======= RENDER FIX =======
 if __name__ != "__main__":
