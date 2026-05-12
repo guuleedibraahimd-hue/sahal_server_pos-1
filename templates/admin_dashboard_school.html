@@ -146,11 +146,13 @@ font-weight:bold;
 <body>
 
 <div class="header">
+
 <h2>🏫 School Admin Dashboard</h2>
 
 <a href="/logout" class="logout">
 Logout
 </a>
+
 </div>
 
 <div class="container">
@@ -162,15 +164,28 @@ Logout
 
 <div class="pass-box">
 
-<input type="text" id="admin_pass" placeholder="Admin Password">
+<input
+type="text"
+id="admin_pass"
+placeholder="Admin Password"
+>
 
-<input type="text" id="teacher_pass" placeholder="Teacher Password">
+<input
+type="text"
+id="teacher_pass"
+placeholder="Teacher Password"
+>
 
-<input type="text" id="cashier_pass" placeholder="Cashier Password">
+<input
+type="text"
+id="cashier_pass"
+placeholder="Cashier Password"
+>
 
 </div>
 
 <button
+type="button"
 onclick="updatePasswords()"
 class="btn btn-blue"
 style="margin-top:10px;"
@@ -192,21 +207,33 @@ Update Passwords
 <h3>⚡ Quick Actions</h3>
 
 <a href="/admin_attendance">
+
 <button class="btn btn-green">
+
 📊 View Attendance
+
 </button>
+
 </a>
 
 <a href="/school/student_register">
+
 <button class="btn btn-blue">
+
 ➕ Add Student
+
 </button>
+
 </a>
 
 <a href="/teacher_panel">
+
 <button class="btn btn-orange">
+
 👨‍🏫 Add Teacher
+
 </button>
+
 </a>
 
 </div>
@@ -219,6 +246,7 @@ Update Passwords
 <table class="table">
 
 <tr>
+
 <th>#</th>
 <th>ID</th>
 <th>Name</th>
@@ -228,6 +256,7 @@ Update Passwords
 <th>Remaining</th>
 <th>Status</th>
 <th>Last Paid</th>
+
 </tr>
 
 {% for s in students %}
@@ -281,8 +310,8 @@ let msg = document.getElementById("passMsg");
 
 let err = document.getElementById("errorMsg");
 
+/* RESET */
 msg.style.display = "none";
-
 err.style.display = "none";
 
 /* VALIDATION */
@@ -297,25 +326,34 @@ return;
 }
 
 /* SEND REQUEST */
-let res = await fetch("/update_school_passwords",{
+const response = await fetch("/update_school_passwords", {
 
-method:"POST",
+method: "POST",
 
-headers:{
-"Content-Type":"application/json"
+headers: {
+"Content-Type": "application/json"
 },
 
-body:JSON.stringify({
+body: JSON.stringify({
 
-admin:admin,
-teacher:teacher,
-cashier:cashier
+admin: admin,
+teacher: teacher,
+cashier: cashier
 
 })
 
 });
 
-let data = await res.json();
+/* CHECK RESPONSE */
+if(!response.ok){
+
+throw new Error("Server response error");
+
+}
+
+const data = await response.json();
+
+console.log(data);
 
 /* SUCCESS */
 if(data.success){
@@ -338,17 +376,19 @@ else{
 
 err.style.display = "block";
 
-err.innerText = data.message || data.error || "Something went wrong";
+err.innerText = data.message || "Update failed";
 
 }
 
-}catch(e){
+}catch(error){
+
+console.log(error);
 
 let err = document.getElementById("errorMsg");
 
 err.style.display = "block";
 
-err.innerText = "Server error: " + e;
+err.innerText = "Server error. Check Flask route.";
 
 }
 
