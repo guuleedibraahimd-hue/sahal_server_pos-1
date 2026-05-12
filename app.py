@@ -1567,6 +1567,42 @@ def admin():
             total = len(orders)
 
             # =========================
+            # 📢 LOAD SYSTEM INFO
+            # =========================
+            info_docs = db.collection("system_info").stream()
+
+            all_info = []
+
+            for doc in info_docs:
+
+                data = doc.to_dict()
+
+                all_info.append({
+
+                    "id": doc.id,
+
+                    "title": data.get("title", ""),
+
+                    "content": data.get("content", ""),
+
+                    "image": data.get("image", ""),
+
+                    "video": data.get("video", ""),
+
+                    "date": str(data.get("date", "")),
+
+                    "position": data.get("position", 0)
+
+                })
+
+            # =========================
+            # 🔥 SORT INFO POSITIONS
+            # =========================
+            all_info.sort(
+                key=lambda x: x.get("position", 0)
+            )
+
+            # =========================
             # 🔥 FIX SCHOOL DATES
             # =========================
             from datetime import datetime
@@ -1577,12 +1613,10 @@ def admin():
 
                 try:
 
-                    # haddii string yahay
                     if isinstance(expiry, str):
 
                         expiry = datetime.fromisoformat(expiry)
 
-                    # haddii firestore datetime yahay
                     elif hasattr(expiry, "timestamp"):
 
                         expiry = expiry
@@ -1654,6 +1688,8 @@ def admin():
 
             top_reviews = []
 
+            all_info = []
+
         # =========================
         # 📤 SEND TO TEMPLATE
         # =========================
@@ -1671,7 +1707,9 @@ def admin():
 
             total=total,
 
-            top_reviews=top_reviews
+            top_reviews=top_reviews,
+
+            all_info=all_info
 
         )
 

@@ -106,6 +106,46 @@ th{
     box-shadow: 0 0 6px rgba(0,0,0,0.08);
 }
 
+/* INFO ADMIN */
+.info-card{
+    border:1px solid #ddd;
+    padding:15px;
+    margin-bottom:15px;
+    border-radius:12px;
+    background:#fff;
+    cursor: grab;
+}
+
+.info-card.dragging{
+    opacity:0.5;
+}
+
+.moveBtns{
+    margin-top:10px;
+}
+
+.moveBtn{
+    background:#007bff;
+    color:white;
+    border:none;
+    padding:8px 12px;
+    border-radius:8px;
+    cursor:pointer;
+    margin-right:5px;
+}
+
+.savePositionBtn{
+    width:100%;
+    background:#28a745;
+    color:white;
+    border:none;
+    padding:12px;
+    border-radius:10px;
+    font-weight:bold;
+    cursor:pointer;
+    margin-bottom:15px;
+}
+
 @media(max-width:900px){
     table{
         display: block;
@@ -125,36 +165,70 @@ th{
 
 <div class="section-box">
     <h2>➕ Registration Panel</h2>
+
     <a href="/register" class="btn activate">Register Restaurant</a>
+
     <a href="/supermarket_register" class="btn activate">Register Supermarket</a>
-    <a href="/school_register" class="btn renew">Register School</a> 
+
+    <a href="/school_register" class="btn renew">Register School</a>
+
     <a href="/register_student" class="btn activate">Register Student</a>
 </div>
 
 <div class="section-box">
+
     <h2>ℹ️ System Information</h2>
 
-    <input type="text" id="info_title" placeholder="Title (e.g System Info)" style="width: 100%; padding: 10px; box-sizing: border-box;">
-    
-    <textarea id="info_content" placeholder="Write full information..."
-    style="width:100%;height:120px;margin-top:10px; padding: 10px; box-sizing: border-box;"></textarea>
+    <input
+    type="text"
+    id="info_title"
+    placeholder="Title (e.g System Info)"
+    style="width:100%;padding:10px;box-sizing:border-box;">
 
-    <input type="file" id="info_image" accept="image/*" style="margin-top:10px; display: block;">
-    <input type="file" id="info_video" accept="video/*" style="margin-top:10px; display: block;">
+    <textarea
+    id="info_content"
+    placeholder="Write full information..."
+    style="width:100%;height:120px;margin-top:10px;padding:10px;box-sizing:border-box;"></textarea>
 
-    <button onclick="saveInfo()" class="btn activate" style="margin-top:10px; width: 100%;">
+    <input
+    type="file"
+    id="info_image"
+    accept="image/*"
+    style="margin-top:10px;display:block;">
+
+    <input
+    type="file"
+    id="info_video"
+    accept="video/*"
+    style="margin-top:10px;display:block;">
+
+    <button
+    onclick="saveInfo()"
+    class="btn activate"
+    style="margin-top:10px;width:100%;">
+
         💾 Save Information
+
     </button>
 
-    <div id="infoLink" style="margin-top:10px;font-size:14px;color:green;"></div>
 </div>
 
 <div class="section-box">
+
     <h2 onclick="toggleInfo()" style="cursor:pointer;">
         📰 All Information Posts ⬇️
     </h2>
 
+    <button
+    class="savePositionBtn"
+    onclick="savePositions()">
+
+        💾 Save New Positions
+
+    </button>
+
     <div id="infoAdminList" style="display:none;"></div>
+
 </div>
 
 <div class="section-box">
@@ -162,6 +236,7 @@ th{
 
     {% if top_reviews and top_reviews|length > 0 %}
     <table>
+
         <tr>
             <th>Rank</th>
             <th>Name</th>
@@ -175,246 +250,319 @@ th{
             <td>{{ r.review_count }}</td>
         </tr>
         {% endfor %}
+
     </table>
+
     {% else %}
-        <div class="empty-box">No reviews yet</div>
-    {% endif %}
-</div>
 
-<h2>🏪 Restaurants</h2>
+    <div class="empty-box">
+        No reviews yet
+    </div>
 
-{% if restaurants and restaurants|length > 0 %}
-<table>
-    <tr>
-        <th>#</th>
-        <th>Name</th>
-        <th>Phone</th>
-        <th>Username</th>
-        <th>Kitchen Password</th>
-        <th>Login Password</th>
-        <th>Expiry Date</th>
-        <th>Status</th>
-        <th>Actions</th>
-    </tr>
-
-    {% for r in restaurants %}
-    <tr>
-        <td>{{ loop.index }}</td>
-        <td>{{ r.name }}</td>
-        <td>{{ r.phone }}</td>
-        <td>{{ r.username }}</td>
-        <td>{{ r.kitchen_password }}</td>
-        <td>{{ r.password }}</td>
-        <td>{{ r.expiry }}</td>
-
-        <td>
-            {% if r.active %}
-                <span class="status-active">Active</span>
-            {% else %}
-                <span class="status-disabled">Disabled</span>
-            {% endif %}
-        </td>
-
-        <td>
-            <a href="/activate/{{ r.id }}" class="btn activate">Activate</a>
-            <a href="/disable/{{ r.id }}" class="btn disable">Disable</a>
-            <a href="/renew/{{ r.id }}" class="btn renew">Renew</a>
-            <a href="/delete_restaurant/{{ r.id }}"
-               class="btn delete"
-               onclick="return confirm('Delete this restaurant permanently?')">
-               Delete
-            </a>
-        </td>
-    </tr>
-    {% endfor %}
-</table>
-{% else %}
-<div class="empty-box">No restaurants found</div>
-{% endif %}
-
-<h2>🏫 Schools</h2>
-
-{% if schools and schools|length > 0 %}
-<table>
-    <tr>
-        <th>#</th>
-        <th>School Name</th>
-        <th>Phone</th>
-        <th>Password</th>
-        <th>Monthly Fee</th>
-        <th>School Code</th>
-        <th>Expiry</th>
-        <th>Status</th>
-        <th>Actions</th>
-    </tr>
-
-    {% for s in schools %}
-    <tr>
-        <td>{{ loop.index }}</td>
-        <td>{{ s.name }}</td>
-        <td>{{ s.phone }}</td>
-        <td>{{ s.password }}</td>
-        <td>${{ s.fee }}</td>
-        <td>{{ s.code }}</td>
-        <td>{{ s.expiry }}</td>
-
-        <td>
-            {% if s.status == 'active' %}
-                <span class="status-active">Active</span>
-            {% else %}
-                <span class="status-disabled">Disabled</span>
-            {% endif %}
-        </td>
-
-        <td>
-            <a href="/activate_school/{{ s.id }}" class="btn activate">Activate</a>
-            <a href="/disable_school/{{ s.id }}" class="btn disable">Disable</a>
-            <a href="/renew_school_admin/{{ s.id }}" class="btn renew">Renew</a>
-            <a href="/delete_school/{{ s.id }}" class="btn delete"
-               onclick="return confirm('Delete this school?')">
-               Delete
-            </a>
-        </td>
-    </tr>
-    {% endfor %}
-</table>
-{% else %}
-<div class="empty-box">No schools found</div>
-{% endif %}
-
-<h2>🛒 Supermarkets</h2>
-
-{% if supermarkets and supermarkets|length > 0 %}
-<table>
-    <tr>
-        <th>#</th>
-        <th>Name</th>
-        <th>Username</th>
-        <th>Expiry</th>
-        <th>Status</th>
-        <th>Actions</th>
-    </tr>
-
-    {% for s in supermarkets %}
-    <tr>
-        <td>{{ loop.index }}</td>
-        <td>{{ s.name }}</td>
-        <td>{{ s.username }}</td>
-        <td>{{ s.expiry }}</td>
-
-        <td>
-            {% if s.active %}
-                <span class="status-active">Active</span>
-            {% else %}
-                <span class="status-disabled">Disabled</span>
-            {% endif %}
-        </td>
-
-        <td>
-            <a href="/activate_market/{{ s.id }}" class="btn activate">Activate</a>
-            <a href="/disable_market/{{ s.id }}" class="btn disable">Disable</a>
-            <a href="/renew_market/{{ s.id }}" class="btn renew">Renew</a>
-            <a href="/delete_market/{{ s.id }}"
-               class="btn delete"
-               onclick="return confirm('Delete this supermarket permanently?')">
-               Delete
-            </a>
-        </td>
-    </tr>
-    {% endfor %}
-</table>
-{% else %}
-<div class="empty-box">No supermarkets found</div>
-{% endif %}
-
-<div class="orders">
-    <h2>📦 Orders ({{ total }})</h2>
-
-    {% if orders and orders|length > 0 %}
-        {% for o in orders %}
-        <div class="order-card">
-            <p><b>Restaurant:</b> {{ o.restaurant_name }}</p>
-            <p><b>Food:</b> {{ o.food }}</p>
-            <p><b>Table:</b> {{ o.table }}</p>
-            <p><b>Time:</b> {{ o.time }}</p>
-            <p><b>Status:</b> {{ o.status }}</p>
-        </div>
-        {% endfor %}
-    {% else %}
-        <div class="empty-box">No orders available</div>
     {% endif %}
 </div>
 
 <script>
+
+let infoData = [];
+
 function toggleInfo(){
+
     let box = document.getElementById("infoAdminList");
 
     if(box.style.display === "none"){
+
         box.style.display = "block";
+
         loadInfoAdmin();
+
     }else{
+
         box.style.display = "none";
+
     }
 }
 
 async function saveInfo(){
+
     let fd = new FormData();
 
-    fd.append("title", document.getElementById("info_title").value);
-    fd.append("content", document.getElementById("info_content").value);
+    fd.append(
+        "title",
+        document.getElementById("info_title").value
+    );
+
+    fd.append(
+        "content",
+        document.getElementById("info_content").value
+    );
 
     let img = document.getElementById("info_image").files;
+
     let vid = document.getElementById("info_video").files;
 
-    if(img.length > 0) fd.append("image", img);
-    if(vid.length > 0) fd.append("video", vid);
+    if(img.length > 0){
 
-    let res = await fetch("/save_info", {method:"POST", body:fd});
+        fd.append("image", img[0]);
+
+    }
+
+    if(vid.length > 0){
+
+        fd.append("video", vid[0]);
+
+    }
+
+    let res = await fetch("/save_info", {
+
+        method:"POST",
+
+        body:fd
+
+    });
+
     let data = await res.json();
 
     if(data.success){
-        document.getElementById("infoLink").innerHTML =
-        "🔗 Link: <a href='"+data.link+"' target='_blank'>Open Info</a>";
-        alert("Saved ✅");
-        loadInfoAdmin(); // Update the list after saving
+
+        alert("Saved Successfully ✅");
+
+        document.getElementById("info_title").value = "";
+
+        document.getElementById("info_content").value = "";
+
+        loadInfoAdmin();
+
     }else{
+
         alert(data.error);
+
     }
 }
 
 function loadInfoAdmin(){
+
 fetch("/get_all_info")
+
 .then(res=>res.json())
+
 .then(data=>{
+
+    infoData = data;
+
     let box = document.getElementById("infoAdminList");
-    box.innerHTML="";
 
-    data.reverse().forEach(i=>{
+    box.innerHTML = "";
+
+    data.forEach(i=>{
+
         box.innerHTML += `
-        <div style="border:1px solid #ddd;padding:10px;margin-bottom:10px;border-radius:8px; color: black;">
-            <b>${i.title}</b><br>
-            ${i.content}<br>
 
-            ${i.image ? `<img src="/static/info/${i.image}" width="100">` : ""}
-            ${i.video ? `<video width="150" controls src="/static/info/${i.video}"></video>` : ""}
+        <div class="info-card"
+        draggable="true"
+        data-id="${i.id}">
+
+            <b>${i.title}</b>
 
             <br><br>
-            <button onclick="deleteInfo('${i.id}')" class="btn delete">Delete</button>
+
+            ${i.content}
+
+            <br><br>
+
+            ${i.image ? `
+            <img src="/static/info/${i.image}"
+            width="120"
+            style="border-radius:8px;">
+            ` : ""}
+
+            ${i.video ? `
+            <br><br>
+            <video width="180" controls>
+                <source src="/static/info/${i.video}">
+            </video>
+            ` : ""}
+
+            <div class="moveBtns">
+
+                <button
+                onclick="moveUp('${i.id}')"
+                class="moveBtn">
+
+                    ⬆️ Up
+
+                </button>
+
+                <button
+                onclick="moveDown('${i.id}')"
+                class="moveBtn">
+
+                    ⬇️ Down
+
+                </button>
+
+                <button
+                onclick="deleteInfo('${i.id}')"
+                class="btn delete">
+
+                    Delete
+
+                </button>
+
+            </div>
+
         </div>
+
         `;
     });
+
 });
 }
 
-function deleteInfo(id){
-if(confirm("Delete this post?")){
-fetch("/delete_info/"+id)
-.then(()=>loadInfoAdmin());
-}
+function moveUp(id){
+
+    let index = infoData.findIndex(x => x.id === id);
+
+    if(index > 0){
+
+        [infoData[index], infoData[index - 1]] =
+        [infoData[index - 1], infoData[index]];
+
+        renderInfoAgain();
+    }
 }
 
-// Load initial data
+function moveDown(id){
+
+    let index = infoData.findIndex(x => x.id === id);
+
+    if(index < infoData.length - 1){
+
+        [infoData[index], infoData[index + 1]] =
+        [infoData[index + 1], infoData[index]];
+
+        renderInfoAgain();
+    }
+}
+
+function renderInfoAgain(){
+
+    let box = document.getElementById("infoAdminList");
+
+    box.innerHTML = "";
+
+    infoData.forEach(i=>{
+
+        box.innerHTML += `
+
+        <div class="info-card">
+
+            <b>${i.title}</b>
+
+            <br><br>
+
+            ${i.content}
+
+            <br><br>
+
+            <button
+            onclick="moveUp('${i.id}')"
+            class="moveBtn">
+
+                ⬆️ Up
+
+            </button>
+
+            <button
+            onclick="moveDown('${i.id}')"
+            class="moveBtn">
+
+                ⬇️ Down
+
+            </button>
+
+            <button
+            onclick="deleteInfo('${i.id}')"
+            class="btn delete">
+
+                Delete
+
+            </button>
+
+        </div>
+
+        `;
+    });
+}
+
+function savePositions(){
+
+    let positions = [];
+
+    infoData.forEach((item,index)=>{
+
+        positions.push({
+
+            id:item.id,
+            position:index
+
+        });
+
+    });
+
+    fetch("/update_info_positions",{
+
+        method:"POST",
+
+        headers:{
+            "Content-Type":"application/json"
+        },
+
+        body:JSON.stringify({
+            positions:positions
+        })
+
+    })
+
+    .then(res=>res.json())
+
+    .then(data=>{
+
+        if(data.success){
+
+            alert("Positions Updated ✅");
+
+            loadInfoAdmin();
+
+        }else{
+
+            alert("Failed ❌");
+
+        }
+
+    });
+}
+
+function deleteInfo(id){
+
+    if(confirm("Delete this post?")){
+
+        fetch("/delete_info/" + id,{
+
+            method:"DELETE"
+
+        })
+
+        .then(()=>{
+
+            loadInfoAdmin();
+
+        });
+    }
+}
+
 loadInfoAdmin();
+
 </script>
 
 </body>
