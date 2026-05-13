@@ -103,10 +103,10 @@ background:#f39c12;
 color:white;
 }
 
-/* PASSWORD BOX */
+/* PASSWORD BOX - Updated for 4 inputs */
 .pass-box{
 display:grid;
-grid-template-columns:1fr 1fr 1fr;
+grid-template-columns: 1fr 1fr 1fr 1fr;
 gap:10px;
 margin-top:10px;
 }
@@ -168,8 +168,13 @@ color:#2c3e50;
 margin-bottom:6px;
 }
 
-@media(max-width:900px){
+@media(max-width:1000px){
+.pass-box{
+grid-template-columns:1fr 1fr;
+}
+}
 
+@media(max-width:600px){
 .pass-box{
 grid-template-columns:1fr;
 }
@@ -178,7 +183,6 @@ grid-template-columns:1fr;
 display:block;
 overflow-x:auto;
 }
-
 }
 
 </style>
@@ -187,124 +191,51 @@ overflow-x:auto;
 <body>
 
 <div class="header">
-
-<h2>
-🏫 {{ school_name }}
-</h2>
-
-<a href="/logout" class="logout">
-Logout
-</a>
-
+<h2>🏫 {{ school_name }}</h2>
+<a href="/logout" class="logout">Logout</a>
 </div>
 
 <div class="container">
 
 <!-- 🔐 PASSWORD UPDATE -->
 <div class="card">
-
 <h3>🔐 Update Register Passwords</h3>
 
 <div class="pass-box">
-
-<input
-type="text"
-id="admin_pass"
-placeholder="New Admin Password"
->
-
-<input
-type="text"
-id="teacher_pass"
-placeholder="New Teacher Password"
->
-
-<input
-type="text"
-id="cashier_pass"
-placeholder="New Cashier Password"
->
-
+<input type="text" id="admin_pass" placeholder="New Admin Password">
+<input type="text" id="teacher_pass" placeholder="New Teacher Password">
+<input type="text" id="cashier_pass" placeholder="New Cashier Password">
+<!-- NEW INPUT: Student Register Password -->
+<input type="text" id="student_reg_pass" placeholder="New Student Reg Password">
 </div>
 
-<button
-type="button"
-id="updateBtn"
-class="btn btn-blue"
-style="margin-top:15px;"
->
-
+<button type="button" id="updateBtn" class="btn btn-blue" style="margin-top:15px;">
 ✅ Update Passwords
-
 </button>
 
 <div id="passMsg" class="success"></div>
-
 <div id="errorMsg" class="error"></div>
-
 </div>
 
 <!-- 📜 PASSWORD HISTORY -->
 <div class="card">
-
 <h3>📜 Password Update History</h3>
-
-<div id="historyBox" class="history-box">
-
-Loading updates...
-
-</div>
-
+<div id="historyBox" class="history-box">Loading updates...</div>
 </div>
 
 <!-- 📊 QUICK ACTIONS -->
 <div class="card">
-
 <h3>⚡ Quick Actions</h3>
-
-<a href="/admin_attendance">
-
-<button class="btn btn-green">
-
-📊 View Attendance
-
-</button>
-
-</a>
-
-<a href="/school/student_register">
-
-<button class="btn btn-blue">
-
-➕ Add Student
-
-</button>
-
-</a>
-
-<a href="/teacher_panel">
-
-<button class="btn btn-orange">
-
-👨‍🏫 Add Teacher
-
-</button>
-
-</a>
-
+<a href="/admin_attendance"><button class="btn btn-green">📊 View Attendance</button></a>
+<a href="/school/student_register"><button class="btn btn-blue">➕ Add Student</button></a>
+<a href="/teacher_panel"><button class="btn btn-orange">👨‍🏫 Add Teacher</button></a>
 </div>
-
-
 
 <!-- 👨‍🎓 STUDENTS TABLE -->
 <div class="card">
-
 <h3>👨‍🎓 Students Overview</h3>
-
 <table class="table">
-
 <tr>
-
 <th>#</th>
 <th>ID</th>
 <th>Name</th>
@@ -313,330 +244,139 @@ Loading updates...
 <th>Paid</th>
 <th>Remaining</th>
 <th>Status</th>
-<th>Password</th> <!-- TIIRKA CUSUB -->
+<th>Password</th>
 <th>Last Paid</th>
-
 </tr>
-
 {% for s in students %}
-
 <tr>
-
 <td>{{ loop.index }}</td>
-
 <td>{{ s.student_id }}</td>
-
 <td>{{ s.full_name }}</td>
-
 <td>{{ s.class_name }}</td>
-
 <td>${{ s.fee }}</td>
-
 <td>${{ s.paid }}</td>
-
 <td>${{ s.remaining }}</td>
-
-<td class="{% if s.status=='paid' %}paid{% else %}unpaid{% endif %}">
-{{ s.status }}
-</td>
-
-<!-- QAYBTA PASSWORD-KA ARDAYDA -->
-<td>
-{{ s.student_password }}
-</td>
-
+<td class="{% if s.status=='paid' %}paid{% else %}unpaid{% endif %}">{{ s.status }}</td>
+<td>{{ s.student_password }}</td>
 <td>{{ s.last_paid }}</td>
-
 </tr>
-
 {% endfor %}
-
 </table>
-
 </div>
 
 </div>
 
 <!-- FIREBASE SDK -->
 <script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, doc, setDoc, collection, getDocs, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-import { initializeApp }
-from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-
-import {
-getFirestore,
-doc,
-setDoc,
-collection,
-getDocs,
-query,
-orderBy,
-serverTimestamp
-}
-from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-
-/* FIREBASE CONFIG */
 const firebaseConfig = {
-
 apiKey: "{{ firebase_api_key }}",
 authDomain: "{{ firebase_auth_domain }}",
 projectId: "{{ firebase_project_id }}",
 storageBucket: "{{ firebase_storage_bucket }}",
 messagingSenderId: "{{ firebase_messaging_sender_id }}",
 appId: "{{ firebase_app_id }}"
-
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-/* BUTTON */
-document.getElementById("updateBtn")
-.addEventListener("click", updatePasswords);
+document.getElementById("updateBtn").addEventListener("click", updatePasswords);
 
-/* UPDATE PASSWORDS */
 async function updatePasswords(){
-
 try{
+let admin = document.getElementById("admin_pass").value.trim();
+let teacher = document.getElementById("teacher_pass").value.trim();
+let cashier = document.getElementById("cashier_pass").value.trim();
+let studentReg = document.getElementById("student_reg_pass").value.trim(); // NEW
 
-let admin =
-document.getElementById("admin_pass")
-.value.trim();
-
-let teacher =
-document.getElementById("teacher_pass")
-.value.trim();
-
-let cashier =
-document.getElementById("cashier_pass")
-.value.trim();
-
-let msg =
-document.getElementById("passMsg");
-
-let err =
-document.getElementById("errorMsg");
+let msg = document.getElementById("passMsg");
+let err = document.getElementById("errorMsg");
 
 msg.style.display = "none";
 err.style.display = "none";
 
-if(!admin || !teacher || !cashier){
-
+if(!admin || !teacher || !cashier || !studentReg){
 err.style.display = "block";
-
-err.innerText =
-"Please fill all password fields";
-
+err.innerText = "Please fill all password fields";
 return;
-
 }
 
-/* SEND TO FLASK */
-const response =
-await fetch("/update_school_passwords", {
-
+const response = await fetch("/update_school_passwords", {
 method:"POST",
-
-headers:{
-"Content-Type":"application/json"
-},
-
+headers:{"Content-Type":"application/json"},
 body:JSON.stringify({
-
-admin:admin,
-teacher:teacher,
-cashier:cashier
-
+admin: admin,
+teacher: teacher,
+cashier: cashier,
+student_reg: studentReg // SEND TO BACKEND
 })
-
 });
 
 const data = await response.json();
 
-/* SUCCESS */
 if(data.success){
+let schoolId = data.school_id || "unknown";
+let schoolName = data.school_name || "unknown";
+let documentId = schoolId + "_" + Date.now();
 
-let schoolId =
-data.school_id || "unknown";
-
-let schoolName =
-data.school_name || "unknown";
-
-let oldAdmin =
-data.old_admin_password || "";
-
-let oldTeacher =
-data.old_teacher_password || "";
-
-let oldCashier =
-data.old_cashier_password || "";
-
-/* DOCUMENT ID */
-let documentId =
-schoolId + "_" + Date.now();
-
-/* SAVE TO FIRESTORE */
-await setDoc(
-
-doc(
-db,
-"school_updates",
-documentId
-),
-
-{
-
+await setDoc(doc(db, "school_updates", documentId), {
 school_id: schoolId,
-
 school_name: schoolName,
-
 new_admin_password: admin,
-
 new_teacher_password: teacher,
-
 new_cashier_password: cashier,
-
-old_admin_password: oldAdmin,
-
-old_teacher_password: oldTeacher,
-
-old_cashier_password: oldCashier,
-
+new_student_reg_password: studentReg, // SAVE TO FIRESTORE
 type: "password_update",
-
 updated_by: "school_admin",
-
 time: new Date().toLocaleString(),
-
 timestamp: serverTimestamp()
-
-}
-
-);
+});
 
 msg.style.display = "block";
+msg.innerText = "Passwords Updated Successfully ✅";
 
-msg.innerText =
-"Passwords Updated Successfully ✅";
-
-/* CLEAR */
 document.getElementById("admin_pass").value="";
 document.getElementById("teacher_pass").value="";
 document.getElementById("cashier_pass").value="";
-
-/* RELOAD HISTORY */
+document.getElementById("student_reg_pass").value="";
 loadHistory();
-
-}
-
-else{
-
+} else {
 err.style.display = "block";
-
-err.innerText =
-data.message ||
-data.error ||
-"Update Failed";
-
+err.innerText = data.message || "Update Failed";
+}
+} catch(error){
+document.getElementById("errorMsg").style.display = "block";
+document.getElementById("errorMsg").innerText = "Server Error: " + error.message;
+}
 }
 
-}catch(error){
-
-console.log(error);
-
-let err =
-document.getElementById("errorMsg");
-
-err.style.display = "block";
-
-err.innerText =
-"Server Error: " + error.message;
-
-}
-
-}
-
-/* LOAD HISTORY */
 async function loadHistory(){
-
-const historyBox =
-document.getElementById("historyBox");
-
-historyBox.innerHTML =
-"Loading updates...";
-
+const historyBox = document.getElementById("historyBox");
+historyBox.innerHTML = "Loading updates...";
 try{
-
-const q =
-query(
-collection(db, "school_updates"),
-orderBy("timestamp", "desc")
-);
-
-const querySnapshot =
-await getDocs(q);
-
+const q = query(collection(db, "school_updates"), orderBy("timestamp", "desc"));
+const querySnapshot = await getDocs(q);
 let html = "";
-
 querySnapshot.forEach((docu)=>{
-
 let d = docu.data();
-
 html += `
-
 <div class="history-item">
-
-<div class="history-title">
-🏫 ${d.school_name}
-</div>
-
-🔐 Admin:
-<b>${d.new_admin_password}</b>
-
-<br><br>
-
-👨‍🏫 Teacher:
-<b>${d.new_teacher_password}</b>
-
-<br><br>
-
-💰 Cashier:
-<b>${d.new_cashier_password}</b>
-
-<br><br>
-
+<div class="history-title">🏫 ${d.school_name}</div>
+🔐 Admin: <b>${d.new_admin_password}</b> | 👨‍🏫 Teacher: <b>${d.new_teacher_password}</b><br>
+💰 Cashier: <b>${d.new_cashier_password}</b> | 👨‍🎓 Student Reg: <b>${d.new_student_reg_password || 'N/A'}</b><br>
 🕒 ${d.time}
-
-</div>
-
-`;
-
+</div>`;
 });
-
-if(html === ""){
-
-html =
-"No updates found";
-
+historyBox.innerHTML = html || "No updates found";
+} catch(error){
+historyBox.innerHTML = "Failed to load history";
+}
 }
 
-historyBox.innerHTML = html;
-
-}catch(error){
-
-historyBox.innerHTML =
-"Failed to load history";
-
-console.log(error);
-
-}
-
-}
-
-/* LOAD ON START */
 loadHistory();
-
 </script>
-
 </body>
 </html>
