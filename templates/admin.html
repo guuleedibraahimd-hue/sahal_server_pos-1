@@ -75,6 +75,10 @@ body{
     background:#007bff;
 }
 
+.paymentBtn{
+    background:#6f42c1;
+}
+
 .tableBox{
     display:none;
     overflow-x:auto;
@@ -215,6 +219,36 @@ textarea,input{
     cursor:pointer;
 }
 
+.info-card{
+    background:#fff;
+    border:1px solid #ddd;
+    border-radius:14px;
+    padding:15px;
+    margin-top:15px;
+}
+
+.moveBtns{
+    margin-top:15px;
+}
+
+.moveBtn{
+    border:none;
+    padding:10px 14px;
+    border-radius:8px;
+    color:white;
+    cursor:pointer;
+    font-weight:bold;
+    margin-right:5px;
+}
+
+.upBtn{
+    background:#17a2b8;
+}
+
+.downBtn{
+    background:#6c757d;
+}
+
 @media(max-width:900px){
 
     .sectionTitle{
@@ -266,34 +300,34 @@ textarea,input{
 
 </div>
 
-<!-- RESTAURANTS -->
+<!-- PAYMENT DASHBOARD -->
 <div class="section">
 
     <div class="sectionTitle">
 
-        <h2>🍽️ Restaurants</h2>
+        <h2>💰 Payment Dashboard</h2>
 
-        <button class="openBtn restaurantBtn"
-        onclick="toggleTable('restaurantTable')">
+        <button class="openBtn paymentBtn"
+        onclick="toggleTable('paymentTable')">
 
-            Open Restaurants
+            Open Payments
 
         </button>
 
     </div>
 
-    <div class="tableBox" id="restaurantTable">
+    <div class="tableBox" id="paymentTable">
 
         <table>
 
             <tr>
 
-                <th>Restaurant Info</th>
-                <th>System Passwords</th>
-                <th>Payment & Fee</th>
-                <th>Expiry</th>
+                <th>Department</th>
+                <th>Name</th>
+                <th>Fee</th>
+                <th>Payment</th>
                 <th>Status</th>
-                <th>Actions</th>
+                <th>Expiry</th>
 
             </tr>
 
@@ -301,500 +335,105 @@ textarea,input{
 
             <tr>
 
-                <td>
+                <td>🍽️ Restaurant</td>
 
-                    <div class="card">
+                <td>{{ r.name }}</td>
 
-                        <div class="big">
-                            {{ r.name }}
-                        </div>
+                <td>${{ r.monthly_fee or r.price or r.fee }}</td>
 
-                        <br>
-
-                        📞 {{ r.phone }}
-
-                        <br><br>
-
-                        👤 Username:
-                        <b>{{ r.username }}</b>
-
-                        <br><br>
-
-                        👨‍💼 Admin:
-                        <b>{{ r.admin_name }}</b>
-
-                        <br><br>
-
-                        📧 {{ r.admin_email }}
-
-                    </div>
-
-                </td>
-
-                <td>
-
-                    <div class="card">
-
-                        <div class="label">
-                            🔐 Login Password
-                        </div>
-
-                        <div class="pass">
-                            {{ r.password }}
-                        </div>
-
-                        <hr>
-
-                        <div class="label">
-                            👨‍💼 Admin Password
-                        </div>
-
-                        <div class="pass">
-                            {{ r.restaurant_admin_password or r["resturen_admin password"] }}
-                        </div>
-
-                        <hr>
-
-                        <div class="label">
-                            👨‍🍳 Kitchen Password
-                        </div>
-
-                        <div class="pass">
-                            {{ r.kitchen_password }}
-                        </div>
-
-                    </div>
-
-                </td>
-
-                <td>
-
-                    <div class="card">
-
-                        💰 Fee:
-                        <b>
-                            ${{ r.monthly_fee or r.price or r.fee }}
-                        </b>
-
-                        <br><br>
-
-                        💳 Payment:
-
-                        <br>
-
-                        <b>
-                            {{ r.payment }}
-                        </b>
-
-                    </div>
-
-                </td>
-
-                <td>
-
-                    <div class="card">
-
-                        📅 Expiry Date
-
-                        <br><br>
-
-                        <b style="color:#ff9800;">
-                            {{ r.expiry_date or r.expiry }}
-                        </b>
-
-                    </div>
-
-                </td>
+                <td>{{ r.payment }}</td>
 
                 <td>
 
                     {% if r.status == 'active' or r.active == true %}
 
                     <span class="status-active">
-                        ✅ Active
+                        ✅ Paid
                     </span>
 
                     {% else %}
 
                     <span class="status-disabled">
-                        ❌ Disabled
+                        ❌ Not Paid
                     </span>
 
                     {% endif %}
 
                 </td>
 
-                <td>
-
-                    <a href="/activate/restaurant/{{ r.id }}"
-                    class="btn activate">
-
-                        Activate
-
-                    </a>
-
-                    <a href="/disable/restaurant/{{ r.id }}"
-                    class="btn disable">
-
-                        Disable
-
-                    </a>
-
-                    <a href="/delete/restaurant/{{ r.id }}"
-                    class="btn delete">
-
-                        Delete
-
-                    </a>
-
-                    <a href="/renew/restaurant/{{ r.id }}"
-                    class="btn renew">
-
-                        Renew
-
-                    </a>
-
-                </td>
+                <td>{{ r.expiry_date or r.expiry }}</td>
 
             </tr>
 
             {% endfor %}
 
-        </table>
-
-    </div>
-
-</div>
-
-<!-- SUPERMARKETS -->
-<div class="section">
-
-    <div class="sectionTitle">
-
-        <h2>🛒 Supermarkets</h2>
-
-        <button class="openBtn superBtn"
-        onclick="toggleTable('supermarketTable')">
-
-            Open Supermarkets
-
-        </button>
-
-    </div>
-
-    <div class="tableBox" id="supermarketTable">
-
-        <table>
-
-            <tr>
-
-                <th>Supermarket Info</th>
-                <th>Password</th>
-                <th>Fee & Payment</th>
-                <th>Expiry</th>
-                <th>Status</th>
-                <th>Actions</th>
-
-            </tr>
-
             {% for s in supermarkets %}
 
             <tr>
 
-                <td>
+                <td>🛒 Supermarket</td>
 
-                    <div class="card">
+                <td>{{ s.name }}</td>
 
-                        <div class="big">
-                            {{ s.name }}
-                        </div>
+                <td>${{ s.monthly_fee or s.price or s.fee }}</td>
 
-                        <br>
-
-                        👤 Username:
-                        <b>{{ s.username }}</b>
-
-                    </div>
-
-                </td>
-
-                <td>
-
-                    <div class="card">
-
-                        <div class="label">
-                            🔐 Password
-                        </div>
-
-                        <div class="pass">
-                            {{ s.password }}
-                        </div>
-
-                    </div>
-
-                </td>
-
-                <td>
-
-                    <div class="card">
-
-                        💰 Fee:
-                        <b>
-                            ${{ s.monthly_fee or s.price or s.fee }}
-                        </b>
-
-                        <br><br>
-
-                        💳 Payment:
-
-                        <br>
-
-                        <b>
-                            {{ s.payment }}
-                        </b>
-
-                    </div>
-
-                </td>
-
-                <td>
-
-                    <div class="card">
-
-                        📅 {{ s.expiry_date or s.expiry }}
-
-                    </div>
-
-                </td>
+                <td>{{ s.payment }}</td>
 
                 <td>
 
                     {% if s.status == 'active' or s.status == true %}
 
                     <span class="status-active">
-                        ✅ Active
+                        ✅ Paid
                     </span>
 
                     {% else %}
 
                     <span class="status-disabled">
-                        ❌ Disabled
+                        ❌ Not Paid
                     </span>
 
                     {% endif %}
 
                 </td>
 
-                <td>
-
-                    <a href="/activate/supermarket/{{ s.id }}"
-                    class="btn activate">
-
-                        Activate
-
-                    </a>
-
-                    <a href="/disable/supermarket/{{ s.id }}"
-                    class="btn disable">
-
-                        Disable
-
-                    </a>
-
-                    <a href="/delete/supermarket/{{ s.id }}"
-                    class="btn delete">
-
-                        Delete
-
-                    </a>
-
-                    <a href="/renew/supermarket/{{ s.id }}"
-                    class="btn renew">
-
-                        Renew
-
-                    </a>
-
-                </td>
+                <td>{{ s.expiry_date or s.expiry }}</td>
 
             </tr>
 
             {% endfor %}
 
-        </table>
-
-    </div>
-
-</div>
-
-<!-- SCHOOLS -->
-<div class="section">
-
-    <div class="sectionTitle">
-
-        <h2>🏫 Schools</h2>
-
-        <button class="openBtn schoolBtn"
-        onclick="toggleTable('schoolTable')">
-
-            Open Schools
-
-        </button>
-
-    </div>
-
-    <div class="tableBox" id="schoolTable">
-
-        <table>
-
-            <tr>
-
-                <th>School Info</th>
-                <th>Passwords</th>
-                <th>Fee & Payment</th>
-                <th>Expiry</th>
-                <th>Status</th>
-                <th>Actions</th>
-
-            </tr>
-
             {% for sc in schools %}
 
             <tr>
 
-                <td>
+                <td>🏫 School</td>
 
-                    <div class="card">
+                <td>{{ sc.school_name or sc.name }}</td>
 
-                        <div class="big">
+                <td>${{ sc.monthly_fee or sc.price or sc.fee }}</td>
 
-                            {{ sc.school_name or sc.name }}
-
-                        </div>
-
-                        <br>
-
-                        🆔 School Code:
-                        <b>{{ sc.school_code }}</b>
-
-                        <br><br>
-
-                        📞 Phone:
-                        <b>{{ sc.phone }}</b>
-
-                        <br><br>
-
-                        👤 Username:
-                        <b>{{ sc.username }}</b>
-
-                    </div>
-
-                </td>
-
-                <td>
-
-                    <div class="card">
-
-                        <div class="label">
-                            🔐 School Password
-                        </div>
-
-                        <div class="pass">
-                            {{ sc.password }}
-                        </div>
-
-                    </div>
-
-                </td>
-
-                <td>
-
-                    <div class="card">
-
-                        💰 Fee:
-                        <b>
-                            ${{ sc.monthly_fee or sc.price or sc.fee }}
-                        </b>
-
-                        <br><br>
-
-                        💳 Payment:
-
-                        <br>
-
-                        <b>
-                            {{ sc.payment }}
-                        </b>
-
-                    </div>
-
-                </td>
-
-                <td>
-
-                    <div class="card">
-
-                        📅
-
-                        <b style="color:#ff9800;">
-
-                            {{ sc.expiry_date }}
-
-                        </b>
-
-                    </div>
-
-                </td>
+                <td>{{ sc.payment }}</td>
 
                 <td>
 
                     {% if sc.status == 'active' or sc.active == true %}
 
                     <span class="status-active">
-                        ✅ Active
+                        ✅ Paid
                     </span>
 
                     {% else %}
 
                     <span class="status-disabled">
-                        ❌ Disabled
+                        ❌ Not Paid
                     </span>
 
                     {% endif %}
 
                 </td>
 
-                <td>
-
-                    <a href="/activate/school/{{ sc.id }}"
-                    class="btn activate">
-
-                        Activate
-
-                    </a>
-
-                    <a href="/disable/school/{{ sc.id }}"
-                    class="btn disable">
-
-                        Disable
-
-                    </a>
-
-                    <a href="/delete/school/{{ sc.id }}"
-                    class="btn delete">
-
-                        Delete
-
-                    </a>
-
-                    <a href="/renew/school/{{ sc.id }}"
-                    class="btn renew">
-
-                        Renew
-
-                    </a>
-
-                </td>
+                <td>{{ sc.expiry_date }}</td>
 
             </tr>
 
@@ -835,7 +474,44 @@ textarea,input{
 
 </div>
 
+<!-- ALL INFO POSTS -->
+<div class="section">
+
+    <div class="sectionTitle">
+
+        <h2>
+            📰 All Information Posts
+        </h2>
+
+        <button class="openBtn schoolBtn"
+        onclick="toggleTable('allInfoPosts')">
+
+            Open Information
+
+        </button>
+
+    </div>
+
+    <div class="tableBox" id="allInfoPosts">
+
+        <button
+        onclick="savePositions()"
+        class="saveBtn"
+        style="margin-bottom:20px;">
+
+            💾 Save New Positions
+
+        </button>
+
+        <div id="infoAdminList"></div>
+
+    </div>
+
+</div>
+
 <script>
+
+let infoData = [];
 
 function toggleTable(id){
 
@@ -853,6 +529,7 @@ function toggleTable(id){
 
 }
 
+/* SAVE INFO */
 async function saveInfo(){
 
     let fd = new FormData();
@@ -898,7 +575,7 @@ async function saveInfo(){
 
         alert("Saved Successfully ✅");
 
-        location.reload();
+        loadInfoAdmin();
 
     }else{
 
@@ -907,6 +584,211 @@ async function saveInfo(){
     }
 
 }
+
+/* LOAD INFO */
+function loadInfoAdmin(){
+
+    fetch("/get_all_info")
+
+    .then(res=>res.json())
+
+    .then(data=>{
+
+        infoData = data;
+
+        renderInfoAgain();
+
+    });
+
+}
+
+/* RENDER INFO */
+function renderInfoAgain(){
+
+    let box = document.getElementById("infoAdminList");
+
+    box.innerHTML = "";
+
+    infoData.forEach(i=>{
+
+        box.innerHTML += `
+
+        <div class="info-card">
+
+            <h3>
+
+                🏫 ${i.title}
+
+            </h3>
+
+            <p style="line-height:1.8;">
+
+                ${i.content}
+
+            </p>
+
+            ${i.image ? `
+
+            <img
+            src="/static/info/${i.image}"
+            width="250"
+            style="border-radius:12px;">
+
+            ` : ""}
+
+            ${i.video ? `
+
+            <br><br>
+
+            <video width="300"
+            controls
+            style="border-radius:12px;">
+
+                <source
+                src="/static/info/${i.video}">
+
+            </video>
+
+            ` : ""}
+
+            <div class="moveBtns">
+
+                <button
+                onclick="moveUp('${i.id}')"
+                class="moveBtn upBtn">
+
+                    ⬆️ Up
+
+                </button>
+
+                <button
+                onclick="moveDown('${i.id}')"
+                class="moveBtn downBtn">
+
+                    ⬇️ Down
+
+                </button>
+
+                <button
+                onclick="deleteInfo('${i.id}')"
+                class="btn delete">
+
+                    Delete
+
+                </button>
+
+            </div>
+
+        </div>
+
+        `;
+
+    });
+
+}
+
+/* MOVE UP */
+function moveUp(id){
+
+    let index =
+    infoData.findIndex(x=>x.id===id);
+
+    if(index > 0){
+
+        [infoData[index], infoData[index - 1]] =
+        [infoData[index - 1], infoData[index]];
+
+        renderInfoAgain();
+
+    }
+
+}
+
+/* MOVE DOWN */
+function moveDown(id){
+
+    let index =
+    infoData.findIndex(x=>x.id===id);
+
+    if(index < infoData.length - 1){
+
+        [infoData[index], infoData[index + 1]] =
+        [infoData[index + 1], infoData[index]];
+
+        renderInfoAgain();
+
+    }
+
+}
+
+/* SAVE POSITIONS */
+function savePositions(){
+
+    let positions = [];
+
+    infoData.forEach((item,index)=>{
+
+        positions.push({
+
+            id:item.id,
+            position:index
+
+        });
+
+    });
+
+    fetch("/update_info_positions",{
+
+        method:"POST",
+
+        headers:{
+            "Content-Type":"application/json"
+        },
+
+        body:JSON.stringify({
+            positions:positions
+        })
+
+    })
+
+    .then(res=>res.json())
+
+    .then(data=>{
+
+        if(data.success){
+
+            alert("Positions Updated ✅");
+
+            loadInfoAdmin();
+
+        }
+
+    });
+
+}
+
+/* DELETE INFO */
+function deleteInfo(id){
+
+    if(confirm("Delete this info?")){
+
+        fetch("/delete_info/" + id,{
+
+            method:"DELETE"
+
+        })
+
+        .then(()=>{
+
+            loadInfoAdmin();
+
+        });
+
+    }
+
+}
+
+loadInfoAdmin();
 
 </script>
 
