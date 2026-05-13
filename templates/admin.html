@@ -55,6 +55,7 @@ th,td{
     text-align:left;
     border-bottom:1px solid #eee;
     font-size:14px;
+    vertical-align:top;
 }
 
 th{
@@ -91,7 +92,18 @@ th{
     background:#ff9800;
 }
 
-/* Edit Button Style */
+.restaurantBtn{
+    background:#ff5722;
+}
+
+.supermarketBtn{
+    background:#4caf50;
+}
+
+.schoolBtn{
+    background:#2196f3;
+}
+
 .editBtn {
     background: #17a2b8;
 }
@@ -127,7 +139,6 @@ th{
     box-shadow:0 0 6px rgba(0,0,0,0.08);
 }
 
-/* INFO ADMIN */
 .info-card{
     border:1px solid #ddd;
     padding:15px;
@@ -162,23 +173,32 @@ th{
     margin-bottom:15px;
 }
 
-.noticeBox{
-    background:#fff8e1;
-    border-left:5px solid #ff9800;
-    padding:15px;
-    border-radius:10px;
-    margin-bottom:15px;
-}
-
 textarea{
     resize:vertical;
 }
 
-/* Style for password labels in table */
-.pwd-label {
-    font-size: 11px;
-    color: #666;
-    display: block;
+.pwdBox{
+    background:#f8f9fa;
+    padding:10px;
+    border-radius:10px;
+    border:1px solid #ddd;
+    line-height:1.8;
+}
+
+.pwdTitle{
+    font-size:12px;
+    color:#555;
+    font-weight:bold;
+}
+
+.bigText{
+    font-size:15px;
+    font-weight:bold;
+    color:#111;
+}
+
+.sectionActions{
+    margin-bottom:15px;
 }
 
 @media(max-width:900px){
@@ -211,622 +231,427 @@ textarea{
 
     <h2>➕ Registration Panel</h2>
 
-    <a href="/register" class="btn activate">
-        Register Restaurant
+    <a href="/register" class="btn restaurantBtn">
+        🍽️ Register Restaurant
     </a>
 
-    <a href="/supermarket_register" class="btn activate">
-        Register Supermarket
+    <a href="/supermarket_register" class="btn supermarketBtn">
+        🛒 Register Supermarket
     </a>
 
-    <a href="/school_register" class="btn renew">
-        Register School
+    <a href="/school_register" class="btn schoolBtn">
+        🏫 Register School
     </a>
 
     <a href="/register_student" class="btn activate">
-        Register Student
+        👨‍🎓 Register Student
     </a>
 
 </div>
 
-<!-- RESTAURANTS TABLE -->
-<div class="section-box">
-    <h2>🍽️ Restaurants</h2>
-    <table>
-        <tr>
-            <th>Name</th>
-            <th>Contact & Fee</th> <!-- Updated Header -->
-            <th>Passwords</th>
-            <th>Expiry Date</th>
-            <th>Status</th>
-            <th>Actions</th>
-        </tr>
-        {% for r in restaurants %}
-        <tr>
-            <td><b>{{ r.name }}</b></td>
-            <td>
-                📞 {{ r.phone }}<br>
-                👤 {{ r.username }}<br>
-                💰 <b>${{ r.monthly_fee }}</b> <!-- Added Fee -->
-            </td>
-            <td>
-                <span class="pwd-label">Login: {{ r.password }}</span>
-                <span class="pwd-label">Admin: {{ r.restaurant_admin_password }}</span>
-                <span class="pwd-label">Kitchen: {{ r.kitchen_password }}</span>
-            </td>
-            <td>{{ r.expiry_date }}</td>
-            <td>
-                {% if r.status == 'active' %}
-                <span class="status-active">✅ Active</span>
-                {% else %}
-                <span class="status-disabled">❌ Disabled</span>
-                {% endif %}
-            </td>
-            <td>
-                <a href="/activate/restaurant/{{ r.id }}" class="btn activate">Activate</a>
-                <a href="/disable/restaurant/{{ r.id }}" class="btn disable">Disable</a>
-                <a href="/delete/restaurant/{{ r.id }}" class="btn delete">Delete</a>
-                <a href="/renew/restaurant/{{ r.id }}" class="btn renew">Renew</a>
-            </td>
-        </tr>
-        {% endfor %}
-    </table>
-</div>
-
-<!-- SUPERMARKETS TABLE -->
-<div class="section-box">
-    <h2>🛒 Supermarkets</h2>
-    <table>
-        <tr>
-            <th>Name</th>
-            <th>Username & Fee</th> <!-- Updated Header -->
-            <th>Password</th>
-            <th>Status</th>
-            <th>Actions</th>
-        </tr>
-        {% for s in supermarkets %}
-        <tr>
-            <td><b>{{ s.name }}</b></td>
-            <td>
-                👤 {{ s.username }}<br>
-                💰 <b>${{ s.monthly_fee }}</b> <!-- Added Fee -->
-            </td>
-            <td>{{ s.password }}</td>
-            <td>
-                {% if s.status == 'active' %}
-                <span class="status-active">✅ Active</span>
-                {% else %}
-                <span class="status-disabled">❌ Disabled</span>
-                {% endif %}
-            </td>
-            <td>
-                <a href="/activate/supermarket/{{ s.id }}" class="btn activate">Activate</a>
-                <a href="/disable/supermarket/{{ s.id }}" class="btn disable">Disable</a>
-                <a href="/delete/supermarket/{{ s.id }}" class="btn delete">Delete</a>
-                <a href="/renew/supermarket/{{ s.id }}" class="btn renew">Renew</a>
-            </td>
-        </tr>
-        {% endfor %}
-    </table>
-</div>
-
-<!-- SCHOOLS TABLE -->
-<div class="section-box">
-    <h2>🏫 Schools</h2>
-    <table>
-        <tr>
-            <th>School Name</th>
-            <th>Details (Code/User)</th>
-            <th>Phone & Fee</th>
-            <th>Password</th>
-            <th>Expiry Date</th>
-            <th>Status</th>
-            <th>Actions</th>
-        </tr>
-        {% for sc in schools %}
-        <tr>
-            <td><b>{{ sc.name }}</b></td>
-            <td>
-                🆔 {{ sc.school_code }}<br>
-                👤 {{ sc.username }}
-            </td>
-            <td>
-                📞 {{ sc.phone }}<br>
-                💰 <b>${{ sc.monthly_fee }}</b> <!-- Fee already exists here -->
-            </td>
-            <td>{{ sc.password }}</td>
-            <td style="color:#ff9800; font-weight:bold;">{{ sc.expiry_date }}</td>
-            <td>
-                {% if sc.status == 'active' %}
-                <span class="status-active">✅ Active</span>
-                {% else %}
-                <span class="status-disabled">❌ Disabled</span>
-                {% endif %}
-            </td>
-            <td>
-                <a href="/activate/school/{{ sc.id }}" class="btn activate">Activate</a>
-                <a href="/disable/school/{{ sc.id }}" class="btn disable">Disable</a>
-                <a href="/delete/school/{{ sc.id }}" class="btn delete">Delete</a>
-                <a href="/renew/school/{{ sc.id }}" class="btn renew">Renew</a>
-            </td>
-        </tr>
-        {% endfor %}
-    </table>
-</div>
-
-<!-- SYSTEM INFO -->
+<!-- RESTAURANTS -->
 <div class="section-box">
 
-    <h2 id="info_form_title">📢 System Information</h2>
-
-    <!-- Hidden field to store ID when editing -->
-    <input type="hidden" id="info_id" value="">
-
-    <input
-    type="text"
-    id="info_title"
-    placeholder="Title"
-    style="width:100%;padding:10px;box-sizing:border-box;">
-
-    <textarea
-    id="info_content"
-    placeholder="Write full information..."
-    style="width:100%;height:120px;margin-top:10px;padding:10px;box-sizing:border-box;"></textarea>
-
-    <input
-    type="file"
-    id="info_image"
-    accept="image/*"
-    style="margin-top:10px;display:block;">
-
-    <input
-    type="file"
-    id="info_video"
-    accept="video/*"
-    style="margin-top:10px;display:block;">
-
-    <button
-    id="save_btn"
-    onclick="saveInfo()"
-    class="btn activate"
-    style="margin-top:10px;width:100%;">
-        💾 Save Information
-    </button>
-    
-    <button
-    id="cancel_btn"
-    onclick="clearInfoForm()"
-    class="btn delete"
-    style="margin-top:10px;width:100%; display:none;">
-        ❌ Cancel Edit
-    </button>
-
-</div>
-
-<!-- SCHOOL NOTIFICATIONS -->
-<div class="section-box">
-
-    <h2>🔔 Send School Notification</h2>
-
-    <select
-    id="notice_school"
-    style="width:100%;padding:10px;margin-bottom:10px;">
-
-        <option value="">Select School</option>
-
-        {% for s in schools %}
-        <option value="{{ s.school_code }}">
-            {{ s.name }}
-        </option>
-        {% endfor %}
-
-    </select>
-
-    <textarea
-    id="notice_message"
-    placeholder="Write notification message..."
-    style="width:100%;height:120px;padding:10px;box-sizing:border-box;"></textarea>
-
-    <button
-    onclick="sendNotification()"
-    class="btn noticeBtn"
-    style="width:100%;margin-top:10px;">
-
-        📨 Send Notification
-
-    </button>
-
-</div>
-
-<!-- INFO POSTS -->
-<div class="section-box">
-
-    <h2 onclick="toggleInfo()" style="cursor:pointer;">
-        📰 All Information Posts ⬇️
-    </h2>
-
-    <button
-    class="savePositionBtn"
-    onclick="savePositions()">
-
-        💾 Save New Positions
-
-    </button>
-
-    <div id="infoAdminList" style="display:none;"></div>
-
-</div>
-
-<!-- TOP REVIEWS -->
-<div class="section-box">
-
-    <h2>⭐ Top 3 Restaurants by Reviews</h2>
-
-    {% if top_reviews and top_reviews|length > 0 %}
-
-    <table>
-
-        <tr>
-            <th>Rank</th>
-            <th>Name</th>
-            <th>Total Reviews</th>
-        </tr>
-
-        {% for r in top_reviews %}
-
-        <tr>
-            <td>{{ loop.index }}</td>
-            <td>{{ r.name }}</td>
-            <td>{{ r.review_count }}</td>
-        </tr>
-
-        {% endfor %}
-
-    </table>
-
-    {% else %}
-
-    <div class="empty-box">
-        No reviews yet
+    <div class="sectionActions">
+        <a href="/register" class="btn restaurantBtn">
+            ➕ Add New Restaurant
+        </a>
     </div>
 
-    {% endif %}
+    <h2>🍽️ Restaurants</h2>
+
+    <table>
+
+        <tr>
+            <th>Restaurant Info</th>
+            <th>All System Passwords</th>
+            <th>Subscription</th>
+            <th>Status</th>
+            <th>Actions</th>
+        </tr>
+
+        {% for r in restaurants %}
+
+        <tr>
+
+            <td>
+
+                <div class="bigText">
+                    {{ r.name }}
+                </div>
+
+                <br>
+
+                📞 <b>{{ r.phone }}</b>
+
+                <br><br>
+
+                👤 Username:
+                <b>{{ r.username }}</b>
+
+                <br><br>
+
+                👨‍💼 Admin:
+                <b>{{ r.admin_name }}</b>
+
+                <br><br>
+
+                📧 {{ r.admin_email }}
+
+            </td>
+
+            <td>
+
+                <div class="pwdBox">
+
+                    <span class="pwdTitle">
+                        🔐 Login Password
+                    </span>
+
+                    <br>
+
+                    <span class="bigText">
+                        {{ r.password }}
+                    </span>
+
+                    <hr>
+
+                    <span class="pwdTitle">
+                        👨‍💼 Admin Password
+                    </span>
+
+                    <br>
+
+                    <span class="bigText">
+                        {{ r.restaurant_admin_password }}
+                    </span>
+
+                    <hr>
+
+                    <span class="pwdTitle">
+                        👨‍🍳 Kitchen Password
+                    </span>
+
+                    <br>
+
+                    <span class="bigText">
+                        {{ r.kitchen_password }}
+                    </span>
+
+                </div>
+
+            </td>
+
+            <td>
+
+                💰 Fee:
+                <b>${{ r.monthly_fee }}</b>
+
+                <br><br>
+
+                📅 Expiry:
+
+                <br>
+
+                <span style="color:#ff9800;font-weight:bold;">
+                    {{ r.expiry_date }}
+                </span>
+
+            </td>
+
+            <td>
+
+                {% if r.status == 'active' %}
+
+                <span class="status-active">
+                    ✅ Active
+                </span>
+
+                {% else %}
+
+                <span class="status-disabled">
+                    ❌ Disabled
+                </span>
+
+                {% endif %}
+
+            </td>
+
+            <td>
+
+                <a href="/activate/restaurant/{{ r.id }}" class="btn activate">
+                    Activate
+                </a>
+
+                <a href="/disable/restaurant/{{ r.id }}" class="btn disable">
+                    Disable
+                </a>
+
+                <a href="/delete/restaurant/{{ r.id }}" class="btn delete">
+                    Delete
+                </a>
+
+                <a href="/renew/restaurant/{{ r.id }}" class="btn renew">
+                    Renew
+                </a>
+
+            </td>
+
+        </tr>
+
+        {% endfor %}
+
+    </table>
 
 </div>
 
-<script>
+<!-- SUPERMARKETS -->
+<div class="section-box">
 
-let infoData = [];
+    <div class="sectionActions">
+        <a href="/supermarket_register" class="btn supermarketBtn">
+            ➕ Add New Supermarket
+        </a>
+    </div>
 
-/* TOGGLE INFO */
-function toggleInfo(){
+    <h2>🛒 Supermarkets</h2>
 
-    let box = document.getElementById("infoAdminList");
+    <table>
 
-    if(box.style.display === "none"){
+        <tr>
+            <th>Supermarket Info</th>
+            <th>System Passwords</th>
+            <th>Subscription</th>
+            <th>Status</th>
+            <th>Actions</th>
+        </tr>
 
-        box.style.display = "block";
+        {% for s in supermarkets %}
 
-        loadInfoAdmin();
+        <tr>
 
-    }else{
+            <td>
 
-        box.style.display = "none";
+                <div class="bigText">
+                    {{ s.name }}
+                </div>
 
-    }
+                <br>
 
-}
+                👤 Username:
+                <b>{{ s.username }}</b>
 
-/* CLEAR FORM */
-function clearInfoForm(){
-    document.getElementById("info_id").value = "";
-    document.getElementById("info_title").value = "";
-    document.getElementById("info_content").value = "";
-    document.getElementById("info_form_title").innerText = "📢 System Information";
-    document.getElementById("save_btn").innerText = "💾 Save Information";
-    document.getElementById("cancel_btn").style.display = "none";
-}
+            </td>
 
-/* EDIT INFO */
-function editInfo(id){
-    let item = infoData.find(x => x.id == id);
-    if(item){
-        document.getElementById("info_id").value = item.id;
-        document.getElementById("info_title").value = item.title;
-        document.getElementById("info_content").value = item.content;
-        
-        document.getElementById("info_form_title").innerText = "✏️ Edit Information";
-        document.getElementById("save_btn").innerText = "🔄 Update Information";
-        document.getElementById("cancel_btn").style.display = "block";
-        
-        // Scroll to form
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-}
+            <td>
 
-/* SAVE INFO (Supports Save and Update) */
-async function saveInfo(){
-    let edit_id = document.getElementById("info_id").value;
-    let fd = new FormData();
+                <div class="pwdBox">
 
-    fd.append("title", document.getElementById("info_title").value);
-    fd.append("content", document.getElementById("info_content").value);
-    
-    if(edit_id) {
-        fd.append("id", edit_id);
-    }
+                    <span class="pwdTitle">
+                        🔐 Supermarket Password
+                    </span>
 
-    let img = document.getElementById("info_image").files;
-    let vid = document.getElementById("info_video").files;
+                    <br>
 
-    if(img.length > 0){ fd.append("image", img[0]); }
-    if(vid.length > 0){ fd.append("video", vid[0]); }
+                    <span class="bigText">
+                        {{ s.password }}
+                    </span>
 
-    // Route depends on whether it's update or new
-    let route = edit_id ? "/update_info" : "/save_info";
+                </div>
 
-    let res = await fetch(route,{
-        method:"POST",
-        body:fd
-    });
+            </td>
 
-    let data = await res.json();
+            <td>
 
-    if(data.success){
-        alert(edit_id ? "Updated Successfully ✅" : "Saved Successfully ✅");
-        clearInfoForm();
-        loadInfoAdmin();
-    }else{
-        alert(data.error);
-    }
-}
+                💰 Fee:
+                <b>${{ s.monthly_fee }}</b>
 
-/* LOAD INFO */
-function loadInfoAdmin(){
-    fetch("/get_all_info")
-    .then(res=>res.json())
-    .then(data=>{
-        infoData = data;
-        renderInfoAgain();
-    });
-}
+                <br><br>
 
-/* RENDER AGAIN */
-function renderInfoAgain(){
+                📅 Expiry:
 
-    let box = document.getElementById("infoAdminList");
+                <br>
 
-    box.innerHTML = "";
+                <span style="color:#ff9800;font-weight:bold;">
+                    {{ s.expiry_date }}
+                </span>
 
-    infoData.forEach(i=>{
+            </td>
 
-        box.innerHTML += `
+            <td>
 
-        <div class="info-card">
+                {% if s.status == 'active' %}
 
-            <b>${i.title}</b>
+                <span class="status-active">
+                    ✅ Active
+                </span>
 
-            <br><br>
+                {% else %}
 
-            ${i.content}
+                <span class="status-disabled">
+                    ❌ Disabled
+                </span>
 
-            <br><br>
+                {% endif %}
 
-            ${i.image ? `
-            <img
-            src="/static/info/${i.image}"
-            width="120"
-            style="border-radius:8px;">
-            ` : ""}
+            </td>
 
-            ${i.video ? `
-            <br><br>
-            <video width="180" controls>
-                <source src="/static/info/${i.video}">
-            </video>
-            ` : ""}
+            <td>
 
-            <div class="moveBtns">
+                <a href="/activate/supermarket/{{ s.id }}" class="btn activate">
+                    Activate
+                </a>
 
-                <button
-                onclick="moveUp('${i.id}')"
-                class="moveBtn">
-                    ⬆️ Up
-                </button>
+                <a href="/disable/supermarket/{{ s.id }}" class="btn disable">
+                    Disable
+                </a>
 
-                <button
-                onclick="moveDown('${i.id}')"
-                class="moveBtn">
-                    ⬇️ Down
-                </button>
-
-                <!-- Added Edit Button -->
-                <button
-                onclick="editInfo('${i.id}')"
-                class="btn editBtn">
-                    ✏️ Edit
-                </button>
-
-                <button
-                onclick="deleteInfo('${i.id}')"
-                class="btn delete">
+                <a href="/delete/supermarket/{{ s.id }}" class="btn delete">
                     Delete
-                </button>
+                </a>
 
-            </div>
+                <a href="/renew/supermarket/{{ s.id }}" class="btn renew">
+                    Renew
+                </a>
 
-        </div>
+            </td>
 
-        `;
+        </tr>
 
-    });
+        {% endfor %}
 
-}
+    </table>
 
-/* MOVE UP */
-function moveUp(id){
+</div>
 
-    let index = infoData.findIndex(x=>x.id===id);
+<!-- SCHOOLS -->
+<div class="section-box">
 
-    if(index > 0){
+    <div class="sectionActions">
+        <a href="/school_register" class="btn schoolBtn">
+            ➕ Add New School
+        </a>
+    </div>
 
-        [infoData[index], infoData[index - 1]] =
-        [infoData[index - 1], infoData[index]];
+    <h2>🏫 Schools</h2>
 
-        renderInfoAgain();
+    <table>
 
-    }
+        <tr>
+            <th>School Info</th>
+            <th>School System Passwords</th>
+            <th>Subscription</th>
+            <th>Status</th>
+            <th>Actions</th>
+        </tr>
 
-}
+        {% for sc in schools %}
 
-/* MOVE DOWN */
-function moveDown(id){
+        <tr>
 
-    let index = infoData.findIndex(x=>x.id===id);
+            <td>
 
-    if(index < infoData.length - 1){
+                <div class="bigText">
+                    {{ sc.name }}
+                </div>
 
-        [infoData[index], infoData[index + 1]] =
-        [infoData[index + 1], infoData[index]];
+                <br>
 
-        renderInfoAgain();
+                🆔 School Code:
+                <b>{{ sc.school_code }}</b>
 
-    }
+                <br><br>
 
-}
+                👤 Username:
+                <b>{{ sc.username }}</b>
 
-/* SAVE POSITIONS */
-function savePositions(){
+                <br><br>
 
-    let positions = [];
+                📞 Phone:
+                <b>{{ sc.phone }}</b>
 
-    infoData.forEach((item,index)=>{
+            </td>
 
-        positions.push({
+            <td>
 
-            id:item.id,
-            position:index
+                <div class="pwdBox">
 
-        });
+                    <span class="pwdTitle">
+                        🔐 School Password
+                    </span>
 
-    });
+                    <br>
 
-    fetch("/update_info_positions",{
+                    <span class="bigText">
+                        {{ sc.password }}
+                    </span>
 
-        method:"POST",
+                </div>
 
-        headers:{
-            "Content-Type":"application/json"
-        },
+            </td>
 
-        body:JSON.stringify({
-            positions:positions
-        })
+            <td>
 
-    })
+                💰 Fee:
+                <b>${{ sc.monthly_fee }}</b>
 
-    .then(res=>res.json())
+                <br><br>
 
-    .then(data=>{
+                📅 Expiry:
 
-        if(data.success){
+                <br>
 
-            alert("Positions Updated ✅");
+                <span style="color:#ff9800;font-weight:bold;">
+                    {{ sc.expiry_date }}
+                </span>
 
-            loadInfoAdmin();
+            </td>
 
-        }else{
+            <td>
 
-            alert("Failed ❌");
+                {% if sc.status == 'active' %}
 
-        }
+                <span class="status-active">
+                    ✅ Active
+                </span>
 
-    });
+                {% else %}
 
-}
+                <span class="status-disabled">
+                    ❌ Disabled
+                </span>
 
-/* DELETE */
-function deleteInfo(id){
+                {% endif %}
 
-    if(confirm("Delete this post?")){
+            </td>
 
-        fetch("/delete_info/" + id,{
+            <td>
 
-            method:"DELETE"
+                <a href="/activate/school/{{ sc.id }}" class="btn activate">
+                    Activate
+                </a>
 
-        })
+                <a href="/disable/school/{{ sc.id }}" class="btn disable">
+                    Disable
+                </a>
 
-        .then(()=>{
+                <a href="/delete/school/{{ sc.id }}" class="btn delete">
+                    Delete
+                </a>
 
-            loadInfoAdmin();
+                <a href="/renew/school/{{ sc.id }}" class="btn renew">
+                    Renew
+                </a>
 
-        });
+            </td>
 
-    }
+        </tr>
 
-}
+        {% endfor %}
 
-/* SEND NOTIFICATION */
-async function sendNotification(){
+    </table>
 
-    let school_code =
-    document.getElementById("notice_school").value;
-
-    let message =
-    document.getElementById("notice_message").value;
-
-    if(!school_code){
-
-        alert("Select school");
-
-        return;
-
-    }
-
-    if(!message){
-
-        alert("Write message");
-
-        return;
-
-    }
-
-    let res = await fetch("/send_school_notification",{
-
-        method:"POST",
-
-        headers:{
-            "Content-Type":"application/json"
-        },
-
-        body:JSON.stringify({
-
-            school_code:school_code,
-            message:message
-
-        })
-
-    });
-
-    let data = await res.json();
-
-    if(data.success){
-
-        alert("Notification sent ✅");
-
-        document.getElementById("notice_message").value = "";
-
-    }else{
-
-        alert(data.error);
-
-    }
-
-}
-
-loadInfoAdmin();
-
-</script>
+</div>
 
 </body>
 </html>
