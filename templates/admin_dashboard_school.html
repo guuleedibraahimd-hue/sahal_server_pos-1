@@ -294,6 +294,8 @@ Loading updates...
 
 </div>
 
+
+
 <!-- 👨‍🎓 STUDENTS TABLE -->
 <div class="card">
 
@@ -311,6 +313,7 @@ Loading updates...
 <th>Paid</th>
 <th>Remaining</th>
 <th>Status</th>
+<th>Password</th> <!-- TIIRKA CUSUB -->
 <th>Last Paid</th>
 
 </tr>
@@ -335,6 +338,11 @@ Loading updates...
 
 <td class="{% if s.status=='paid' %}paid{% else %}unpaid{% endif %}">
 {{ s.status }}
+</td>
+
+<!-- QAYBTA PASSWORD-KA ARDAYDA -->
+<td>
+{{ s.student_password }}
 </td>
 
 <td>{{ s.last_paid }}</td>
