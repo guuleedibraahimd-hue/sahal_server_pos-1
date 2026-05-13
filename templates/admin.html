@@ -6,104 +6,125 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
+
 body{
-    font-family: Arial, sans-serif;
-    background: #f4f6f9;
-    padding: 20px;
-    margin: 0;
+    font-family:Arial,sans-serif;
+    background:#f4f6f9;
+    padding:20px;
+    margin:0;
 }
 
 .top{
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-    flex-wrap: wrap;
-    gap: 10px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:20px;
+    flex-wrap:wrap;
+    gap:10px;
 }
 
 .logout{
-    background: #dc3545;
-    color: white;
-    padding: 10px 15px;
-    border-radius: 8px;
-    text-decoration: none;
-    font-weight: bold;
+    background:#dc3545;
+    color:white;
+    padding:10px 15px;
+    border-radius:8px;
+    text-decoration:none;
+    font-weight:bold;
 }
 
 .section-box{
-    background: white;
-    padding: 20px;
-    border-radius: 12px;
-    box-shadow: 0 0 8px rgba(0,0,0,0.08);
-    margin-bottom: 25px;
+    background:white;
+    padding:20px;
+    border-radius:12px;
+    box-shadow:0 0 8px rgba(0,0,0,0.08);
+    margin-bottom:25px;
 }
 
 table{
-    width: 100%;
-    border-collapse: collapse;
-    background: white;
-    border-radius: 15px;
-    overflow: hidden;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-    margin-bottom: 25px;
+    width:100%;
+    border-collapse:collapse;
+    background:white;
+    border-radius:15px;
+    overflow:hidden;
+    box-shadow:0 4px 10px rgba(0,0,0,0.1);
+    margin-bottom:25px;
 }
 
-th, td{
-    padding: 14px;
-    text-align: left;
-    border-bottom: 1px solid #eee;
-    font-size: 14px;
+th,td{
+    padding:14px;
+    text-align:left;
+    border-bottom:1px solid #eee;
+    font-size:14px;
 }
 
 th{
-    background: #007bff;
-    color: white;
+    background:#007bff;
+    color:white;
 }
 
 .btn{
-    padding: 8px 12px;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    color: white;
-    font-weight: bold;
-    text-decoration: none;
-    display: inline-block;
-    margin: 2px;
-    font-size: 14px;
+    padding:8px 12px;
+    border:none;
+    border-radius:8px;
+    cursor:pointer;
+    color:white;
+    font-weight:bold;
+    text-decoration:none;
+    display:inline-block;
+    margin:2px;
+    font-size:14px;
 }
 
-.activate{ background: #28a745; }
-.disable{ background: #dc3545; }
-.delete{ background: #212529; }
-.renew{ background: #ff9800; }
+.activate{
+    background:#28a745;
+}
+
+.disable{
+    background:#dc3545;
+}
+
+.delete{
+    background:#212529;
+}
+
+.renew{
+    background:#ff9800;
+}
+
+/* Edit Button Style */
+.editBtn {
+    background: #17a2b8;
+}
+
+.noticeBtn{
+    background:#0066ff;
+}
 
 .status-active{
-    color: #28a745;
-    font-weight: bold;
+    color:#28a745;
+    font-weight:bold;
 }
 
 .status-disabled{
-    color: #dc3545;
-    font-weight: bold;
+    color:#dc3545;
+    font-weight:bold;
 }
 
 .order-card{
-    background: white;
-    padding: 15px;
-    border-radius: 12px;
-    margin-bottom: 15px;
-    box-shadow: 0 0 6px rgba(0,0,0,0.08);
+    background:white;
+    padding:15px;
+    border-radius:12px;
+    margin-bottom:15px;
+    box-shadow:0 0 6px rgba(0,0,0,0.08);
 }
 
 .empty-box{
-    background: white;
-    padding: 20px;
-    border-radius: 12px;
-    text-align: center;
-    color: #777;
-    box-shadow: 0 0 6px rgba(0,0,0,0.08);
+    background:white;
+    padding:20px;
+    border-radius:12px;
+    text-align:center;
+    color:#777;
+    box-shadow:0 0 6px rgba(0,0,0,0.08);
 }
 
 /* INFO ADMIN */
@@ -113,11 +134,6 @@ th{
     margin-bottom:15px;
     border-radius:12px;
     background:#fff;
-    cursor: grab;
-}
-
-.info-card.dragging{
-    opacity:0.5;
 }
 
 .moveBtns{
@@ -146,43 +162,210 @@ th{
     margin-bottom:15px;
 }
 
-@media(max-width:900px){
-    table{
-        display: block;
-        overflow-x: auto;
-        white-space: nowrap;
-    }
+.noticeBox{
+    background:#fff8e1;
+    border-left:5px solid #ff9800;
+    padding:15px;
+    border-radius:10px;
+    margin-bottom:15px;
 }
+
+textarea{
+    resize:vertical;
+}
+
+/* Style for password labels in table */
+.pwd-label {
+    font-size: 11px;
+    color: #666;
+    display: block;
+}
+
+@media(max-width:900px){
+
+    table{
+        display:block;
+        overflow-x:auto;
+        white-space:nowrap;
+    }
+
+}
+
 </style>
 </head>
 
 <body>
 
 <div class="top">
+
     <h1>⚙️ System Admin Panel</h1>
-    <a href="/logout_admin" class="logout">Logout</a>
+
+    <a href="/logout_admin" class="logout">
+        Logout
+    </a>
+
 </div>
 
+<!-- REGISTER -->
 <div class="section-box">
+
     <h2>➕ Registration Panel</h2>
 
-    <a href="/register" class="btn activate">Register Restaurant</a>
+    <a href="/register" class="btn activate">
+        Register Restaurant
+    </a>
 
-    <a href="/supermarket_register" class="btn activate">Register Supermarket</a>
+    <a href="/supermarket_register" class="btn activate">
+        Register Supermarket
+    </a>
 
-    <a href="/school_register" class="btn renew">Register School</a>
+    <a href="/school_register" class="btn renew">
+        Register School
+    </a>
 
-    <a href="/register_student" class="btn activate">Register Student</a>
+    <a href="/register_student" class="btn activate">
+        Register Student
+    </a>
+
 </div>
 
+<!-- RESTAURANTS TABLE -->
+<div class="section-box">
+    <h2>🍽️ Restaurants</h2>
+    <table>
+        <tr>
+            <th>Name</th>
+            <th>Contact & Fee</th> <!-- Updated Header -->
+            <th>Passwords</th>
+            <th>Expiry Date</th>
+            <th>Status</th>
+            <th>Actions</th>
+        </tr>
+        {% for r in restaurants %}
+        <tr>
+            <td><b>{{ r.name }}</b></td>
+            <td>
+                📞 {{ r.phone }}<br>
+                👤 {{ r.username }}<br>
+                💰 <b>${{ r.monthly_fee }}</b> <!-- Added Fee -->
+            </td>
+            <td>
+                <span class="pwd-label">Login: {{ r.password }}</span>
+                <span class="pwd-label">Admin: {{ r.restaurant_admin_password }}</span>
+                <span class="pwd-label">Kitchen: {{ r.kitchen_password }}</span>
+            </td>
+            <td>{{ r.expiry_date }}</td>
+            <td>
+                {% if r.status == 'active' %}
+                <span class="status-active">✅ Active</span>
+                {% else %}
+                <span class="status-disabled">❌ Disabled</span>
+                {% endif %}
+            </td>
+            <td>
+                <a href="/activate/restaurant/{{ r.id }}" class="btn activate">Activate</a>
+                <a href="/disable/restaurant/{{ r.id }}" class="btn disable">Disable</a>
+                <a href="/delete/restaurant/{{ r.id }}" class="btn delete">Delete</a>
+                <a href="/renew/restaurant/{{ r.id }}" class="btn renew">Renew</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
+
+<!-- SUPERMARKETS TABLE -->
+<div class="section-box">
+    <h2>🛒 Supermarkets</h2>
+    <table>
+        <tr>
+            <th>Name</th>
+            <th>Username & Fee</th> <!-- Updated Header -->
+            <th>Password</th>
+            <th>Status</th>
+            <th>Actions</th>
+        </tr>
+        {% for s in supermarkets %}
+        <tr>
+            <td><b>{{ s.name }}</b></td>
+            <td>
+                👤 {{ s.username }}<br>
+                💰 <b>${{ s.monthly_fee }}</b> <!-- Added Fee -->
+            </td>
+            <td>{{ s.password }}</td>
+            <td>
+                {% if s.status == 'active' %}
+                <span class="status-active">✅ Active</span>
+                {% else %}
+                <span class="status-disabled">❌ Disabled</span>
+                {% endif %}
+            </td>
+            <td>
+                <a href="/activate/supermarket/{{ s.id }}" class="btn activate">Activate</a>
+                <a href="/disable/supermarket/{{ s.id }}" class="btn disable">Disable</a>
+                <a href="/delete/supermarket/{{ s.id }}" class="btn delete">Delete</a>
+                <a href="/renew/supermarket/{{ s.id }}" class="btn renew">Renew</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
+
+<!-- SCHOOLS TABLE -->
+<div class="section-box">
+    <h2>🏫 Schools</h2>
+    <table>
+        <tr>
+            <th>School Name</th>
+            <th>Details (Code/User)</th>
+            <th>Phone & Fee</th>
+            <th>Password</th>
+            <th>Expiry Date</th>
+            <th>Status</th>
+            <th>Actions</th>
+        </tr>
+        {% for sc in schools %}
+        <tr>
+            <td><b>{{ sc.name }}</b></td>
+            <td>
+                🆔 {{ sc.school_code }}<br>
+                👤 {{ sc.username }}
+            </td>
+            <td>
+                📞 {{ sc.phone }}<br>
+                💰 <b>${{ sc.monthly_fee }}</b> <!-- Fee already exists here -->
+            </td>
+            <td>{{ sc.password }}</td>
+            <td style="color:#ff9800; font-weight:bold;">{{ sc.expiry_date }}</td>
+            <td>
+                {% if sc.status == 'active' %}
+                <span class="status-active">✅ Active</span>
+                {% else %}
+                <span class="status-disabled">❌ Disabled</span>
+                {% endif %}
+            </td>
+            <td>
+                <a href="/activate/school/{{ sc.id }}" class="btn activate">Activate</a>
+                <a href="/disable/school/{{ sc.id }}" class="btn disable">Disable</a>
+                <a href="/delete/school/{{ sc.id }}" class="btn delete">Delete</a>
+                <a href="/renew/school/{{ sc.id }}" class="btn renew">Renew</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
+
+<!-- SYSTEM INFO -->
 <div class="section-box">
 
-    <h2>ℹ️ System Information</h2>
+    <h2 id="info_form_title">📢 System Information</h2>
+
+    <!-- Hidden field to store ID when editing -->
+    <input type="hidden" id="info_id" value="">
 
     <input
     type="text"
     id="info_title"
-    placeholder="Title (e.g System Info)"
+    placeholder="Title"
     style="width:100%;padding:10px;box-sizing:border-box;">
 
     <textarea
@@ -203,16 +386,59 @@ th{
     style="margin-top:10px;display:block;">
 
     <button
+    id="save_btn"
     onclick="saveInfo()"
     class="btn activate"
     style="margin-top:10px;width:100%;">
-
         💾 Save Information
+    </button>
+    
+    <button
+    id="cancel_btn"
+    onclick="clearInfoForm()"
+    class="btn delete"
+    style="margin-top:10px;width:100%; display:none;">
+        ❌ Cancel Edit
+    </button>
+
+</div>
+
+<!-- SCHOOL NOTIFICATIONS -->
+<div class="section-box">
+
+    <h2>🔔 Send School Notification</h2>
+
+    <select
+    id="notice_school"
+    style="width:100%;padding:10px;margin-bottom:10px;">
+
+        <option value="">Select School</option>
+
+        {% for s in schools %}
+        <option value="{{ s.school_code }}">
+            {{ s.name }}
+        </option>
+        {% endfor %}
+
+    </select>
+
+    <textarea
+    id="notice_message"
+    placeholder="Write notification message..."
+    style="width:100%;height:120px;padding:10px;box-sizing:border-box;"></textarea>
+
+    <button
+    onclick="sendNotification()"
+    class="btn noticeBtn"
+    style="width:100%;margin-top:10px;">
+
+        📨 Send Notification
 
     </button>
 
 </div>
 
+<!-- INFO POSTS -->
 <div class="section-box">
 
     <h2 onclick="toggleInfo()" style="cursor:pointer;">
@@ -231,10 +457,13 @@ th{
 
 </div>
 
+<!-- TOP REVIEWS -->
 <div class="section-box">
+
     <h2>⭐ Top 3 Restaurants by Reviews</h2>
 
     {% if top_reviews and top_reviews|length > 0 %}
+
     <table>
 
         <tr>
@@ -244,11 +473,13 @@ th{
         </tr>
 
         {% for r in top_reviews %}
+
         <tr>
             <td>{{ loop.index }}</td>
             <td>{{ r.name }}</td>
             <td>{{ r.review_count }}</td>
         </tr>
+
         {% endfor %}
 
     </table>
@@ -260,12 +491,14 @@ th{
     </div>
 
     {% endif %}
+
 </div>
 
 <script>
 
 let infoData = [];
 
+/* TOGGLE INFO */
 function toggleInfo(){
 
     let box = document.getElementById("infoAdminList");
@@ -281,170 +514,84 @@ function toggleInfo(){
         box.style.display = "none";
 
     }
+
 }
 
-async function saveInfo(){
+/* CLEAR FORM */
+function clearInfoForm(){
+    document.getElementById("info_id").value = "";
+    document.getElementById("info_title").value = "";
+    document.getElementById("info_content").value = "";
+    document.getElementById("info_form_title").innerText = "📢 System Information";
+    document.getElementById("save_btn").innerText = "💾 Save Information";
+    document.getElementById("cancel_btn").style.display = "none";
+}
 
+/* EDIT INFO */
+function editInfo(id){
+    let item = infoData.find(x => x.id == id);
+    if(item){
+        document.getElementById("info_id").value = item.id;
+        document.getElementById("info_title").value = item.title;
+        document.getElementById("info_content").value = item.content;
+        
+        document.getElementById("info_form_title").innerText = "✏️ Edit Information";
+        document.getElementById("save_btn").innerText = "🔄 Update Information";
+        document.getElementById("cancel_btn").style.display = "block";
+        
+        // Scroll to form
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+}
+
+/* SAVE INFO (Supports Save and Update) */
+async function saveInfo(){
+    let edit_id = document.getElementById("info_id").value;
     let fd = new FormData();
 
-    fd.append(
-        "title",
-        document.getElementById("info_title").value
-    );
-
-    fd.append(
-        "content",
-        document.getElementById("info_content").value
-    );
+    fd.append("title", document.getElementById("info_title").value);
+    fd.append("content", document.getElementById("info_content").value);
+    
+    if(edit_id) {
+        fd.append("id", edit_id);
+    }
 
     let img = document.getElementById("info_image").files;
-
     let vid = document.getElementById("info_video").files;
 
-    if(img.length > 0){
+    if(img.length > 0){ fd.append("image", img[0]); }
+    if(vid.length > 0){ fd.append("video", vid[0]); }
 
-        fd.append("image", img[0]);
+    // Route depends on whether it's update or new
+    let route = edit_id ? "/update_info" : "/save_info";
 
-    }
-
-    if(vid.length > 0){
-
-        fd.append("video", vid[0]);
-
-    }
-
-    let res = await fetch("/save_info", {
-
+    let res = await fetch(route,{
         method:"POST",
-
         body:fd
-
     });
 
     let data = await res.json();
 
     if(data.success){
-
-        alert("Saved Successfully ✅");
-
-        document.getElementById("info_title").value = "";
-
-        document.getElementById("info_content").value = "";
-
+        alert(edit_id ? "Updated Successfully ✅" : "Saved Successfully ✅");
+        clearInfoForm();
         loadInfoAdmin();
-
     }else{
-
         alert(data.error);
-
     }
 }
 
+/* LOAD INFO */
 function loadInfoAdmin(){
-
-fetch("/get_all_info")
-
-.then(res=>res.json())
-
-.then(data=>{
-
-    infoData = data;
-
-    let box = document.getElementById("infoAdminList");
-
-    box.innerHTML = "";
-
-    data.forEach(i=>{
-
-        box.innerHTML += `
-
-        <div class="info-card"
-        draggable="true"
-        data-id="${i.id}">
-
-            <b>${i.title}</b>
-
-            <br><br>
-
-            ${i.content}
-
-            <br><br>
-
-            ${i.image ? `
-            <img src="/static/info/${i.image}"
-            width="120"
-            style="border-radius:8px;">
-            ` : ""}
-
-            ${i.video ? `
-            <br><br>
-            <video width="180" controls>
-                <source src="/static/info/${i.video}">
-            </video>
-            ` : ""}
-
-            <div class="moveBtns">
-
-                <button
-                onclick="moveUp('${i.id}')"
-                class="moveBtn">
-
-                    ⬆️ Up
-
-                </button>
-
-                <button
-                onclick="moveDown('${i.id}')"
-                class="moveBtn">
-
-                    ⬇️ Down
-
-                </button>
-
-                <button
-                onclick="deleteInfo('${i.id}')"
-                class="btn delete">
-
-                    Delete
-
-                </button>
-
-            </div>
-
-        </div>
-
-        `;
+    fetch("/get_all_info")
+    .then(res=>res.json())
+    .then(data=>{
+        infoData = data;
+        renderInfoAgain();
     });
-
-});
 }
 
-function moveUp(id){
-
-    let index = infoData.findIndex(x => x.id === id);
-
-    if(index > 0){
-
-        [infoData[index], infoData[index - 1]] =
-        [infoData[index - 1], infoData[index]];
-
-        renderInfoAgain();
-    }
-}
-
-function moveDown(id){
-
-    let index = infoData.findIndex(x => x.id === id);
-
-    if(index < infoData.length - 1){
-
-        [infoData[index], infoData[index + 1]] =
-        [infoData[index + 1], infoData[index]];
-
-        renderInfoAgain();
-    }
-}
-
+/* RENDER AGAIN */
 function renderInfoAgain(){
 
     let box = document.getElementById("infoAdminList");
@@ -465,36 +612,90 @@ function renderInfoAgain(){
 
             <br><br>
 
-            <button
-            onclick="moveUp('${i.id}')"
-            class="moveBtn">
+            ${i.image ? `
+            <img
+            src="/static/info/${i.image}"
+            width="120"
+            style="border-radius:8px;">
+            ` : ""}
 
-                ⬆️ Up
+            ${i.video ? `
+            <br><br>
+            <video width="180" controls>
+                <source src="/static/info/${i.video}">
+            </video>
+            ` : ""}
 
-            </button>
+            <div class="moveBtns">
 
-            <button
-            onclick="moveDown('${i.id}')"
-            class="moveBtn">
+                <button
+                onclick="moveUp('${i.id}')"
+                class="moveBtn">
+                    ⬆️ Up
+                </button>
 
-                ⬇️ Down
+                <button
+                onclick="moveDown('${i.id}')"
+                class="moveBtn">
+                    ⬇️ Down
+                </button>
 
-            </button>
+                <!-- Added Edit Button -->
+                <button
+                onclick="editInfo('${i.id}')"
+                class="btn editBtn">
+                    ✏️ Edit
+                </button>
 
-            <button
-            onclick="deleteInfo('${i.id}')"
-            class="btn delete">
+                <button
+                onclick="deleteInfo('${i.id}')"
+                class="btn delete">
+                    Delete
+                </button>
 
-                Delete
-
-            </button>
+            </div>
 
         </div>
 
         `;
+
     });
+
 }
 
+/* MOVE UP */
+function moveUp(id){
+
+    let index = infoData.findIndex(x=>x.id===id);
+
+    if(index > 0){
+
+        [infoData[index], infoData[index - 1]] =
+        [infoData[index - 1], infoData[index]];
+
+        renderInfoAgain();
+
+    }
+
+}
+
+/* MOVE DOWN */
+function moveDown(id){
+
+    let index = infoData.findIndex(x=>x.id===id);
+
+    if(index < infoData.length - 1){
+
+        [infoData[index], infoData[index + 1]] =
+        [infoData[index + 1], infoData[index]];
+
+        renderInfoAgain();
+
+    }
+
+}
+
+/* SAVE POSITIONS */
 function savePositions(){
 
     let positions = [];
@@ -541,8 +742,10 @@ function savePositions(){
         }
 
     });
+
 }
 
+/* DELETE */
 function deleteInfo(id){
 
     if(confirm("Delete this post?")){
@@ -558,7 +761,67 @@ function deleteInfo(id){
             loadInfoAdmin();
 
         });
+
     }
+
+}
+
+/* SEND NOTIFICATION */
+async function sendNotification(){
+
+    let school_code =
+    document.getElementById("notice_school").value;
+
+    let message =
+    document.getElementById("notice_message").value;
+
+    if(!school_code){
+
+        alert("Select school");
+
+        return;
+
+    }
+
+    if(!message){
+
+        alert("Write message");
+
+        return;
+
+    }
+
+    let res = await fetch("/send_school_notification",{
+
+        method:"POST",
+
+        headers:{
+            "Content-Type":"application/json"
+        },
+
+        body:JSON.stringify({
+
+            school_code:school_code,
+            message:message
+
+        })
+
+    });
+
+    let data = await res.json();
+
+    if(data.success){
+
+        alert("Notification sent ✅");
+
+        document.getElementById("notice_message").value = "";
+
+    }else{
+
+        alert(data.error);
+
+    }
+
 }
 
 loadInfoAdmin();
