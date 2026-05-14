@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dhibic Dahab — Restaurant System</title>
+<title>sahal server — Restaurant System</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
@@ -152,7 +152,7 @@ nav{background:linear-gradient(135deg,#0D0D0D,#1a1200);border-bottom:1px solid v
 <body>
 
 <nav>
-  <span class="logo">🍽 Dhibic Dahab</span>
+  <span class="logo">🍽 sahal server</span>
   <div class="nav-tabs" id="nav-tabs"></div>
   <span class="table-badge" id="nav-badge">System</span>
 </nav>
@@ -161,7 +161,7 @@ nav{background:linear-gradient(135deg,#0D0D0D,#1a1200);border-bottom:1px solid v
 <div class="page active" id="page-landing">
   <div class="landing">
     <div style="font-size:3.5rem;margin-bottom:12px">🍽</div>
-    <h1>Dhibic Dahab</h1>
+    <h1>Sahal Server</h1>
     <p>Restaurant QR Ordering System<br><span style="font-size:.8rem">Powered by Sahal Server</span></p>
     <div class="land-btns">
       <button class="land-btn primary" onclick="goTo('page-register')">➕ Maqaayad Diiwaan Geli</button>
@@ -385,8 +385,8 @@ nav{background:linear-gradient(135deg,#0D0D0D,#1a1200);border-bottom:1px solid v
 <script>
 // ===== STORAGE =====
 const ADMIN_PW = 'admin123';
-let restaurants = JSON.parse(localStorage.getItem('dhibic_rests')||'[]');
-let orders = JSON.parse(localStorage.getItem('dhibic_orders')||'[]');
+let restaurants = JSON.parse(localStorage.getItem('sahal_rests')||'[]');
+let orders = JSON.parse(localStorage.getItem('sahal_orders')||'[]');
 let currentRest = null;       // logged-in restaurant staff
 let custRest = null;          // customer's restaurant
 let custTable = null;
@@ -395,8 +395,8 @@ let currentOrder = null;
 let fromKitchen = false;
 
 function save(){
-  localStorage.setItem('dhibic_rests',JSON.stringify(restaurants));
-  localStorage.setItem('dhibic_orders',JSON.stringify(orders));
+  localStorage.setItem('Sahal_rests',JSON.stringify(restaurants));
+  localStorage.setItem('Sahal_orders',JSON.stringify(orders));
 }
 
 // ===== NAVIGATION =====
