@@ -3,580 +3,765 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dhibic Dahab — Restaurant</title>
+<title>Dhibic Dahab — Restaurant System</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
-  :root {
-    --gold: #C9A84C;
-    --gold-light: #F0D080;
-    --dark: #0D0D0D;
-    --card: #161616;
-    --card2: #1E1E1E;
-    --text: #F5F0E8;
-    --muted: #888;
-    --green: #4CAF7D;
-    --red: #E05555;
-  }
-  * { margin:0; padding:0; box-sizing:border-box; }
-  body { background:var(--dark); color:var(--text); font-family:'DM Sans',sans-serif; min-height:100vh; }
-
-  /* ===== NAV ===== */
-  nav {
-    background: linear-gradient(135deg, #0D0D0D 0%, #1a1200 100%);
-    border-bottom: 1px solid var(--gold);
-    padding: 14px 20px;
-    display: flex; align-items:center; justify-content:space-between;
-    position:sticky; top:0; z-index:100;
-  }
-  nav .logo { font-family:'Playfair Display',serif; font-size:1.3rem; color:var(--gold); letter-spacing:1px; }
-  nav .table-badge { background:var(--gold); color:#000; padding:4px 14px; border-radius:20px; font-size:.8rem; font-weight:600; }
-  .nav-tabs { display:flex; gap:6px; }
-  .nav-tab { padding:7px 16px; border-radius:20px; border:1px solid #333; background:none; color:var(--muted); cursor:pointer; font-family:'DM Sans',sans-serif; font-size:.82rem; transition:all .2s; }
-  .nav-tab.active { background:var(--gold); color:#000; border-color:var(--gold); font-weight:600; }
-
-  /* ===== VIEWS ===== */
-  .view { display:none; padding:20px; max-width:480px; margin:0 auto; }
-  .view.active { display:block; }
-
-  /* ===== QR VIEW ===== */
-  .qr-hero { text-align:center; padding:40px 20px; }
-  .qr-hero h1 { font-family:'Playfair Display',serif; font-size:2rem; color:var(--gold); margin-bottom:8px; }
-  .qr-hero p { color:var(--muted); font-size:.9rem; margin-bottom:30px; }
-  .qr-box {
-    background:var(--card); border:2px solid var(--gold);
-    border-radius:20px; padding:30px; display:inline-block;
-    box-shadow: 0 0 40px rgba(201,168,76,.15);
-  }
-  #qrcode canvas, #qrcode img { border-radius:8px; }
-  .qr-info { margin-top:20px; background:var(--card2); border-radius:12px; padding:16px; text-align:left; }
-  .qr-info p { font-size:.82rem; color:var(--muted); margin-bottom:6px; }
-  .qr-info strong { color:var(--gold); font-size:1.1rem; }
-  .scan-btn { width:100%; margin-top:20px; padding:14px; background:var(--gold); color:#000; border:none; border-radius:12px; font-size:1rem; font-weight:700; cursor:pointer; font-family:'DM Sans',sans-serif; transition:transform .15s; }
-  .scan-btn:active { transform:scale(.97); }
-
-  /* ===== MENU VIEW ===== */
-  .section-title { font-family:'Playfair Display',serif; font-size:1.3rem; color:var(--gold); margin:20px 0 12px; border-left:3px solid var(--gold); padding-left:12px; }
-  .menu-grid { display:flex; flex-direction:column; gap:10px; }
-  .menu-item {
-    background:var(--card); border:1px solid #2a2a2a; border-radius:14px;
-    padding:14px 16px; display:flex; align-items:center; gap:14px;
-    transition: border-color .2s, box-shadow .2s;
-  }
-  .menu-item:hover { border-color:var(--gold); box-shadow:0 0 16px rgba(201,168,76,.1); }
-  .item-emoji { font-size:2rem; width:48px; text-align:center; }
-  .item-info { flex:1; }
-  .item-name { font-weight:600; font-size:.95rem; margin-bottom:2px; }
-  .item-price { color:var(--gold); font-weight:700; font-size:1rem; }
-  .item-desc { color:var(--muted); font-size:.75rem; margin-top:2px; }
-  .qty-ctrl { display:flex; align-items:center; gap:8px; }
-  .qty-btn { width:30px; height:30px; border-radius:50%; border:1.5px solid var(--gold); background:none; color:var(--gold); font-size:1.1rem; cursor:pointer; display:flex; align-items:center; justify-content:center; font-weight:700; transition:all .15s; }
-  .qty-btn:hover { background:var(--gold); color:#000; }
-  .qty-num { font-weight:700; min-width:20px; text-align:center; }
-
-  /* ===== CART FLOAT ===== */
-  .cart-float {
-    position:fixed; bottom:24px; left:50%; transform:translateX(-50%);
-    background: linear-gradient(135deg, var(--gold), #A07830);
-    color:#000; padding:14px 28px; border-radius:30px;
-    font-weight:700; font-size:1rem; cursor:pointer;
-    box-shadow:0 8px 30px rgba(201,168,76,.4);
-    display:flex; align-items:center; gap:10px;
-    transition:all .2s; border:none; font-family:'DM Sans',sans-serif;
-    white-space:nowrap;
-  }
-  .cart-float:hover { transform:translateX(-50%) translateY(-2px); box-shadow:0 12px 40px rgba(201,168,76,.5); }
-  .cart-float.hidden { display:none; }
-  .cart-badge { background:#000; color:var(--gold); border-radius:50%; width:24px; height:24px; display:flex; align-items:center; justify-content:center; font-size:.78rem; font-weight:800; }
-
-  /* ===== CART VIEW ===== */
-  .cart-list { display:flex; flex-direction:column; gap:10px; margin-bottom:20px; }
-  .cart-row {
-    background:var(--card); border-radius:12px; padding:14px 16px;
-    display:flex; align-items:center; justify-content:space-between;
-  }
-  .cart-row-left { display:flex; align-items:center; gap:10px; }
-  .cart-row-emoji { font-size:1.5rem; }
-  .cart-row-name { font-weight:600; font-size:.9rem; }
-  .cart-row-qty { color:var(--muted); font-size:.8rem; }
-  .cart-row-price { color:var(--gold); font-weight:700; }
-  .cart-remove { background:none; border:1px solid #333; color:var(--red); border-radius:8px; padding:4px 10px; cursor:pointer; font-size:.8rem; }
-  .cart-summary { background:var(--card); border:1px solid var(--gold); border-radius:16px; padding:20px; margin-bottom:20px; }
-  .summary-row { display:flex; justify-content:space-between; margin-bottom:10px; font-size:.9rem; }
-  .summary-row.total { border-top:1px solid #333; padding-top:12px; margin-top:4px; font-weight:700; font-size:1.1rem; color:var(--gold); }
-  .table-input { width:100%; padding:12px 16px; background:var(--card2); border:1px solid #333; border-radius:10px; color:var(--text); font-family:'DM Sans',sans-serif; font-size:1rem; margin-bottom:14px; }
-  .table-input:focus { outline:none; border-color:var(--gold); }
-  .order-btn { width:100%; padding:16px; background:var(--gold); color:#000; border:none; border-radius:14px; font-size:1.05rem; font-weight:800; cursor:pointer; font-family:'DM Sans',sans-serif; transition:transform .15s; }
-  .order-btn:active { transform:scale(.98); }
-
-  /* ===== RECEIPT VIEW ===== */
-  #view-receipt { background:#f5f5f5; }
-  .receipt {
-    width:300px;
-    margin:auto;
-    border:1px dashed #000;
-    padding:15px;
-    background:#fff;
-    font-family:monospace;
-    color:#111;
-    text-align:center;
-  }
-  .receipt hr { border:dashed 1px #000; }
-  .receipt .row {
-    display:flex;
-    justify-content:space-between;
-    font-size:13px;
-    margin:2px 0;
-  }
-  .receipt .center { text-align:center; }
-  .receipt .bold { font-weight:bold; }
-  .print-btn {
-    display:block;
-    margin:14px auto 0;
-    padding:10px 15px;
-    background:#0a7cff;
-    color:white;
-    border:none;
-    border-radius:6px;
-    cursor:pointer;
-    font-family:'DM Sans',sans-serif;
-  }
-  @media print {
-    body { background:#fff !important; }
-    nav, .nav-tabs, #cart-float-btn, .back-btn, .print-btn { display:none !important; }
-    .view { display:none !important; padding:0 !important; }
-    #view-receipt { display:block !important; background:#fff !important; }
-  }
-
-  /* ===== SUCCESS ===== */
-  .success-screen { text-align:center; padding:60px 20px; }
-  .success-icon { font-size:4rem; margin-bottom:16px; }
-  .success-screen h2 { font-family:'Playfair Display',serif; font-size:1.6rem; color:var(--gold); margin-bottom:10px; }
-  .success-screen p { color:var(--muted); font-size:.9rem; margin-bottom:28px; }
-  .receipt-btn { padding:14px 32px; background:var(--gold); color:#000; border:none; border-radius:12px; font-weight:700; font-size:1rem; cursor:pointer; font-family:'DM Sans',sans-serif; margin:6px; }
-  .back-btn { padding:14px 32px; background:var(--card); color:var(--text); border:1px solid #333; border-radius:12px; font-weight:600; font-size:.9rem; cursor:pointer; font-family:'DM Sans',sans-serif; margin:6px; }
-  .print-btn { display:block; width:100%; margin-top:16px; padding:13px; background:var(--card); color:var(--gold); border:1.5px solid var(--gold); border-radius:12px; font-weight:600; font-size:.9rem; cursor:pointer; font-family:'DM Sans',sans-serif; }
-
-  /* ===== ADMIN VIEW ===== */
-  .admin-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
-  .admin-header h2 { font-family:'Playfair Display',serif; color:var(--gold); }
-  .order-count { background:var(--gold); color:#000; border-radius:50%; width:28px; height:28px; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:.85rem; }
-  .order-card { background:var(--card); border:1px solid #2a2a2a; border-radius:14px; padding:16px; margin-bottom:12px; }
-  .order-card-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
-  .order-card-table { font-weight:700; font-size:1rem; }
-  .order-time { color:var(--muted); font-size:.78rem; }
-  .order-status { padding:4px 12px; border-radius:20px; font-size:.75rem; font-weight:700; }
-  .status-new { background:rgba(201,168,76,.2); color:var(--gold); }
-  .status-prep { background:rgba(76,130,175,.2); color:#6aadff; }
-  .status-done { background:rgba(76,175,80,.2); color:var(--green); }
-  .order-items-list { font-size:.83rem; color:var(--muted); margin-bottom:10px; line-height:1.7; }
-  .order-total-line { font-weight:700; color:var(--gold); font-size:.9rem; margin-bottom:10px; }
-  .action-btns { display:flex; gap:8px; }
-  .action-btn { flex:1; padding:8px; border-radius:8px; border:none; font-weight:600; font-size:.8rem; cursor:pointer; font-family:'DM Sans',sans-serif; transition:all .15s; }
-  .btn-prep { background:rgba(76,130,175,.2); color:#6aadff; border:1px solid #6aadff; }
-  .btn-done { background:rgba(76,175,80,.2); color:var(--green); border:1px solid var(--green); }
-  .btn-receipt { background:rgba(201,168,76,.15); color:var(--gold); border:1px solid var(--gold); }
-  .empty-state { text-align:center; padding:60px 20px; color:var(--muted); }
-  .empty-state .empty-icon { font-size:3rem; margin-bottom:12px; }
-
-  @media print {
-    body > *:not(.receipt-wrapper) { display:none !important; }
-    .receipt-wrapper { box-shadow:none; border-radius:0; max-width:100%; }
-  }
+:root{--gold:#C9A84C;--dark:#0D0D0D;--card:#161616;--card2:#1E1E1E;--text:#F5F0E8;--muted:#888;--green:#4CAF7D;--red:#E05555;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--dark);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;}
+nav{background:linear-gradient(135deg,#0D0D0D,#1a1200);border-bottom:1px solid var(--gold);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:200;}
+.logo{font-family:'Playfair Display',serif;font-size:1.2rem;color:var(--gold);}
+.nav-tabs{display:flex;gap:4px;flex-wrap:wrap;}
+.nav-tab{padding:6px 12px;border-radius:20px;border:1px solid #333;background:none;color:var(--muted);cursor:pointer;font-family:'DM Sans',sans-serif;font-size:.78rem;transition:all .2s;}
+.nav-tab.active{background:var(--gold);color:#000;border-color:var(--gold);font-weight:700;}
+.table-badge{background:var(--gold);color:#000;padding:4px 12px;border-radius:20px;font-size:.78rem;font-weight:600;white-space:nowrap;}
+.page{display:none;}.page.active{display:block;}
+/* LANDING */
+.landing{max-width:480px;margin:0 auto;padding:40px 20px;text-align:center;}
+.landing h1{font-family:'Playfair Display',serif;font-size:2.2rem;color:var(--gold);margin-bottom:10px;}
+.landing p{color:var(--muted);margin-bottom:36px;}
+.land-btns{display:flex;flex-direction:column;gap:14px;}
+.land-btn{padding:16px;border-radius:14px;border:none;font-size:1rem;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;transition:transform .15s;}
+.land-btn:active{transform:scale(.97);}
+.land-btn.primary{background:var(--gold);color:#000;}
+.land-btn.secondary{background:var(--card);color:var(--text);border:1px solid #333;}
+/* FORMS */
+.form-wrap{max-width:480px;margin:0 auto;padding:24px 20px;}
+.form-wrap h2{font-family:'Playfair Display',serif;color:var(--gold);margin-bottom:20px;}
+.field{margin-bottom:14px;}
+.field label{display:block;font-size:.82rem;color:var(--muted);margin-bottom:6px;}
+.field input,.field select{width:100%;padding:12px 14px;background:var(--card2);border:1px solid #333;border-radius:10px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:.95rem;}
+.field input:focus,.field select:focus{outline:none;border-color:var(--gold);}
+.field select option{background:#222;}
+.submit-btn{width:100%;padding:15px;background:var(--gold);color:#000;border:none;border-radius:12px;font-size:1rem;font-weight:800;cursor:pointer;font-family:'DM Sans',sans-serif;margin-top:6px;}
+.back-link{display:inline-block;margin-bottom:18px;color:var(--muted);font-size:.85rem;cursor:pointer;}
+.back-link:hover{color:var(--gold);}
+/* ADMIN TABLE */
+.admin-wrap{max-width:900px;margin:0 auto;padding:20px;}
+.admin-wrap h2{font-family:'Playfair Display',serif;color:var(--gold);margin-bottom:16px;}
+.rest-table{width:100%;border-collapse:collapse;font-size:.83rem;}
+.rest-table th{background:var(--gold);color:#000;padding:10px 12px;text-align:left;}
+.rest-table td{padding:10px 12px;border-bottom:1px solid #222;vertical-align:middle;}
+.rest-table tr:hover td{background:var(--card);}
+.tag{display:inline-block;padding:3px 10px;border-radius:20px;font-size:.72rem;font-weight:700;}
+.tag-active{background:rgba(76,175,80,.2);color:var(--green);}
+.tag-disabled{background:rgba(224,85,85,.2);color:var(--red);}
+.act-btn{padding:5px 11px;border-radius:6px;border:none;font-size:.74rem;font-weight:700;cursor:pointer;margin:2px;font-family:'DM Sans',sans-serif;}
+.act-qr{background:rgba(201,168,76,.2);color:var(--gold);border:1px solid var(--gold);}
+.act-dis{background:rgba(224,85,85,.15);color:var(--red);border:1px solid var(--red);}
+.act-en{background:rgba(76,175,80,.15);color:var(--green);border:1px solid var(--green);}
+.act-del{background:#222;color:var(--muted);border:1px solid #333;}
+/* QR PAGE */
+.qr-page-wrap{max-width:480px;margin:0 auto;padding:30px 20px;text-align:center;}
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:300;align-items:center;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal-box{background:var(--card);border:1px solid var(--gold);border-radius:20px;padding:28px;text-align:center;max-width:360px;width:90%;}
+.modal-box h3{font-family:'Playfair Display',serif;color:var(--gold);margin-bottom:6px;}
+.modal-close{margin-top:14px;padding:10px 24px;background:var(--card2);color:var(--text);border:1px solid #333;border-radius:10px;cursor:pointer;}
+/* DASHBOARD */
+.dash-wrap{max-width:600px;margin:0 auto;padding:20px;}
+.dash-wrap h2{font-family:'Playfair Display',serif;color:var(--gold);margin-bottom:4px;}
+.dash-info{color:var(--muted);font-size:.8rem;margin-bottom:18px;}
+.dash-btns{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:22px;}
+.dash-btn{padding:10px 18px;border-radius:10px;border:none;font-weight:700;font-size:.85rem;cursor:pointer;font-family:'DM Sans',sans-serif;}
+.dash-btn.gold{background:var(--gold);color:#000;}
+.dash-btn.outline{background:none;color:var(--gold);border:1.5px solid var(--gold);}
+.dash-btn.red{background:none;color:var(--red);border:1.5px solid var(--red);}
+.add-menu-form{background:var(--card);border:1px solid #2a2a2a;border-radius:14px;padding:18px;margin-bottom:20px;}
+.add-menu-form h3{color:var(--gold);font-size:1rem;margin-bottom:14px;}
+.form-row{display:flex;gap:10px;margin-bottom:10px;}
+.form-row input{flex:1;padding:10px 12px;background:var(--card2);border:1px solid #333;border-radius:8px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:.9rem;}
+.form-row input:focus{outline:none;border-color:var(--gold);}
+.add-item-btn{padding:10px 16px;background:var(--gold);color:#000;border:none;border-radius:8px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:'DM Sans',sans-serif;}
+.section-title{font-family:'Playfair Display',serif;font-size:1.2rem;color:var(--gold);margin:16px 0 10px;border-left:3px solid var(--gold);padding-left:10px;}
+.menu-list{display:flex;flex-direction:column;gap:8px;}
+.menu-row{background:var(--card);border:1px solid #2a2a2a;border-radius:12px;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;}
+.menu-row-left{display:flex;align-items:center;gap:12px;}
+.del-btn{padding:5px 12px;background:none;border:1px solid var(--red);color:var(--red);border-radius:8px;cursor:pointer;font-size:.8rem;}
+/* CUSTOMER MENU */
+.menu-wrap{max-width:480px;margin:0 auto;padding:16px;}
+.rest-header{background:var(--card);border:1px solid var(--gold);border-radius:14px;padding:16px;text-align:center;margin-bottom:16px;}
+.rest-header h2{font-family:'Playfair Display',serif;color:var(--gold);}
+.cust-menu-item{background:var(--card);border:1px solid #2a2a2a;border-radius:14px;padding:14px;display:flex;align-items:center;gap:12px;margin-bottom:10px;transition:border-color .2s;}
+.cust-menu-item:hover{border-color:var(--gold);}
+.cust-item-info{flex:1;}
+.qty-ctrl{display:flex;align-items:center;gap:8px;}
+.qty-btn{width:28px;height:28px;border-radius:50%;border:1.5px solid var(--gold);background:none;color:var(--gold);font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:700;transition:all .15s;}
+.qty-btn:hover{background:var(--gold);color:#000;}
+.qty-num{font-weight:700;min-width:18px;text-align:center;font-size:.9rem;}
+.cart-float{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,var(--gold),#A07830);color:#000;padding:12px 24px;border-radius:30px;font-weight:700;cursor:pointer;box-shadow:0 8px 30px rgba(201,168,76,.4);display:flex;align-items:center;gap:8px;border:none;font-family:'DM Sans',sans-serif;white-space:nowrap;z-index:100;}
+.cart-float.hidden{display:none;}
+.cart-badge{background:#000;color:var(--gold);border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:800;}
+/* CART */
+.cart-wrap{max-width:480px;margin:0 auto;padding:16px;}
+.cart-row{background:var(--card);border-radius:12px;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.cart-row-left{display:flex;align-items:center;gap:10px;}
+.cart-summary-box{background:var(--card);border:1px solid var(--gold);border-radius:14px;padding:18px;margin:14px 0;}
+.sum-row{display:flex;justify-content:space-between;margin-bottom:8px;font-size:.9rem;}
+.sum-row.grand{border-top:1px solid #333;padding-top:10px;font-weight:700;color:var(--gold);font-size:1rem;}
+.table-in{width:100%;padding:12px 14px;background:var(--card2);border:1px solid #333;border-radius:10px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:.95rem;margin-bottom:12px;}
+.table-in:focus{outline:none;border-color:var(--gold);}
+.order-btn{width:100%;padding:15px;background:var(--gold);color:#000;border:none;border-radius:12px;font-size:1rem;font-weight:800;cursor:pointer;font-family:'DM Sans',sans-serif;}
+.cart-remove{background:none;border:1px solid #333;color:var(--red);border-radius:8px;padding:4px 10px;cursor:pointer;font-size:.78rem;}
+/* SUCCESS */
+.success-screen{text-align:center;padding:50px 20px;max-width:400px;margin:0 auto;}
+.success-icon{font-size:4rem;margin-bottom:14px;}
+.success-screen h2{font-family:'Playfair Display',serif;font-size:1.6rem;color:var(--gold);margin-bottom:8px;}
+.success-screen p{color:var(--muted);font-size:.88rem;margin-bottom:24px;}
+.succ-btns{display:flex;flex-direction:column;gap:10px;}
+.succ-btn{padding:13px;border-radius:12px;border:none;font-size:.95rem;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;}
+.succ-btn.gold{background:var(--gold);color:#000;}
+.succ-btn.dark{background:var(--card);color:var(--text);border:1px solid #333;}
+/* RECEIPT */
+.receipt-page-wrap{background:#f5f5f5;min-height:100vh;padding:20px;}
+.receipt{width:300px;margin:auto;border:1px dashed #000;padding:15px;background:#fff;font-family:monospace;color:#111;text-align:center;}
+.receipt hr{border:dashed 1px #000;}
+.receipt .row{display:flex;justify-content:space-between;font-size:13px;margin:2px 0;}
+.receipt .bold{font-weight:bold;}
+.rcp-print-btn{display:block;width:300px;margin:14px auto;padding:11px 15px;background:#0a7cff;color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:700;}
+.rcp-back-btn{display:block;width:300px;margin:8px auto;padding:11px 15px;background:#222;color:var(--text);border:1px solid #333;border-radius:6px;cursor:pointer;font-family:'DM Sans',sans-serif;}
+/* KITCHEN */
+.kitchen-wrap{max-width:700px;margin:0 auto;padding:20px;}
+.kitchen-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}
+.kitchen-header h2{font-family:'Playfair Display',serif;color:var(--gold);}
+.k-count{background:var(--gold);color:#000;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.85rem;}
+.order-card{background:var(--card);border:1px solid #2a2a2a;border-radius:14px;padding:16px;margin-bottom:12px;}
+.order-card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+.order-status-tag{display:inline-block;padding:4px 12px;border-radius:20px;font-size:.72rem;font-weight:700;margin-bottom:8px;}
+.s-new{background:rgba(201,168,76,.2);color:var(--gold);}
+.s-prep{background:rgba(76,130,175,.2);color:#6aadff;}
+.s-done{background:rgba(76,175,80,.2);color:var(--green);}
+.order-items-txt{font-size:.82rem;color:var(--muted);margin-bottom:8px;line-height:1.7;}
+.order-total-txt{font-weight:700;color:var(--gold);font-size:.88rem;margin-bottom:10px;}
+.k-btns{display:flex;gap:8px;}
+.k-btn{flex:1;padding:8px;border-radius:8px;border:none;font-weight:700;font-size:.78rem;cursor:pointer;font-family:'DM Sans',sans-serif;}
+.k-prep{background:rgba(76,130,175,.2);color:#6aadff;border:1px solid #6aadff;}
+.k-done{background:rgba(76,175,80,.2);color:var(--green);border:1px solid var(--green);}
+.k-receipt{background:rgba(201,168,76,.15);color:var(--gold);border:1px solid var(--gold);}
+.empty-state{text-align:center;padding:50px 20px;color:var(--muted);}
+.empty-icon{font-size:3rem;margin-bottom:10px;}
+@media print{
+  body>*:not(#page-receipt){display:none!important;}
+  #page-receipt{display:block!important;background:#fff!important;padding:0!important;}
+  .rcp-print-btn,.rcp-back-btn,nav{display:none!important;}
+}
 </style>
 </head>
 <body>
 
 <nav>
   <span class="logo">🍽 Dhibic Dahab</span>
-  <div class="nav-tabs">
-    <button class="nav-tab active" onclick="showView('qr')">QR</button>
-    <button class="nav-tab" onclick="showView('menu')">Menu</button>
-    <button class="nav-tab" onclick="showView('cart')">Cart</button>
-    <button class="nav-tab" onclick="showView('admin')">Admin</button>
-  </div>
-  <span class="table-badge" id="nav-table">Mesa #—</span>
+  <div class="nav-tabs" id="nav-tabs"></div>
+  <span class="table-badge" id="nav-badge">System</span>
 </nav>
 
-<!-- QR VIEW -->
-<div class="view active" id="view-qr">
-  <div class="qr-hero">
-    <h1>Scan & Order</h1>
-    <p>Sawirka QR-ka scan garee si aad menu-ga u aragto</p>
-    <div class="qr-box">
-      <div id="qrcode"></div>
+<!-- LANDING -->
+<div class="page active" id="page-landing">
+  <div class="landing">
+    <div style="font-size:3.5rem;margin-bottom:12px">🍽</div>
+    <h1>Dhibic Dahab</h1>
+    <p>Restaurant QR Ordering System<br><span style="font-size:.8rem">Powered by Sahal Server</span></p>
+    <div class="land-btns">
+      <button class="land-btn primary" onclick="goTo('page-register')">➕ Maqaayad Diiwaan Geli</button>
+      <button class="land-btn secondary" onclick="goTo('page-admin-login')">🔐 System Admin</button>
+      <button class="land-btn secondary" onclick="goTo('page-rest-login')">🍴 Restaurant Login</button>
     </div>
-    <div class="qr-info">
-      <p>URL-ka Menu-ga:</p>
-      <strong id="qr-url-text">Loading...</strong>
-    </div>
-    <button class="scan-btn" onclick="showView('menu')">👆 Toos u Fur Menu-ga</button>
   </div>
 </div>
 
-<!-- MENU VIEW -->
-<div class="view" id="view-menu">
-  <div class="section-title">☕ Cabitaannada</div>
-  <div class="menu-grid" id="menu-drinks"></div>
-  <div class="section-title">🍽 Cuntada</div>
-  <div class="menu-grid" id="menu-food"></div>
-  <div style="height:80px"></div>
+<!-- REGISTER -->
+<div class="page" id="page-register">
+  <div class="form-wrap">
+    <span class="back-link" onclick="goTo('page-landing')">← Dib u Noqo</span>
+    <h2>➕ Maqaayad Diiwaan Geli</h2>
+    <div class="field"><label>Magaca Maqaayadda *</label><input id="reg-name" placeholder="Baydan Restaurant"></div>
+    <div class="field"><label>Telefoon</label><input id="reg-phone" placeholder="252xxxxxxxxx"></div>
+    <div class="field"><label>Username *</label><input id="reg-user" placeholder="baydan1"></div>
+    <div class="field"><label>Login Password *</label><input id="reg-pass" type="password" placeholder="••••••"></div>
+    <div class="field"><label>Kitchen Password</label><input id="reg-kpass" type="password" placeholder="••••••"></div>
+    <div class="field"><label>USSD Payment Code</label><input id="reg-ussd" placeholder="*789*123456*$#"></div>
+    <div class="field"><label>Subscription (bilood)</label>
+      <select id="reg-months">
+        <option value="1">1 Bil</option>
+        <option value="3" selected>3 Bilood</option>
+        <option value="6">6 Bilood</option>
+        <option value="12">1 Sano</option>
+      </select>
+    </div>
+    <button class="submit-btn" onclick="registerRestaurant()">✅ Abuur Maqaayad</button>
+  </div>
 </div>
 
-<!-- CART VIEW -->
-<div class="view" id="view-cart">
-  <div class="section-title">🛒 Basket-kaaga</div>
-  <div id="cart-empty" style="display:none" class="empty-state">
-    <div class="empty-icon">🛒</div>
-    <p>Basket-ka waa faaruq<br>Menu-ga tag oo item ku dar</p>
-    <button class="scan-btn" style="margin-top:20px" onclick="showView('menu')">Menu-ga Fur</button>
+<!-- ADMIN LOGIN -->
+<div class="page" id="page-admin-login">
+  <div class="form-wrap" style="max-width:400px">
+    <span class="back-link" onclick="goTo('page-landing')">← Dib u Noqo</span>
+    <h2>🔐 Admin Login</h2>
+    <div class="field"><label>Admin Password</label><input id="admin-pw" type="password" placeholder="••••••" onkeydown="if(event.key==='Enter')adminLogin()"></div>
+    <button class="submit-btn" onclick="adminLogin()">Gal</button>
   </div>
-  <div id="cart-content">
-    <div class="cart-list" id="cart-list"></div>
-    <div class="cart-summary" id="cart-summary">
-      <div class="summary-row"><span>Wadarta</span><span id="sum-sub">$0.00</span></div>
-      <div class="summary-row tax"><span>Tax (5%)</span><span id="sum-tax">$0.00</span></div>
-      <div class="summary-row total"><span>Grand Total</span><span id="sum-total">$0.00</span></div>
+</div>
+
+<!-- ADMIN PANEL -->
+<div class="page" id="page-admin">
+  <div class="admin-wrap">
+    <h2>🏢 System Admin</h2>
+    <div style="margin-bottom:16px;display:flex;gap:10px;flex-wrap:wrap">
+      <button class="dash-btn gold" onclick="goTo('page-register')">➕ Maqaayad Cusub</button>
+      <button class="dash-btn red" onclick="adminLogout()">🚪 Logout</button>
     </div>
-    <input class="table-input" id="table-num" type="number" placeholder="Table Number-kaaga gali (1-300)" min="1" max="300">
+    <div id="admin-table-wrap"></div>
+  </div>
+</div>
+
+<!-- QR DISPLAY PAGE -->
+<div class="page" id="page-qr-display">
+  <div class="qr-page-wrap">
+    <span class="back-link" onclick="goTo('page-admin')">← Admin</span>
+    <div style="font-family:'Playfair Display',serif;font-size:1.6rem;color:var(--gold);margin-bottom:6px" id="qr-disp-name"></div>
+    <p style="color:var(--muted);font-size:.82rem;margin-bottom:20px">QR Code-kan print garee oo miiska saar</p>
+    <div style="background:var(--card);border:2px solid var(--gold);border-radius:20px;padding:24px;display:inline-block;margin-bottom:16px">
+      <div id="qr-display-code"></div>
+    </div>
+    <div style="background:var(--card2);border-radius:10px;padding:14px;margin-bottom:16px;word-break:break-all">
+      <p style="color:var(--muted);font-size:.75rem;margin-bottom:4px">Menu URL:</p>
+      <span style="color:var(--gold);font-size:.8rem" id="qr-disp-url"></span>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:center">
+      <button class="dash-btn gold" onclick="window.print()">🖨 Print QR</button>
+    </div>
+  </div>
+</div>
+
+<!-- RESTAURANT LOGIN -->
+<div class="page" id="page-rest-login">
+  <div class="form-wrap" style="max-width:400px">
+    <span class="back-link" onclick="goTo('page-landing')">← Dib u Noqo</span>
+    <h2>🍴 Restaurant Login</h2>
+    <div class="field"><label>Username</label><input id="rl-user" placeholder="baydan1"></div>
+    <div class="field"><label>Password</label><input id="rl-pass" type="password" placeholder="••••••" onkeydown="if(event.key==='Enter')restLogin()"></div>
+    <button class="submit-btn" onclick="restLogin()">Gal</button>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div class="page" id="page-dashboard">
+  <div class="dash-wrap">
+    <h2 id="dash-title">Dashboard</h2>
+    <p class="dash-info" id="dash-info"></p>
+    <div class="dash-btns">
+      <button class="dash-btn gold" onclick="openQRModal()">📱 Generate QR</button>
+      <button class="dash-btn outline" onclick="goTo('page-kitchen');renderKitchen()">👨‍🍳 Kitchen</button>
+      <button class="dash-btn red" onclick="restLogout()">🚪 Logout</button>
+    </div>
+    <div class="add-menu-form">
+      <h3>➕ Cunno Ku Dar Menu-ga</h3>
+      <div class="form-row">
+        <input id="nf-name" placeholder="Magaca cuntada">
+        <input id="nf-price" placeholder="Qiimaha $" type="number" style="max-width:90px">
+        <input id="nf-emoji" placeholder="🍝" style="max-width:60px">
+      </div>
+      <div class="form-row">
+        <input id="nf-desc" placeholder="Faahfaahin gaaban (ikhtiyaari)">
+        <button class="add-item-btn" onclick="addMenuItem()">+ Ku Dar</button>
+      </div>
+    </div>
+    <div class="section-title">🍽 Menu-ga Hadda</div>
+    <div id="dash-menu-list" class="menu-list"></div>
+  </div>
+</div>
+
+<!-- QR GEN MODAL -->
+<div class="modal-overlay" id="qr-gen-modal">
+  <div class="modal-box">
+    <h3>📱 Generate QR Code</h3>
+    <p style="color:var(--muted);font-size:.82rem;margin-bottom:14px">Table number gali</p>
+    <input id="qr-table-input" type="number" placeholder="Table No" min="1" max="999"
+      style="width:100%;padding:11px 14px;background:var(--card2);border:1px solid #444;border-radius:8px;color:var(--text);font-family:'DM Sans',sans-serif;margin-bottom:12px">
+    <div id="qr-modal-result" style="margin-bottom:12px"></div>
+    <div style="display:flex;gap:10px;justify-content:center">
+      <button class="dash-btn gold" onclick="genQR()">Generate</button>
+      <button class="modal-close" onclick="closeQRModal()">Xir</button>
+    </div>
+  </div>
+</div>
+
+<!-- CUSTOMER MENU -->
+<div class="page" id="page-menu">
+  <div class="menu-wrap">
+    <div class="rest-header">
+      <div style="font-size:1.5rem;margin-bottom:4px">🍽</div>
+      <h2 id="cust-rest-name">Restaurant</h2>
+      <p id="cust-table-info" style="color:var(--muted);font-size:.82rem;margin-top:4px">Table: —</p>
+    </div>
+    <div id="cust-menu-items"></div>
+    <div style="height:72px"></div>
+  </div>
+  <button class="cart-float hidden" id="cart-float-btn" onclick="goTo('page-cart');renderCartPage()">
+    🛒 Basket <span class="cart-badge" id="cart-float-count">0</span> <span id="cart-float-price">$0.00</span>
+  </button>
+</div>
+
+<!-- CART -->
+<div class="page" id="page-cart">
+  <div class="cart-wrap">
+    <div class="section-title">🛒 Basket-kaaga</div>
+    <div id="cart-empty-msg" class="empty-state" style="display:none">
+      <div class="empty-icon">🛒</div><p>Basket waa faaruq</p>
+      <button class="succ-btn gold" style="margin-top:14px;width:200px" onclick="goTo('page-menu')">Menu-ga Fur</button>
+    </div>
+    <div id="cart-items-list"></div>
+    <div class="cart-summary-box" id="cart-sum-box" style="display:none">
+      <div class="sum-row"><span>Subtotal</span><span id="cs-sub">$0.00</span></div>
+      <div class="sum-row"><span>VAT (5%)</span><span id="cs-tax">$0.00</span></div>
+      <div class="sum-row grand"><span>Grand Total</span><span id="cs-grand">$0.00</span></div>
+    </div>
+    <input class="table-in" id="cart-table-no" type="number" placeholder="Table Number" readonly>
+    <div id="ussd-box" style="display:none;background:var(--card);border:1px solid #333;border-radius:10px;padding:12px;margin-bottom:12px;font-size:.85rem">
+      💳 <strong style="color:var(--gold)">Payment USSD:</strong> <span id="ussd-code" style="color:var(--text)"></span>
+    </div>
     <button class="order-btn" onclick="placeOrder()">✅ Order U Dir Kitchen-ka</button>
   </div>
 </div>
 
-<!-- SUCCESS VIEW -->
-<div class="view" id="view-success">
+<!-- SUCCESS -->
+<div class="page" id="page-success">
   <div class="success-screen">
     <div class="success-icon">✅</div>
     <h2>Order la Diray!</h2>
     <p>Kitchen-ka waxay heli doonaan order-kaaga. Fadlan sug.</p>
-    <div>
-      <button class="receipt-btn" onclick="showView('receipt')">🧾 Rasiidka Arag</button>
-      <button class="back-btn" onclick="showView('menu'); resetCart()">🍽 Order Cusub</button>
+    <div class="succ-btns">
+      <button class="succ-btn gold" onclick="goTo('page-receipt')">🧾 Rasiidka Arag</button>
+      <button class="succ-btn dark" onclick="newOrder()">🍽 Order Cusub</button>
     </div>
   </div>
 </div>
 
-<!-- RECEIPT VIEW -->
-<div class="view" id="view-receipt">
-
-  <div class="receipt" id="printArea">
-
-    <h3 id="r-name">Dhibic Dahab</h3>
-    <p id="r-phone">Online Store &amp; Restaurant</p>
-
-    <p id="r-ref"></p>
-
-    <p class="center bold">SALES INVOICE</p>
-    <p>Table: <span id="r-table"></span></p>
-    <p id="r-time"></p>
-
-    <hr>
-
-    <div class="row bold">
-      <span>Item</span>
-      <span>Qty</span>
-      <span>Rate</span>
-      <span>Amount</span>
+<!-- RECEIPT -->
+<div class="page" id="page-receipt">
+  <div class="receipt-page-wrap">
+    <div class="receipt" id="printArea">
+      <h3 id="r-name">Restaurant</h3>
+      <p id="r-phone"></p>
+      <p id="r-ref"></p>
+      <p class="bold">SALES INVOICE</p>
+      <p>Table: <span id="r-table"></span></p>
+      <p id="r-time"></p>
+      <hr>
+      <div class="row bold">
+        <span>Item</span><span>Qty</span><span>Rate</span><span>Amount</span>
+      </div>
+      <hr>
+      <div id="r-items"></div>
+      <hr>
+      <div class="row"><span>Subtotal</span><span id="r-sub"></span></div>
+      <div class="row"><span>VAT (5%)</span><span id="r-vat"></span></div>
+      <div class="row bold"><span>Grand Total</span><span id="r-grand"></span></div>
+      <hr>
+      <p id="r-payment"></p>
+      <p style="font-size:11px">Powered by Sahal Server</p>
     </div>
-
-    <hr>
-
-    <div id="r-items"></div>
-
-    <hr>
-
-    <div class="row">
-      <span>Subtotal</span>
-      <span id="r-sub"></span>
-    </div>
-
-    <div class="row">
-      <span>VAT (5%)</span>
-      <span id="r-vat"></span>
-    </div>
-
-    <div class="row bold">
-      <span>Grand Total</span>
-      <span id="r-grand"></span>
-    </div>
-
-    <hr>
-
-    <p id="r-payment"></p>
-    <p style="font-size:11px;">Powered by Sahal Server</p>
-
+    <button class="rcp-print-btn" onclick="window.print()">🖨 Print</button>
+    <button class="rcp-back-btn" onclick="newOrder()">🍽 Order Cusub Samee</button>
   </div>
-
-  <br>
-  <button class="print-btn" onclick="window.print()">🖨 Print</button>
-  <button class="back-btn" style="display:block;width:300px;margin:10px auto;padding:12px;border-radius:12px" onclick="showView('menu'); resetCart()">🍽 Order Cusub Samee</button>
-
 </div>
 
-<!-- ADMIN VIEW -->
-<div class="view" id="view-admin">
-  <div class="admin-header">
-    <h2>Kitchen Orders</h2>
-    <div class="order-count" id="admin-count">0</div>
+<!-- KITCHEN -->
+<div class="page" id="page-kitchen">
+  <div class="kitchen-wrap">
+    <div class="kitchen-header">
+      <h2>👨‍🍳 Kitchen Orders</h2>
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="k-count" id="k-count">0</div>
+        <button class="dash-btn outline" onclick="goTo('page-dashboard')">← Dashboard</button>
+      </div>
+    </div>
+    <div id="kitchen-orders"></div>
   </div>
-  <div id="admin-orders"></div>
 </div>
-
-<!-- FLOATING CART BUTTON -->
-<button class="cart-float hidden" id="cart-float-btn" onclick="showView('cart')">
-  🛒 Basket Arag
-  <span class="cart-badge" id="cart-float-count">0</span>
-  <span id="cart-float-total">$0.00</span>
-</button>
 
 <script>
-// ===== DATA =====
-const menuData = {
-  drinks: [
-    { id:'d1', name:'Shaah', emoji:'☕', price:1.00, desc:'Shaah Somali ah' },
-    { id:'d2', name:'Caano Latte', emoji:'🥛', price:2.50, desc:'Caano kulul oo caleen leh' },
-    { id:'d3', name:'Juice Cambe', emoji:'🥭', price:1.50, desc:'Cambe cusub' },
-    { id:'d4', name:'Milkshake', emoji:'🧋', price:3.00, desc:'Vanilla ama Chocolate' },
-    { id:'d5', name:'Biyo', emoji:'💧', price:0.50, desc:'Biyo qabow' },
-    { id:'d6', name:'Coke', emoji:'🥤', price:1.00, desc:'Soda qabow' },
-  ],
-  food: [
-    { id:'f1', name:'Baasto', emoji:'🍝', price:3.00, desc:'Baasto Somali macaan' },
-    { id:'f2', name:'Hilib Ari', emoji:'🍖', price:5.00, desc:'Hilib ari la kariyay' },
-    { id:'f3', name:'Baris', emoji:'🍚', price:2.50, desc:'Baris maraq leh' },
-    { id:'f4', name:'Sabaayad', emoji:'🫓', price:1.00, desc:'Sabaayad kulul' },
-    { id:'f5', name:'Muufo', emoji:'🥞', price:1.00, desc:'Muufo Somali' },
-    { id:'f6', name:'Xalwo', emoji:'🍮', price:1.50, desc:'Xalwo macaan' },
-    { id:'f7', name:'Sambuus', emoji:'🥟', price:0.75, desc:'3 sambuus' },
-    { id:'f8', name:'Chicken', emoji:'🍗', price:4.00, desc:'Chicken la shiilay' },
-  ]
-};
-
+// ===== STORAGE =====
+const ADMIN_PW = 'admin123';
+let restaurants = JSON.parse(localStorage.getItem('dhibic_rests')||'[]');
+let orders = JSON.parse(localStorage.getItem('dhibic_orders')||'[]');
+let currentRest = null;       // logged-in restaurant staff
+let custRest = null;          // customer's restaurant
+let custTable = null;
 let cart = {};
-let orders = [];
 let currentOrder = null;
+let fromKitchen = false;
 
-// ===== QR CODE =====
-function initQR() {
-  const url = window.location.href.split('#')[0] + '#menu';
-  document.getElementById('qr-url-text').textContent = url;
-  new QRCode(document.getElementById('qrcode'), {
-    text: url, width:200, height:200,
-    colorDark:'#000', colorLight:'#fff', correctLevel: QRCode.CorrectLevel.H
-  });
-}
-
-// ===== RENDER MENU =====
-function renderMenu() {
-  ['drinks','food'].forEach(cat => {
-    const el = document.getElementById('menu-' + cat);
-    el.innerHTML = menuData[cat].map(item => `
-      <div class="menu-item">
-        <div class="item-emoji">${item.emoji}</div>
-        <div class="item-info">
-          <div class="item-name">${item.name}</div>
-          <div class="item-desc">${item.desc}</div>
-          <div class="item-price">$${item.price.toFixed(2)}</div>
-        </div>
-        <div class="qty-ctrl">
-          <button class="qty-btn" onclick="updateCart('${item.id}',-1)">−</button>
-          <span class="qty-num" id="qty-${item.id}">${cart[item.id]||0}</span>
-          <button class="qty-btn" onclick="updateCart('${item.id}',1)">+</button>
-        </div>
-      </div>
-    `).join('');
-  });
-}
-
-// ===== CART =====
-function getItem(id) {
-  return [...menuData.drinks,...menuData.food].find(x=>x.id===id);
-}
-
-function updateCart(id, delta) {
-  cart[id] = Math.max(0, (cart[id]||0) + delta);
-  if(!cart[id]) delete cart[id];
-  const el = document.getElementById('qty-'+id);
-  if(el) el.textContent = cart[id]||0;
-  updateFloatBtn();
-}
-
-function cartTotal() {
-  return Object.entries(cart).reduce((s,[id,q])=>{
-    const it=getItem(id); return s+(it?it.price*q:0);
-  },0);
-}
-
-function cartCount() {
-  return Object.values(cart).reduce((s,q)=>s+q,0);
-}
-
-function updateFloatBtn() {
-  const btn = document.getElementById('cart-float-btn');
-  const count = cartCount();
-  if(count > 0 && document.querySelector('.view.active').id === 'view-menu') {
-    btn.classList.remove('hidden');
-    document.getElementById('cart-float-count').textContent = count;
-    document.getElementById('cart-float-total').textContent = '$'+cartTotal().toFixed(2);
-  } else {
-    btn.classList.add('hidden');
-  }
-}
-
-function renderCart() {
-  const count = cartCount();
-  const cartContent = document.getElementById('cart-content');
-  const cartEmpty = document.getElementById('cart-empty');
-  if(!count) { cartContent.style.display='none'; cartEmpty.style.display='block'; return; }
-  cartContent.style.display='block'; cartEmpty.style.display='none';
-
-  const sub = cartTotal();
-  const tax = sub * 0.05;
-  const grand = sub + tax;
-
-  document.getElementById('cart-list').innerHTML = Object.entries(cart).map(([id,q])=>{
-    const it=getItem(id);
-    return `<div class="cart-row">
-      <div class="cart-row-left">
-        <span class="cart-row-emoji">${it.emoji}</span>
-        <div><div class="cart-row-name">${it.name}</div>
-        <div class="cart-row-qty">x${q} × $${it.price.toFixed(2)}</div></div>
-      </div>
-      <div style="display:flex;align-items:center;gap:8px">
-        <span class="cart-row-price">$${(it.price*q).toFixed(2)}</span>
-        <button class="cart-remove" onclick="removeFromCart('${id}')">✕</button>
-      </div>
-    </div>`;
-  }).join('');
-
-  document.getElementById('sum-sub').textContent = '$'+sub.toFixed(2);
-  document.getElementById('sum-tax').textContent = '$'+tax.toFixed(2);
-  document.getElementById('sum-total').textContent = '$'+grand.toFixed(2);
-}
-
-function removeFromCart(id) {
-  delete cart[id];
-  const el = document.getElementById('qty-'+id);
-  if(el) el.textContent = 0;
-  updateFloatBtn();
-  renderCart();
-}
-
-function resetCart() { cart={}; renderMenu(); updateFloatBtn(); }
-
-// ===== ORDER =====
-function placeOrder() {
-  const tableNum = document.getElementById('table-num').value.trim();
-  if(!tableNum) { alert('Table Number-kaaga gali!'); return; }
-  if(!cartCount()) { alert('Basket-ka waa faaruq!'); return; }
-
-  const sub = cartTotal();
-  const tax = sub * 0.05;
-  const grand = sub + tax;
-  const now = new Date();
-
-  currentOrder = {
-    id: 'ORD-' + Math.floor(Math.random()*9000+1000),
-    table: tableNum,
-    items: Object.entries(cart).map(([id,q])=>({...getItem(id), qty:q, subtotal:getItem(id).price*q})),
-    sub, tax, grand,
-    time: now.toLocaleTimeString('so-SO'),
-    date: now.toLocaleDateString('en-GB'),
-    status: 'new'
-  };
-
-  orders.unshift(currentOrder);
-  document.getElementById('nav-table').textContent = 'Mesa #' + tableNum;
-  renderAdmin();
-  generateReceipt(currentOrder);
-  showView('success');
-}
-
-// ===== RECEIPT =====
-function formatMoney(num){ return "$" + Number(num).toFixed(2); }
-
-function generateReceipt(order) {
-  document.getElementById('r-name').innerText = 'Dhibic Dahab';
-  document.getElementById('r-phone').innerText = 'Online Store & Restaurant';
-  document.getElementById('r-ref').innerText = 'Ref: ' + order.id;
-  document.getElementById('r-table').innerText = order.table;
-  document.getElementById('r-time').innerText = order.date + '  ' + order.time;
-  document.getElementById('r-payment').innerText = 'Payment: Cash';
-
-  let itemsHTML = '';
-  order.items.forEach(i => {
-    itemsHTML += `
-    <div class="row">
-      <span>${i.name}</span>
-      <span>${i.qty}</span>
-      <span>${formatMoney(i.price)}</span>
-      <span>${formatMoney(i.subtotal)}</span>
-    </div>`;
-  });
-  document.getElementById('r-items').innerHTML = itemsHTML;
-
-  document.getElementById('r-sub').innerText = formatMoney(order.sub);
-  document.getElementById('r-vat').innerText = formatMoney(order.tax);
-  document.getElementById('r-grand').innerText = formatMoney(order.grand);
-}
-
-// ===== ADMIN =====
-function renderAdmin() {
-  const el = document.getElementById('admin-orders');
-  document.getElementById('admin-count').textContent = orders.length;
-  if(!orders.length) {
-    el.innerHTML = `<div class="empty-state"><div class="empty-icon">📋</div><p>Wali order ma jiro</p></div>`;
-    return;
-  }
-  el.innerHTML = orders.map((o,i)=>`
-    <div class="order-card">
-      <div class="order-card-header">
-        <span class="order-card-table">🪑 Table #${o.table} — ${o.id}</span>
-        <span class="order-time">${o.time}</span>
-      </div>
-      <div class="order-status ${o.status==='new'?'status-new':o.status==='prep'?'status-prep':'status-done'}">
-        ${o.status==='new'?'🆕 Order Cusub':o.status==='prep'?'👨‍🍳 La Diyaarinayaa':'✅ Diyaar'}
-      </div>
-      <div class="order-items-list" style="margin-top:10px">
-        ${o.items.map(it=>`${it.emoji} ${it.name} × ${it.qty}`).join(' &nbsp;|&nbsp; ')}
-      </div>
-      <div class="order-total-line">Grand Total: $${o.grand.toFixed(2)}</div>
-      <div class="action-btns">
-        ${o.status==='new'?`<button class="action-btn btn-prep" onclick="updateStatus(${i},'prep')">👨‍🍳 La Diyaarinayaa</button>`:''}
-        ${o.status==='prep'?`<button class="action-btn btn-done" onclick="updateStatus(${i},'done')">✅ Diyaar</button>`:''}
-        <button class="action-btn btn-receipt" onclick="viewOrderReceipt(${i})">🧾 Rasiid</button>
-      </div>
-    </div>
-  `).join('');
-}
-
-function updateStatus(i, status) {
-  orders[i].status = status;
-  renderAdmin();
-}
-
-function viewOrderReceipt(i) {
-  currentOrder = orders[i];
-  generateReceipt(orders[i]);
-  showView('receipt');
+function save(){
+  localStorage.setItem('dhibic_rests',JSON.stringify(restaurants));
+  localStorage.setItem('dhibic_orders',JSON.stringify(orders));
 }
 
 // ===== NAVIGATION =====
-function showView(name) {
-  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
-  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
-  document.getElementById('view-'+name).classList.add('active');
-  const idx = {qr:0,menu:1,cart:2,admin:3}[name];
-  if(idx!==undefined) document.querySelectorAll('.nav-tab')[idx]?.classList.add('active');
-  if(name==='cart') renderCart();
-  if(name==='admin') renderAdmin();
-  updateFloatBtn();
+function goTo(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  renderNav(id);
   window.scrollTo(0,0);
 }
 
-// ===== INIT =====
-initQR();
-renderMenu();
+function renderNav(id){
+  const tabs=document.getElementById('nav-tabs');
+  const badge=document.getElementById('nav-badge');
+  tabs.innerHTML='';
+  if(id==='page-admin'){
+    badge.textContent='System Admin';
+  } else if(['page-dashboard','page-kitchen'].includes(id)&&currentRest){
+    tabs.innerHTML=`
+      <button class="nav-tab ${id==='page-dashboard'?'active':''}" onclick="goTo('page-dashboard')">Dashboard</button>
+      <button class="nav-tab ${id==='page-kitchen'?'active':''}" onclick="goTo('page-kitchen');renderKitchen()">Kitchen</button>`;
+    badge.textContent=currentRest.name;
+  } else if(['page-menu','page-cart','page-success','page-receipt'].includes(id)&&custRest){
+    tabs.innerHTML=`<button class="nav-tab active">Menu</button>`;
+    badge.textContent='Mesa #'+(custTable||'—');
+  } else {
+    badge.textContent='System';
+  }
+}
+
+// ===== REGISTER =====
+function genId(){ return Math.random().toString(36).substring(2,10).toUpperCase(); }
+
+function registerRestaurant(){
+  const name=document.getElementById('reg-name').value.trim();
+  const phone=document.getElementById('reg-phone').value.trim();
+  const user=document.getElementById('reg-user').value.trim();
+  const pass=document.getElementById('reg-pass').value.trim();
+  const kpass=document.getElementById('reg-kpass').value.trim();
+  const ussd=document.getElementById('reg-ussd').value.trim();
+  const months=parseInt(document.getElementById('reg-months').value);
+  if(!name||!user||!pass){alert('Magaca, Username, iyo Password waa waajib!');return;}
+  if(restaurants.find(r=>r.username===user)){alert('Username-kan horay ayaa loo isticmaalay!');return;}
+  const exp=new Date(); exp.setMonth(exp.getMonth()+months);
+  const rest={id:genId(),name,phone,username:user,password:pass,kitchenPass:kpass,ussd,
+    status:'active',expiry:exp.toISOString(),menu:[],createdAt:new Date().toISOString()};
+  restaurants.push(rest); save();
+  alert('✅ '+name+' si guul ah ayaa loo abuuray!\nID: '+rest.id);
+  ['reg-name','reg-phone','reg-user','reg-pass','reg-kpass','reg-ussd'].forEach(id=>document.getElementById(id).value='');
+  renderAdminTable(); goTo('page-admin');
+}
+
+// ===== ADMIN =====
+function adminLogin(){
+  if(document.getElementById('admin-pw').value===ADMIN_PW){
+    document.getElementById('admin-pw').value='';
+    renderAdminTable(); goTo('page-admin');
+  } else alert('Password khalad!');
+}
+function adminLogout(){ goTo('page-landing'); }
+
+function renderAdminTable(){
+  const wrap=document.getElementById('admin-table-wrap');
+  if(!restaurants.length){
+    wrap.innerHTML='<div class="empty-state"><div class="empty-icon">🏪</div><p>Maqaayad ma jirto wali</p></div>';
+    return;
+  }
+  wrap.innerHTML=`<table class="rest-table">
+    <thead><tr><th>Maqaayadda</th><th>Username</th><th>USSD</th><th>Expiry</th><th>Status</th><th>Actions</th></tr></thead>
+    <tbody>${restaurants.map((r,i)=>`<tr>
+      <td><strong>${r.name}</strong><br><small style="color:var(--muted)">${r.phone||''}</small></td>
+      <td>${r.username}</td>
+      <td style="font-size:.75rem">${r.ussd||'—'}</td>
+      <td style="font-size:.75rem">${new Date(r.expiry).toLocaleDateString('en-GB')}</td>
+      <td><span class="tag ${r.status==='active'?'tag-active':'tag-disabled'}">${r.status==='active'?'Active':'Disabled'}</span></td>
+      <td>
+        <button class="act-btn act-qr" onclick="showRestQR(${i})">📱 QR</button>
+        ${r.status==='active'
+          ?`<button class="act-btn act-dis" onclick="toggleStatus(${i},'disabled')">Disable</button>`
+          :`<button class="act-btn act-en" onclick="toggleStatus(${i},'active')">Enable</button>`}
+        <button class="act-btn act-del" onclick="delRest(${i})">Delete</button>
+      </td>
+    </tr>`).join('')}</tbody></table>`;
+}
+
+function toggleStatus(i,s){restaurants[i].status=s;save();renderAdminTable();}
+function delRest(i){
+  if(!confirm('"'+restaurants[i].name+'" delete gareysaa?'))return;
+  restaurants.splice(i,1);save();renderAdminTable();
+}
+
+function showRestQR(i){
+  const r=restaurants[i];
+  const url=buildMenuURL(r.id,1);
+  document.getElementById('qr-disp-name').textContent=r.name+' — QR Code';
+  document.getElementById('qr-disp-url').textContent=url;
+  const el=document.getElementById('qr-display-code');
+  el.innerHTML='';
+  new QRCode(el,{text:url,width:200,height:200,colorDark:'#000',colorLight:'#fff',correctLevel:QRCode.CorrectLevel.H});
+  goTo('page-qr-display');
+}
+
+function buildMenuURL(rid, table){
+  const base=window.location.href.split('?')[0].split('#')[0];
+  return base+'?rid='+rid+'&table='+table;
+}
+
+// ===== RESTAURANT LOGIN =====
+function restLogin(){
+  const user=document.getElementById('rl-user').value.trim();
+  const pass=document.getElementById('rl-pass').value.trim();
+  const r=restaurants.find(x=>x.username===user&&x.password===pass);
+  if(!r){alert('Username ama Password khalad!');return;}
+  if(r.status!=='active'){alert('Account-kaagu waa disabled. Admin la xiriir.');return;}
+  currentRest=r;
+  document.getElementById('rl-user').value='';document.getElementById('rl-pass').value='';
+  renderDashboard(); goTo('page-dashboard');
+}
+function restLogout(){currentRest=null;goTo('page-landing');}
+
+// ===== DASHBOARD =====
+function renderDashboard(){
+  if(!currentRest)return;
+  document.getElementById('dash-title').textContent=currentRest.name+' Dashboard';
+  document.getElementById('dash-info').textContent=
+    'Username: '+currentRest.username+' | USSD: '+(currentRest.ussd||'—')+
+    ' | Expires: '+new Date(currentRest.expiry).toLocaleDateString('en-GB');
+  renderDashMenu();
+}
+
+function renderDashMenu(){
+  const list=document.getElementById('dash-menu-list');
+  const menu=currentRest.menu||[];
+  if(!menu.length){
+    list.innerHTML='<div class="empty-state"><div class="empty-icon">🍽</div><p>Menu faaruq — cunno ku dar</p></div>';return;
+  }
+  list.innerHTML=menu.map((item,i)=>`
+    <div class="menu-row">
+      <div class="menu-row-left">
+        <span style="font-size:1.6rem">${item.emoji||'🍽'}</span>
+        <div>
+          <div style="font-weight:600">${item.name}</div>
+          <div style="color:var(--gold);font-size:.85rem">$${Number(item.price).toFixed(2)}${item.desc?' · '+item.desc:''}</div>
+        </div>
+      </div>
+      <button class="del-btn" onclick="delMenuItem(${i})">✕ Tirtir</button>
+    </div>`).join('');
+}
+
+function addMenuItem(){
+  const name=document.getElementById('nf-name').value.trim();
+  const price=parseFloat(document.getElementById('nf-price').value);
+  const emoji=document.getElementById('nf-emoji').value.trim()||'🍽';
+  const desc=document.getElementById('nf-desc').value.trim();
+  if(!name||isNaN(price)){alert('Magaca iyo Qiimaha waa waajib!');return;}
+  const idx=restaurants.findIndex(r=>r.id===currentRest.id);
+  if(!restaurants[idx].menu)restaurants[idx].menu=[];
+  restaurants[idx].menu.push({id:'m'+Date.now(),name,price,emoji,desc});
+  currentRest=restaurants[idx]; save();
+  ['nf-name','nf-price','nf-emoji','nf-desc'].forEach(id=>document.getElementById(id).value='');
+  renderDashMenu();
+}
+
+function delMenuItem(i){
+  const idx=restaurants.findIndex(r=>r.id===currentRest.id);
+  restaurants[idx].menu.splice(i,1);
+  currentRest=restaurants[idx];save();renderDashMenu();
+}
+
+// ===== QR MODAL =====
+function openQRModal(){
+  document.getElementById('qr-modal-result').innerHTML='';
+  document.getElementById('qr-table-input').value='';
+  document.getElementById('qr-gen-modal').classList.add('open');
+}
+function closeQRModal(){document.getElementById('qr-gen-modal').classList.remove('open');}
+function genQR(){
+  const t=document.getElementById('qr-table-input').value.trim();
+  if(!t){alert('Table number gali!');return;}
+  const url=buildMenuURL(currentRest.id,t);
+  const res=document.getElementById('qr-modal-result');
+  res.innerHTML=`<div style="background:#fff;border-radius:8px;padding:10px;display:inline-block;margin-bottom:8px"><div id="qr-m-code"></div></div>
+    <p style="font-size:.72rem;color:var(--muted);word-break:break-all">${url}</p>`;
+  new QRCode(document.getElementById('qr-m-code'),{text:url,width:140,height:140,colorDark:'#000',colorLight:'#fff',correctLevel:QRCode.CorrectLevel.H});
+}
+
+// ===== CUSTOMER FLOW =====
+function loadCustomerMenu(rid,table){
+  const r=restaurants.find(x=>x.id===rid);
+  if(!r){alert('Maqaayaddan lama helin!');goTo('page-landing');return;}
+  if(r.status!=='active'){alert('Maqaayaddan hadda ma shaqaynayso.');goTo('page-landing');return;}
+  custRest=r; custTable=table; cart={};
+  document.getElementById('cust-rest-name').textContent=r.name;
+  document.getElementById('cust-table-info').textContent='Table: '+table;
+  document.getElementById('cart-table-no').value=table;
+  if(r.ussd){
+    document.getElementById('ussd-box').style.display='block';
+    document.getElementById('ussd-code').textContent=r.ussd;
+  } else document.getElementById('ussd-box').style.display='none';
+  renderCustomerMenu(); goTo('page-menu'); updateCartFloat();
+}
+
+function renderCustomerMenu(){
+  const menu=custRest.menu||[];
+  const wrap=document.getElementById('cust-menu-items');
+  if(!menu.length){
+    wrap.innerHTML='<div class="empty-state"><div class="empty-icon">🍽</div><p>Menu wali la ridmin</p></div>';return;
+  }
+  wrap.innerHTML=menu.map(item=>`
+    <div class="cust-menu-item">
+      <span style="font-size:1.8rem">${item.emoji||'🍽'}</span>
+      <div class="cust-item-info">
+        <div style="font-weight:600">${item.name}</div>
+        ${item.desc?`<div style="color:var(--muted);font-size:.75rem">${item.desc}</div>`:''}
+        <div style="color:var(--gold);font-weight:700">$${Number(item.price).toFixed(2)}</div>
+      </div>
+      <div class="qty-ctrl">
+        <button class="qty-btn" onclick="updateCart('${item.id}',-1)">−</button>
+        <span class="qty-num" id="qty-${item.id}">${cart[item.id]||0}</span>
+        <button class="qty-btn" onclick="updateCart('${item.id}',1)">+</button>
+      </div>
+    </div>`).join('');
+}
+
+function getItem(id){return(custRest.menu||[]).find(x=>x.id===id);}
+function cartCount(){return Object.values(cart).reduce((s,q)=>s+q,0);}
+function cartTotal(){return Object.entries(cart).reduce((s,[id,q])=>{const it=getItem(id);return s+(it?Number(it.price)*q:0);},0);}
+
+function updateCart(id,delta){
+  cart[id]=Math.max(0,(cart[id]||0)+delta);
+  if(!cart[id])delete cart[id];
+  const el=document.getElementById('qty-'+id);
+  if(el)el.textContent=cart[id]||0;
+  updateCartFloat();
+}
+
+function updateCartFloat(){
+  const btn=document.getElementById('cart-float-btn');
+  const active=document.querySelector('.page.active');
+  if(cartCount()>0&&active&&active.id==='page-menu'){
+    btn.classList.remove('hidden');
+    document.getElementById('cart-float-count').textContent=cartCount();
+    document.getElementById('cart-float-price').textContent='$'+cartTotal().toFixed(2);
+  } else btn.classList.add('hidden');
+}
+
+function renderCartPage(){
+  const count=cartCount();
+  const emEl=document.getElementById('cart-empty-msg');
+  const listEl=document.getElementById('cart-items-list');
+  const sumEl=document.getElementById('cart-sum-box');
+  if(!count){emEl.style.display='block';listEl.innerHTML='';sumEl.style.display='none';return;}
+  emEl.style.display='none';sumEl.style.display='block';
+  const sub=cartTotal(),tax=sub*.05,grand=sub+tax;
+  listEl.innerHTML=Object.entries(cart).map(([id,q])=>{
+    const it=getItem(id);
+    return `<div class="cart-row">
+      <div class="cart-row-left">
+        <span style="font-size:1.4rem">${it.emoji||'🍽'}</span>
+        <div>
+          <div style="font-weight:600;font-size:.9rem">${it.name}</div>
+          <div style="color:var(--muted);font-size:.78rem">x${q} × $${Number(it.price).toFixed(2)}</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="color:var(--gold);font-weight:700">$${(Number(it.price)*q).toFixed(2)}</span>
+        <button class="cart-remove" onclick="removeCart('${id}')">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+  document.getElementById('cs-sub').textContent='$'+sub.toFixed(2);
+  document.getElementById('cs-tax').textContent='$'+tax.toFixed(2);
+  document.getElementById('cs-grand').textContent='$'+grand.toFixed(2);
+}
+
+function removeCart(id){
+  delete cart[id];
+  const el=document.getElementById('qty-'+id);
+  if(el)el.textContent=0;
+  updateCartFloat(); renderCartPage();
+}
+
+// ===== PLACE ORDER =====
+function placeOrder(){
+  const table=document.getElementById('cart-table-no').value;
+  if(!cartCount()){alert('Basket-ka waa faaruq!');return;}
+  const sub=cartTotal(),tax=sub*.05,grand=sub+tax;
+  const now=new Date();
+  currentOrder={
+    id:'ORD-'+Math.floor(Math.random()*9000+1000),
+    rid:custRest.id,restName:custRest.name,restPhone:custRest.phone||'',ussd:custRest.ussd||'',
+    table,
+    items:Object.entries(cart).map(([id,q])=>{const it=getItem(id);return{name:it.name,emoji:it.emoji||'🍽',qty:q,price:Number(it.price),subtotal:Number(it.price)*q};}),
+    sub,tax,grand,
+    time:now.toLocaleTimeString('en-GB'),date:now.toLocaleDateString('en-GB'),
+    status:'new'
+  };
+  orders.unshift(currentOrder);save();
+  generateReceipt(currentOrder);
+  goTo('page-success');
+}
+
+// ===== RECEIPT =====
+function fm(n){return'$'+Number(n).toFixed(2);}
+function generateReceipt(o){
+  document.getElementById('r-name').innerText=o.restName;
+  document.getElementById('r-phone').innerText=o.restPhone;
+  document.getElementById('r-ref').innerText='Ref: '+o.id;
+  document.getElementById('r-table').innerText=o.table;
+  document.getElementById('r-time').innerText=o.date+'  '+o.time;
+  document.getElementById('r-payment').innerText=o.ussd?'Payment USSD: '+o.ussd:'Payment: Cash';
+  document.getElementById('r-items').innerHTML=o.items.map(i=>`
+    <div class="row"><span>${i.name}</span><span>${i.qty}</span><span>${fm(i.price)}</span><span>${fm(i.subtotal)}</span></div>`).join('');
+  document.getElementById('r-sub').innerText=fm(o.sub);
+  document.getElementById('r-vat').innerText=fm(o.tax);
+  document.getElementById('r-grand').innerText=fm(o.grand);
+}
+
+function newOrder(){
+  cart={};
+  if(custRest&&custTable){renderCustomerMenu();updateCartFloat();goTo('page-menu');}
+  else goTo('page-landing');
+}
+
+// ===== KITCHEN =====
+function renderKitchen(){
+  if(!currentRest)return;
+  const restOrders=orders.filter(o=>o.rid===currentRest.id);
+  const el=document.getElementById('kitchen-orders');
+  const pending=restOrders.filter(o=>o.status!=='done').length;
+  document.getElementById('k-count').textContent=pending;
+  if(!restOrders.length){
+    el.innerHTML='<div class="empty-state"><div class="empty-icon">📋</div><p>Wali order ma jiro</p></div>';return;
+  }
+  el.innerHTML=restOrders.map(o=>{
+    const gi=orders.findIndex(x=>x.id===o.id);
+    return `<div class="order-card">
+      <div class="order-card-header">
+        <span style="font-weight:700">🪑 Table #${o.table} — ${o.id}</span>
+        <span style="color:var(--muted);font-size:.78rem">${o.time}</span>
+      </div>
+      <div class="order-status-tag ${o.status==='new'?'s-new':o.status==='prep'?'s-prep':'s-done'}">
+        ${o.status==='new'?'🆕 Order Cusub':o.status==='prep'?'👨‍🍳 La Diyaarinayaa':'✅ Diyaar'}
+      </div>
+      <div class="order-items-txt">${o.items.map(i=>`${i.emoji} ${i.name} × ${i.qty}`).join(' | ')}</div>
+      <div class="order-total-txt">Grand Total: ${fm(o.grand)}</div>
+      <div class="k-btns">
+        ${o.status==='new'?`<button class="k-btn k-prep" onclick="setStatus(${gi},'prep')">👨‍🍳 La Diyaarinayaa</button>`:''}
+        ${o.status==='prep'?`<button class="k-btn k-done" onclick="setStatus(${gi},'done')">✅ Diyaar</button>`:''}
+        <button class="k-btn k-receipt" onclick="kitchenReceipt(${gi})">🧾 Rasiid</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function setStatus(i,s){orders[i].status=s;save();renderKitchen();}
+function kitchenReceipt(i){currentOrder=orders[i];generateReceipt(orders[i]);goTo('page-receipt');}
+
+// ===== URL ROUTING =====
+function checkURL(){
+  const p=new URLSearchParams(window.location.search);
+  const rid=p.get('rid'),table=p.get('table');
+  if(rid&&table) loadCustomerMenu(rid,table);
+}
+
+checkURL();
 </script>
 </body>
 </html>
