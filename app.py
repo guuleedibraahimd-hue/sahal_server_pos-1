@@ -36,8 +36,6 @@ app = Flask(__name__)
 
 app.secret_key = "dhibic-secret-key"
 
-socketio = SocketIO(app)
-
 # 🔥 DATABASE
 DB_PATH = os.environ.get("DB_PATH", "database.db")
 
@@ -5303,7 +5301,11 @@ def update_info(doc_id):
 app = Flask(__name__)
 app.secret_key = "sahal_secret_key"
 
-socketio = SocketIO(app)
+socketio = SocketIO(
+    app,
+    cors_allowed_origins="*",
+    async_mode="threading"
+)
 
 # ==============================
 # HOME PAGE
@@ -5656,7 +5658,8 @@ if __name__ == "__main__":
 
     init_db()
 
-    app.run(
+    socketio.run(
+        app,
         host="0.0.0.0",
         port=5000,
         debug=True
