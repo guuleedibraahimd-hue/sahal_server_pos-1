@@ -5315,7 +5315,7 @@ def home():
 
 
 # ==============================
-# DHIBIC DAHAB DASHBOARD LOGIN
+# DASHBOARD LOGIN
 # ==============================
 
 @app.route("/dashboard_login", methods=["POST"])
@@ -5326,7 +5326,9 @@ def dashboard_login():
         email = request.form.get("email")
         password = request.form.get("password")
 
-        users_ref = db.collection("dashboard_users").stream()
+        users_ref = db.collection(
+            "dashboard_users"
+        ).stream()
 
         for user in users_ref:
 
@@ -5340,15 +5342,18 @@ def dashboard_login():
                 session["dashboard_user"] = email
 
                 return jsonify({
-                    "success": True
+                    "success": True,
+                    "redirect": "/view-orders"
                 })
 
         return jsonify({
             "success": False,
-            "error": "Invalid Email or Password"
+            "error": "Invalid email or password"
         })
 
     except Exception as e:
+
+        print(e)
 
         return jsonify({
             "success": False,
