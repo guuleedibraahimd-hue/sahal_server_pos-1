@@ -5349,39 +5349,37 @@ def home():
 # ==============================
 # DASHBOARD LOGIN
 # ==============================
-
 @app.route("/dashboard_login", methods=["POST"])
 def dashboard_login():
 
     try:
 
-        email = request.form.get("email", "").strip()
-        password = request.form.get("password", "").strip()
+        email = request.form.get("email")
+        password = request.form.get("password")
 
-        user_doc = db.collection(
+        users = db.collection(
             "dashboard_users"
-        ).document(
-            "main_admin"
-        ).get()
+        ).stream()
 
-        if user_doc.exists:
+        for user in users:
 
-            data = user_doc.to_dict()
+            data = user.to_dict()
 
             db_email = str(
                 data.get("email", "")
-            ).strip()
+            ).strip().lower()
 
             db_password = str(
                 data.get("password", "")
             ).strip()
 
             if (
-                db_email == email and
-                db_password == password
+                db_email == email.strip().lower()
+                and
+                db_password == password.strip()
             ):
 
-                session["dashboard_user"] = email
+                session["dashboard_user"] = db_email
 
                 return jsonify({
                     "success": True,
