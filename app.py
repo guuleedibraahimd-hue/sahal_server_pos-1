@@ -19,18 +19,33 @@ import json
 
 from zoneinfo import ZoneInfo
 
-# Tan waa muhiim si login-ka iyo expiry-ga ay u shaqeeyaan
-from datetime import datetime, timedelta, timezone
-
 # 🔥 FIREBASE
 import firebase_admin
 from firebase_admin import credentials, firestore
 
+cred = credentials.Certificate(
+    "dhibic-dahab-online-store-firebase-adminsdk-fbsvc-70a4ef183a.json"
+)
+
+firebase_admin.initialize_app(cred)
+
+db = firestore.client()
+
+# 🔥 FLASK APP
+app = Flask(__name__)
+
+app.secret_key = "dhibic-secret-key"
+
+socketio = SocketIO(app)
+
+# 🔥 DATABASE
 DB_PATH = os.environ.get("DB_PATH", "database.db")
 
 
 def init_db():
+
     conn = sqlite3.connect(DB_PATH)
+
     c = conn.cursor()
 
     c.execute("""
@@ -55,9 +70,8 @@ def init_db():
     conn.commit()
     conn.close()
 
-init_db()
 
-DB_PATH = os.environ.get("DB_PATH", "database.db")
+init_db()
 
 # =========================
 # 🔥 FIREBASE CONFIG (FIXED)
@@ -5281,6 +5295,252 @@ def update_info(doc_id):
     except Exception as e:
 
         return str(e)
+
+# =========================
+# APP CONFIG
+# =========================
+
+app = Flask(__name__)
+app.secret_key = "sahal_secret_key"
+
+socketio = SocketIO(app)
+
+# ==============================
+# HOME PAGE
+# ==============================
+
+@app.route("/")
+def home():
+    return render_template("home.html")
+
+
+# ==============================
+# DHIBIC DAHAB DASHBOARD LOGIN
+# ==============================
+
+@app.route("/dashboard_login", methods=["POST"])
+def dashboard_login():
+
+    try:
+
+        email = request.form.get("email")
+        password = request.form.get("password")
+
+        users_ref = db.collection("dashboard_users").stream()
+
+        for user in users_ref:
+
+            data = user.to_dict()
+
+            if (
+                data.get("email") == email and
+                data.get("password") == password
+            ):
+
+                session["dashboard_user"] = email
+
+                return jsonify({
+                    "success": True
+                })
+
+        return jsonify({
+            "success": False,
+            "error": "Invalid Email or Password"
+        })
+
+    except Exception as e:
+
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        })
+
+
+# ==============================
+# VIEW ORDERS PAGE
+# ==============================
+
+@app.route("/view-orders")
+def view_orders():
+
+    if "dashboard_user" not in session:
+        return redirect("/")
+
+    orders_ref = db.collection("orders").stream()
+
+    orders = []
+
+    for doc in orders_ref:
+
+        data = doc.to_dict()
+
+        # =========================
+        # MERCHANT INFO
+        # =========================
+
+        merchant_name = ""
+        merchant_phone = ""
+        other_merchant_name = ""
+        other_merchant_phone = ""
+
+        merchant_id = data.get("merchantId", "")
+
+        if merchant_id:
+
+            merchant_doc = db.collection("merchant").document(
+                merchant_id
+            ).get()
+
+            if merchant_doc.exists:
+
+                merchant_data = merchant_doc.to_dict()
+
+                merchant_name = merchant_data.get(
+                    "name",
+                    ""
+                )
+
+                merchant_phone = merchant_data.get(
+                    "merchantPhone",
+                    ""
+                )
+
+                other_merchant_name = merchant_data.get(
+                    "otherMerchantName",
+                    ""
+                )
+
+                other_merchant_phone = merchant_data.get(
+                    "otherMerchantPhone",
+                    ""
+                )
+
+        # =========================
+        # PRODUCT INFO
+        # =========================
+
+        item_name = "Product Order"
+        quantity = 1
+
+        cart_items = data.get("cartItems", [])
+
+        if len(cart_items) > 0:
+
+            first_item = cart_items[0]
+
+            item_name = first_item.get(
+                "name",
+                "Unknown Product"
+            )
+
+            quantity = first_item.get(
+                "quantity",
+                1
+            )
+
+        # =========================
+        # RECEIVER NUMBER
+        # =========================
+
+        receiver_phone = data.get(
+            "receiverPhone",
+            ""
+        )
+
+        if not receiver_phone:
+            receiver_phone = merchant_phone
+
+        # =========================
+        # DATE TIME
+        # =========================
+
+        created_at = str(
+            data.get("createdAt", "")
+        )
+
+        order_date = ""
+        order_time = ""
+
+        if created_at:
+
+            try:
+
+                order_date = created_at.split(" ")[0]
+
+                order_time = created_at.split(" ")[1][:8]
+
+            except:
+                pass
+
+        # =========================
+        # FINAL PUSH
+        # =========================
+
+        orders.append({
+
+            "docId": doc.id,
+
+            "referenceId": data.get(
+                "referenceId",
+                ""
+            ),
+
+            "phone": data.get(
+                "phone",
+                ""
+            ),
+
+            "receiverPhone": receiver_phone,
+
+            "merchantName": merchant_name,
+
+            "merchantPhone": merchant_phone,
+
+            "otherMerchantName": other_merchant_name,
+
+            "otherMerchantPhone": other_merchant_phone,
+
+            "itemName": item_name,
+
+            "quantity": quantity,
+
+            "amount": data.get(
+                "amount",
+                ""
+            ),
+
+            "status": data.get(
+                "status",
+                ""
+            ),
+
+            "address": data.get(
+                "address",
+                ""
+            ),
+
+            "date": order_date,
+
+            "time": order_time
+
+        })
+
+    return render_template(
+        "view_orders.html",
+        orders=orders
+    )
+
+
+# =========================
+# RUN SERVER
+# =========================
+
+if __name__ == "__main__":
+    init_db()
+    socketio.run(app, debug=True)
+
+if __name__ == "__main__":
+    socketio.run(app, debug=True)
 
 # ======= RENDER FIX =======
 if __name__ != "__main__":

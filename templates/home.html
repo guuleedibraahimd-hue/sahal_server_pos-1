@@ -6,7 +6,6 @@
 <title>Sahal Server POS</title>
 
 <style>
-/* (CSS KAAGA OO DHAN WAA SIDII HORE – waxba lama taaban) */
 body{
 margin:0;
 font-family:Arial, sans-serif;
@@ -50,7 +49,9 @@ font-weight:bold;
 border-bottom:1px solid #eee;
 }
 
-.admin-menu a:hover{ background:#f4f4f4; }
+.admin-menu a:hover{
+background:#f4f4f4;
+}
 
 .container{
 max-width:900px;
@@ -78,7 +79,10 @@ border-radius:18px;
 box-shadow:0 0 15px rgba(0,0,0,0.25);
 }
 
-.links a, .parent-btn, .teacher-btn{
+.links a,
+.parent-btn,
+.teacher-btn,
+.dashboard-btn{
 display:block;
 padding:16px;
 margin:12px 0;
@@ -88,18 +92,20 @@ text-align:center;
 font-weight:bold;
 color:white;
 font-size:17px;
-border: none;
-width: 100%;
-cursor: pointer;
-box-sizing: border-box;
+border:none;
+width:100%;
+cursor:pointer;
+box-sizing:border-box;
 }
 
 .login{ background:#007bff; }
 .kitchen{ background:#6f42c1; }
-.parent-btn{ background: #ff9800; }
-.teacher-btn{ background: #6f42c1; }
+.parent-btn{ background:#ff9800; }
+.teacher-btn{ background:#6f42c1; }
+.dashboard-btn{ background:#009688; }
 
-.support-fab, .student-fab{
+.support-fab,
+.student-fab{
 position:fixed;
 bottom:20px;
 width:60px;
@@ -113,28 +119,48 @@ box-shadow:0 4px 12px rgba(0,0,0,0.3);
 z-index:9999;
 }
 
-.support-fab{ right:20px; background:#25D366; }
-.student-fab{ left:20px; background:#0a7cff; }
+.support-fab{
+right:20px;
+background:#25D366;
+}
 
-.support-popup, .student-popup, .parent-popup, .teacher-popup{
+.student-fab{
+left:20px;
+background:#0a7cff;
+}
+
+.support-popup,
+.student-popup,
+.parent-popup,
+.teacher-popup,
+.dashboard-popup{
 display:none;
 position:fixed;
 background:white;
-padding:15px;
+padding:20px;
 border-radius:15px;
-width:280px;
+width:320px;
 box-shadow:0 4px 12px rgba(0,0,0,0.2);
 z-index:9999;
-color: black;
+color:black;
 }
 
-.support-popup{ bottom:90px; right:20px; }
-.student-popup{ bottom:90px; left:20px; }
+.support-popup{
+bottom:90px;
+right:20px;
+}
 
-.parent-popup, .teacher-popup{
-top: 50%;
-left: 50%;
-transform: translate(-50%, -50%);
+.student-popup{
+bottom:90px;
+left:20px;
+}
+
+.parent-popup,
+.teacher-popup,
+.dashboard-popup{
+top:50%;
+left:50%;
+transform:translate(-50%, -50%);
 }
 
 .popup-btn{
@@ -155,24 +181,26 @@ cursor:pointer;
 .email{ background:#007bff; }
 .student{ background:#0a7cff; }
 .screen{ background:#6f42c1; }
+.dashboard-login{ background:#009688; }
 
 input{
-width: 100%;
-padding: 12px;
-margin: 8px 0;
-border: 1px solid #ccc;
-border-radius: 8px;
-box-sizing: border-box;
+width:100%;
+padding:12px;
+margin:8px 0;
+border:1px solid #ccc;
+border-radius:8px;
+box-sizing:border-box;
+font-size:15px;
 }
 
-.res-box {
-background: #f8f9fa;
-padding: 12px;
-border-radius: 8px;
-margin-top: 10px;
-font-size: 14px;
-display: none;
-border-left: 5px solid #ff9800;
+.res-box{
+background:#f8f9fa;
+padding:12px;
+border-radius:8px;
+margin-top:10px;
+font-size:14px;
+display:none;
+border-left:5px solid #ff9800;
 }
 </style>
 </head>
@@ -181,6 +209,7 @@ border-left: 5px solid #ff9800;
 
 <div class="top-bar">
 <div class="menu-btn" onclick="toggleAdminMenu()">⋮</div>
+
 <div class="admin-menu" id="adminMenu">
 <a href="/admin">🛠️ System Admin</a>
 <a href="#" onclick="openInfo()">ℹ️ System Info</a>
@@ -188,57 +217,149 @@ border-left: 5px solid #ff9800;
 </div>
 
 <div class="container">
+
 <img src="{{ url_for('static', filename='logo.png') }}" class="logo">
-<h1> Sahal Server POS</h1>
+
+<h1>Sahal Server POS</h1>
 
 <div class="card links">
+
 <a href="/login" class="login">🔐 Restaurant Login</a>
+
 <a href="/supermarket_login" class="login">🏪 Supermarket Login</a>
+
 <a href="/kitchen/1" class="kitchen">👨‍🍳 Kitchen Screen</a>
+
 <a href="/school_login" class="login">🏫 School Login</a>
-<button class="teacher-btn" onclick="toggleTeacher()">👨‍🏫 Teacher Portal</button>
-<button class="parent-btn" onclick="toggleParent()">👨‍👩‍👧 Parent View</button>
+
+<button class="teacher-btn" onclick="toggleTeacher()">
+👨‍🏫 Teacher Portal
+</button>
+
+<button class="parent-btn" onclick="toggleParent()">
+👨‍👩‍👧 Parent View
+</button>
+
+<!-- ✅ NEW DHIBIC DAHAB DASHBOARD -->
+<button class="dashboard-btn" onclick="toggleDashboard()">
+💰 Dhibic Dahab Dashboard
+</button>
+
 </div>
+</div>
+
+<!-- DASHBOARD LOGIN -->
+<div class="dashboard-popup" id="dashboardPopup">
+
+<h3>💰 Dhibic Dahab Dashboard Login</h3>
+
+<form id="dashboardLoginForm">
+
+<input
+type="email"
+name="email"
+id="dashboard_email"
+placeholder="Enter Email"
+required
+>
+
+<input
+type="password"
+name="password"
+id="dashboard_password"
+placeholder="Enter Password"
+required
+>
+
+<button type="submit" class="popup-btn dashboard-login">
+Login Dashboard
+</button>
+
+</form>
+
+<div id="dashboardMsg"></div>
+
+<button onclick="toggleDashboard()">Close</button>
+
 </div>
 
 <!-- TEACHER -->
 <div class="teacher-popup" id="teacherPopup">
+
 <h3>👨‍🏫 Teacher Login</h3>
+
 <form id="teacherLoginForm">
+
 <input type="text" name="username" id="t_username" required>
+
 <input type="password" name="password" id="t_password" required>
-<button type="submit" class="popup-btn screen">Login to Dashboard</button>
+
+<button type="submit" class="popup-btn screen">
+Login to Dashboard
+</button>
+
 </form>
+
 <div id="teacherMsg"></div>
+
 <button onclick="toggleTeacher()">Close</button>
+
 </div>
 
 <!-- PARENT -->
 <div class="parent-popup" id="parentPopup">
+
 <h3>🔍 Student Status</h3>
-<input id="p_std_id">
-<input type="password" id="p_password">
-<button onclick="checkStudent()" class="popup-btn student">Check Status</button>
+
+<input id="p_std_id" placeholder="Student ID">
+
+<input type="password" id="p_password" placeholder="Password">
+
+<button onclick="checkStudent()" class="popup-btn student">
+Check Status
+</button>
+
 <div id="studentResult" class="res-box"></div>
+
 <button onclick="toggleParent()">Close</button>
+
 </div>
 
 <!-- SUPPORT -->
 <div class="support-popup" id="supportPopup">
-<a href="https://wa.me/252628276993" target="_blank" class="popup-btn whatsapp">WhatsApp</a>
-<a href="mailto:moodirmanooge@gmail.com" class="popup-btn email">Email</a>
+
+<a href="https://wa.me/252628276993"
+target="_blank"
+class="popup-btn whatsapp">
+WhatsApp
+</a>
+
+<a href="mailto:moodirmanooge@gmail.com"
+class="popup-btn email">
+Email
+</a>
+
 </div>
 
-<!-- STUDENT BUTTON -->
+<!-- STUDENT -->
 <div class="student-popup" id="studentPopup">
-<a href="/register_student" class="popup-btn student">Student Register</a>
-<a href="/screen_login" class="popup-btn screen">Student Screen</a>
+
+<a href="/register_student" class="popup-btn student">
+Student Register
+</a>
+
+<a href="/screen_login" class="popup-btn screen">
+Student Screen
+</a>
+
 </div>
 
 <button class="support-fab" onclick="toggleSupport()">📱</button>
+
 <button class="student-fab" onclick="toggleStudent()">🎓</button>
 
 <script>
+
 function toggleSupport(){
 let p=document.getElementById("supportPopup");
 p.style.display=p.style.display==="block"?"none":"block";
@@ -264,27 +385,91 @@ let p=document.getElementById("teacherPopup");
 p.style.display=p.style.display==="block"?"none":"block";
 }
 
-/* ✅ FIXED ONLY THIS */
+function toggleDashboard(){
+let p=document.getElementById("dashboardPopup");
+p.style.display=p.style.display==="block"?"none":"block";
+}
+
+/* TEACHER LOGIN */
 document.getElementById("teacherLoginForm").onsubmit=async(e)=>{
+
 e.preventDefault();
+
 let msg=document.getElementById("teacherMsg");
+
 msg.innerHTML="Checking...";
 
 let fd=new FormData(e.target);
 
 try{
-let res=await fetch("/teacher_login",{method:"POST",body:fd});
+
+let res=await fetch("/teacher_login",{
+method:"POST",
+body:fd
+});
+
 let data=await res.json();
 
 if(data.success){
-window.location.href=data.redirect || "/teacher_dashboard"; // ✅ FIX
+
+window.location.href=data.redirect || "/teacher_dashboard";
+
 }else{
-msg.innerHTML="<span style='color:red'>"+data.error+"</span>";
+
+msg.innerHTML=
+"<span style='color:red'>"+data.error+"</span>";
+
 }
+
 }catch{
-msg.innerHTML="<span style='color:red'>Server Error!</span>";
+
+msg.innerHTML=
+"<span style='color:red'>Server Error!</span>";
+
 }
+
+};
+
+/* ✅ DHIBIC DAHAB DASHBOARD LOGIN */
+document.getElementById("dashboardLoginForm").onsubmit=async(e)=>{
+
+e.preventDefault();
+
+let msg=document.getElementById("dashboardMsg");
+
+msg.innerHTML="Checking Login...";
+
+let fd=new FormData(e.target);
+
+try{
+
+let res=await fetch("/dashboard_login",{
+method:"POST",
+body:fd
+});
+
+let data=await res.json();
+
+if(data.success){
+
+window.location.href="/view-orders";
+
+}else{
+
+msg.innerHTML=
+"<span style='color:red'>"+data.error+"</span>";
+
 }
+
+}catch{
+
+msg.innerHTML=
+"<span style='color:red'>Server Error!</span>";
+
+}
+
+};
+
 </script>
 
 </body>
