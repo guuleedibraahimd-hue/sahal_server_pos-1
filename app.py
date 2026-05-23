@@ -7,7 +7,12 @@ from flask import (
     session
 )
 
-from flask_socketio import SocketIO, emit, join_room
+from flask_socketio import (
+    SocketIO,
+    emit,
+    join_room
+)
+
 from werkzeug.utils import secure_filename
 
 import sqlite3
@@ -19,9 +24,16 @@ import json
 
 from zoneinfo import ZoneInfo
 
-# 🔥 FIREBASE
+# =========================
+# FIREBASE
+# =========================
+
 import firebase_admin
-from firebase_admin import credentials, firestore
+
+from firebase_admin import (
+    credentials,
+    firestore
+)
 
 cred = credentials.Certificate(
     "dhibic-dahab-online-store-firebase-adminsdk-fbsvc-70a4ef183a.json"
@@ -31,14 +43,32 @@ firebase_admin.initialize_app(cred)
 
 db = firestore.client()
 
-# 🔥 FLASK APP
+# =========================
+# FLASK APP
+# =========================
+
 app = Flask(__name__)
 
 app.secret_key = "dhibic-secret-key"
 
-# 🔥 DATABASE
-DB_PATH = os.environ.get("DB_PATH", "database.db")
+socketio = SocketIO(
+    app,
+    cors_allowed_origins="*",
+    async_mode="threading"
+)
 
+# =========================
+# DATABASE
+# =========================
+
+DB_PATH = os.environ.get(
+    "DB_PATH",
+    "database.db"
+)
+
+# =========================
+# INIT DATABASE
+# =========================
 
 def init_db():
 
@@ -61,13 +91,13 @@ def init_db():
     """)
 
     c.execute("""
-    CREATE INDEX IF NOT EXISTS idx_orders 
+    CREATE INDEX IF NOT EXISTS idx_orders
     ON orders(restaurant_id, table_no)
     """)
 
     conn.commit()
-    conn.close()
 
+    conn.close()
 
 init_db()
 
@@ -5325,8 +5355,8 @@ def dashboard_login():
 
     try:
 
-        email = request.form.get("email")
-        password = request.form.get("password")
+        email = request.form.get("email", "").strip()
+        password = request.form.get("password", "").strip()
 
         user_doc = db.collection(
             "dashboard_users"
@@ -5338,9 +5368,17 @@ def dashboard_login():
 
             data = user_doc.to_dict()
 
+            db_email = str(
+                data.get("email", "")
+            ).strip()
+
+            db_password = str(
+                data.get("password", "")
+            ).strip()
+
             if (
-                data.get("email") == email and
-                data.get("password") == password
+                db_email == email and
+                db_password == password
             ):
 
                 session["dashboard_user"] = email
@@ -5357,10 +5395,13 @@ def dashboard_login():
 
     except Exception as e:
 
+        print("LOGIN ERROR:", e)
+
         return jsonify({
             "success": False,
             "error": str(e)
         })
+
 
 # ==============================
 # VIEW ORDERS PAGE
@@ -5372,247 +5413,228 @@ def view_orders():
     if "dashboard_user" not in session:
         return redirect("/")
 
-    orders_ref = db.collection("orders").stream()
+    try:
 
-    orders = []
+        orders_ref = db.collection(
+            "orders"
+        ).limit(50).stream()
 
-    for doc in orders_ref:
+        orders = []
 
-        data = doc.to_dict()
+        for doc in orders_ref:
 
-        # =========================
-        # MERCHANT INFO
-        # =========================
+            data = doc.to_dict()
 
-        merchant_name = "N/A"
-        merchant_phone = "N/A"
-        other_merchant_name = "N/A"
-        other_merchant_phone = "N/A"
+            # =========================
+            # MERCHANT INFO
+            # =========================
 
-        merchant_id = data.get("merchantId", "")
+            merchant_name = "N/A"
+            merchant_phone = "N/A"
+            other_merchant_name = "N/A"
+            other_merchant_phone = "N/A"
 
-        if merchant_id:
-
-            merchant_doc = db.collection(
-                "merchant"
-            ).document(
-                merchant_id
-            ).get()
-
-            if merchant_doc.exists:
-
-                merchant_data = merchant_doc.to_dict()
-
-                merchant_name = merchant_data.get(
-                    "name",
-                    "N/A"
-                )
-
-                merchant_phone = merchant_data.get(
-                    "merchantPhone",
-                    "N/A"
-                )
-
-                other_merchant_name = merchant_data.get(
-                    "otherMerchantName",
-                    "N/A"
-                )
-
-                other_merchant_phone = merchant_data.get(
-                    "otherMerchantPhone",
-                    "N/A"
-                )
-
-        # =========================
-        # RECEIVER PHONE
-        # =========================
-
-        receiver_phone = data.get(
-            "receiverPhone",
-            ""
-        )
-
-        if not receiver_phone:
-
-            receiver_phone = data.get(
-                "merchantPhone",
+            merchant_id = data.get(
+                "merchantId",
                 ""
             )
 
-        if not receiver_phone:
-
-            receiver_phone = merchant_phone
-
-        # =========================
-        # PRODUCT INFO
-        # =========================
-
-        item_name = "Product Order"
-        quantity = 1
-
-        cart_items = data.get(
-            "cartItems",
-            []
-        )
-
-        if cart_items and len(cart_items) > 0:
-
-            first_item = cart_items[0]
-
-            item_name = first_item.get(
-                "name",
-                "Unknown Product"
-            )
-
-            quantity = first_item.get(
-                "quantity",
-                1
-            )
-
-        if item_name == "Product Order":
-
-            item_name = data.get(
-                "productName",
-                item_name
-            )
-
-        # =========================
-        # ADDRESS
-        # =========================
-
-        address = data.get(
-            "address",
-            ""
-        )
-
-        if not address:
-
-            address = data.get(
-                "customerlocation",
-                ""
-            )
-
-        if not address:
-
-            address = "Mogadishu"
-
-        # =========================
-        # DATE & TIME
-        # =========================
-
-        order_date = ""
-        order_time = ""
-
-        created_at = data.get(
-            "createdAt"
-        )
-
-        if created_at:
-
-            try:
-
-                dt = created_at
-
-                order_date = dt.strftime(
-                    "%Y-%m-%d"
-                )
-
-                order_time = dt.strftime(
-                    "%I:%M %p"
-                )
-
-            except:
+            if merchant_id:
 
                 try:
 
-                    created_at = str(created_at)
+                    merchant_doc = db.collection(
+                        "merchant"
+                    ).document(
+                        merchant_id
+                    ).get()
 
-                    order_date = created_at.split(
-                        " "
-                    )[0]
+                    if merchant_doc.exists:
 
-                    order_time = created_at.split(
-                        " "
-                    )[1][:8]
+                        merchant_data = merchant_doc.to_dict()
+
+                        merchant_name = merchant_data.get(
+                            "name",
+                            "N/A"
+                        )
+
+                        merchant_phone = merchant_data.get(
+                            "merchantPhone",
+                            "N/A"
+                        )
+
+                        other_merchant_name = merchant_data.get(
+                            "otherMerchantName",
+                            "N/A"
+                        )
+
+                        other_merchant_phone = merchant_data.get(
+                            "otherMerchantPhone",
+                            "N/A"
+                        )
 
                 except:
                     pass
 
-        # =========================
-        # SHORT ORDER ID
-        # =========================
+            # =========================
+            # RECEIVER PHONE
+            # =========================
 
-        short_order_id = ""
-
-        reference_id = str(
-            data.get(
-                "referenceId",
+            receiver_phone = data.get(
+                "receiverPhone",
                 ""
             )
-        )
 
-        if "#" in reference_id:
+            if not receiver_phone:
 
-            short_order_id = reference_id.replace(
-                "#",
+                receiver_phone = merchant_phone
+
+            # =========================
+            # PRODUCT INFO
+            # =========================
+
+            item_name = "Product Order"
+            quantity = 1
+
+            cart_items = data.get(
+                "cartItems",
+                []
+            )
+
+            if cart_items:
+
+                try:
+
+                    first_item = cart_items[0]
+
+                    item_name = first_item.get(
+                        "name",
+                        "Unknown Product"
+                    )
+
+                    quantity = first_item.get(
+                        "quantity",
+                        1
+                    )
+
+                except:
+                    pass
+
+            if item_name == "Product Order":
+
+                item_name = data.get(
+                    "productName",
+                    "Product Order"
+                )
+
+            # =========================
+            # ADDRESS
+            # =========================
+
+            address = data.get(
+                "address",
                 ""
-            )[-4:]
+            )
 
-        else:
+            if not address:
+
+                address = data.get(
+                    "customerlocation",
+                    "Mogadishu"
+                )
+
+            # =========================
+            # DATE TIME
+            # =========================
+
+            order_date = ""
+            order_time = ""
+
+            created_at = data.get(
+                "createdAt"
+            )
+
+            try:
+
+                order_date = created_at.strftime(
+                    "%Y-%m-%d"
+                )
+
+                order_time = created_at.strftime(
+                    "%I:%M %p"
+                )
+
+            except:
+                pass
+
+            # =========================
+            # SHORT ORDER ID
+            # =========================
+
+            reference_id = str(
+                data.get(
+                    "referenceId",
+                    ""
+                )
+            )
 
             short_order_id = reference_id[-4:]
 
-        # =========================
-        # FINAL DATA
-        # =========================
+            # =========================
+            # FINAL DATA
+            # =========================
 
-        orders.append({
+            orders.append({
 
-            "docId": doc.id,
+                "docId": doc.id,
 
-            "referenceId": short_order_id,
+                "referenceId": short_order_id,
 
-            "phone": data.get(
-                "phone",
-                ""
-            ),
+                "phone": data.get(
+                    "phone",
+                    ""
+                ),
 
-            "receiverPhone": receiver_phone,
+                "receiverPhone": receiver_phone,
 
-            "merchantName": merchant_name,
+                "merchantName": merchant_name,
 
-            "merchantPhone": merchant_phone,
+                "merchantPhone": merchant_phone,
 
-            "otherMerchantName": other_merchant_name,
+                "otherMerchantName": other_merchant_name,
 
-            "otherMerchantPhone": other_merchant_phone,
+                "otherMerchantPhone": other_merchant_phone,
 
-            "itemName": item_name,
+                "itemName": item_name,
 
-            "quantity": quantity,
+                "quantity": quantity,
 
-            "amount": data.get(
-                "amount",
-                ""
-            ),
+                "amount": data.get(
+                    "amount",
+                    ""
+                ),
 
-            "status": data.get(
-                "status",
-                "PENDING"
-            ),
+                "status": data.get(
+                    "status",
+                    "PENDING"
+                ),
 
-            "address": address,
+                "address": address,
 
-            "date": order_date,
+                "date": order_date,
 
-            "time": order_time
+                "time": order_time
 
-        })
+            })
 
-    return render_template(
-        "view_orders.html",
-        orders=orders
-    )
+        return render_template(
+            "view_orders.html",
+            orders=orders
+        )
+
+    except Exception as e:
+
+        return str(e)
 
 
 # ==============================
@@ -5640,17 +5662,6 @@ def approve_order(doc_id):
 
 
 # =========================
-# SOCKET CONFIG
-# =========================
-
-socketio = SocketIO(
-    app,
-    cors_allowed_origins="*",
-    async_mode="threading"
-)
-
-
-# =========================
 # RUN SERVER
 # =========================
 
@@ -5664,7 +5675,7 @@ if __name__ == "__main__":
         port=5000,
         debug=True
     )
-
+    
 # ======= RENDER FIX =======
 if __name__ != "__main__":
     init_db()
