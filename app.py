@@ -5373,25 +5373,6 @@ def dashboard_login():
         traceback.print_exc()
         return jsonify({"success": False, "error": str(e)})
 
-
-# ==============================
-# APPROVE ORDER  ← FIX: GET + POST labadaba
-# ==============================
-@app.route("/approve-order/<doc_id>", methods=["GET", "POST"])
-def approve_order(doc_id):
-    try:
-        db.collection("orders").document(doc_id).update({"status": "APPROVED"})
-
-        # POST (fetch) waa JSON, GET waa redirect
-        if request.method == "POST":
-            return jsonify({"success": True})
-        return redirect("/view-orders")
-
-    except Exception as e:
-        if request.method == "POST":
-            return jsonify({"success": False, "error": str(e)})
-        return str(e)
-
 # ==============================
 # VIEW ORDERS PAGE
 # ==============================
