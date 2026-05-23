@@ -545,49 +545,6 @@ alert("Server Error");
 
 }
 
-/* DASHBOARD LOGIN FETCH QAYBTA AAD CODSEDAY */
-
-document.getElementById("dashboardLoginForm").onsubmit = async(e)=>{
-
-e.preventDefault();
-
-let msg = document.getElementById("dashboardMsg");
-
-msg.innerHTML = "Checking...";
-
-let fd = new FormData(e.target);
-
-try{
-
-let res = await fetch("/dashboard_login",{
-method:"POST",
-body:fd
-});
-
-let data = await res.json();
-
-if(data.success){
-
-window.location.href = data.redirect;
-
-}else{
-
-msg.innerHTML =
-"<span style='color:red'>" + data.error + "</span>";
-
-}
-
-}catch(err){
-
-msg.innerHTML =
-"<span style='color:red'>Server Error!</span>";
-
-console.log(err);
-
-}
-
-}
-
 </script>
 
 </body>
