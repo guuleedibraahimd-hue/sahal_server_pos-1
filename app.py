@@ -21,35 +21,19 @@ import qrcode
 import socket
 import random
 import json
+import re
 
 from zoneinfo import ZoneInfo
-
-# =========================
-# FIREBASE
-# =========================
+from datetime import datetime, timedelta, timezone
 
 import firebase_admin
-
-from firebase_admin import (
-    credentials,
-    firestore
-)
-
-cred = credentials.Certificate(
-    "dhibic-dahab-online-store-firebase-adminsdk-fbsvc-70a4ef183a.json"
-)
-
-firebase_admin.initialize_app(cred)
-
-db = firestore.client()
+from firebase_admin import credentials, firestore
 
 # =========================
-# FLASK APP
+# FLASK APP - HAL MAR KELIYA
 # =========================
-
-app = Flask(__name__)
-
-app.secret_key = "dhibic-secret-key"
+app = Flask(__name__, static_url_path='/static')
+app.secret_key = "sahal-secret-key"
 
 socketio = SocketIO(
     app,
@@ -57,23 +41,42 @@ socketio = SocketIO(
     async_mode="threading"
 )
 
-# =========================
-# DATABASE
-# =========================
+UPLOAD_FOLDER = "static/uploads"
+QR_FOLDER = "static/qr"
 
-DB_PATH = os.environ.get(
-    "DB_PATH",
-    "database.db"
-)
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+os.makedirs(QR_FOLDER, exist_ok=True)
+
+# =========================
+# FIREBASE - HAL MAR KELIYA
+# =========================
+firebase_key_str = os.environ.get("FIREBASE_KEY")
+
+if firebase_key_str:
+    firebase_key = json.loads(firebase_key_str)
+    cred = credentials.Certificate(firebase_key)
+else:
+    cred = credentials.Certificate(
+        "dhibic-dahab-online-store-firebase-adminsdk-fbsvc-70a4ef183a.json"
+    )
+
+if not firebase_admin._apps:
+    firebase_admin.initialize_app(cred)
+
+db = firestore.client()
+
+# =========================
+# DATABASE PATH
+# =========================
+DB_PATH = os.environ.get("DB_PATH", "database.db")
 
 # =========================
 # INIT DATABASE
 # =========================
-
 def init_db():
+    print("INIT DB RUNNING...")
 
     conn = sqlite3.connect(DB_PATH)
-
     c = conn.cursor()
 
     c.execute("""
@@ -95,147 +98,227 @@ def init_db():
     ON orders(restaurant_id, table_no)
     """)
 
-    conn.commit()
+    c.execute("""
+    CREATE TABLE IF NOT EXISTS restaurants(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT,
+        phone TEXT,
+        username TEXT,
+        password TEXT,
+        price INTEGER,
+        expiry TEXT,
+        active INTEGER,
+        payment_number TEXT,
+        kitchen_password TEXT
+    )
+    """)
 
+    c.execute("""
+    CREATE TABLE IF NOT EXISTS settings(
+        id INTEGER PRIMARY KEY,
+        admin_password TEXT,
+        register_password TEXT
+    )
+    """)
+
+    c.execute("SELECT id FROM settings WHERE id=1")
+    if not c.fetchone():
+        c.execute("""
+            INSERT INTO settings
+            (id, admin_password, register_password)
+            VALUES (1, '8880', '8880')
+        """)
+
+    c.execute("""
+    CREATE TABLE IF NOT EXISTS evote_passwords(
+        id INTEGER PRIMARY KEY,
+        student_password TEXT,
+        candidate_password TEXT,
+        evote_admin_password TEXT
+    )
+    """)
+
+    c.execute("SELECT id FROM evote_passwords WHERE id=1")
+    if not c.fetchone():
+        c.execute("""
+            INSERT INTO evote_passwords
+            (id, student_password, candidate_password, evote_admin_password)
+            VALUES (1, '12345', '12345', 'admin123')
+        """)
+
+    c.execute("""
+    CREATE TABLE IF NOT EXISTS students(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        student_id TEXT UNIQUE,
+        full_name TEXT,
+        class_name TEXT,
+        semester TEXT,
+        vote_code TEXT UNIQUE,
+        has_voted_round1 INTEGER DEFAULT 0,
+        has_voted_round2 INTEGER DEFAULT 0,
+        has_voted_round3 INTEGER DEFAULT 0
+    )
+    """)
+
+    c.execute("""
+    CREATE TABLE IF NOT EXISTS candidates(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        full_name TEXT,
+        department TEXT,
+        round INTEGER DEFAULT 1,
+        votes INTEGER DEFAULT 0,
+        percentage REAL DEFAULT 0,
+        image TEXT
+    )
+    """)
+
+    c.execute("""
+    CREATE TABLE IF NOT EXISTS election_settings(
+        id INTEGER PRIMARY KEY,
+        current_round INTEGER DEFAULT 1,
+        round_end_time TEXT
+    )
+    """)
+
+    c.execute("SELECT id FROM election_settings WHERE id=1")
+    if not c.fetchone():
+        c.execute("""
+            INSERT INTO election_settings
+            (id, current_round, round_end_time)
+            VALUES (1, 1, '')
+        """)
+
+    c.execute("""
+    CREATE TABLE IF NOT EXISTS election_timer(
+        id INTEGER PRIMARY KEY,
+        round_time_minutes INTEGER DEFAULT 60,
+        end_time TEXT
+    )
+    """)
+
+    c.execute("SELECT id FROM election_timer WHERE id=1")
+    if not c.fetchone():
+        c.execute("""
+            INSERT INTO election_timer
+            (id, round_time_minutes, end_time)
+            VALUES (1, 60, '')
+        """)
+
+    c.execute("""
+    CREATE TABLE IF NOT EXISTS evote_timer(
+        id INTEGER PRIMARY KEY,
+        minutes INTEGER,
+        end_time TEXT
+    )
+    """)
+
+    c.execute("SELECT id FROM evote_timer WHERE id=1")
+    if not c.fetchone():
+        c.execute("""
+            INSERT INTO evote_timer
+            (id, minutes, end_time)
+            VALUES (1, 60, '')
+        """)
+
+    c.execute("""
+    CREATE TABLE IF NOT EXISTS supermarkets(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT,
+        username TEXT,
+        password TEXT,
+        price INTEGER,
+        expiry TEXT,
+        active INTEGER DEFAULT 1
+    )
+    """)
+
+    c.execute("""
+    CREATE TABLE IF NOT EXISTS supermarket_products(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        barcode TEXT UNIQUE,
+        product_name TEXT,
+        price REAL
+    )
+    """)
+
+    c.execute("""
+    CREATE TABLE IF NOT EXISTS supermarket_orders(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        receipt_no TEXT,
+        total REAL,
+        created_at TEXT
+    )
+    """)
+
+    conn.commit()
     conn.close()
+
+    print("DATABASE READY ✅")
 
 init_db()
 
 # =========================
-# 🔥 FIREBASE CONFIG (FIXED)
+# 🔢 EVOTE CODE GENERATOR
 # =========================
-if not firebase_admin._apps:
-    firebase_key_str = os.environ.get("FIREBASE_KEY")
-
-    if not firebase_key_str:
-        raise Exception("FIREBASE_KEY not set!")
-
-    firebase_key = json.loads(firebase_key_str)
-    cred = credentials.Certificate(firebase_key)
-    firebase_admin.initialize_app(cred)
-
-db = firestore.client()
+def generate_vote_code():
+    return str(random.randint(100000, 999999))
 
 # =========================
-# 🔥 FIRESTORE FUNCTIONS
+# 🇸🇴 SOMALIA TIME
 # =========================
-def get_restaurants_firestore():
-    restaurants = []
+def somalia_time():
+    return datetime.now(timezone(timedelta(hours=3)))
 
+def get_somali_time():
+    return datetime.now(timezone.utc) + timedelta(hours=3)
+
+# =========================
+# 🌐 GET SERVER IP
+# =========================
+def get_ip():
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     try:
-        docs = db.collection("restaurants").stream()
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+    finally:
+        s.close()
+    return ip
 
-        for doc in docs:
-            item = doc.to_dict()
-            item["id"] = doc.id
-            item["active"] = item.get("active", False)
-            restaurants.append(item)
-
-    except Exception as e:
-        print("Restaurant Load Error:", e)
-
-    return restaurants
-
-
-def get_schools_firestore():
-    schools = []
-
-    try:
-        docs = db.collection("schools").stream()
-
-        for d in docs:
-            item = d.to_dict()
-
-            item["id"] = d.id
-            item["name"] = item.get("name", "N/A")
-            item["phone"] = item.get("phone", "N/A")
-            item["password"] = item.get("password", "N/A")
-            item["school_code"] = item.get("school_code", d.id)
-
-            item["active"] = item.get("active", True)
-            item["status"] = item.get("status", "active")
-
-            expiry = item.get("expiry_date")
-            if expiry:
-                try:
-                    item["expiry_date"] = expiry
-                    item["is_expired"] = datetime.now() > datetime.fromisoformat(expiry)
-                except:
-                    item["is_expired"] = False
-            else:
-                item["expiry_date"] = "N/A"
-                item["is_expired"] = False
-
-            schools.append(item)
-
-        schools = sorted(
-            schools,
-            key=lambda x: x.get("expiry_date", ""),
-            reverse=True
-        )
-
-    except Exception as e:
-        print("School Load Error:", e)
-
-    return schools
-
-
-def get_supermarkets_firestore():
-    supermarkets = []
-
-    try:
-        docs = db.collection("supermarkets").stream()
-
-        for doc in docs:
-            item = doc.to_dict()
-            item["id"] = doc.id
-            item["active"] = item.get("active", False)
-            supermarkets.append(item)
-
-    except Exception as e:
-        print("Supermarket Load Error:", e)
-
-    return supermarkets
-
-
-def get_orders_firestore():
-    orders = []
-
-    try:
-        docs = db.collection("orders").stream()
-
-        for doc in docs:
-            item = doc.to_dict()
-            item["id"] = doc.id
-            orders.append(item)
-
-    except Exception as e:
-        print("Orders Load Error:", e)
-
-    return orders
+SERVER_IP = get_ip()
 
 # =========================
-# 🔥 FIREBASE HELPERS
+# 🎤 WEBRTC SIGNALING EVENTS
 # =========================
-def save_student_firestore(data):
-    db.collection("students").add(data)
+@socketio.on("voice_call")
+def voice_call(data):
+    emit("incoming_call", data, broadcast=True)
 
+@socketio.on("offer")
+def handle_offer(data):
+    emit("offer", data, broadcast=True)
 
-def get_students_firestore():
-    docs = db.collection("students").stream()
-    return [doc.to_dict() for doc in docs]
+@socketio.on("answer")
+def handle_answer(data):
+    emit("answer", data, broadcast=True)
 
+@socketio.on("ice_candidate")
+def handle_ice(data):
+    emit("ice_candidate", data, broadcast=True)
 
-def save_restaurant_firestore(data):
-    db.collection("restaurants").add(data)
+# =========================
+# 🏠 SOCKET ROOM JOIN
+# =========================
+@socketio.on("join_customer_room")
+def join_customer(data):
+    room = f"{data['rid']}_{data['table']}"
+    join_room(room)
+    emit("joined_room", {"room": room})
 
-
-def save_supermarket_firestore(data):
-    db.collection("supermarkets").add(data)
-
-
-def save_order_firestore(data):
-    db.collection("orders").add(data)
+@socketio.on("join_kitchen_room")
+def join_kitchen(data):
+    room = f"kitchen_{data['rid']}"
+    join_room(room)
+    emit("joined_kitchen", {"room": room})
 
 # =========================
 # 🔐 SYSTEM PASSWORDS FROM FIREBASE
@@ -259,7 +342,6 @@ def get_system_passwords():
 
     except Exception as e:
         print("Firebase password error:", e)
-
         return {
             "admin_password": "6993",
             "register_password": "6993",
@@ -269,31 +351,23 @@ def get_system_passwords():
             "evote_admin_password": "1851"
         }
 
-
-def check_school_active(school_id):
+# =========================
+# ⏰ AUTO CHECK EXPIRY
+# =========================
+def auto_check_expiry(rid):
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-
-    c.execute("SELECT expiry_date FROM schools WHERE id=?", (school_id,))
-    result = c.fetchone()
-
-    conn.close()
-
-    if not result:
-        return False
-
     try:
-        expiry = datetime.fromisoformat(result[0])
-    except:
-        return False
-
-    return datetime.now() <= expiry
-
-# =========================
-# 🇸🇴 SOMALIA TIME
-# =========================
-def somalia_time():
-    return datetime.now(timezone(timedelta(hours=3)))
+        c.execute("SELECT expiry, active FROM restaurants WHERE id=?", (rid,))
+        row = c.fetchone()
+        if row and row[0]:
+            expiry = datetime.strptime(row[0], "%Y-%m-%d")
+            if datetime.now() >= expiry:
+                c.execute("UPDATE restaurants SET active=0 WHERE id=?", (rid,))
+                conn.commit()
+    except Exception as e:
+        print("Auto Expiry Error:", e)
+    conn.close()
 
 # =========================
 # ⏰ AUTO ROUND PROGRESS
@@ -301,396 +375,146 @@ def somalia_time():
 def auto_round_progress():
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-
     try:
-        c.execute("""
-            SELECT current_round
-            FROM election_settings
-            WHERE id=1
-        """)
+        c.execute("SELECT current_round FROM election_settings WHERE id=1")
         row = c.fetchone()
         current_round = row[0] if row else 1
 
-        c.execute("""
-CREATE TABLE IF NOT EXISTS schools (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    school_name TEXT,
-    phone TEXT,
-    school_code TEXT,
-    password TEXT,
-    subscription_fee REAL,
-    start_date TEXT,
-    expiry_date TEXT
-)
-""")
-
-        c.execute("""
-            SELECT end_time
-            FROM election_timer
-            WHERE id=1
-        """)
+        c.execute("SELECT end_time FROM election_timer WHERE id=1")
         timer_row = c.fetchone()
 
         if timer_row and timer_row[0]:
-            end_time = datetime.strptime(
-                timer_row[0],
-                "%Y-%m-%d %H:%M:%S"
-            )
-
+            end_time = datetime.strptime(timer_row[0], "%Y-%m-%d %H:%M:%S")
             now = somalia_time().replace(tzinfo=None)
 
             if now >= end_time + timedelta(minutes=20):
                 next_round_no = current_round + 1
-
                 if next_round_no <= 3:
-                    c.execute("""
-                        UPDATE election_settings
-                        SET current_round=?
-                        WHERE id=1
-                    """, (next_round_no,))
-
+                    c.execute(
+                        "UPDATE election_settings SET current_round=? WHERE id=1",
+                        (next_round_no,)
+                    )
                     new_end = now + timedelta(minutes=60)
-
-                    c.execute("""
-                        UPDATE election_timer
-                        SET round_time_minutes=60,
-                            end_time=?
-                        WHERE id=1
-                    """, (
-                        new_end.strftime("%Y-%m-%d %H:%M:%S"),
-                    ))
-
+                    c.execute(
+                        "UPDATE election_timer SET round_time_minutes=60, end_time=? WHERE id=1",
+                        (new_end.strftime("%Y-%m-%d %H:%M:%S"),)
+                    )
                     conn.commit()
-
                     print(f"Auto moved to Round {next_round_no} ✅")
-
     except Exception as e:
         print("Auto Round Error:", e)
-
     conn.close()
 
 # =========================
-# ⏰ AUTO CHECK EXPIRY
+# 🔥 FIRESTORE FUNCTIONS
 # =========================
-def auto_check_expiry(rid):
-    conn = sqlite3.connect("database.db")
-    c = conn.cursor()
-
+def get_restaurants_firestore():
+    restaurants = []
     try:
-        c.execute("SELECT expiry, active FROM restaurants WHERE id=?", (rid,))
-        row = c.fetchone()
-
-        if row and row[0]:
-            expiry_date = row[0]
-
-            expiry = datetime.strptime(expiry_date, "%Y-%m-%d")
-
-            if datetime.now() >= expiry:
-                c.execute("""
-                    UPDATE restaurants
-                    SET active=0
-                    WHERE id=?
-                """, (rid,))
-                conn.commit()
-
+        docs = db.collection("restaurants").stream()
+        for doc in docs:
+            item = doc.to_dict()
+            item["id"] = doc.id
+            item["active"] = item.get("active", False)
+            item["name"] = item.get("name", "N/A")
+            item["phone"] = item.get("phone", "N/A")
+            item["username"] = item.get("username", "N/A")
+            item["kitchen_password"] = item.get("kitchen_password", "N/A")
+            item["password"] = item.get("password", "N/A")
+            item["expiry"] = item.get("expiry", "N/A")
+            restaurants.append(item)
     except Exception as e:
-        print("Auto Expiry Error:", e)
-
-    conn.close()
-
-
-from flask import Flask
-from flask_socketio import SocketIO
-import os
-import random
-
-# =========================
-# 🔢 EVOTE CODE GENERATOR
-# =========================
-def generate_vote_code():
-    return str(random.randint(100000, 999999))
+        print("Restaurant Load Error:", e)
+    return restaurants
 
 
-app = Flask(__name__, static_url_path='/static')
-app.secret_key = "super-secret-key-123"
-
-# ✅ SAX (HAL MAR OO KALIYA)
-socketio = SocketIO(app, cors_allowed_origins="*", async_mode="threading")
-
-UPLOAD_FOLDER = "static/uploads"
-QR_FOLDER = "static/qr"
-
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-os.makedirs(QR_FOLDER, exist_ok=True)
-
-
-# =========================
-# 🎤 WEBRTC SIGNALING EVENTS
-# =========================
-@socketio.on("voice_call")
-def voice_call(data):
-    emit("incoming_call", data, broadcast=True)
-
-
-@socketio.on("offer")
-def handle_offer(data):
-    emit("offer", data, broadcast=True)
-
-
-@socketio.on("answer")
-def handle_answer(data):
-    emit("answer", data, broadcast=True)
-
-
-@socketio.on("ice_candidate")
-def handle_ice(data):
-    emit("ice_candidate", data, broadcast=True)
-
-
-# =========================
-# 🏠 SOCKET ROOM JOIN
-# =========================
-@socketio.on("join_customer_room")
-def join_customer(data):
-    room = f"{data['rid']}_{data['table']}"
-    join_room(room)
-    emit("joined_room", {"room": room})
-
-
-@socketio.on("join_kitchen_room")
-def join_kitchen(data):
-    room = f"kitchen_{data['rid']}"
-    join_room(room)
-    emit("joined_kitchen", {"room": room})
-
-
-# =========================
-# 🌐 GET SERVER IP
-# =========================
-def get_ip():
-    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-
+def get_schools_firestore():
+    schools = []
     try:
-        s.connect(("8.8.8.8", 80))
-        ip = s.getsockname()[0]
-    finally:
-        s.close()
+        docs = db.collection("schools").stream()
+        for d in docs:
+            item = d.to_dict()
+            item["id"] = d.id
+            item["name"] = item.get("name", "N/A")
+            item["phone"] = item.get("phone", "N/A")
+            item["password"] = item.get("password", "N/A")
+            item["school_code"] = item.get("school_code", d.id)
+            item["active"] = item.get("active", True)
+            item["status"] = item.get("status", "active")
 
-    return ip
+            expiry = item.get("expiry_date")
+            if expiry:
+                try:
+                    item["expiry_date"] = expiry
+                    item["is_expired"] = datetime.now() > datetime.fromisoformat(expiry)
+                except:
+                    item["is_expired"] = False
+            else:
+                item["expiry_date"] = "N/A"
+                item["is_expired"] = False
+
+            schools.append(item)
+
+        schools = sorted(
+            schools,
+            key=lambda x: x.get("expiry_date", ""),
+            reverse=True
+        )
+    except Exception as e:
+        print("School Load Error:", e)
+    return schools
 
 
-SERVER_IP = get_ip()
+def get_supermarkets_firestore():
+    supermarkets = []
+    try:
+        docs = db.collection("supermarkets").stream()
+        for doc in docs:
+            item = doc.to_dict()
+            item["id"] = doc.id
+            item["active"] = item.get("active", False)
+            item["name"] = item.get("name", "N/A")
+            item["username"] = item.get("username", "N/A")
+            item["expiry"] = item.get("expiry", "N/A")
+            supermarkets.append(item)
+    except Exception as e:
+        print("Supermarket Load Error:", e)
+    return supermarkets
 
 
-# =========================
-# DATABASE
-# =========================
-def init_db():
-    print("INIT DB RUNNING...")
+def get_orders_firestore():
+    orders = []
+    try:
+        docs = db.collection("orders").stream()
+        for doc in docs:
+            item = doc.to_dict()
+            item["id"] = doc.id
+            item["restaurant_name"] = item.get("restaurant_name", "N/A")
+            item["food"] = item.get("food", "N/A")
+            item["table"] = item.get("table", "N/A")
+            item["time"] = item.get("time", "N/A")
+            item["status"] = item.get("status", "Pending")
+            orders.append(item)
+    except Exception as e:
+        print("Orders Load Error:", e)
+    return orders
 
-    conn = sqlite3.connect("database.db")
-    c = conn.cursor()
 
-    # =========================
-    # 🍽️ RESTAURANTS
-    # =========================
-    c.execute("""
-    CREATE TABLE IF NOT EXISTS restaurants(
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT,
-        phone TEXT,
-        username TEXT,
-        password TEXT,
-        price INTEGER,
-        expiry TEXT,
-        active INTEGER,
-        payment_number TEXT,
-        kitchen_password TEXT
-    )
-    """)
+def save_student_firestore(data):
+    db.collection("students").add(data)
 
-    # =========================
-    # ⚙️ SYSTEM SETTINGS
-    # =========================
-    c.execute("""
-    CREATE TABLE IF NOT EXISTS settings(
-        id INTEGER PRIMARY KEY,
-        admin_password TEXT,
-        register_password TEXT
-    )
-    """)
+def get_students_firestore():
+    docs = db.collection("students").stream()
+    return [doc.to_dict() for doc in docs]
 
-    c.execute("SELECT id FROM settings WHERE id=1")
-    existing_settings = c.fetchone()
+def save_restaurant_firestore(data):
+    db.collection("restaurants").add(data)
 
-    if not existing_settings:
-        c.execute("""
-            INSERT INTO settings
-            (id, admin_password, register_password)
-            VALUES (1, '8880', '8880')
-        """)
+def save_supermarket_firestore(data):
+    db.collection("supermarkets").add(data)
 
-    # =========================
-    # 🔐 EVOTE PASSWORD SETTINGS
-    # =========================
-    c.execute("""
-    CREATE TABLE IF NOT EXISTS evote_passwords(
-        id INTEGER PRIMARY KEY,
-        student_password TEXT,
-        candidate_password TEXT,
-        evote_admin_password TEXT
-    )
-    """)
-
-    c.execute("SELECT id FROM evote_passwords WHERE id=1")
-    existing_passwords = c.fetchone()
-
-    if not existing_passwords:
-        c.execute("""
-            INSERT INTO evote_passwords
-            (id, student_password, candidate_password, evote_admin_password)
-            VALUES (1, '12345', '12345', 'admin123')
-        """)
-
-    # =========================
-    # 🎓 STUDENTS
-    # =========================
-    c.execute("""
-    CREATE TABLE IF NOT EXISTS students(
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        student_id TEXT UNIQUE,
-        full_name TEXT,
-        class_name TEXT,
-        semester TEXT,
-        vote_code TEXT UNIQUE,
-        has_voted_round1 INTEGER DEFAULT 0,
-        has_voted_round2 INTEGER DEFAULT 0,
-        has_voted_round3 INTEGER DEFAULT 0
-    )
-    """)
-
-    # =========================
-    # 🧑‍💼 CANDIDATES
-    # =========================
-    c.execute("""
-    CREATE TABLE IF NOT EXISTS candidates(
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        full_name TEXT,
-        department TEXT,
-        round INTEGER DEFAULT 1,
-        votes INTEGER DEFAULT 0,
-        percentage REAL DEFAULT 0,
-        image TEXT
-    )
-    """)
-
-    # =========================
-    # 🗳️ ROUND SETTINGS
-    # =========================
-    c.execute("""
-    CREATE TABLE IF NOT EXISTS election_settings(
-        id INTEGER PRIMARY KEY,
-        current_round INTEGER DEFAULT 1,
-        round_end_time TEXT
-    )
-    """)
-
-    c.execute("SELECT id FROM election_settings WHERE id=1")
-    existing_round = c.fetchone()
-
-    if not existing_round:
-        c.execute("""
-            INSERT INTO election_settings
-            (id, current_round, round_end_time)
-            VALUES (1, 1, '')
-        """)
-
-    # =========================
-    # ⏰ ELECTION TIMER
-    # =========================
-    c.execute("""
-    CREATE TABLE IF NOT EXISTS election_timer(
-        id INTEGER PRIMARY KEY,
-        round_time_minutes INTEGER DEFAULT 60,
-        end_time TEXT
-    )
-    """)
-
-    c.execute("SELECT id FROM election_timer WHERE id=1")
-    existing_timer = c.fetchone()
-
-    if not existing_timer:
-        c.execute("""
-            INSERT INTO election_timer
-            (id, round_time_minutes, end_time)
-            VALUES (1, 60, '')
-        """)
-
-    # =========================
-    # ⏰ EVOTE TIMER
-    # =========================
-    c.execute("""
-    CREATE TABLE IF NOT EXISTS evote_timer(
-        id INTEGER PRIMARY KEY,
-        minutes INTEGER,
-        end_time TEXT
-    )
-    """)
-
-    c.execute("SELECT id FROM evote_timer WHERE id=1")
-    existing_evote_timer = c.fetchone()
-
-    if not existing_evote_timer:
-        c.execute("""
-            INSERT INTO evote_timer
-            (id, minutes, end_time)
-            VALUES (1, 60, '')
-        """)
-
-    # =========================
-    # 🛒 SUPERMARKETS
-    # =========================
-    c.execute("""
-    CREATE TABLE IF NOT EXISTS supermarkets(
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT,
-        username TEXT,
-        password TEXT,
-        price INTEGER,
-        expiry TEXT,
-        active INTEGER DEFAULT 1
-    )
-    """)
-
-    # =========================
-    # 🛒 SUPERMARKET PRODUCTS
-    # =========================
-    c.execute("""
-    CREATE TABLE IF NOT EXISTS supermarket_products(
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        barcode TEXT UNIQUE,
-        product_name TEXT,
-        price REAL
-    )
-    """)
-
-    # =========================
-    # 🧾 SUPERMARKET ORDERS
-    # =========================
-    c.execute("""
-    CREATE TABLE IF NOT EXISTS supermarket_orders(
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        receipt_no TEXT,
-        total REAL,
-        created_at TEXT
-    )
-    """)
-
-    conn.commit()
-    conn.close()
-
-    print("DATABASE READY ✅")
-
+def save_order_firestore(data):
+    db.collection("orders").add(data)
 
 @app.route("/")
 def home():
@@ -3153,8 +2977,8 @@ import os
 def school_register_page():
     return render_template("school_register.html")
 
-@app.route("/school_login")
-def school_login_page():
+@app.route("/school_login", methods=["GET", "POST"])  # Conflict!
+def school_login():
     return render_template("school_login.html")
 
 
