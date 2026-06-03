@@ -2976,12 +2976,6 @@ import os
 @app.route("/school_register")
 def school_register_page():
     return render_template("school_register.html")
-
-@app.route("/school_login", methods=["GET", "POST"])  # Conflict!
-def school_login():
-    return render_template("school_login.html")
-
-
 # ==========================================
 # 🔐 REGISTER SCHOOL
 # ==========================================
@@ -3019,6 +3013,13 @@ from datetime import datetime
 # =========================
 @app.route("/school_login", methods=["GET", "POST"])
 def school_login():
+    if request.method == "GET":
+        return render_template("school_login.html")
+    
+    # POST logic...
+    username = request.form.get("username", "").strip()
+    password = request.form.get("password", "").strip()
+    # ... etc
 
     try:
 
@@ -4782,4 +4783,11 @@ import os
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8080))
-    socketio.run(app, host="0.0.0.0", port=port)
+
+    init_db()
+
+    socketio.run(
+        app,
+        host="0.0.0.0",
+        port=port
+    )
