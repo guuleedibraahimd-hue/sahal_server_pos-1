@@ -4,7 +4,9 @@ from flask import (
     request,
     redirect,
     jsonify,
-    session
+    session,
+    url_for,
+    flash
 )
 
 from flask_socketio import (
@@ -14,6 +16,11 @@ from flask_socketio import (
 )
 
 from werkzeug.utils import secure_filename
+
+from werkzeug.security import (
+    generate_password_hash,
+    check_password_hash
+)
 
 import sqlite3
 import os
@@ -25,15 +32,20 @@ import re
 
 from zoneinfo import ZoneInfo
 from datetime import datetime, timedelta, timezone
-from werkzeug.security import generate_password_hash
 
 import firebase_admin
 from firebase_admin import credentials, firestore
 
 # =========================
-# FLASK APP - HAL MAR KELIYA
+# 🚀 FLASK APP
 # =========================
-app = Flask(__name__, static_url_path='/static')
+app = Flask(
+    __name__,
+    static_url_path="/static",
+    static_folder="static",
+    template_folder="templates"
+)
+
 app.secret_key = "sahal-secret-key"
 
 socketio = SocketIO(
@@ -42,21 +54,30 @@ socketio = SocketIO(
     async_mode="threading"
 )
 
+# =========================
+# 📁 FOLDERS
+# =========================
 UPLOAD_FOLDER = "static/uploads"
 QR_FOLDER = "static/qr"
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(QR_FOLDER, exist_ok=True)
 
+app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
+
 # =========================
-# FIREBASE - HAL MAR KELIYA
+# 🔥 FIREBASE
 # =========================
 firebase_key_str = os.environ.get("FIREBASE_KEY")
 
 if firebase_key_str:
+
     firebase_key = json.loads(firebase_key_str)
+
     cred = credentials.Certificate(firebase_key)
+
 else:
+
     cred = credentials.Certificate(
         "dhibic-dahab-online-store-firebase-adminsdk-fbsvc-70a4ef183a.json"
     )
