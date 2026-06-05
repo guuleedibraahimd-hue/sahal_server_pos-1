@@ -71,13 +71,10 @@ app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 firebase_key_str = os.environ.get("FIREBASE_KEY")
 
 if firebase_key_str:
-
     firebase_key = json.loads(firebase_key_str)
-
     cred = credentials.Certificate(firebase_key)
 
 else:
-
     cred = credentials.Certificate(
         "dhibic-dahab-online-store-firebase-adminsdk-fbsvc-70a4ef183a.json"
     )
