@@ -3766,20 +3766,36 @@ def dashboard_login():
 
         for user in users:
             data = user.to_dict()
+
             db_email = str(data.get("email", "")).strip().lower()
             db_password = str(data.get("password", "")).strip()
 
-            if db_email == email and db_password == password:
-                session["dashboard_user"] = db_email
-                return jsonify({"success": True, "redirect": "/view-orders"})
+            print("CHECKING:", db_email, db_password)
 
-        return jsonify({"success": False, "error": "Invalid Email or Password"})
+            if db_email == email and db_password == password:
+
+                session["dashboard_user"] = db_email
+
+                return jsonify({
+                    "success": True,
+                    "redirect": "/dashboard"
+                })
+
+        return jsonify({
+            "success": False,
+            "error": "Invalid Email or Password"
+        })
 
     except Exception as e:
         print("LOGIN ERROR:", e)
+
         import traceback
         traceback.print_exc()
-        return jsonify({"success": False, "error": str(e)})
+
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        })
 
 # ==============================
 # VIEW ORDERS PAGE
