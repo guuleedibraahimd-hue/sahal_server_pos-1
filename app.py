@@ -93,26 +93,6 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(QR_FOLDER, exist_ok=True)
 
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
-
-# =========================
-# 🔥 FIREBASE
-# =========================
-firebase_key_str = os.environ.get("FIREBASE_KEY")
-
-if firebase_key_str:
-    firebase_key = json.loads(firebase_key_str)
-    cred = credentials.Certificate(firebase_key)
-
-else:
-    cred = credentials.Certificate(
-        "dhibic-dahab-online-store-firebase-adminsdk-fbsvc-70a4ef183a.json"
-    )
-
-if not firebase_admin._apps:
-    firebase_admin.initialize_app(cred)
-
-db = firestore.client()
-
 # =========================
 # DATABASE PATH
 # =========================
