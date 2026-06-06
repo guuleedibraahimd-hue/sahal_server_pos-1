@@ -3782,7 +3782,8 @@ def update_info(doc_id):
     except Exception as e:
 
         return str(e)
-@app.route("/dashboard_login", methods=["POST"])  # ✅ @ hore u geli
+
+@app.route("/dashboard_login", methods=["POST"])
 def dashboard_login():
     try:
         email = request.form.get("email", "").strip().lower()
@@ -3824,91 +3825,36 @@ def dashboard_login():
             "error": str(e)
         }), 500
 
+
 # ==============================
 # VIEW ORDERS PAGE
 # ==============================
 @app.route("/view-orders")
 def view_orders():
-
     if "dashboard_user" not in session:
         return redirect("/")
 
     try:
-
-        orders_ref = db.collection(
-            "orders"
-        ).limit(50).stream()
+        docs = dhibic_db.collection(
+            "data_orders"
+        ).order_by(
+            "createdAt",
+            direction=firestore.Query.DESCENDING
+        ).limit(200).get()
 
         orders = []
-
-        for doc in orders_ref:
-
-            data = doc.to_dict()
-
+        for doc in docs:
+            d = doc.to_dict()
             orders.append({
-
-                "docId": doc.id,
-
-                "referenceId": str(
-                    data.get("referenceId", "")
-                )[-4:],
-
-                "phone": data.get("phone", ""),
-
-                "receiverPhone": data.get(
-                    "receiverPhone",
-                    ""
-                ),
-
-                "merchantName": data.get(
-                    "merchantName",
-                    "N/A"
-                ),
-
-                "merchantPhone": data.get(
-                    "merchantPhone",
-                    "N/A"
-                ),
-
-                "otherMerchantName": data.get(
-                    "otherMerchantName",
-                    "N/A"
-                ),
-
-                "otherMerchantPhone": data.get(
-                    "otherMerchantPhone",
-                    "N/A"
-                ),
-
-                "itemName": data.get(
-                    "productName",
-                    "Product"
-                ),
-
-                "quantity": data.get(
-                    "quantity",
-                    1
-                ),
-
-                "amount": data.get(
-                    "amount",
-                    0
-                ),
-
-                "status": data.get(
-                    "status",
-                    "PENDING"
-                ),
-
-                "address": data.get(
-                    "address",
-                    "Mogadishu"
-                ),
-
-                "date": "",
-
-                "time": ""
-
+                "docId":         doc.id,
+                "referenceId":   d.get("referenceId", ""),
+                "senderPhone":   d.get("senderPhone", "N/A"),
+                "receiverPhone": d.get("receiverPhone", "N/A"),
+                "packageName":   d.get("packageName", "N/A"),
+                "packageData":   d.get("packageData", ""),
+                "description":   d.get("description", ""),
+                "amount":        d.get("amount", "0"),
+                "status":        d.get("status", "PENDING"),
             })
 
         return render_template(
@@ -3917,11 +3863,9 @@ def view_orders():
         )
 
     except Exception as e:
-
         import traceback
         traceback.print_exc()
-
-        return str(e)
+        return f"Error: {str(e)}", 500
 
 
 # ==============================
@@ -3929,23 +3873,18 @@ def view_orders():
 # ==============================
 @app.route("/approve-order/<doc_id>", methods=["POST"])
 def approve_order(doc_id):
+    if "dashboard_user" not in session:
+        return jsonify({"success": False, "error": "Not logged in"})
 
     try:
-
-        db.collection(
-            "orders"
-        ).document(
-            doc_id
-        ).update({
+        dhibic_db.collection(
+            "data_orders"
+        ).document(doc_id).update({
             "status": "APPROVED"
         })
-
-        return jsonify({
-            "success": True
-        })
+        return jsonify({"success": True})
 
     except Exception as e:
-
         return jsonify({
             "success": False,
             "error": str(e)
