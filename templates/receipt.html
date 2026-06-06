@@ -1,53 +1,287 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Receipt</title>
 
 <style>
-body{
-    font-family: monospace;
-    text-align:center;
-    padding:20px;
-    background:#f5f5f5;
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    font-family: 'Courier New', Courier, monospace;
+    background: #e8e8e8;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+    min-height: 100vh;
 }
 
-.receipt{
-    width:300px;
-    margin:auto;
-    border:1px dashed #000;
-    padding:15px;
-    background:#fff;
+.receipt-wrapper {
+    position: relative;
 }
 
-hr{border:dashed 1px #000;}
-
-.row{
-    display:flex;
-    justify-content:space-between;
-    font-size:13px;
-    margin:2px 0;
+/* Jagged top edge - thermal paper look */
+.receipt-top {
+    width: 320px;
+    height: 15px;
+    background:
+        radial-gradient(circle at 10px 0, #e8e8e8 6px, #fff 7px) 0 0 / 20px 15px repeat-x;
 }
 
-.center{text-align:center;}
-.bold{font-weight:bold;}
-
-button{
-    padding:10px 15px;
-    background:#0a7cff;
-    color:white;
-    border:none;
-    border-radius:6px;
-    cursor:pointer;
+.receipt {
+    width: 320px;
+    background: #fff;
+    padding: 20px 22px;
+    position: relative;
 }
 
-/* 🔥 PRINT CLEAN */
-@media print{
-    body{
-        background:#fff;
+/* Jagged bottom edge */
+.receipt-bottom {
+    width: 320px;
+    height: 15px;
+    background:
+        radial-gradient(circle at 10px 15px, #e8e8e8 6px, #fff 7px) 0 0 / 20px 15px repeat-x;
+}
+
+/* ===== HEADER ===== */
+.restaurant-name {
+    font-size: 20px;
+    font-weight: 900;
+    text-align: center;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: #111;
+    margin-bottom: 2px;
+}
+
+.restaurant-sub {
+    text-align: center;
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: #555;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+}
+
+.restaurant-phone {
+    text-align: center;
+    font-size: 11px;
+    color: #333;
+    margin-bottom: 4px;
+}
+
+.divider-double {
+    border: none;
+    border-top: 2px solid #111;
+    border-bottom: 1px solid #111;
+    height: 4px;
+    margin: 8px 0;
+}
+
+.divider {
+    border: none;
+    border-top: 1px dashed #999;
+    margin: 8px 0;
+}
+
+/* ===== META ===== */
+.meta-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: #333;
+    margin: 3px 0;
+}
+
+.invoice-title {
+    text-align: center;
+    font-size: 12px;
+    font-weight: bold;
+    letter-spacing: 2px;
+    margin: 6px 0;
+}
+
+/* ===== ITEMS TABLE ===== */
+.col-headers {
+    display: grid;
+    grid-template-columns: 1fr 40px 55px 55px;
+    font-size: 10px;
+    font-weight: bold;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 4px 0;
+    color: #111;
+}
+
+.col-headers span:not(:first-child) {
+    text-align: right;
+}
+
+.item-row {
+    display: grid;
+    grid-template-columns: 1fr 40px 55px 55px;
+    font-size: 11px;
+    padding: 4px 0;
+    color: #222;
+    border-bottom: 1px dotted #ddd;
+}
+
+.item-row span:not(:first-child) {
+    text-align: right;
+}
+
+.item-name {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding-right: 4px;
+    text-transform: capitalize;
+}
+
+/* ===== TOTALS ===== */
+.total-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    padding: 3px 0;
+    color: #333;
+}
+
+.grand-total-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 15px;
+    font-weight: 900;
+    padding: 6px 0;
+    color: #000;
+    letter-spacing: 1px;
+}
+
+/* ===== PAYMENT ===== */
+.payment-box {
+    background: #f7f7f7;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 8px 10px;
+    margin: 6px 0;
+    text-align: center;
+    font-size: 11px;
+    color: #333;
+}
+
+.payment-box .pay-label {
+    font-size: 9px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #888;
+    margin-bottom: 3px;
+}
+
+.payment-box .pay-code {
+    font-size: 14px;
+    font-weight: bold;
+    color: #111;
+    letter-spacing: 1px;
+}
+
+/* ===== FOOTER ===== */
+.thank-you {
+    text-align: center;
+    font-size: 13px;
+    font-weight: bold;
+    letter-spacing: 3px;
+    margin: 8px 0 2px;
+    text-transform: uppercase;
+}
+
+.footer-note {
+    text-align: center;
+    font-size: 9px;
+    color: #888;
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+}
+
+.powered {
+    text-align: center;
+    font-size: 9px;
+    color: #aaa;
+    letter-spacing: 1px;
+    margin-top: 4px;
+}
+
+/* ===== BARCODE ===== */
+.barcode-area {
+    text-align: center;
+    margin: 8px 0 2px;
+}
+
+.barcode-bars {
+    display: inline-flex;
+    gap: 0;
+    height: 35px;
+    align-items: flex-end;
+}
+
+.barcode-bars span {
+    display: inline-block;
+    background: #000;
+    height: 100%;
+}
+
+.barcode-text {
+    font-size: 8px;
+    letter-spacing: 2px;
+    color: #555;
+    margin-top: 2px;
+}
+
+/* ===== PRINT BUTTON ===== */
+.print-btn-area {
+    margin-top: 20px;
+    text-align: center;
+}
+
+.print-btn {
+    padding: 12px 30px;
+    background: #1a1a1a;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 15px;
+    font-family: 'Courier New', monospace;
+    cursor: pointer;
+    letter-spacing: 2px;
+    transition: background 0.2s;
+}
+
+.print-btn:hover {
+    background: #444;
+}
+
+/* ===== LOADING ===== */
+#loading {
+    text-align: center;
+    padding: 40px;
+    font-size: 14px;
+    color: #555;
+    letter-spacing: 2px;
+}
+
+/* ===== PRINT STYLES ===== */
+@media print {
+    body {
+        background: #fff;
+        padding: 0;
     }
-    button{
-        display:none;
+    .print-btn-area { display: none !important; }
+    .receipt-top, .receipt-bottom { display: none; }
+    .receipt {
+        width: 100%;
+        padding: 10px;
+        box-shadow: none;
     }
 }
 </style>
@@ -55,109 +289,175 @@ button{
 
 <body>
 
-<div class="receipt" id="printArea">
+<div id="loading">⏳ Loading receipt...</div>
 
-    <h3 id="name">Restaurant</h3>
-    <p id="phone"></p>
+<div id="receiptContainer" style="display:none;">
+    <div class="receipt-wrapper">
+        <div class="receipt-top"></div>
+        <div class="receipt" id="printArea">
 
-    <p id="ref"></p>
+            <div class="restaurant-name" id="rName">—</div>
+            <div class="restaurant-sub">RESTAURANT &amp; CAFÉ</div>
+            <div class="restaurant-phone" id="rPhone"></div>
 
-    <p class="center bold">SALES INVOICE</p>
-    <p>Table: <span id="table"></span></p>
-    <p id="time"></p>
+            <div class="divider-double"></div>
 
-    <hr>
+            <div class="invoice-title">★ SALES INVOICE ★</div>
 
-    <div class="row bold">
-        <span>Item</span>
-        <span>Qty</span>
-        <span>Rate</span>
-        <span>Amount</span>
+            <div class="meta-row">
+                <span>📅 <span id="rDate"></span></span>
+                <span>🕐 <span id="rTime"></span></span>
+            </div>
+            <div class="meta-row">
+                <span>Table: <strong id="rTable"></strong></span>
+                <span>Ref: <span id="rRef"></span></span>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="col-headers">
+                <span>Item</span>
+                <span>Qty</span>
+                <span>Rate</span>
+                <span>Amt</span>
+            </div>
+
+            <div class="divider"></div>
+
+            <div id="itemsArea"></div>
+
+            <div class="divider"></div>
+
+            <div class="total-row">
+                <span>Sub-total</span>
+                <span id="rSubtotal"></span>
+            </div>
+            <div class="total-row">
+                <span>VAT (5%)</span>
+                <span id="rVat"></span>
+            </div>
+
+            <div class="divider-double"></div>
+
+            <div class="grand-total-row">
+                <span>TOTAL</span>
+                <span id="rTotal"></span>
+            </div>
+
+            <div class="divider"></div>
+
+            <!-- PAYMENT -->
+            <div class="payment-box">
+                <div class="pay-label">💳 Payment Info</div>
+                <div class="pay-code" id="rPayment"></div>
+            </div>
+
+            <div class="divider"></div>
+
+            <!-- BARCODE -->
+            <div class="barcode-area">
+                <div class="barcode-bars" id="barcodeEl"></div>
+                <div class="barcode-text" id="barcodeText"></div>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="thank-you">★ THANK YOU ★</div>
+            <div class="footer-note">We appreciate your business!</div>
+            <div class="footer-note">• PLEASE COME AGAIN •</div>
+            <div class="powered">Powered by Sahal Server</div>
+
+        </div>
+        <div class="receipt-bottom"></div>
     </div>
 
-    <hr>
-
-    <div id="items"></div>
-
-    <hr>
-
-    <div class="row">
-        <span>Subtotal</span>
-        <span id="subtotal"></span>
+    <div class="print-btn-area">
+        <button class="print-btn" onclick="window.print()">🖨 PRINT RECEIPT</button>
     </div>
-
-    <div class="row">
-        <span>VAT (5%)</span>
-        <span id="vat"></span>
-    </div>
-
-    <div class="row bold">
-        <span>Grand Total</span>
-        <span id="total"></span>
-    </div>
-
-    <hr>
-
-    <p id="payment"></p>
-
-    <p style="font-size:11px;">Powered by Sahal Server</p>
-
 </div>
 
-<br>
-<button onclick="window.print()">🖨 Print</button>
-
 <script>
-function formatMoney(num){
-    return "$" + Number(num).toFixed(2);
+function fmt(n) {
+    return "$" + Number(n).toFixed(2);
 }
 
-async function loadReceipt(){
-    try{
-        let rid = "{{ rid }}";
-        let table = "{{ table }}";
+function generateBarcode(text) {
+    const el = document.getElementById("barcodeEl");
+    el.innerHTML = "";
+    // Simple visual barcode
+    const pattern = [3,1,2,1,3,2,1,2,1,3,1,2,2,1,3,1,2,1,2,3,1,1,2,3,1,2,1,2,1,3];
+    pattern.forEach(w => {
+        const bar = document.createElement("span");
+        bar.style.width = (w * 2) + "px";
+        bar.style.marginRight = "1px";
+        el.appendChild(bar);
+        // gap
+        const gap = document.createElement("span");
+        gap.style.width = "2px";
+        gap.style.background = "white";
+        el.appendChild(gap);
+    });
+    document.getElementById("barcodeText").innerText = text;
+}
 
-        let res = await fetch(`/receipt/${rid}/${table}`);
-        let data = await res.json();
+async function loadReceipt() {
+    try {
+        const rid   = "{{ rid }}";
+        const table = "{{ table }}";
 
-        if(data.error){
-            document.body.innerHTML = "<h3>No receipt found ❌</h3>";
+        const res  = await fetch(`/receipt/${rid}/${table}`);
+        const data = await res.json();
+
+        if (data.error) {
+            document.getElementById("loading").innerHTML =
+                "<b>❌ Receipt not found</b>";
             return;
         }
 
-        document.getElementById("name").innerText = data.restaurant_name || "Restaurant";
-        document.getElementById("phone").innerText = data.phone || "";
-        document.getElementById("table").innerText = data.table || "";
-        document.getElementById("time").innerText = data.time || "";
-        document.getElementById("payment").innerText = data.payment || "";
-        document.getElementById("ref").innerText = "Ref: " + (data.ref || "");
+        // Fill header
+        document.getElementById("rName").innerText    = (data.restaurant_name || "Restaurant").toUpperCase();
+        document.getElementById("rPhone").innerText   = data.phone ? "📞 " + data.phone : "";
+        document.getElementById("rPayment").innerText = data.payment || "—";
+        document.getElementById("rTable").innerText   = data.table || "—";
+        document.getElementById("rRef").innerText     = data.ref   || "—";
 
-        let itemsHTML = "";
+        // Date / Time
+        const now = new Date();
+        document.getElementById("rDate").innerText = now.toLocaleDateString("en-GB");
+        document.getElementById("rTime").innerText = now.toLocaleTimeString("en-US", {hour:'2-digit', minute:'2-digit'});
 
-        data.items.forEach(i=>{
-            itemsHTML += `
-            <div class="row">
-                <span>${i.food}</span>
+        // Items
+        let html = "";
+        (data.items || []).forEach(i => {
+            html += `
+            <div class="item-row">
+                <span class="item-name">${i.food}</span>
                 <span>${i.qty}</span>
-                <span>${formatMoney(i.price)}</span>
-                <span>${formatMoney(i.total)}</span>
+                <span>${fmt(i.price)}</span>
+                <span>${fmt(i.total)}</span>
             </div>`;
         });
+        document.getElementById("itemsArea").innerHTML = html;
 
-        document.getElementById("items").innerHTML = itemsHTML;
+        // Totals
+        document.getElementById("rSubtotal").innerText = fmt(data.subtotal || 0);
+        document.getElementById("rVat").innerText      = fmt(data.vat      || 0);
+        document.getElementById("rTotal").innerText    = fmt(data.total    || 0);
 
-        document.getElementById("subtotal").innerText = formatMoney(data.subtotal || 0);
-        document.getElementById("vat").innerText = formatMoney(data.vat || 0);
-        document.getElementById("total").innerText = formatMoney(data.total || 0);
+        // Barcode
+        generateBarcode(data.ref || "SAHALPOS");
 
-        // 🔥 AUTO PRINT
-        setTimeout(()=>{
-            window.print();
-        },800);
+        // Show receipt
+        document.getElementById("loading").style.display = "none";
+        document.getElementById("receiptContainer").style.display = "block";
 
-    }catch(err){
-        document.body.innerHTML = "<h3>Error loading receipt ❌</h3>";
-        console.log(err);
+        // ✅ AUTO PRINT after 800ms
+        setTimeout(() => { window.print(); }, 800);
+
+    } catch (err) {
+        document.getElementById("loading").innerHTML =
+            "<b>❌ Error loading receipt</b>";
+        console.error(err);
     }
 }
 

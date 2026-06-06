@@ -3433,110 +3433,60 @@ def clear_calls(rid):
     return "ok"
 
 # =========================
-# 🔔 CHECK NEW ORDER
+# 📦 SEND ORDER → auto open receipt
 # =========================
-last_order_map = {}
-
-@app.route("/check_new_order/<rid>")
-def check_new_order(rid):
+@app.route("/send_order", methods=["POST"])
+def send_order():
     try:
-        conn = sqlite3.connect("database.db")
-        c = conn.cursor()
+        data = request.get_json()
 
-        c.execute("""
-            SELECT id, table_no
-            FROM orders
-            WHERE restaurant_id=?
-            ORDER BY id DESC
-            LIMIT 1
-        """, (rid,))
+        rid        = data.get("restaurant_id")
+        table      = data.get("table_no")
+        items      = data.get("items", [])      # [{"food":"baasto","qty":1,"price":2.5}, ...]
+        total      = data.get("total", 0)
 
-        row = c.fetchone()
-        conn.close()
+        if not rid or not table or not items:
+            return jsonify({"success": False, "error": "Missing data ❌"})
 
-        if not row:
-            return jsonify({"new_order": False})
-
-        order_id, table = row
-
-        if rid not in last_order_map:
-            last_order_map[rid] = order_id
-            return jsonify({"new_order": False})
-
-        if order_id != last_order_map[rid]:
-            last_order_map[rid] = order_id
-            return jsonify({
-                "new_order": True,
-                "table": table
-            })
-
-        return jsonify({"new_order": False})
-
-    except Exception as e:
-        return jsonify({"error": str(e)})
-
-@app.route("/receipt/<rid>/<table>")
-def generate_receipt(rid, table):
-    try:
-        r_doc = db.collection("restaurants").document(rid).get()
-        restaurant = r_doc.to_dict() if r_doc.exists else {}
-
-        # ✅ FIX: FILTER BY RID + TABLE
-        orders_ref = db.collection("orders") \
+        # ✅ Get next order number
+        last_order = db.collection("orders") \
             .where("restaurant_id", "==", rid) \
-            .where("table_no", "==", table) \
-            .stream()
+            .order_by("order_number", direction=firestore.Query.DESCENDING) \
+            .limit(1).stream()
 
-        rows = [doc.to_dict() for doc in orders_ref]
+        order_number = 1
+        for d in last_order:
+            order_number = (d.to_dict().get("order_number") or 0) + 1
 
-        if not rows:
-            return jsonify({"error": "No order found"})
+        # ✅ Save order to Firestore
+        db.collection("orders").add({
+            "restaurant_id": rid,
+            "table_no":      str(table),
+            "items":         items,
+            "total":         float(total),
+            "order_number":  order_number,
+            "status":        "pending",
+            "time":          datetime.now().strftime("%Y-%m-%d %I:%M:%S %p")
+        })
 
-        items = []
-        grand_total = 0
-
-        for r in rows:
-            name = r.get("food") or r.get("item_name") or "Item"
-            qty = int(r.get("qty") or r.get("quantity") or 1)
-            price = float(r.get("price", 0))
-
-            total = qty * price
-
-            items.append({
-                "food": name,
-                "qty": qty,
-                "price": price,
-                "total": total
-            })
-
-            grand_total += total
-
-        vat = round(grand_total * 0.05, 2)
-        final_total = round(grand_total + vat, 2)
-
+        # ✅ Return receipt URL so frontend can open it
         return jsonify({
-            "restaurant_name": restaurant.get("name", "Restaurant"),
-            "phone": restaurant.get("phone", ""),
-            "payment": restaurant.get("payment", ""),
-            "table": table,
-            "items": items,
-            "subtotal": grand_total,
-            "vat": vat,
-            "total": final_total,
-            "time": datetime.now().strftime("%Y-%m-%d %H:%M"),
-            "ref": f"SALE{int(datetime.now().timestamp())}"
+            "success":     True,
+            "message":     "Waan helnay dalabkaaga 🎉",
+            "receipt_url": f"/receipt_view/{rid}/{table}"
         })
 
     except Exception as e:
-        return jsonify({"error": str(e)})
+        print("SEND ORDER ERROR:", e)
+        return jsonify({"success": False, "error": str(e)})
+
 
 # =========================
-# 🧾 RECEIPT VIEW PAGE
+# 🧾 RECEIPT PAGE
 # =========================
 @app.route("/receipt_view/<rid>/<table>")
 def receipt_view(rid, table):
     try:
-        # hubi values madhan maaha
         if not rid or not table:
             return "Invalid receipt request", 400
 
@@ -3545,40 +3495,112 @@ def receipt_view(rid, table):
             rid=str(rid),
             table=str(table)
         )
-
     except Exception as e:
-        return f"Error loading receipt page: {str(e)}", 500
+        return f"Error: {str(e)}", 500
 
-        # ==========================================
-        # 🔥 SAVE TO FIREBASE
-        # ==========================================
-        db.collection("system_info").add({
 
-            "title": title,
-            "content": content,
-            "image": image_name,
-            "video": video_name,
+# =========================
+# 📊 RECEIPT DATA API
+# =========================
+@app.route("/receipt/<rid>/<table>")
+def generate_receipt(rid, table):
+    try:
+        # Get restaurant info
+        r_doc = db.collection("restaurants").document(rid).get()
+        restaurant = r_doc.to_dict() if r_doc.exists else {}
 
-            # 🔥 EXTRA INFO
-            "date": datetime.now().strftime("%Y-%m-%d"),
-            "timestamp": datetime.utcnow(),
+        # Get latest order for this table
+        orders_ref = db.collection("orders") \
+            .where("restaurant_id", "==", rid) \
+            .where("table_no", "==", str(table)) \
+            .order_by("order_number", direction=firestore.Query.DESCENDING) \
+            .limit(1).stream()
 
-            # 🔥 ORDER SYSTEM
-            "position": int(time.time())
+        order_data = None
+        for doc in orders_ref:
+            order_data = doc.to_dict()
 
-        })
+        if not order_data:
+            return jsonify({"error": "No order found"})
+
+        raw_items = order_data.get("items", [])
+        items = []
+        grand_total = 0
+
+        for i in raw_items:
+            name  = i.get("food") or i.get("item_name") or "Item"
+            qty   = int(i.get("qty") or i.get("quantity") or 1)
+            price = float(i.get("price", 0))
+            total = qty * price
+
+            items.append({
+                "food":  name,
+                "qty":   qty,
+                "price": price,
+                "total": total
+            })
+            grand_total += total
+
+        vat         = round(grand_total * 0.05, 2)
+        final_total = round(grand_total + vat, 2)
 
         return jsonify({
-            "success": True,
-            "message": "Information saved successfully"
+            "restaurant_name": restaurant.get("name", "Restaurant"),
+            "phone":           restaurant.get("phone", ""),
+            "payment":         restaurant.get("payment", ""),   # USSD code
+            "table":           table,
+            "items":           items,
+            "subtotal":        round(grand_total, 2),
+            "vat":             vat,
+            "total":           final_total,
+            "time":            datetime.now().strftime("%Y-%m-%d %H:%M"),
+            "ref":             f"ORD-{order_data.get('order_number', 0):04d}"
         })
 
     except Exception as e:
+        print("RECEIPT ERROR:", e)
+        return jsonify({"error": str(e)})
 
-        return jsonify({
-            "success": False,
-            "error": str(e)
-        })
+
+# =========================
+# 🔔 CHECK NEW ORDER (Kitchen)
+# =========================
+last_order_map = {}
+
+@app.route("/check_new_order/<rid>")
+def check_new_order(rid):
+    try:
+        docs = db.collection("orders") \
+            .where("restaurant_id", "==", rid) \
+            .order_by("order_number", direction=firestore.Query.DESCENDING) \
+            .limit(1).stream()
+
+        latest_id  = None
+        latest_tbl = None
+
+        for d in docs:
+            od = d.to_dict()
+            latest_id  = od.get("order_number")
+            latest_tbl = od.get("table_no")
+
+        if latest_id is None:
+            return jsonify({"new_order": False})
+
+        if rid not in last_order_map:
+            last_order_map[rid] = latest_id
+            return jsonify({"new_order": False})
+
+        if latest_id != last_order_map[rid]:
+            last_order_map[rid] = latest_id
+            return jsonify({
+                "new_order": True,
+                "table":     latest_tbl
+            })
+
+        return jsonify({"new_order": False})
+
+    except Exception as e:
+        return jsonify({"error": str(e)})
 
 # ==========================================
 # 📢 PUBLIC INFO PAGE (READ ONLY)
