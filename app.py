@@ -68,9 +68,7 @@ socketio = SocketIO(
 # =========================
 
 firebase_key_str = os.environ.get("FIREBASE_KEY")
-
 firebase_key = json.loads(firebase_key_str)
-
 cred1 = credentials.Certificate(firebase_key)
 
 sahal_app = firebase_admin.initialize_app(
@@ -78,34 +76,22 @@ sahal_app = firebase_admin.initialize_app(
     name="sahal_app"
 )
 
-db = firestore.client(sahal_app)
-db = firestore.client(sahal_app)
+db = firestore.client(sahal_app)  # ✅ hal mar oo kaliya
 
 # =========================
 # 💎 DHIBIC DAHAB FIREBASE
 # =========================
 
-dhibic_key_str = os.environ.get(
-    "DHIBIC_FIREBASE_KEY"
-)
-
-dhibic_key = json.loads(
-    dhibic_key_str
-)
-
-cred2 = credentials.Certificate(
-    dhibic_key
-)
+dhibic_key_str = os.environ.get("DHIBIC_FIREBASE_KEY")
+dhibic_key = json.loads(dhibic_key_str)
+cred2 = credentials.Certificate(dhibic_key)
 
 dhibic_app = firebase_admin.initialize_app(
     cred2,
     name="dhibic_app"
 )
 
-dhibic_db = firestore.client(
-    dhibic_app
-)
-
+dhibic_db = firestore.client(dhibic_app)  # ✅ hal mar oo kaliya
 # =========================
 # 📁 FOLDERS
 # =========================
@@ -731,7 +717,10 @@ def logout_register():
     session.pop("register_ok", None)
     return redirect("/register")
 
-
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect("/")
 # =========================
 # 🔐 CHANGE SYSTEM PASSWORDS
 # =========================
@@ -3793,50 +3782,33 @@ def update_info(doc_id):
     except Exception as e:
 
         return str(e)
-@app.route("/dashboard_login", methods=["POST"])
+@app.route("/dashboard_login", methods=["POST"])  # ✅ @ hore u geli
 def dashboard_login():
-
     try:
-
         email = request.form.get("email", "").strip().lower()
         password = request.form.get("password", "").strip()
 
-        # FIND USER BY EMAIL ONLY
         docs = dhibic_db.collection(
             "dashboard_users"
         ).where(
-            "email",
-            "==",
-            email
+            "email", "==", email
         ).limit(1).get()
 
-        # USER NOT FOUND
         if len(docs) == 0:
-
             return jsonify({
                 "success": False,
                 "error": "Email not found"
             })
 
-        # GET USER DATA
         user_data = docs[0].to_dict()
+        db_password = str(user_data.get("password", "")).strip()
 
-        db_password = str(
-            user_data.get(
-                "password",
-                ""
-            )
-        ).strip()
-
-        # PASSWORD CHECK
         if db_password != password:
-
             return jsonify({
                 "success": False,
                 "error": "Wrong password"
             })
 
-        # LOGIN SUCCESS
         session["dashboard_user"] = email
 
         return jsonify({
@@ -3845,10 +3817,8 @@ def dashboard_login():
         })
 
     except Exception as e:
-
         import traceback
         traceback.print_exc()
-
         return jsonify({
             "success": False,
             "error": str(e)
