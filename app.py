@@ -2117,13 +2117,12 @@ def clean_table_menu(restaurant_slug, table_no):
         return f"Menu Error ❌ {str(e)}"
 
 # =====================================
-# 📦 CREATE ORDER - FIXED
+# 📦 CREATE ORDER - FINAL FIX
 # =====================================
 @app.route("/order/<rid>", methods=["POST"])
 def create_order(rid):
     try:
         data = request.get_json()
-
         if not data:
             return jsonify({"error": "No data"}), 400
 
@@ -2133,11 +2132,10 @@ def create_order(rid):
         if not table or not cart:
             return jsonify({"error": "Invalid order"}), 400
 
-        # Build items text + total
         items_text  = ", ".join([f"{i.get('qty')}x {i.get('name')}" for i in cart])
         total_price = sum(float(i.get("price", 0)) * int(i.get("qty", 1)) for i in cart)
 
-        # Save to Firestore with a known ID
+        # ✅ HAL MEEl KALIYA - restaurants subcollection
         order_ref = db.collection("restaurants").document(rid)\
                       .collection("orders").document()
         order_id  = order_ref.id
@@ -2148,7 +2146,8 @@ def create_order(rid):
             "table":      table,
             "price":      total_price,
             "status":     "pending",
-            "created_at": datetime.utcnow()
+            "created_at": datetime.utcnow(),
+            "kitchen_cleared": False
         })
 
         return jsonify({
@@ -3536,21 +3535,21 @@ def generate_receipt(rid, table):
         return jsonify({"error": str(e)})
     
 # =====================================
-# 🧾 RECEIPT PAGE - FIXED
+# 🧾 RECEIPT - FINAL FIX
 # =====================================
 @app.route("/receipt/<rid>/<order_id>")
 def receipt(rid, order_id):
     try:
+        # ✅ Isla subcollection-ka
         order_ref = db.collection("restaurants").document(rid)\
                       .collection("orders").document(order_id)
         order_doc = order_ref.get()
 
         if not order_doc.exists:
-            return "Receipt not found ❌", 404
+            return render_template("receipt_error.html"), 404
 
         order = order_doc.to_dict()
 
-        # Get restaurant info
         rest_doc = db.collection("restaurants").document(rid).get()
         rest     = rest_doc.to_dict() if rest_doc.exists else {}
 
@@ -3559,7 +3558,6 @@ def receipt(rid, order_id):
         vat      = round(subtotal * 0.05, 2)
         total    = round(subtotal + vat, 2)
 
-        # Format items
         items = []
         for i in cart:
             qty   = int(i.get("qty", 1))
@@ -3571,21 +3569,25 @@ def receipt(rid, order_id):
                 "total": round(qty * price, 2)
             })
 
-        return jsonify({
-            "restaurant_name": rest.get("name", "Restaurant"),
-            "phone":           rest.get("phone", ""),
-            "payment":         rest.get("payment", ""),
-            "table":           order.get("table", ""),
-            "ref":             order_id[:8].upper(),
-            "items":           items,
-            "subtotal":        subtotal,
-            "vat":             vat,
-            "total":           total
-        })
+        return render_template(
+            "receipt.html",
+            rid             = rid,
+            order_id        = order_id,
+            restaurant_name = rest.get("name", "Restaurant"),
+            phone           = rest.get("phone", ""),
+            payment         = rest.get("payment", ""),
+            table           = order.get("table", ""),
+            ref             = order_id[:8].upper(),
+            items           = items,
+            subtotal        = subtotal,
+            vat             = vat,
+            total           = total,
+            created_at      = order.get("created_at")
+        )
 
     except Exception as e:
         print("Receipt Error:", e)
-        return jsonify({"error": str(e)}), 500
+        return f"Receipt Error ❌ {str(e)}"
 
 # =========================
 # 🧾 RECEIPT VIEW PAGE
