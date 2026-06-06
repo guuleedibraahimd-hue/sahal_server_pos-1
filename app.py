@@ -2545,10 +2545,6 @@ def register_school():
     except Exception as e:
         return jsonify({"error": str(e)})
 
-
-# =====================================
-# 🏫 SCHOOL LOGIN - HAL MAR KELIYA
-# =====================================
 @app.route("/school_login", methods=["GET", "POST"])
 def school_login():
     try:
@@ -2563,11 +2559,13 @@ def school_login():
         for doc in docs:
             data = doc.to_dict()
 
+            # ✅ FIX 1: school_code ayaa username u ah, ma ahan "username"
             if (
-                data.get("username") == username and
+                str(data.get("school_code", "")) == username and
                 data.get("password") == password
             ):
-                if not data.get("active", True):
+                # ✅ FIX 2: status waa string "active", ma ahan boolean
+                if data.get("status") != "active":
                     return render_template(
                         "school_login.html",
                         error="School account disabled ❌"
@@ -2582,14 +2580,14 @@ def school_login():
 
         return render_template(
             "school_login.html",
-            error="Wrong username or password ❌"
+            error="❌ Magaca ama passwordka waa khalad"
         )
 
     except Exception as e:
         print("SCHOOL LOGIN ERROR:", e)
         return render_template(
             "school_login.html",
-            error=f"System Error ❌ {str(e)}"
+            error=f"❌ Cilad dhanka internet-ka ah!"  # ← TANI waa error-ka aad aragtay!
         )
 
 
