@@ -3809,23 +3809,24 @@ def dashboard_login():
         ).strip()
 
         # =========================
-        # 💎 DHIBIC DAHAB DATABASE
+        # FIND USER BY EMAIL
         # =========================
 
         users = dhibic_db.collection(
             "dashboard_users"
-        ).stream()
+        ).where(
+            "email",
+            "==",
+            email
+        ).limit(1).stream()
+
+        user_found = False
 
         for user in users:
 
-            data = user.to_dict()
+            user_found = True
 
-            db_email = str(
-                data.get(
-                    "email",
-                    ""
-                )
-            ).strip().lower()
+            data = user.to_dict()
 
             db_password = str(
                 data.get(
@@ -3835,35 +3836,40 @@ def dashboard_login():
             ).strip()
 
             print(
-                "CHECK LOGIN:",
-                db_email,
-                db_password
+                "LOGIN USER:",
+                email
             )
 
             # =========================
-            # LOGIN SUCCESS
+            # PASSWORD CHECK
             # =========================
 
-            if (
-                db_email == email and
-                db_password == password
-            ):
+            if db_password == password:
 
-                session["dashboard_user"] = db_email
+                session["dashboard_user"] = email
 
                 return jsonify({
                     "success": True,
                     "redirect": "/view-orders"
                 })
 
+            else:
+
+                return jsonify({
+                    "success": False,
+                    "error": "Wrong Password"
+                })
+
         # =========================
-        # LOGIN FAILED
+        # USER NOT FOUND
         # =========================
 
-        return jsonify({
-            "success": False,
-            "error": "Invalid Email or Password"
-        })
+        if not user_found:
+
+            return jsonify({
+                "success": False,
+                "error": "Email not found"
+            })
 
     except Exception as e:
 
@@ -3871,7 +3877,10 @@ def dashboard_login():
 
         traceback.print_exc()
 
-        print("LOGIN ERROR:", str(e))
+        print(
+            "LOGIN ERROR:",
+            str(e)
+        )
 
         return jsonify({
             "success": False,
