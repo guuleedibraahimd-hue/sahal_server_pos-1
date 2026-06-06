@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Receipts - {{ restaurant }}</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family: Arial, sans-serif; background:#f4f4f4; padding:20px; }
+h1 { text-align:center; margin-bottom:20px; font-size:24px; }
+.back-btn {
+    display:inline-block; margin-bottom:20px;
+    padding:10px 20px; background:#0a7cff; color:white;
+    border-radius:8px; text-decoration:none; font-weight:bold;
+}
+.order-card {
+    background:white; border-radius:12px; padding:18px;
+    margin-bottom:15px; box-shadow:0 0 8px rgba(0,0,0,0.08);
+    display:flex; justify-content:space-between; align-items:center;
+    flex-wrap:wrap; gap:10px;
+}
+.order-info { flex:1; }
+.order-info h3 { font-size:16px; margin-bottom:6px; color:#333; }
+.order-info p { font-size:13px; color:#666; margin:2px 0; }
+.order-info .items { font-size:13px; color:#444; margin:4px 0; }
+.badge {
+    padding:4px 10px; border-radius:20px; font-size:12px; font-weight:bold;
+}
+.pending  { background:#fff3cd; color:#856404; }
+.preparing{ background:#cce5ff; color:#004085; }
+.ready    { background:#d4edda; color:#155724; }
+.receipt-btn {
+    padding:10px 18px; background:#e74c3c; color:white;
+    border:none; border-radius:8px; font-weight:bold;
+    cursor:pointer; font-size:14px; text-decoration:none;
+    display:inline-block;
+}
+.receipt-btn:hover { background:#c0392b; }
+.empty { text-align:center; padding:40px; color:#999; font-size:16px; }
+.total-bar {
+    background:white; border-radius:12px; padding:15px 20px;
+    margin-bottom:20px; box-shadow:0 0 8px rgba(0,0,0,0.08);
+    display:flex; justify-content:space-between; align-items:center;
+}
+.total-bar span { font-size:16px; font-weight:bold; }
+.total-bar .amount { color:#0a7cff; font-size:20px; }
+</style>
+</head>
+<body>
+
+<a href="/dashboard/{{ rid }}" class="back-btn">← Dashboard</a>
+<h1>🧾 {{ restaurant }} - Receipts</h1>
+
+{% if orders %}
+<div class="total-bar">
+    <span>📦 Total Orders: {{ orders|length }}</span>
+    <span class="amount">
+        ${{ "%.2f"|format(orders|sum(attribute='price')) }}
+    </span>
+</div>
+
+{% for o in orders %}
+<div class="order-card">
+    <div class="order-info">
+        <h3>Order {{ o.order_num }} — Table {{ o.table }}</h3>
+        <div class="items">
+            {% for item in o.items.split(', ') %}
+            • {{ item }}<br>
+            {% endfor %}
+        </div>
+        <p>💰 <strong>${{ o.price }}</strong></p>
+        <p>🕐 {{ o.created_at.strftime('%Y-%m-%d %H:%M') if o.created_at else 'N/A' }}</p>
+        <span class="badge {{ o.status }}">
+            {% if o.status == 'pending' %}⏳ Pending
+            {% elif o.status == 'preparing' %}👨‍🍳 Preparing
+            {% elif o.status == 'ready' %}✅ Ready
+            {% else %}{{ o.status }}{% endif %}
+        </span>
+    </div>
+    <a href="/receipt/{{ rid }}/{{ o.order_id }}" 
+       target="_blank" class="receipt-btn">
+        🖨 Print Receipt
+    </a>
+</div>
+{% endfor %}
+
+{% else %}
+<div class="empty">
+    📭 No orders yet
+</div>
+{% endif %}
+
+</body>
+</html>

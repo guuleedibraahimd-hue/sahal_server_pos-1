@@ -3529,6 +3529,50 @@ def receipt(rid, order_id):
         print("Receipt Error:", e)
         return f"<h2>Receipt Error ❌ {str(e)}</h2>"
 
+# =====================================
+# 🧾 DASHBOARD RECEIPT LIST
+# =====================================
+@app.route("/dashboard_receipts/<rid>")
+def dashboard_receipts(rid):
+    try:
+        if not session.get("restaurant_login"):
+            return redirect("/login")
+
+        order_docs = db.collection("restaurants").document(rid)\
+                       .collection("orders")\
+                       .order_by("created_at", direction=firestore.Query.DESCENDING)\
+                       .stream()
+
+        orders = []
+        count = 1
+        for doc in order_docs:
+            o = doc.to_dict()
+            if o.get("kitchen_cleared"):
+                continue
+            orders.append({
+                "order_num": count,
+                "order_id":  doc.id,
+                "table":     o.get("table", "?"),
+                "items":     o.get("items", ""),
+                "price":     o.get("price", 0),
+                "status":    o.get("status", "pending"),
+                "created_at": o.get("created_at")
+            })
+            count += 1
+
+        rest_doc = db.collection("restaurants").document(rid).get()
+        rest = rest_doc.to_dict() if rest_doc.exists else {}
+
+        return render_template(
+            "dashboard_receipts.html",
+            orders=orders,
+            rid=rid,
+            restaurant=rest.get("name", "Restaurant")
+        )
+
+    except Exception as e:
+        return f"Receipt List Error ❌ {str(e)}"
+
         # ==========================================
         # 🔥 SAVE TO FIREBASE
         # ==========================================
