@@ -3573,6 +3573,58 @@ def dashboard_receipts(rid):
     except Exception as e:
         return f"Receipt List Error ❌ {str(e)}"
 
+@app.route("/receipt_view/<rid>/<table>")
+def receipt_view(rid, table):
+    try:
+        order_docs = db.collection("restaurants").document(rid)\
+                       .collection("orders")\
+                       .order_by("created_at", direction=firestore.Query.DESCENDING)\
+                       .stream()
+
+        for doc in order_docs:
+            o = doc.to_dict()
+            if not o.get("kitchen_cleared"):
+                order_id = doc.id
+                cart = o.get("cart", [])
+                subtotal = float(o.get("price", 0))
+                vat = round(subtotal * 0.05, 2)
+                total = round(subtotal + vat, 2)
+
+                items = []
+                for i in cart:
+                    qty = int(i.get("qty", 1))
+                    price = float(i.get("price", 0))
+                    items.append({
+                        "food": i.get("name", "Item"),
+                        "qty": qty,
+                        "price": price,
+                        "total": round(qty * price, 2)
+                    })
+
+                rest_doc = db.collection("restaurants").document(rid).get()
+                rest = rest_doc.to_dict() if rest_doc.exists else {}
+
+                return render_template(
+                    "receipt.html",
+                    rid=rid,
+                    order_id=order_id,
+                    restaurant_name=rest.get("name", "Restaurant"),
+                    phone=rest.get("phone", ""),
+                    payment=rest.get("payment", ""),
+                    table=o.get("table", table),
+                    ref=order_id[:8].upper(),
+                    items=items,
+                    subtotal=subtotal,
+                    vat=vat,
+                    total=total,
+                    created_at=o.get("created_at")
+                )
+
+        return "<h2 style='font-family:monospace;text-align:center;margin-top:100px'>📭 No orders found</h2>"
+
+    except Exception as e:
+        return f"Error ❌ {str(e)}"
+
         # ==========================================
         # 🔥 SAVE TO FIREBASE
         # ==========================================

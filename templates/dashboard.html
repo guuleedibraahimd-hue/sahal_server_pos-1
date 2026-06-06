@@ -164,9 +164,11 @@ button{
         👨‍🍳 Open Kitchen
     </a>
 
-    <button onclick="openReceipt('1')" class="top-btn" style="background:#ff5722;">
+    <!-- ✅ CUSUB: Link toos ah receipt page-ka -->
+    <a href="/dashboard_receipts/{{ rid }}" target="_blank" 
+       class="top-btn" style="background:#ff5722; text-decoration:none;">
         🧾 View Receipt
-    </button>
+    </a>
 </div>
 
 <h2>Add Menu</h2>
@@ -276,12 +278,6 @@ button{
 <script>
 const RID = "{{rid}}"
 
-// 🧾 RECEIPT FUNCTION
-function openReceipt(table){
-    let rid = "{{ rid }}";
-    window.open(`/receipt_view/${rid}/${table}`, "_blank");
-}
-
 function openStats(){
     document.getElementById("statsPopup").style.display="flex"
 }
@@ -355,55 +351,19 @@ function renew() {
         location.reload();
     });
 }
+
+// ✅ CUSUB: Notification kaliya - receipt page ma furi
+setInterval(async () => {
+    let rid = "{{ rid }}";
+    let res = await fetch(`/check_new_order/${rid}`);
+    let data = await res.json();
+    if(data.new_order){
+        // Maqaayada notification kaliya muuji
+        document.title = "🔔 NEW ORDER! - Dashboard";
+        setTimeout(() => { document.title = "{{ restaurant }} Dashboard"; }, 5000);
+    }
+}, 3000);
 </script>
 
 </body>
 </html>
-
-<script>
-let lastOrderId = 0;
-
-setInterval(async () => {
-
-    let rid = "{{ rid }}";
-
-    let res = await fetch(`/check_new_order/${rid}`);
-    let data = await res.json();
-
-    if(data.new_order){
-        printReceipt(data.table);
-    }
-
-}, 3000);
-
-async function printReceipt(table){
-
-    let rid = "{{ rid }}";
-
-    let res = await fetch(`/receipt/${rid}/${table}`);
-    let data = await res.json();
-
-    let content = `
-    <div style="font-family:monospace; width:280px">
-        <h3>${data.restaurant_name}</h3>
-        <p>Table: ${data.table}</p>
-        <p>${data.time}</p>
-        <hr>
-
-        ${data.items.map(item => `
-            <div>${item.food}</div>
-            <div>${item.qty} x ${item.price} = ${item.total}</div>
-        `).join("")}
-
-        <hr>
-        <h3>Total: $${data.total}</h3>
-    </div>
-    `;
-
-    let win = window.open("", "", "width=300,height=600");
-    win.document.write(content);
-    win.document.close();
-
-    win.print();
-}
-</script>
