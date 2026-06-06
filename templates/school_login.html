@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>School Login | Sahal Server</title>
-
 <style>
     body {
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -23,11 +22,7 @@
         box-shadow: 0 10px 25px rgba(0,0,0,0.3);
         text-align: center;
     }
-    h2 {
-        color: #333;
-        margin-bottom: 25px;
-        font-size: 24px;
-    }
+    h2 { color: #333; margin-bottom: 25px; font-size: 24px; }
     input {
         width: 100%;
         padding: 12px;
@@ -50,67 +45,45 @@
         cursor: pointer;
         transition: 0.3s;
     }
-    button:hover {
-        background: #373B44;
-    }
-    .msg {
-        margin-top: 20px;
-        min-height: 20px;
+    button:hover { background: #373B44; }
+    .error {
+        margin-top: 15px;
+        color: red;
         font-size: 14px;
+        min-height: 20px;
     }
 </style>
 </head>
-
 <body>
 
 <div class="box">
     <h2>🔐 School Login</h2>
 
-    <form id="form">
-        <input name="school_code" type="text" placeholder="School Code (e.g. 7891)" required>
-        <input name="password" type="password" placeholder="Password" required>
-        <button type="submit" id="loginBtn">Login</button>
+    <!-- ✅ Normal form POST - no JavaScript needed -->
+    <form method="POST" action="/school_login">
+
+        <!-- ✅ name="username" - Python u baahan yahay -->
+        <input 
+            type="text" 
+            name="username" 
+            placeholder="School Code (e.g. 7891)"
+            required
+        >
+        <input 
+            type="password" 
+            name="password" 
+            placeholder="Password"
+            required
+        >
+        <button type="submit">Login</button>
     </form>
 
-    <div id="msg" class="msg"></div>
+    <!-- ✅ Error - Python ka yimaada -->
+    {% if error %}
+        <div class="error">{{ error }}</div>
+    {% endif %}
+
 </div>
-
-<script>
-document.getElementById("form").onsubmit = async (e) => {
-    e.preventDefault();
-    const btn = document.getElementById("loginBtn");
-    const msgDiv = document.getElementById("msg");
-    
-    // KHALADKII HALKAN AYUU AHAA: 'true' waa inuu yaryahay
-    btn.disabled = true; 
-    btn.innerText = "Checking...";
-    msgDiv.innerHTML = "";
-
-    try {
-        let res = await fetch("/school_login", {
-            method: "POST",
-            body: new FormData(e.target)
-        });
-
-        let data = await res.json();
-
-        if (res.status === 200) {
-            msgDiv.innerHTML = "<span style='color:green'>Guul! Waa laguu gudbinayaa...</span>";
-            // Dib ugu laabo dashboard-ka
-            window.location.href = data.redirect;
-        } else {
-            btn.disabled = false;
-            btn.innerText = "Login";
-            // Soo bandhig qaladka ka yimid Python (sida 'System-kaagu waa dhacay')
-            msgDiv.innerHTML = "<span style='color:red'>❌ " + (data.error || "Login failed") + "</span>";
-        }
-    } catch (err) {
-        btn.disabled = false;
-        btn.innerText = "Login";
-        msgDiv.innerHTML = "<span style='color:red'>❌ Cilad dhanka internet-ka ah!</span>";
-    }
-}
-</script>
 
 </body>
 </html>

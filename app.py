@@ -2586,21 +2586,7 @@ def school_login():
         print("SCHOOL LOGIN ERROR:", e)
         return render_template("school_login.html", error=f"❌ Error: {str(e)}")
 
-@app.route("/test_login")
-def test_login():
-    try:
-        doc = db.collection("schools").document("7891").get()
-        if doc.exists:
-            d = doc.to_dict()
-            return f"""
-            ✅ DOC FOUND<br>
-            password: {d.get('password')}<br>
-            status: {d.get('status')}<br>
-            school_name: {d.get('school_name')}
-            """
-        return "❌ Document 7891 ma jiro"
-    except Exception as e:
-        return f"❌ Firebase Error: {str(e)}"
+
 # =====================================
 # 🏫 SCHOOL DASHBOARD
 # =====================================
