@@ -39,6 +39,7 @@ from firebase_admin import credentials, firestore
 # =========================
 # 🚀 FLASK APP
 # =========================
+
 app = Flask(
     __name__,
     static_url_path="/static",
@@ -49,48 +50,65 @@ app = Flask(
 # =========================
 # 🔐 SECRET KEY
 # =========================
+
 app.secret_key = "supersecretkey123"
 
 # =========================
 # 🔌 SOCKET IO
 # =========================
+
 socketio = SocketIO(
     app,
     cors_allowed_origins="*",
     async_mode="threading"
 )
 
-# =========================
-# 🔥 FIREBASE
-# =========================
-firebase_key_str = os.environ.get("FIREBASE_KEY")
+# =====================================================
+# 🔥 SAHAL SERVER FIREBASE
+# =====================================================
 
-if firebase_key_str:
+cred1 = credentials.Certificate(
+    "sahal-server-pos-firebase-adminsdk-fbsvc-8f6ef77014.json"
+)
 
-    firebase_key = json.loads(firebase_key_str)
+sahal_app = firebase_admin.initialize_app(
+    cred1,
+    name="sahal_app"
+)
 
-    cred = credentials.Certificate(firebase_key)
+db = firestore.client(sahal_app)
 
-else:
+# =====================================================
+# 💎 DHIBIC DAHAB FIREBASE
+# =====================================================
 
-    cred = credentials.Certificate(
-        "dhibic-dahab-online-store-firebase-adminsdk-fbsvc-70a4ef183a.json"
-    )
+cred2 = credentials.Certificate(
+    "dhibic-dahab-online-store-firebase-adminsdk-fbsvc-70a4ef183a.json"
+)
 
-if not firebase_admin._apps:
+dhibic_app = firebase_admin.initialize_app(
+    cred2,
+    name="dhibic_app"
+)
 
-    firebase_admin.initialize_app(cred)
-
-db = firestore.client()
+dhibic_db = firestore.client(dhibic_app)
 
 # =========================
 # 📁 FOLDERS
 # =========================
+
 UPLOAD_FOLDER = "static/uploads"
 QR_FOLDER = "static/qr"
 
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-os.makedirs(QR_FOLDER, exist_ok=True)
+os.makedirs(
+    UPLOAD_FOLDER,
+    exist_ok=True
+)
+
+os.makedirs(
+    QR_FOLDER,
+    exist_ok=True
+)
 
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 # =========================
@@ -3762,37 +3780,61 @@ def update_info(doc_id):
     except Exception as e:
 
         return str(e)
-# ==============================
-# DASHBOARD LOGIN
-# ==============================
-
 @app.route("/dashboard_login", methods=["POST"])
 def dashboard_login():
 
     try:
 
-        email = request.form.get("email", "").strip().lower()
-        password = request.form.get("password", "").strip()
+        email = request.form.get(
+            "email",
+            ""
+        ).strip().lower()
 
-        print("LOGIN TRY:", email, password)
+        password = request.form.get(
+            "password",
+            ""
+        ).strip()
 
-        users = db.collection("dashboard_users").stream()
+        # =========================
+        # 💎 DHIBIC DAHAB DATABASE
+        # =========================
+
+        users = dhibic_db.collection(
+            "dashboard_users"
+        ).stream()
 
         for user in users:
 
             data = user.to_dict()
 
             db_email = str(
-                data.get("email", "")
+                data.get(
+                    "email",
+                    ""
+                )
             ).strip().lower()
 
             db_password = str(
-                data.get("password", "")
+                data.get(
+                    "password",
+                    ""
+                )
             ).strip()
 
-            print("DATABASE USER:", db_email, db_password)
+            print(
+                "CHECK LOGIN:",
+                db_email,
+                db_password
+            )
 
-            if db_email == email and db_password == password:
+            # =========================
+            # LOGIN SUCCESS
+            # =========================
+
+            if (
+                db_email == email and
+                db_password == password
+            ):
 
                 session["dashboard_user"] = db_email
 
@@ -3800,6 +3842,10 @@ def dashboard_login():
                     "success": True,
                     "redirect": "/view-orders"
                 })
+
+        # =========================
+        # LOGIN FAILED
+        # =========================
 
         return jsonify({
             "success": False,
@@ -3809,7 +3855,10 @@ def dashboard_login():
     except Exception as e:
 
         import traceback
+
         traceback.print_exc()
+
+        print("LOGIN ERROR:", str(e))
 
         return jsonify({
             "success": False,
