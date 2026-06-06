@@ -2572,7 +2572,7 @@ def school_login():
             return render_template("school_login.html", error="❌ Password khalad ah")
 
         # ✅ Status check
-        if data.get("status") != "active":
+        if data.get("status") == "disabled":
             return render_template("school_login.html", error="❌ Account disabled")
 
         session["school"] = school_doc.id
