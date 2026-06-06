@@ -2554,41 +2554,37 @@ def school_login():
         username = request.form.get("username", "").strip()
         password = request.form.get("password", "").strip()
 
-        docs = db.collection("schools").stream()
+        print(f"LOGIN ATTEMPT: username={username}, password={password}")  # DEBUG
 
-        for doc in docs:
-            data = doc.to_dict()
+        # ✅ Toos u hel document-ka ID-ga ah
+        school_doc = db.collection("schools").document(username).get()
 
-            # ✅ FIX 1: school_code ayaa username u ah, ma ahan "username"
-            if (
-                str(data.get("school_code", "")) == username and
-                data.get("password") == password
-            ):
-                # ✅ FIX 2: status waa string "active", ma ahan boolean
-                if data.get("status") != "active":
-                    return render_template(
-                        "school_login.html",
-                        error="School account disabled ❌"
-                    )
+        print(f"DOC EXISTS: {school_doc.exists}")  # DEBUG
 
-                session["school"] = doc.id
-                session["school_login"] = True
-                session["school_id"] = doc.id
-                session["school_name"] = data.get("school_name")
+        if not school_doc.exists:
+            return render_template("school_login.html", error="❌ School code ma jiro")
 
-                return redirect("/school_dashboard")
+        data = school_doc.to_dict()
+        print(f"DATA: {data}")  # DEBUG
 
-        return render_template(
-            "school_login.html",
-            error="❌ Magaca ama passwordka waa khalad"
-        )
+        # ✅ Password check
+        if data.get("password") != password:
+            return render_template("school_login.html", error="❌ Password khalad ah")
+
+        # ✅ Status check
+        if data.get("status") != "active":
+            return render_template("school_login.html", error="❌ Account disabled")
+
+        session["school"] = school_doc.id
+        session["school_login"] = True
+        session["school_id"] = school_doc.id
+        session["school_name"] = data.get("school_name")
+
+        return redirect("/school_dashboard")
 
     except Exception as e:
         print("SCHOOL LOGIN ERROR:", e)
-        return render_template(
-            "school_login.html",
-            error=f"❌ Cilad dhanka internet-ka ah!"  # ← TANI waa error-ka aad aragtay!
-        )
+        return render_template("school_login.html", error=f"❌ Error: {str(e)}")
 
 
 # =====================================
