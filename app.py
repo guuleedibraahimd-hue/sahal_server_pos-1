@@ -68,7 +68,7 @@ socketio = SocketIO(
 # =========================
 
 cred1 = credentials.Certificate(
-    "sahal-server-pos-firebase-adminsdk-fbsvc-8f6ef77014.json"
+    "sahal-server-pos-firebase-adminsdk-fbsvc-0878fbca28.json"
 )
 
 sahal_app = firebase_admin.initialize_app(
