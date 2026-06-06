@@ -2230,6 +2230,7 @@ def check_new_order(rid):
 
 
 # ✅ RECEIPT VIEW PAGE
+
 @app.route("/receipt_view/<rid>/<table>")
 def receipt_view(rid, table):
     try:
@@ -3287,25 +3288,6 @@ def send_order():
     except Exception as e:
         print("SEND ORDER ERROR:", e)
         return jsonify({"success": False, "error": str(e)})
-
-
-# =========================
-# 🧾 RECEIPT PAGE
-# =========================
-@app.route("/receipt_view/<rid>/<table>")
-def receipt_view(rid, table):
-    try:
-        if not rid or not table:
-            return "Invalid receipt request", 400
-
-        return render_template(
-            "receipt.html",
-            rid=str(rid),
-            table=str(table)
-        )
-    except Exception as e:
-        return f"Error: {str(e)}", 500
-
 
 # =========================
 # 📊 RECEIPT DATA API
