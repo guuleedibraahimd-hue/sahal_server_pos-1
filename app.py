@@ -3765,6 +3765,7 @@ def update_info(doc_id):
 # ==============================
 # DASHBOARD LOGIN
 # ==============================
+
 @app.route("/dashboard_login", methods=["POST"])
 def dashboard_login():
 
@@ -3789,7 +3790,7 @@ def dashboard_login():
                 data.get("password", "")
             ).strip()
 
-            print("DATABASE:", db_email, db_password)
+            print("DATABASE USER:", db_email, db_password)
 
             if db_email == email and db_password == password:
 
@@ -3813,8 +3814,7 @@ def dashboard_login():
         return jsonify({
             "success": False,
             "error": str(e)
-        })
-
+        }), 500
 
 # ==============================
 # VIEW ORDERS PAGE
