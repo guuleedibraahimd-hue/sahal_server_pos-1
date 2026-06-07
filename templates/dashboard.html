@@ -4,327 +4,888 @@
 <meta charset="UTF-8">
 <title>{{restaurant}} Dashboard</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
 <style>
+*{box-sizing:border-box;margin:0;padding:0;}
+
+:root{
+    --blue:#1565C0;
+    --blue-light:#1976D2;
+    --blue-bright:#2196F3;
+    --green:#28a745;
+    --orange:#FF9800;
+    --red:#F44336;
+    --purple:#673AB7;
+    --sidebar-w:88px;
+    --bg:#F4F6FB;
+    --white:#FFFFFF;
+    --text:#1A1A2E;
+    --muted:#8A94A6;
+    --border:#E8ECF4;
+    --shadow:0 4px 24px rgba(21,101,192,0.10);
+    --shadow-sm:0 2px 12px rgba(0,0,0,0.07);
+    --radius:16px;
+}
+
 body{
-    font-family:Arial, sans-serif;
-    padding:20px;
-    background:#f5f5f5;
-    margin:0;
-}
-
-h1,h2{
-    margin-top:20px;
-}
-
-.card{
-    background:white;
-    padding:15px;
-    border-radius:10px;
-    box-shadow:0 0 5px rgba(0,0,0,0.15);
-}
-
-input, button{
-    padding:10px;
-    margin:5px 0;
-    border-radius:6px;
-    border:1px solid #ddd;
-}
-
-button{
-    background:red;
-    color:white;
-    border:none;
-    cursor:pointer;
-    font-weight:bold;
-}
-
-/* TOP BUTTONS */
-.top-buttons{
+    font-family:'Plus Jakarta Sans',sans-serif;
+    background:var(--bg);
+    min-height:100vh;
     display:flex;
-    justify-content:flex-end;
+    color:var(--text);
+}
+
+/* ── SIDEBAR ── */
+.sidebar{
+    width:var(--sidebar-w);
+    min-height:100vh;
+    background:var(--blue);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    padding:20px 0 30px;
+    position:fixed;
+    top:0;left:0;bottom:0;
+    z-index:200;
+    box-shadow:4px 0 20px rgba(21,101,192,0.18);
+}
+
+.sidebar-logo{
+    width:48px;height:48px;
+    background:rgba(255,255,255,0.18);
+    border-radius:14px;
+    display:flex;align-items:center;justify-content:center;
+    margin-bottom:30px;
+}
+
+.sidebar-logo svg{stroke:#fff;fill:none;width:26px;height:26px;}
+
+.sidebar-nav{
+    display:flex;
+    flex-direction:column;
+    gap:4px;
+    flex:1;
+    width:100%;
+    align-items:center;
+}
+
+.nav-link{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:5px;
+    width:68px;
+    padding:10px 0;
+    border-radius:14px;
+    cursor:pointer;
+    color:rgba(255,255,255,0.6);
+    font-size:10px;font-weight:600;
+    text-decoration:none;
+    border:none;background:none;
+    font-family:'Plus Jakarta Sans',sans-serif;
+    transition:background .15s,color .15s;
+}
+
+.nav-link svg{stroke:currentColor;fill:none;width:22px;height:22px;}
+
+.nav-link.active,
+.nav-link:hover{
+    background:rgba(255,255,255,0.18);
+    color:#fff;
+}
+
+.nav-link.active{
+    background:rgba(255,255,255,0.22);
+    color:#fff;
+}
+
+.sidebar-bottom{
+    margin-top:auto;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:8px;
+}
+
+.logout-btn{
+    display:flex;flex-direction:column;align-items:center;gap:5px;
+    color:rgba(255,255,255,0.6);font-size:10px;font-weight:600;
+    background:none;border:none;cursor:pointer;
+    font-family:'Plus Jakarta Sans',sans-serif;
+    padding:8px 0;
+}
+
+.logout-btn svg{stroke:currentColor;fill:none;width:22px;height:22px;}
+.logout-btn:hover{color:#fff;}
+
+/* ── MAIN ── */
+.main{
+    margin-left:var(--sidebar-w);
+    flex:1;
+    padding:28px 28px 100px;
+    min-height:100vh;
+}
+
+/* ── TOPBAR ── */
+.topbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:26px;
+}
+
+.topbar-left h1{
+    font-size:22px;font-weight:800;
+    display:flex;align-items:center;gap:8px;
+}
+
+.topbar-left h1 span{
+    color:var(--blue-bright);
+    font-weight:700;
+}
+
+.topbar-left p{
+    font-size:13px;color:var(--muted);
+    margin-top:2px;
+}
+
+.topbar-right{
+    display:flex;align-items:center;gap:12px;
+}
+
+.topbar-icon{
+    width:40px;height:40px;
+    background:var(--white);
+    border-radius:12px;
+    border:1px solid var(--border);
+    display:flex;align-items:center;justify-content:center;
+    cursor:pointer;
+    position:relative;
+    box-shadow:var(--shadow-sm);
+}
+
+.topbar-icon svg{stroke:var(--text);fill:none;width:18px;height:18px;}
+
+.badge{
+    position:absolute;top:-5px;right:-5px;
+    width:18px;height:18px;
+    background:var(--red);
+    border-radius:50%;
+    font-size:10px;font-weight:700;color:#fff;
+    display:flex;align-items:center;justify-content:center;
+    border:2px solid var(--bg);
+}
+
+.avatar{
+    width:40px;height:40px;
+    background:var(--blue);
+    border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    position:relative;
+}
+
+.avatar svg{stroke:#fff;fill:none;width:20px;height:20px;}
+
+.online-dot{
+    position:absolute;bottom:1px;right:1px;
+    width:9px;height:9px;
+    background:#2ECC71;border-radius:50%;
+    border:2px solid var(--bg);
+}
+
+/* ── ACTION BUTTONS ROW ── */
+.action-row{
+    display:flex;
     gap:10px;
-    margin-bottom:15px;
+    justify-content:flex-end;
+    margin-bottom:22px;
     flex-wrap:wrap;
 }
 
-.top-btn{
-    color:white;
-    padding:10px 15px;
-    border-radius:6px;
+.action-btn{
+    display:inline-flex;align-items:center;gap:7px;
+    padding:10px 18px;
+    border-radius:10px;
+    font-family:'Plus Jakarta Sans',sans-serif;
+    font-size:13px;font-weight:700;
+    color:#fff;
+    border:none;cursor:pointer;
     text-decoration:none;
-    font-weight:bold;
+    transition:transform .15s,box-shadow .15s;
+    box-shadow:0 3px 12px rgba(0,0,0,0.12);
 }
 
-.admin-btn{ background:#0a7cff; }
-.kitchen-link-btn{ background:#28a745; }
+.action-btn:active{transform:scale(0.97);}
+.action-btn svg{stroke:#fff;fill:none;width:15px;height:15px;}
+.btn-blue{background:var(--blue);}
+.btn-green{background:var(--green);}
+.btn-orange{background:var(--orange);}
+.btn-red{background:var(--red);}
 
-/* MENU GRID */
+/* ── STAT CARDS ── */
+.stats-row{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
+    gap:14px;
+    margin-bottom:24px;
+}
+
+.stat-card{
+    background:var(--white);
+    border-radius:var(--radius);
+    padding:18px 16px;
+    box-shadow:var(--shadow-sm);
+    display:flex;
+    align-items:flex-start;
+    gap:14px;
+}
+
+.stat-icon{
+    width:48px;height:48px;
+    border-radius:14px;
+    display:flex;align-items:center;justify-content:center;
+    flex-shrink:0;
+}
+
+.stat-icon svg{stroke:#fff;fill:none;width:24px;height:24px;}
+.si-blue{background:var(--blue);}
+.si-green{background:var(--green);}
+.si-orange{background:var(--orange);}
+.si-purple{background:var(--purple);}
+
+.stat-info h4{font-size:12px;color:var(--muted);font-weight:600;margin-bottom:4px;}
+.stat-info .val{font-size:22px;font-weight:800;color:var(--text);line-height:1.1;}
+.stat-info .sub{font-size:11px;color:var(--muted);margin-top:2px;}
+
+/* ── SECTION CARD ── */
+.section-card{
+    background:var(--white);
+    border-radius:var(--radius);
+    padding:22px;
+    box-shadow:var(--shadow-sm);
+    margin-bottom:20px;
+}
+
+.section-head{
+    display:flex;align-items:center;gap:10px;
+    margin-bottom:18px;
+}
+
+.section-head-icon{
+    width:32px;height:32px;
+    background:var(--blue);
+    border-radius:9px;
+    display:flex;align-items:center;justify-content:center;
+}
+
+.section-head-icon svg{stroke:#fff;fill:none;width:16px;height:16px;}
+.section-head h2{font-size:16px;font-weight:700;}
+
+/* ── FORM ROW ── */
+.form-row{
+    display:flex;align-items:center;gap:10px;
+    flex-wrap:wrap;
+}
+
+.form-row input[type="text"],
+.form-row input[type="number"],
+.form-row input[name="name"],
+.form-row input[name="price"],
+.form-row input[name="title"]{
+    flex:1;min-width:120px;
+    padding:11px 14px;
+    border:1.5px solid var(--border);
+    border-radius:10px;
+    font-family:'Plus Jakarta Sans',sans-serif;
+    font-size:13px;color:var(--text);
+    background:var(--bg);
+    outline:none;
+    transition:border-color .15s;
+}
+
+.form-row input:focus{border-color:var(--blue-bright);}
+.form-row input::placeholder{color:var(--muted);}
+
+.file-label{
+    display:inline-flex;align-items:center;gap:7px;
+    padding:10px 16px;
+    background:var(--bg);
+    border:1.5px solid var(--border);
+    border-radius:10px;
+    font-size:13px;font-weight:600;color:var(--text);
+    cursor:pointer;
+    white-space:nowrap;
+}
+
+.file-label svg{stroke:var(--muted);fill:none;width:16px;height:16px;}
+.file-label input[type="file"]{display:none;}
+
+.submit-btn{
+    padding:11px 22px;
+    background:var(--blue);
+    color:#fff;
+    border:none;border-radius:10px;
+    font-family:'Plus Jakarta Sans',sans-serif;
+    font-size:13px;font-weight:700;
+    cursor:pointer;
+    display:inline-flex;align-items:center;gap:7px;
+    box-shadow:0 4px 14px rgba(21,101,192,0.28);
+    white-space:nowrap;
+    transition:transform .15s;
+}
+
+.submit-btn:active{transform:scale(0.97);}
+.submit-btn svg{stroke:#fff;fill:none;width:15px;height:15px;}
+.submit-btn-green{background:var(--green);box-shadow:0 4px 14px rgba(40,167,69,0.28);}
+
+/* ── MENU LIST ── */
+.menu-section-head{
+    display:flex;align-items:center;justify-content:space-between;
+    margin-bottom:18px;
+}
+
+.view-all-link{
+    color:var(--blue-bright);font-size:13px;font-weight:600;
+    display:flex;align-items:center;gap:3px;
+    text-decoration:none;
+}
+
 .menu-grid{
     display:grid;
-    grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
-    gap:15px;
-    margin-top:15px;
+    grid-template-columns:repeat(auto-fill,minmax(200px,1fr));
+    gap:16px;
 }
 
 .menu-card{
-    background:white;
-    border-radius:12px;
-    padding:12px;
-    box-shadow:0 0 6px rgba(0,0,0,0.12);
-    text-align:center;
+    background:var(--white);
+    border-radius:var(--radius);
+    overflow:hidden;
+    box-shadow:var(--shadow-sm);
+    border:1px solid var(--border);
+    transition:transform .2s,box-shadow .2s;
 }
 
-.menu-card img{
-    width:100%;
-    height:150px;
-    object-fit:cover;
-    border-radius:10px;
-    margin-bottom:10px;
+.menu-card:hover{
+    transform:translateY(-3px);
+    box-shadow:0 8px 28px rgba(21,101,192,0.13);
 }
+
+.menu-card-img{
+    position:relative;
+    height:150px;
+}
+
+.menu-card-img img{
+    width:100%;height:100%;
+    object-fit:cover;display:block;
+}
+
+.active-badge{
+    position:absolute;top:10px;right:10px;
+    background:var(--green);
+    color:#fff;font-size:10px;font-weight:700;
+    padding:3px 10px;border-radius:20px;
+}
+
+.menu-card-body{
+    padding:14px;
+}
+
+.menu-card-body h3{
+    font-size:14px;font-weight:700;margin-bottom:4px;
+}
+
+.menu-price{
+    font-size:15px;font-weight:800;color:var(--blue-bright);
+    margin-bottom:12px;
+}
+
+.menu-card-actions{
+    display:flex;gap:8px;
+}
+
+.edit-btn,.delete-btn{
+    flex:1;
+    padding:8px 0;
+    border-radius:8px;
+    font-family:'Plus Jakarta Sans',sans-serif;
+    font-size:12px;font-weight:700;
+    border:1.5px solid;
+    cursor:pointer;
+    display:inline-flex;align-items:center;justify-content:center;gap:5px;
+    transition:background .15s;
+}
+
+.edit-btn{
+    background:#fff;color:var(--blue);border-color:var(--blue);
+}
+
+.edit-btn:hover{background:#EEF4FF;}
 
 .delete-btn{
-    background:red;
-    color:white;
-    padding:8px 12px;
-    border:none;
-    border-radius:6px;
-    cursor:pointer;
-    font-weight:bold;
+    background:#fff;color:var(--red);border-color:var(--red);
 }
 
-/* FLOATING BUTTONS */
-.fab{
+.delete-btn:hover{background:#FFEBEE;}
+
+.edit-btn svg,.delete-btn svg{width:12px;height:12px;stroke:currentColor;fill:none;}
+
+/* ── FABs ── */
+.fab-group{
     position:fixed;
-    right:20px;
-    width:60px;
-    height:60px;
-    border-radius:50%;
-    color:white;
-    font-size:22px;
-    border:none;
-    cursor:pointer;
-    box-shadow:0 0 10px rgba(0,0,0,0.3);
+    right:22px;
+    bottom:22px;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
     z-index:999;
 }
 
-.stats-btn{ bottom:20px; background:#0a7cff; }
-.qr-btn{ bottom:90px; background:green; }
-.staff-btn{ bottom:160px; background:#ff9800; }
-.sales-btn{ bottom:230px; background:#673ab7; }
-.kitchen-btn{ bottom:300px; background:#28a745; }
+.fab{
+    width:50px;height:50px;
+    border-radius:14px;
+    color:white;
+    font-size:20px;
+    border:none;cursor:pointer;
+    box-shadow:0 4px 16px rgba(0,0,0,0.22);
+    display:flex;align-items:center;justify-content:center;
+    transition:transform .15s;
+}
 
-/* POPUP */
+.fab:active{transform:scale(0.92);}
+.fab svg{stroke:#fff;fill:none;width:22px;height:22px;}
+
+.fab-stats  {background:var(--blue);}
+.fab-qr     {background:var(--purple);}
+.fab-staff  {background:var(--orange);}
+.fab-kitchen{background:var(--green);}
+.fab-sales  {background:#E91E63;}
+
+/* ── POPUP ── */
 .popup{
     display:none;
-    position:fixed;
-    top:0;
-    left:0;
-    width:100%;
-    height:100%;
-    background:rgba(0,0,0,0.6);
-    align-items:center;
-    justify-content:center;
+    position:fixed;top:0;left:0;
+    width:100%;height:100%;
+    background:rgba(0,0,0,0.45);
+    align-items:center;justify-content:center;
     z-index:1000;
+    backdrop-filter:blur(3px);
 }
 
 .popup-box{
-    background:white;
-    padding:20px;
-    border-radius:10px;
-    width:350px;
-    max-height:80vh;
+    background:var(--white);
+    padding:28px 24px;
+    border-radius:20px;
+    width:380px;
+    max-height:82vh;
     overflow:auto;
     text-align:center;
+    box-shadow:0 20px 60px rgba(0,0,0,0.18);
 }
 
+.popup-box h3{
+    font-size:17px;font-weight:700;margin-bottom:18px;
+}
+
+.popup-input{
+    width:100%;padding:11px 14px;
+    border:1.5px solid var(--border);
+    border-radius:10px;
+    font-family:'Plus Jakarta Sans',sans-serif;
+    font-size:13px;
+    margin-bottom:10px;
+    outline:none;
+    background:var(--bg);
+}
+
+.popup-input:focus{border-color:var(--blue-bright);}
+
+.popup-btn{
+    width:100%;padding:13px;
+    border:none;border-radius:10px;
+    font-family:'Plus Jakarta Sans',sans-serif;
+    font-size:14px;font-weight:700;
+    cursor:pointer;
+    margin-bottom:8px;
+    transition:transform .12s;
+}
+
+.popup-btn:active{transform:scale(0.97);}
+.popup-btn-blue{background:var(--blue);color:#fff;}
+.popup-btn-close{background:var(--bg);color:var(--text);}
+
+/* ── EXPIRED ── */
+.expired-banner{
+    background:#FFEBEE;border:1.5px solid #FFCDD2;
+    border-radius:12px;padding:14px 18px;
+    display:flex;align-items:center;gap:12px;
+    margin-bottom:20px;
+}
+
+.expired-banner p{color:#C62828;font-weight:700;font-size:14px;}
+
+/* ── FOOTER ── */
+.footer{
+    text-align:center;
+    padding:20px 0 10px;
+    color:var(--muted);
+    font-size:12px;
+}
+
+/* ── DIVIDER ── */
+hr{border:none;border-top:1px solid var(--border);margin:0;}
+
 @media(max-width:700px){
-    .menu-grid{
-        grid-template-columns:repeat(2,1fr);
-    }
+    .main{padding:16px 14px 100px;}
+    .sidebar{width:64px;}
+    .main{margin-left:64px;}
+    .stats-row{grid-template-columns:repeat(2,1fr);}
+    .menu-grid{grid-template-columns:repeat(2,1fr);}
+    .form-row{flex-direction:column;align-items:stretch;}
+    .form-row input,.file-label,.submit-btn{width:100%;}
 }
 </style>
 </head>
 
 <body>
 
-{% if expired %}
-  <h2 style="color:red;">System expired ❌</h2>
-  <button onclick="renew()">Renew Now</button>
-{% endif %}
+<!-- ── SIDEBAR ── -->
+<aside class="sidebar">
+    <div class="sidebar-logo">
+        <svg viewBox="0 0 24 24" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    </div>
 
-<h1>{{restaurant}} Dashboard</h1>
+    <nav class="sidebar-nav">
+        <a class="nav-link active" href="#">
+            <svg viewBox="0 0 24 24" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+            Dashboard
+        </a>
+        <a class="nav-link" href="#">
+            <svg viewBox="0 0 24 24" stroke-width="2"><path d="M3 11l19-9-9 19-2-8-8-2z"/></svg>
+            Menu
+        </a>
+        <a class="nav-link" href="#">
+            <svg viewBox="0 0 24 24" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+            Ads
+        </a>
+        <a class="nav-link" href="#">
+            <svg viewBox="0 0 24 24" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            Orders
+        </a>
+        <a class="nav-link" href="#">
+            <svg viewBox="0 0 24 24" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+            Reports
+        </a>
+        <a class="nav-link" href="/restaurant_admin/{{ rid }}">
+            <svg viewBox="0 0 24 24" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 1.41 14.14M4.93 4.93A10 10 0 0 0 3.51 19.07"/></svg>
+            Settings
+        </a>
+    </nav>
 
-<div class="top-buttons">
-    <a href="/restaurant_admin/{{ rid }}" class="top-btn admin-btn">
-        ⚙️ Admin Restaurant
-    </a>
+    <div class="sidebar-bottom">
+        <button class="logout-btn">
+            <svg viewBox="0 0 24 24" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            Logout
+        </button>
+    </div>
+</aside>
 
-    <a href="/kitchen/{{ rid }}" target="_blank" class="top-btn kitchen-link-btn">
-        👨‍🍳 Open Kitchen
-    </a>
+<!-- ── MAIN ── -->
+<main class="main">
 
-    <!-- ✅ CUSUB: Link toos ah receipt page-ka -->
-    <a href="/dashboard_receipts/{{ rid }}" target="_blank" 
-       class="top-btn" style="background:#ff5722; text-decoration:none;">
-        🧾 View Receipt
-    </a>
-</div>
+    <!-- TOPBAR -->
+    <div class="topbar">
+        <div class="topbar-left">
+            <h1>{{restaurant}} <span>Dashboard</span></h1>
+            <p>Manage your menu, ads and restaurant easily</p>
+        </div>
+        <div class="topbar-right">
+            <div class="topbar-icon">
+                <svg viewBox="0 0 24 24" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            </div>
+            <div class="topbar-icon">
+                <svg viewBox="0 0 24 24" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                <div class="badge">3</div>
+            </div>
+            <div class="avatar">
+                <svg viewBox="0 0 24 24" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                <div class="online-dot"></div>
+            </div>
+        </div>
+    </div>
 
-<h2>Add Menu</h2>
-<form action="/add_menu/{{rid}}" method="post" enctype="multipart/form-data">
-    <input name="name" placeholder="Food name" required>
-    <input name="price" placeholder="Price" required>
-    <input type="file" name="image" required>
-    <button type="submit">Add</button>
-</form>
+    {% if expired %}
+    <div class="expired-banner">
+        <svg viewBox="0 0 24 24" stroke-width="2" style="stroke:#C62828;fill:none;width:22px;height:22px;flex-shrink:0;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <p>System expired ❌</p>
+        <button onclick="renew()" style="margin-left:auto;padding:8px 16px;background:var(--red);color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;">Renew Now</button>
+    </div>
+    {% endif %}
 
-<hr>
-
-<h2>Add Advertisement</h2>
-<form action="/add_ad/{{rid}}" method="post" enctype="multipart/form-data">
-    <input name="title" placeholder="Ad title" required>
-    <input type="file" name="image" required>
-    <button type="submit">Add Ad</button>
-</form>
-
-<hr>
-
-<h2>🍽 Menu List</h2>
-
-<div class="menu-grid">
-{% for m in menu %}
-    <div class="menu-card">
-        <img src="/static/uploads/{{m.image}}" alt="{{m.name}}">
-        <h3>{{m.name}}</h3>
-        <p>$ {{m.price}}</p>
-
-        <a href="/delete_menu/{{m.id}}/{{rid}}"
-           onclick="return confirm('Delete item?')">
-            <button class="delete-btn">🗑 Delete</button>
+    <!-- ACTION BUTTONS -->
+    <div class="action-row">
+        <button class="action-btn btn-blue" onclick="document.getElementById('addMenuSection').scrollIntoView({behavior:'smooth'})">
+            <svg viewBox="0 0 24 24" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add Menu
+        </button>
+        <button class="action-btn btn-green" onclick="document.getElementById('addAdSection').scrollIntoView({behavior:'smooth'})">
+            <svg viewBox="0 0 24 24" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+            Add Advertisement
+        </button>
+        <a href="/kitchen/{{ rid }}" target="_blank" class="action-btn btn-orange">
+            <svg viewBox="0 0 24 24" stroke-width="2"><path d="M3 11l19-9-9 19-2-8-8-2z"/></svg>
+            View Menus
+        </a>
+        <a href="/dashboard_receipts/{{ rid }}" target="_blank" class="action-btn btn-red">
+            <svg viewBox="0 0 24 24" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            View Receipt
         </a>
     </div>
-{% endfor %}
+
+    <!-- STAT CARDS -->
+    <div class="stats-row">
+        <div class="stat-card">
+            <div class="stat-icon si-blue">
+                <svg viewBox="0 0 24 24" stroke-width="2"><path d="M3 11l19-9-9 19-2-8-8-2z"/></svg>
+            </div>
+            <div class="stat-info">
+                <h4>Total Menus</h4>
+                <div class="val">{{ menu|length if menu else 9 }}</div>
+                <div class="sub">Active items</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon si-green">
+                <svg viewBox="0 0 24 24" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+            </div>
+            <div class="stat-info">
+                <h4>Total Orders</h4>
+                <div class="val" id="totalOrders">—</div>
+                <div class="sub">Today</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon si-orange">
+                <svg viewBox="0 0 24 24" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            </div>
+            <div class="stat-info">
+                <h4>Total Sales</h4>
+                <div class="val" id="totalSalesCard">—</div>
+                <div class="sub">Today</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon si-purple">
+                <svg viewBox="0 0 24 24" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </div>
+            <div class="stat-info">
+                <h4>Total Views</h4>
+                <div class="val" id="totalViews">—</div>
+                <div class="sub">Today</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ADD MENU -->
+    <div class="section-card" id="addMenuSection">
+        <div class="section-head">
+            <div class="section-head-icon">
+                <svg viewBox="0 0 24 24" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+            </div>
+            <h2>Add Menu</h2>
+        </div>
+        <form action="/add_menu/{{rid}}" method="post" enctype="multipart/form-data">
+            <div class="form-row">
+                <input name="name" placeholder="Food Name" required>
+                <input name="price" placeholder="Price" required>
+                <label class="file-label">
+                    <svg viewBox="0 0 24 24" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                    Choose File
+                    <input type="file" name="image" required onchange="this.parentElement.querySelector('span') && (this.parentElement.querySelector('span').textContent = this.files[0]?.name || 'No file chosen')">
+                </label>
+                <button type="submit" class="submit-btn">
+                    <svg viewBox="0 0 24 24" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    Add
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- ADD AD -->
+    <div class="section-card" id="addAdSection">
+        <div class="section-head">
+            <div class="section-head-icon" style="background:var(--green);">
+                <svg viewBox="0 0 24 24" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+            </div>
+            <h2>Add Advertisement</h2>
+        </div>
+        <form action="/add_ad/{{rid}}" method="post" enctype="multipart/form-data">
+            <div class="form-row">
+                <input name="title" placeholder="Ad Title" required>
+                <label class="file-label">
+                    <svg viewBox="0 0 24 24" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                    Choose File
+                    <input type="file" name="image" required>
+                </label>
+                <button type="submit" class="submit-btn submit-btn-green">
+                    <svg viewBox="0 0 24 24" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                    Add Ad
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- MENU LIST -->
+    <div class="section-card">
+        <div class="menu-section-head">
+            <div class="section-head" style="margin-bottom:0;">
+                <div class="section-head-icon">
+                    <svg viewBox="0 0 24 24" stroke-width="2"><path d="M3 11l19-9-9 19-2-8-8-2z"/></svg>
+                </div>
+                <h2>Menu List</h2>
+            </div>
+            <a href="#" class="view-all-link">
+                View all
+                <svg viewBox="0 0 24 24" stroke-width="2.5" style="width:14px;height:14px;stroke:currentColor;fill:none;"><polyline points="9 18 15 12 9 6"/></svg>
+            </a>
+        </div>
+
+        <div style="height:18px;"></div>
+
+        <div class="menu-grid">
+        {% for m in menu %}
+            <div class="menu-card">
+                <div class="menu-card-img">
+                    <img src="/static/uploads/{{m.image}}"
+                         alt="{{m.name}}"
+                         onerror="this.src='/static/default_food.jpg'">
+                    <div class="active-badge">Active</div>
+                </div>
+                <div class="menu-card-body">
+                    <h3>{{m.name}}</h3>
+                    <div class="menu-price">${{m.price}}</div>
+                    <div class="menu-card-actions">
+                        <button class="edit-btn">
+                            <svg viewBox="0 0 24 24" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                            Edit
+                        </button>
+                        <a href="/delete_menu/{{m.id}}/{{rid}}"
+                           onclick="return confirm('Delete item?')"
+                           style="flex:1;text-decoration:none;">
+                            <button class="delete-btn" style="width:100%;">
+                                <svg viewBox="0 0 24 24" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+                                Delete
+                            </button>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+        </div>
+    </div>
+
+    <div class="footer">© 2024 {{restaurant}}. All rights reserved.</div>
+</main>
+
+<!-- ── FABs ── -->
+<div class="fab-group">
+    <button class="fab fab-sales" onclick="openSales()" title="Sales">
+        <svg viewBox="0 0 24 24" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+    </button>
+    <button class="fab fab-kitchen" onclick="openKitchen()" title="Kitchen">
+        <svg viewBox="0 0 24 24" stroke-width="2"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
+    </button>
+    <button class="fab fab-staff" onclick="openStaff()" title="Staff">
+        <svg viewBox="0 0 24 24" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    </button>
+    <button class="fab fab-qr" onclick="openQR()" title="QR Code">
+        <svg viewBox="0 0 24 24" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="3" height="3"/><rect x="18" y="14" width="3" height="3"/><rect x="14" y="18" width="3" height="3"/><rect x="18" y="18" width="3" height="3"/></svg>
+    </button>
+    <button class="fab fab-stats" onclick="openStats()" title="Stats">
+        <svg viewBox="0 0 24 24" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+    </button>
 </div>
 
-<button class="fab stats-btn" onclick="openStats()">📊</button>
-<button class="fab qr-btn" onclick="openQR()">📷</button>
-<button class="fab staff-btn" onclick="openStaff()">👨‍💼</button>
-<button class="fab sales-btn" onclick="openSales()">💰</button>
-<button class="fab kitchen-btn" onclick="openKitchen()">👨‍🍳</button>
-
+<!-- ── POPUPS ── -->
 <div class="popup" id="statsPopup">
     <div class="popup-box">
-        <h3>Stats</h3>
-        <p id="statsData">Loading...</p>
-        <button onclick="closeStats()">Close</button>
+        <h3>📊 Stats</h3>
+        <p id="statsData" style="color:var(--muted);font-size:14px;margin-bottom:18px;">Loading...</p>
+        <button class="popup-btn popup-btn-close" onclick="closeStats()">Close</button>
     </div>
 </div>
 
 <div class="popup" id="salesPopup">
     <div class="popup-box">
-        <h3>📊 Sales Dashboard</h3>
-
-        <label>From:</label>
-        <input type="date" id="fromDate"><br>
-
-        <label>To:</label>
-        <input type="date" id="toDate"><br><br>
-
-        <button onclick="loadSales()">Load</button>
-
-        <h3>Total: $<span id="totalSales">0</span></h3>
-        <div id="salesData"></div>
-
-        <button onclick="closeSales()">Close</button>
+        <h3>💰 Sales Dashboard</h3>
+        <input type="date" id="fromDate" class="popup-input">
+        <input type="date" id="toDate" class="popup-input">
+        <button class="popup-btn popup-btn-blue" onclick="loadSales()">Load</button>
+        <h3 style="margin:12px 0 6px;">Total: $<span id="totalSales">0</span></h3>
+        <div id="salesData" style="font-size:13px;color:var(--muted);margin-bottom:12px;"></div>
+        <button class="popup-btn popup-btn-close" onclick="closeSales()">Close</button>
     </div>
 </div>
 
 <div class="popup" id="qrPopup">
     <div class="popup-box">
-        <h3>Generate QR</h3>
-        <input id="tableInput" placeholder="Table No" required>
-        <br><br>
-        <button onclick="generateQR()">Generate</button>
-        <div id="qrResult"></div>
-        <br>
-        <button onclick="closeQR()">Close</button>
+        <h3>📷 Generate QR</h3>
+        <input id="tableInput" placeholder="Table No" class="popup-input" required>
+        <button class="popup-btn popup-btn-blue" onclick="generateQR()">Generate</button>
+        <div id="qrResult" style="margin:12px 0;"></div>
+        <button class="popup-btn popup-btn-close" onclick="closeQR()">Close</button>
     </div>
 </div>
 
 <div class="popup" id="staffPopup">
     <div class="popup-box">
-        <h3>Add Staff</h3>
-        <input id="sname" placeholder="Name"><br>
-        <input id="semail" placeholder="Email"><br>
-        <input id="spass" placeholder="Password"><br><br>
-        <button onclick="addStaff()">Add</button>
-        <br><br>
-        <button onclick="closeStaff()">Close</button>
+        <h3>👨‍💼 Add Staff</h3>
+        <input id="sname" placeholder="Name" class="popup-input">
+        <input id="semail" placeholder="Email" class="popup-input">
+        <input id="spass" placeholder="Password" type="password" class="popup-input">
+        <button class="popup-btn popup-btn-blue" onclick="addStaff()">Add Staff</button>
+        <button class="popup-btn popup-btn-close" onclick="closeStaff()">Close</button>
     </div>
 </div>
 
 <div class="popup" id="kitchenPopup">
     <div class="popup-box">
         <h3>👨‍🍳 Kitchen Screen</h3>
-        <a href="/kitchen/{{ rid }}" target="_blank" class="top-btn kitchen-link-btn">
+        <a href="/kitchen/{{ rid }}" target="_blank"
+           style="display:block;width:100%;padding:13px;background:var(--green);color:#fff;border-radius:10px;font-weight:700;font-size:14px;text-decoration:none;margin-bottom:10px;">
             Open Kitchen Screen
         </a>
-        <br><br>
-        <button onclick="closeKitchen()">Close</button>
+        <button class="popup-btn popup-btn-close" onclick="closeKitchen()">Close</button>
     </div>
 </div>
 
 <script>
 const RID = "{{rid}}"
 
-function openStats(){
-    document.getElementById("statsPopup").style.display="flex"
-}
-function closeStats(){
-    document.getElementById("statsPopup").style.display="none"
-}
+function openStats()  { document.getElementById("statsPopup").style.display="flex" }
+function closeStats() { document.getElementById("statsPopup").style.display="none" }
+function openSales()  { document.getElementById("salesPopup").style.display="flex" }
+function closeSales() { document.getElementById("salesPopup").style.display="none" }
+function openQR()     { document.getElementById("qrPopup").style.display="flex" }
+function closeQR()    { document.getElementById("qrPopup").style.display="none" }
+function openStaff()  { document.getElementById("staffPopup").style.display="flex" }
+function closeStaff() { document.getElementById("staffPopup").style.display="none" }
+function openKitchen(){ document.getElementById("kitchenPopup").style.display="flex" }
+function closeKitchen(){ document.getElementById("kitchenPopup").style.display="none" }
 
-function openSales(){
-    document.getElementById("salesPopup").style.display="flex"
-}
-function closeSales(){
-    document.getElementById("salesPopup").style.display="none"
-}
-
-function openQR(){
-    document.getElementById("qrPopup").style.display="flex"
-}
-function closeQR(){
-    document.getElementById("qrPopup").style.display="none"
-}
-
-function openStaff(){
-    document.getElementById("staffPopup").style.display="flex"
-}
-function closeStaff(){
-    document.getElementById("staffPopup").style.display="none"
-}
-
-function openKitchen(){
-    document.getElementById("kitchenPopup").style.display="flex"
-}
-function closeKitchen(){
-    document.getElementById("kitchenPopup").style.display="none"
-}
+// Close popup on backdrop click
+document.querySelectorAll('.popup').forEach(p=>{
+    p.addEventListener('click',e=>{ if(e.target===p) p.style.display="none" })
+})
 
 function generateQR(){
     let table = document.getElementById("tableInput").value
-
-    fetch("/generate_qr/" + RID,{
+    fetch("/generate_qr/"+RID,{
         method:"POST",
-        headers:{
-            "Content-Type":"application/x-www-form-urlencoded"
-        },
-        body:"table=" + encodeURIComponent(table)
-    })
-    .then(res=>res.text())
-    .then(data=>{
+        headers:{"Content-Type":"application/x-www-form-urlencoded"},
+        body:"table="+encodeURIComponent(table)
+    }).then(res=>res.text()).then(data=>{
         document.getElementById("qrResult").innerHTML=data
     })
 }
@@ -332,37 +893,41 @@ function generateQR(){
 function addStaff(){
     fetch("/add_staff/"+RID,{
         method:"POST",
-        headers:{
-            "Content-Type":"application/x-www-form-urlencoded"
-        },
+        headers:{"Content-Type":"application/x-www-form-urlencoded"},
         body:"name="+document.getElementById("sname").value+
-        "&email="+document.getElementById("semail").value+
-        "&password="+document.getElementById("spass").value
+             "&email="+document.getElementById("semail").value+
+             "&password="+document.getElementById("spass").value
     }).then(()=>alert("Staff Added ✅"))
 }
 
-function renew() {
-    fetch("/renew_school", {
-        method: "POST"
-    })
-    .then(res => res.json())
-    .then(data => {
-        alert(data.message);
-        location.reload();
-    });
+function renew(){
+    fetch("/renew_school",{method:"POST"})
+    .then(res=>res.json())
+    .then(data=>{ alert(data.message); location.reload(); })
 }
 
-// ✅ CUSUB: Notification kaliya - receipt page ma furi
-setInterval(async () => {
-    let rid = "{{ rid }}";
-    let res = await fetch(`/check_new_order/${rid}`);
-    let data = await res.json();
-    if(data.new_order){
-        // Maqaayada notification kaliya muuji
-        document.title = "🔔 NEW ORDER! - Dashboard";
-        setTimeout(() => { document.title = "{{ restaurant }} Dashboard"; }, 5000);
-    }
-}, 3000);
+function loadSales(){
+    let from = document.getElementById("fromDate").value
+    let to = document.getElementById("toDate").value
+    fetch(`/sales/${RID}?from=${from}&to=${to}`)
+    .then(r=>r.json())
+    .then(data=>{
+        document.getElementById("totalSales").innerText = data.total || "0"
+        document.getElementById("salesData").innerHTML = data.html || ""
+    }).catch(()=>{})
+}
+
+// New order notification
+setInterval(async ()=>{
+    try{
+        let res = await fetch(`/check_new_order/${RID}`)
+        let data = await res.json()
+        if(data.new_order){
+            document.title = "🔔 NEW ORDER! - Dashboard"
+            setTimeout(()=>{ document.title = "{{restaurant}} Dashboard" }, 5000)
+        }
+    }catch(e){}
+}, 3000)
 </script>
 
 </body>

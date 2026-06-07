@@ -4,284 +4,715 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ restaurant }} Menu</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
     <style>
+        *{box-sizing:border-box;margin:0;padding:0;}
+
+        :root{
+            --blue:#1565C0;
+            --blue-light:#1976D2;
+            --blue-bright:#2196F3;
+            --orange:#FF9800;
+            --orange-dark:#F57C00;
+            --white:#FFFFFF;
+            --bg:#F0F4FF;
+            --card-bg:#FFFFFF;
+            --text:#1A1A2E;
+            --text-muted:#6B7280;
+            --shadow:0 4px 20px rgba(21,101,192,0.12);
+            --shadow-sm:0 2px 10px rgba(0,0,0,0.08);
+        }
+
         body{
-            font-family:Arial, sans-serif;
-            padding:15px;
-            margin:0;
-            background:#f4f4f4;
+            font-family:'Poppins',sans-serif;
+            background:var(--bg);
+            min-height:100vh;
+            padding-bottom:90px;
+            color:var(--text);
         }
 
-        h1{
-            text-align:center;
-            font-size:30px;
-            margin:15px 0;
-        }
-
-        /* ADS SLIDER */
-        .ads-slider{
+        /* ── HERO HEADER ── */
+        .hero{
+            background:linear-gradient(160deg,#0D47A1 0%,#1565C0 40%,#1976D2 70%,#1E88E5 100%);
+            border-radius:0 0 32px 32px;
+            padding:0 0 28px;
             position:relative;
-            width:100%;
-            height:240px;
             overflow:hidden;
-            border-radius:14px;
-            margin-bottom:20px;
-            background:white;
-            box-shadow:0 0 8px rgba(0,0,0,0.1);
+            margin-bottom:24px;
+        }
+
+        .hero::before{
+            content:'';
+            position:absolute;
+            top:-60px;right:-60px;
+            width:220px;height:220px;
+            background:rgba(255,255,255,0.06);
+            border-radius:50%;
+        }
+
+        .hero::after{
+            content:'';
+            position:absolute;
+            bottom:-80px;left:-40px;
+            width:180px;height:180px;
+            background:rgba(255,255,255,0.04);
+            border-radius:50%;
+        }
+
+        /* top bar */
+        .topbar{
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            padding:16px 20px 0;
+        }
+
+        .topbar-icon{
+            width:44px;height:44px;
+            background:rgba(255,255,255,0.18);
+            border-radius:50%;
+            display:flex;align-items:center;justify-content:center;
+            cursor:pointer;
+            border:none;
+            backdrop-filter:blur(4px);
+        }
+
+        .topbar-icon svg{stroke:#fff;fill:none;width:22px;height:22px;}
+
+        .topbar-right{display:flex;gap:10px;}
+
+        .notif-badge{
+            position:relative;
+        }
+
+        .badge{
+            position:absolute;
+            top:-4px;right:-4px;
+            width:18px;height:18px;
+            background:var(--orange);
+            border-radius:50%;
+            font-size:10px;
+            font-weight:700;
+            color:#fff;
+            display:flex;align-items:center;justify-content:center;
+        }
+
+        /* ADS SLIDER inside hero */
+        .ads-slider{
+            margin:14px 20px 0;
+            border-radius:18px;
+            overflow:hidden;
+            position:relative;
+            height:200px;
+            background:rgba(255,255,255,0.1);
         }
 
         .slide{
             display:none;
-            width:100%;
-            height:100%;
-            position:absolute;
-            top:0;
-            left:0;
+            width:100%;height:100%;
+            position:absolute;top:0;left:0;
         }
 
-        .active-slide{
-            display:block;
-        }
+        .active-slide{display:block;}
 
         .ad-img{
-            width:100%;
-            height:220px;
+            width:100%;height:180px;
             object-fit:cover;
-            border-radius:10px;
+            border-radius:14px;
         }
 
         .ad-title{
-            text-align:center;
-            font-weight:bold;
-            font-size:22px;
-            padding:10px;
+            position:absolute;bottom:0;left:0;right:0;
+            background:linear-gradient(transparent,rgba(0,0,0,0.6));
+            color:#fff;
+            padding:10px 14px 6px;
+            font-weight:700;
+            font-size:16px;
+            border-radius:0 0 14px 14px;
         }
 
-        .ad-audio{
-            width:100%;
-            margin-top:5px;
+        .ad-audio{width:100%;margin-top:4px;height:32px;}
+
+        /* hero welcome text */
+        .hero-text{
+            padding:20px 24px 0;
+            position:relative;z-index:1;
         }
 
-        /* MENU GRID */
+        .hero-welcome{
+            color:var(--orange);
+            font-size:15px;
+            font-weight:600;
+            letter-spacing:0.3px;
+            margin-bottom:4px;
+            display:flex;align-items:center;gap:6px;
+        }
+
+        .hero-title{
+            color:#fff;
+            font-size:30px;
+            font-weight:800;
+            line-height:1.15;
+            margin-bottom:6px;
+        }
+
+        .hero-sub{
+            color:rgba(255,255,255,0.75);
+            font-size:13px;
+            font-weight:400;
+        }
+
+        .hero-sub span{
+            border-bottom:2px solid var(--orange);
+            padding-bottom:1px;
+        }
+
+        /* ── SECTION ── */
+        .section-header{
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            padding:0 20px;
+            margin-bottom:14px;
+        }
+
+        .section-title{
+            display:flex;align-items:center;gap:10px;
+            font-size:17px;font-weight:700;
+        }
+
+        .section-icon{
+            width:34px;height:34px;
+            background:var(--blue);
+            border-radius:10px;
+            display:flex;align-items:center;justify-content:center;
+        }
+
+        .section-icon svg{stroke:#fff;fill:none;width:18px;height:18px;}
+
+        .view-all{
+            color:var(--blue-bright);
+            font-size:13px;font-weight:600;
+            display:flex;align-items:center;gap:3px;
+            cursor:pointer;background:none;border:none;
+        }
+
+        /* ── MENU GRID ── */
         .grid{
             display:grid;
-            grid-template-columns:repeat(auto-fill,minmax(150px,1fr));
-            gap:15px;
+            grid-template-columns:repeat(auto-fill,minmax(155px,1fr));
+            gap:14px;
+            padding:0 20px;
+            margin-bottom:24px;
         }
 
         .card{
-            background:white;
-            border-radius:12px;
+            background:var(--card-bg);
+            border-radius:18px;
             padding:12px;
-            box-shadow:0 0 8px rgba(0,0,0,0.08);
+            box-shadow:var(--shadow-sm);
+            position:relative;
+            transition:transform .2s,box-shadow .2s;
+        }
+
+        .card:active{transform:scale(0.97);}
+
+        .card-img-wrap{
+            position:relative;
+            border-radius:12px;
+            overflow:hidden;
+            height:120px;
+            margin-bottom:10px;
         }
 
         .card img{
-            width:100%;
-            height:120px;
+            width:100%;height:100%;
             object-fit:cover;
-            border-radius:8px;
+            display:block;
         }
 
+        .heart-btn{
+            position:absolute;top:8px;right:8px;
+            width:28px;height:28px;
+            background:rgba(255,255,255,0.85);
+            border-radius:50%;
+            border:none;
+            display:flex;align-items:center;justify-content:center;
+            cursor:pointer;
+        }
+
+        .heart-btn svg{width:14px;height:14px;stroke:#aaa;fill:none;}
+
         .card h3{
-            margin:10px 0 5px;
-            font-size:18px;
+            font-size:13px;font-weight:600;
+            color:var(--text);
+            margin-bottom:8px;
+            white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+        }
+
+        .card-bottom{
+            display:flex;align-items:center;justify-content:space-between;
         }
 
         .price{
-            font-size:20px;
-            font-weight:bold;
-            margin-bottom:10px;
+            font-size:16px;font-weight:700;
+            color:var(--blue-bright);
         }
 
-        .cart-box,.status-box{
-            background:white;
-            padding:15px;
-            border-radius:12px;
-            box-shadow:0 0 8px rgba(0,0,0,0.08);
-            margin-top:20px;
-        }
-
-        button{
-            padding:10px 14px;
-            border:none;
-            border-radius:6px;
+        .add-btn{
+            width:30px;height:30px;
+            background:var(--blue);
+            border:none;border-radius:50%;
+            color:#fff;
+            font-size:20px;line-height:1;
+            display:flex;align-items:center;justify-content:center;
             cursor:pointer;
-            font-weight:bold;
+            box-shadow:0 3px 10px rgba(21,101,192,0.35);
+            transition:transform .15s,background .15s;
         }
 
-        .add-btn,.send-btn{
-            background:#0a7cff;
-            color:white;
+        .add-btn:active{transform:scale(0.9);background:var(--blue-bright);}
+
+        /* ── CART BOX ── */
+        .cart-box{
+            background:var(--card-bg);
+            border-radius:24px 24px 0 0;
+            box-shadow:0 -4px 24px rgba(21,101,192,0.10);
+            padding:20px 20px 10px;
+            margin:0 0 14px;
         }
 
-        .plus-btn{
-            background:green;
-            color:white;
-            margin-left:5px;
+        .cart-header{
+            display:flex;align-items:center;justify-content:space-between;
+            margin-bottom:14px;
         }
 
-        .minus-btn{
-            background:orange;
-            color:white;
-            margin-left:5px;
+        .cart-title{
+            display:flex;align-items:center;gap:10px;
+            font-size:17px;font-weight:700;
         }
 
-        .remove-btn{
-            background:red;
-            color:white;
-            margin-left:5px;
+        .cart-title-icon{
+            width:34px;height:34px;
+            background:var(--blue);
+            border-radius:10px;
+            display:flex;align-items:center;justify-content:center;
         }
 
-        .call-btn{
-            background:orange;
-            color:white;
-            margin-top:15px;
-            width:100%;
+        .cart-title-icon svg{stroke:#fff;fill:none;width:18px;height:18px;}
+
+        .item-count-badge{
+            background:var(--bg);
+            color:var(--blue);
+            font-size:12px;font-weight:700;
+            padding:4px 12px;
+            border-radius:20px;
         }
 
+        #cart{list-style:none;padding:0;margin-bottom:12px;}
+
+        #cart li{
+            display:flex;align-items:center;
+            padding:8px 0;
+            border-bottom:1px solid #F0F4FF;
+            font-size:13px;
+            gap:6px;
+        }
+
+        #cart li:last-child{border-bottom:none;}
+
+        .cart-item-name{flex:1;font-weight:500;}
+        .cart-item-price{font-weight:700;color:var(--blue-bright);min-width:50px;text-align:right;}
+
+        .cart-btn{
+            width:26px;height:26px;
+            border:none;border-radius:8px;
+            font-weight:700;font-size:14px;
+            cursor:pointer;
+            display:flex;align-items:center;justify-content:center;
+        }
+
+        .plus-btn{background:#E8F5E9;color:#2E7D32;}
+        .minus-btn{background:#FFF3E0;color:#E65100;}
+        .remove-btn{background:#FFEBEE;color:#C62828;font-size:12px;}
+
+        .cart-total-row{
+            display:flex;align-items:center;justify-content:space-between;
+            padding:12px 0 0;
+            border-top:2px solid var(--bg);
+        }
+
+        .cart-total-label{font-size:15px;font-weight:600;}
+        .cart-total-amount{font-size:22px;font-weight:800;color:var(--blue-bright);}
+
+        /* ── PAYMENT BOX ── */
+        .payment-box{
+            background:var(--bg);
+            border-radius:16px;
+            padding:14px 16px;
+            margin:16px 0 0;
+            display:flex;align-items:center;gap:14px;
+        }
+
+        .payment-icon{
+            width:46px;height:46px;
+            background:var(--blue);
+            border-radius:14px;
+            display:flex;align-items:center;justify-content:center;
+            flex-shrink:0;
+        }
+
+        .payment-icon svg{stroke:#fff;fill:none;width:24px;height:24px;}
+
+        .payment-info h4{font-size:14px;font-weight:700;margin-bottom:3px;}
+        .payment-info p{font-size:12px;color:var(--text-muted);}
+
+        .secure-badge{
+            margin-left:auto;
+            display:flex;align-items:center;gap:4px;
+            color:#2E7D32;font-size:11px;font-weight:600;
+            flex-shrink:0;
+        }
+
+        .secure-badge svg{width:14px;height:14px;fill:#2E7D32;}
+
+        /* ── BUTTONS ── */
         .send-btn{
             width:100%;
-            margin-top:10px;
-            font-size:16px;
-            padding:14px;
+            padding:16px;
+            background:var(--blue);
+            color:#fff;
+            font-family:'Poppins',sans-serif;
+            font-size:15px;font-weight:700;
+            border:none;border-radius:16px;
+            cursor:pointer;
+            display:flex;align-items:center;justify-content:center;gap:8px;
+            margin-top:16px;
+            box-shadow:0 6px 20px rgba(21,101,192,0.35);
+            transition:transform .15s;
         }
 
+        .send-btn:active{transform:scale(0.98);}
+        .send-btn svg{stroke:#fff;fill:none;width:18px;height:18px;}
+
+        .call-btn{
+            width:100%;
+            padding:16px;
+            background:var(--orange);
+            color:#fff;
+            font-family:'Poppins',sans-serif;
+            font-size:15px;font-weight:700;
+            border:none;border-radius:16px;
+            cursor:pointer;
+            display:flex;align-items:center;justify-content:center;gap:8px;
+            margin-top:10px;
+            box-shadow:0 6px 20px rgba(255,152,0,0.35);
+            transition:transform .15s;
+        }
+
+        .call-btn:active{transform:scale(0.98);}
+        .call-btn svg{stroke:#fff;fill:none;width:18px;height:18px;}
+
+        /* ── SUCCESS MSG ── */
+        #orderSuccess{
+            display:none;
+            background:#E8F5E9;
+            color:#1B5E20;
+            padding:16px;
+            border-radius:14px;
+            text-align:center;
+            margin-top:14px;
+            font-size:15px;
+            font-weight:700;
+            border:1px solid #A5D6A7;
+            animation:fadeIn .4s ease;
+        }
+
+        #orderSuccess span{
+            display:block;
+            font-size:13px;font-weight:400;
+            margin-top:4px;color:#2E7D32;
+        }
+
+        @keyframes fadeIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+
+        /* ── MODAL ── */
         .modal{
             display:none;
-            position:fixed;
-            top:0;
-            left:0;
-            width:100%;
-            height:100%;
-            background:rgba(0,0,0,0.5);
+            position:fixed;top:0;left:0;
+            width:100%;height:100%;
+            background:rgba(0,0,0,0.45);
             z-index:999;
+            backdrop-filter:blur(3px);
         }
 
         .modal-content{
-            background:white;
-            width:90%;
-            max-width:400px;
-            margin:60px auto;
-            padding:20px;
-            border-radius:12px;
+            background:#fff;
+            width:90%;max-width:380px;
+            margin:auto;
+            padding:28px 24px 20px;
+            border-radius:24px;
+            position:absolute;
+            left:50%;bottom:0;
+            transform:translateX(-50%);
+            box-shadow:0 -8px 40px rgba(0,0,0,0.15);
         }
 
-        .close-btn{
-            background:#e91e63;
-            color:white;
+        .modal-drag{
+            width:40px;height:4px;
+            background:#E0E0E0;border-radius:4px;
+            margin:0 auto 16px;
+        }
+
+        .modal-title{
+            font-size:18px;font-weight:700;
+            margin-bottom:20px;text-align:center;
+        }
+
+        .modal-confirm{
+            width:100%;padding:15px;
+            background:var(--blue);color:#fff;
+            font-family:'Poppins',sans-serif;
+            font-size:15px;font-weight:700;
+            border:none;border-radius:14px;
+            cursor:pointer;margin-bottom:10px;
+        }
+
+        .modal-close{
+            width:100%;padding:13px;
+            background:#F5F5F5;color:#555;
+            font-family:'Poppins',sans-serif;
+            font-size:14px;font-weight:600;
+            border:none;border-radius:14px;
+            cursor:pointer;
+        }
+
+        /* ── BOTTOM NAV ── */
+        .bottom-nav{
+            position:fixed;bottom:0;left:0;right:0;
+            background:#fff;
+            border-top:1px solid #EEF2FF;
+            display:flex;
+            box-shadow:0 -4px 20px rgba(21,101,192,0.10);
+            z-index:100;
+        }
+
+        .nav-item{
+            flex:1;
+            display:flex;flex-direction:column;align-items:center;
+            padding:10px 0 8px;
+            cursor:pointer;
+            color:var(--text-muted);
+            font-size:11px;font-weight:500;
+            gap:4px;
+            background:none;border:none;
+            font-family:'Poppins',sans-serif;
+        }
+
+        .nav-item.active{color:var(--blue);}
+
+        .nav-item svg{width:22px;height:22px;stroke:currentColor;fill:none;}
+
+        .nav-item.active svg{stroke:var(--blue);}
+
+        /* Table badge */
+        .table-badge{
+            display:inline-flex;align-items:center;gap:6px;
+            background:rgba(255,255,255,0.18);
+            color:#fff;
+            font-size:12px;font-weight:600;
+            padding:5px 12px;
+            border-radius:20px;
             margin-top:10px;
-        }
-
-        li{
-            margin-bottom:10px;
         }
     </style>
 </head>
 <body>
 
-    {% if ads %}
-    <div class="ads-slider">
-        {% for ad in ads %}
-        <div class="slide {% if loop.first %}active-slide{% endif %}">
-
-            {% if ad.image %}
-                {% if ad.image.endswith('.mp4') %}
-                <video class="ad-img" autoplay muted loop playsinline controls>
-                    <source src="/static/uploads/{{ ad.image }}" type="video/mp4">
-                </video>
-                {% else %}
-                <img src="/static/uploads/{{ ad.image }}" class="ad-img">
-                {% endif %}
-            {% endif %}
-
-            {% if ad.title %}
-            <div class="ad-title">{{ ad.title }}</div>
-            {% endif %}
-
-            {% if ad.audio %}
-            <audio class="ad-audio" controls autoplay>
-                <source src="/static/uploads/{{ ad.audio }}">
-            </audio>
-            {% endif %}
-
+    <!-- ── HERO ── -->
+    <div class="hero">
+        <div class="topbar">
+            <button class="topbar-icon">
+                <svg viewBox="0 0 24 24" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+            </button>
+            <div class="topbar-right">
+                <button class="topbar-icon">
+                    <svg viewBox="0 0 24 24" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                </button>
+                <button class="topbar-icon notif-badge">
+                    <svg viewBox="0 0 24 24" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                    <div class="badge" id="cartBadge">0</div>
+                </button>
+            </div>
         </div>
-        {% endfor %}
+
+        {% if ads %}
+        <div class="ads-slider" style="margin:14px 20px 0;">
+            {% for ad in ads %}
+            <div class="slide {% if loop.first %}active-slide{% endif %}">
+                {% if ad.image %}
+                    {% if ad.image.endswith('.mp4') %}
+                    <video class="ad-img" autoplay muted loop playsinline controls>
+                        <source src="/static/uploads/{{ ad.image }}" type="video/mp4">
+                    </video>
+                    {% else %}
+                    <img src="/static/uploads/{{ ad.image }}" class="ad-img" alt="">
+                    {% endif %}
+                {% endif %}
+                {% if ad.title %}<div class="ad-title">{{ ad.title }}</div>{% endif %}
+                {% if ad.audio %}
+                <audio class="ad-audio" controls autoplay>
+                    <source src="/static/uploads/{{ ad.audio }}">
+                </audio>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="hero-text">
+            <div class="hero-welcome">Welcome 👋</div>
+            <div class="hero-title">{{ restaurant }}</div>
+            <div class="hero-sub"><span>Delicious food, great experience</span></div>
+            <div class="table-badge">
+                <svg viewBox="0 0 24 24" stroke-width="2" style="width:14px;height:14px;stroke:#fff;fill:none;"><rect x="3" y="8" width="18" height="3" rx="1"/><line x1="12" y1="11" x2="12" y2="20"/><line x1="8" y1="20" x2="16" y2="20"/></svg>
+                Table: {{ table }}
+            </div>
+        </div>
+        {% endif %}
+
+        {% if ads %}
+        <div class="hero-text" style="padding-top:12px;">
+            <div class="hero-welcome">Welcome 👋</div>
+            <div class="hero-title">{{ restaurant }}</div>
+            <div class="hero-sub"><span>Delicious food, great experience</span></div>
+            <div class="table-badge">
+                <svg viewBox="0 0 24 24" stroke-width="2" style="width:14px;height:14px;stroke:#fff;fill:none;"><rect x="3" y="8" width="18" height="3" rx="1"/><line x1="12" y1="11" x2="12" y2="20"/><line x1="8" y1="20" x2="16" y2="20"/></svg>
+                Table: {{ table }}
+            </div>
+        </div>
+        {% endif %}
     </div>
-    {% endif %}
 
-    <h1>🍽 {{ restaurant }} Menu</h1>
-
-    <p><b>Table:</b> {{ table }}</p>
+    <!-- ── POPULAR MENU ── -->
+    <div class="section-header">
+        <div class="section-title">
+            <div class="section-icon">
+                <svg viewBox="0 0 24 24" stroke-width="2"><path d="M3 11l19-9-9 19-2-8-8-2z"/></svg>
+            </div>
+            Popular Menu
+        </div>
+        <button class="view-all">
+            View all
+            <svg viewBox="0 0 24 24" stroke-width="2.5" style="width:14px;height:14px;stroke:currentColor;fill:none;"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+    </div>
 
     <div class="grid">
         {% for m in menu %}
         <div class="card">
-            <img src="/static/uploads/{{ m.image }}"
-                 alt="{{ m.name }}"
-                 onerror="this.src='/static/default_food.jpg'">
-
+            <div class="card-img-wrap">
+                <img src="/static/uploads/{{ m.image }}"
+                     alt="{{ m.name }}"
+                     onerror="this.src='/static/default_food.jpg'">
+                <button class="heart-btn">
+                    <svg viewBox="0 0 24 24" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                </button>
+            </div>
             <h3>{{ m.name }}</h3>
-            <div class="price">$ {{ m.price }}</div>
-
-            <button
-                class="add-btn"
-                data-name="{{ m.name }}"
-                data-price="{{ m.price }}"
-                onclick="openItemModal(this)">
-                Add
-            </button>
+            <div class="card-bottom">
+                <div class="price">${{ m.price }}</div>
+                <button
+                    class="add-btn"
+                    data-name="{{ m.name }}"
+                    data-price="{{ m.price }}"
+                    onclick="openItemModal(this)">
+                    +
+                </button>
+            </div>
         </div>
         {% endfor %}
     </div>
 
+    <!-- ── CART ── -->
     <div class="cart-box">
-        <h2>🛒 Cart</h2>
-        <ul id="cart"></ul>
-        <p><b>Total:</b> $<span id="total">0</span></p>
-
-        <div class="status-box">
-            <h2>💳 Payment Info</h2>
-            <p><b>USSD Code:</b> {{ payment }}</p>
+        <div class="cart-header">
+            <div class="cart-title">
+                <div class="cart-title-icon">
+                    <svg viewBox="0 0 24 24" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+                </div>
+                Cart
+            </div>
+            <div class="item-count-badge" id="itemCountBadge">0 Items</div>
         </div>
 
-        <!-- ✅ FIX: JavaScript fetch, no form submit -->
+        <ul id="cart"></ul>
+
+        <div class="cart-total-row">
+            <span class="cart-total-label">Total</span>
+            <span class="cart-total-amount">$<span id="total">0.00</span></span>
+        </div>
+
+        <!-- Payment Info -->
+        <div class="payment-box">
+            <div class="payment-icon">
+                <svg viewBox="0 0 24 24" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+            </div>
+            <div class="payment-info">
+                <h4>Payment Info</h4>
+                <p>USSD Code: {{ payment }}</p>
+            </div>
+            <div class="secure-badge">
+                <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                Secure
+            </div>
+        </div>
+
         <button class="send-btn" onclick="sendOrder()">
+            <svg viewBox="0 0 24 24" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
             Send Order
         </button>
 
         <button class="call-btn" onclick="callWaiter()">
-            🔔 Call Waiter
+            <svg viewBox="0 0 24 24" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+            Call Waiter
         </button>
 
-        <!-- ✅ Order success message - customer u muuji -->
-        <div id="orderSuccess" style="
-            display:none;
-            background:#d4edda;
-            color:#155724;
-            padding:15px;
-            border-radius:10px;
-            text-align:center;
-            margin-top:10px;
-            font-size:18px;
-            font-weight:bold;
-            border:1px solid #c3e6cb;
-        ">
-            ✅ Orderkaaga waa la helay!<br>
-            <span style="font-size:14px;font-weight:normal;">
-                Suug waxaad heshay markuu diyaar yahay 🍽
-            </span>
+        <div id="orderSuccess">
+            ✅ Orderkaaga waa la helay!
+            <span>Suug waxaad heshay markuu diyaar yahay 🍽</span>
         </div>
     </div>
 
-    <div class="modal" id="optionModal">
+    <!-- ── MODAL ── -->
+    <div class="modal" id="optionModal" onclick="closeModalOutside(event)">
         <div class="modal-content">
-            <h3 id="modalTitle">Add To Cart</h3>
-            <button class="send-btn" onclick="confirmAdd()">Confirm</button>
-            <button class="close-btn" onclick="closeModal()">Close</button>
+            <div class="modal-drag"></div>
+            <div class="modal-title" id="modalTitle">Add To Cart</div>
+            <button class="modal-confirm" onclick="confirmAdd()">✓ Confirm Add</button>
+            <button class="modal-close" onclick="closeModal()">Cancel</button>
         </div>
     </div>
+
+    <!-- ── BOTTOM NAV ── -->
+    <nav class="bottom-nav">
+        <button class="nav-item active">
+            <svg viewBox="0 0 24 24" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            Home
+        </button>
+        <button class="nav-item">
+            <svg viewBox="0 0 24 24" stroke-width="2"><path d="M3 11l19-9-9 19-2-8-8-2z"/></svg>
+            Menu
+        </button>
+        <button class="nav-item">
+            <svg viewBox="0 0 24 24" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            Orders
+        </button>
+        <button class="nav-item">
+            <svg viewBox="0 0 24 24" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            Profile
+        </button>
+    </nav>
 
 <script>
 let cart = []
@@ -292,7 +723,7 @@ let currentPrice = 0
 function openItemModal(btn){
     currentItem = btn.dataset.name
     currentPrice = parseFloat(btn.dataset.price)
-    document.getElementById("modalTitle").innerText = currentItem
+    document.getElementById("modalTitle").innerText = "Add: " + currentItem
     document.getElementById("optionModal").style.display = "block"
 }
 
@@ -300,11 +731,15 @@ function closeModal(){
     document.getElementById("optionModal").style.display = "none"
 }
 
+function closeModalOutside(e){
+    if(e.target === document.getElementById("optionModal")) closeModal()
+}
+
 function confirmAdd(){
     let found = cart.find(x => x.name === currentItem)
     if(found){
         found.qty += 1
-    }else{
+    } else {
         cart.push({ name: currentItem, price: currentPrice, qty: 1 })
     }
     total += currentPrice
@@ -322,7 +757,7 @@ function decrease(i){
     if(cart[i].qty > 1){
         cart[i].qty -= 1
         total -= cart[i].price
-    }else{
+    } else {
         remove(i)
         return
     }
@@ -339,15 +774,21 @@ function render(){
     let html = ""
     cart.forEach((item, i) => {
         html += `
-            <li>
-                ${item.qty}x ${item.name} - $${(item.price * item.qty).toFixed(2)}
-                <button class="plus-btn"   onclick="increase(${i})">+</button>
-                <button class="minus-btn"  onclick="decrease(${i})">-</button>
-                <button class="remove-btn" onclick="remove(${i})">X</button>
-            </li>`
+        <li>
+            <span style="background:#EEF2FF;color:#1565C0;font-weight:700;padding:2px 8px;border-radius:8px;font-size:12px;">${item.qty}x</span>
+            <span class="cart-item-name">${item.name}</span>
+            <span class="cart-item-price">$${(item.price * item.qty).toFixed(2)}</span>
+            <button class="cart-btn plus-btn"   onclick="increase(${i})">+</button>
+            <button class="cart-btn minus-btn"  onclick="decrease(${i})">−</button>
+            <button class="cart-btn remove-btn" onclick="remove(${i})">✕</button>
+        </li>`
     })
     document.getElementById("cart").innerHTML = html
     document.getElementById("total").innerText = total.toFixed(2)
+
+    let count = cart.reduce((s,x)=>s+x.qty,0)
+    document.getElementById("itemCountBadge").innerText = count + " Item" + (count!==1?"s":"")
+    document.getElementById("cartBadge").innerText = count
 }
 
 async function sendOrder(){
@@ -355,35 +796,22 @@ async function sendOrder(){
         alert("Please add item first ❌")
         return
     }
-
     try {
         let res = await fetch("/order/{{ rid }}", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                table: "{{ table }}",
-                cart: cart
-            })
+            body: JSON.stringify({ table: "{{ table }}", cart: cart })
         })
-
         let data = await res.json()
-
         if(data.success){
-            cart = []
-            total = 0
-            render()
-
-            // ✅ CUSTOMER: kaliya message muuji - receipt ma fur
-            document.getElementById("orderSuccess").style.display = "block"
-            setTimeout(() => {
-                document.getElementById("orderSuccess").style.display = "none"
-            }, 4000)
-
+            cart = []; total = 0; render()
+            let s = document.getElementById("orderSuccess")
+            s.style.display = "block"
+            setTimeout(() => s.style.display = "none", 4000)
         } else {
             alert("❌ " + (data.error || "Order failed"))
         }
-
-    } catch(err) {
+    } catch(err){
         alert("❌ Error: " + err.message)
     }
 }
@@ -393,9 +821,7 @@ function callWaiter(){
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body: "table={{ table }}"
-    }).then(() => {
-        alert("Waiter called ✅")
-    })
+    }).then(() => alert("Waiter called ✅"))
 }
 
 /* ADS AUTO SLIDER */
@@ -407,13 +833,10 @@ function showNextSlide(){
     slides[currentSlide].classList.remove("active-slide")
     let oldAudio = slides[currentSlide].querySelector(".ad-audio")
     if(oldAudio){ oldAudio.pause(); oldAudio.currentTime = 0 }
-
-    currentSlide++
-    if(currentSlide >= slides.length) currentSlide = 0
-
+    currentSlide = (currentSlide + 1) % slides.length
     slides[currentSlide].classList.add("active-slide")
     let newAudio = slides[currentSlide].querySelector(".ad-audio")
-    if(newAudio){ newAudio.play().catch(()=>{}) }
+    if(newAudio) newAudio.play().catch(()=>{})
 }
 
 setInterval(showNextSlide, 5000)
