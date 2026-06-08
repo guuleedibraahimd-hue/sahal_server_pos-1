@@ -4,3 +4,4 @@ firebase-admin
 qrcode
 Pillow
 gunicorn
+flask-sock

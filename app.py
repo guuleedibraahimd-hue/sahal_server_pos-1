@@ -38,16 +38,6 @@ from flask_sock import Sock
 import firebase_admin
 from firebase_admin import credentials, firestore
 
-
-# =========================
-# FLASK APP
-# =========================
-
-app = Flask(__name__)
-
-# Flask Sock
-sock = Sock(app)
-
 # =========================
 # 🚀 FLASK APP
 # =========================
