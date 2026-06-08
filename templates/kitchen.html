@@ -3,124 +3,47 @@
 <head>
     <title>Kitchen Screen</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-
     <style>
         body{
-            font-family:Arial;
+            font-family:Arial,sans-serif;
             background:#f4f4f4;
             padding:20px;
             margin:0;
         }
-
-        h1,h2{
-            text-align:center;
-        }
-
-        .top-actions{
-            margin-bottom:20px;
-            text-align:center;
-        }
-
+        h1,h2{text-align:center;}
+        .top-actions{margin-bottom:20px;text-align:center;}
         .clear-btn{
-            background:red;
-            color:white;
-            padding:10px 15px;
-            border:none;
-            border-radius:8px;
-            margin:5px;
-            cursor:pointer;
-            font-weight:bold;
+            background:red;color:white;padding:10px 15px;
+            border:none;border-radius:8px;margin:5px;cursor:pointer;font-weight:bold;
         }
-
         .order{
-            background:white;
-            padding:15px;
-            margin-bottom:15px;
-            border-radius:10px;
-            box-shadow:0 0 10px rgba(0,0,0,0.15);
+            background:white;padding:15px;margin-bottom:15px;
+            border-radius:10px;box-shadow:0 0 10px rgba(0,0,0,0.15);
         }
-
         button{
-            padding:8px 12px;
-            border:none;
-            border-radius:6px;
-            cursor:pointer;
-            margin-top:5px;
-            margin-right:5px;
-            font-weight:bold;
+            padding:8px 12px;border:none;border-radius:6px;
+            cursor:pointer;margin-top:5px;margin-right:5px;font-weight:bold;
         }
+        .preparing{background:orange;color:white;}
+        .ready{background:green;color:white;}
+        .done{background:#444;color:white;}
 
-        .preparing{
-            background:orange;
-            color:white;
-        }
-
-        .ready{
-            background:green;
-            color:white;
-        }
-
-        .done{
-            background:#444;
-            color:white;
-        }
-
-        .notify-box{
-            position:fixed;
-            top:20px;
-            right:20px;
-            width:320px;
-            z-index:999;
-        }
-
+        .notify-box{position:fixed;top:20px;right:20px;width:320px;z-index:999;}
         .notify-header{
-            background:#0a7cff;
-            color:white;
-            padding:12px;
-            border-radius:10px;
-            cursor:pointer;
-            font-weight:bold;
-            text-align:center;
-            position:relative;
+            background:#0a7cff;color:white;padding:12px;border-radius:10px;
+            cursor:pointer;font-weight:bold;text-align:center;position:relative;
         }
-
         .badge{
-            position:absolute;
-            top:-8px;
-            right:-8px;
-            background:red;
-            color:white;
-            width:25px;
-            height:25px;
-            border-radius:50%;
-            display:flex;
-            align-items:center;
-            justify-content:center;
-            font-size:13px;
-            font-weight:bold;
+            position:absolute;top:-8px;right:-8px;background:red;color:white;
+            width:25px;height:25px;border-radius:50%;display:flex;align-items:center;
+            justify-content:center;font-size:13px;font-weight:bold;
         }
-
-        .notify-list{
-            margin-top:10px;
-            display:none;
-            max-height:350px;
-            overflow:auto;
-        }
-
-        .notify-item{
-            background:yellow;
-            padding:10px;
-            border-radius:8px;
-            margin-bottom:10px;
-        }
-
-        .item-line{
-            margin:4px 0;
-            font-weight:bold;
-        }
+        .notify-list{margin-top:10px;display:none;max-height:350px;overflow:auto;}
+        .notify-item{background:yellow;padding:10px;border-radius:8px;margin-bottom:10px;}
+        .item-line{margin:4px 0;font-weight:bold;}
 
         /* ══════════════════════════════
-           INCOMING CALL POPUP (Kitchen)
+           INCOMING CALL POPUP — KITCHEN
         ══════════════════════════════ */
         #incomingCallPopup{
             display:none;
@@ -128,77 +51,74 @@
             bottom:30px;
             left:50%;
             transform:translateX(-50%);
-            width:320px;
-            background:#1a1a2e;
-            border-radius:20px;
-            padding:24px 20px 20px;
+            width:340px;
+            background:linear-gradient(160deg,#0D47A1,#1565C0 50%,#1E88E5);
+            border-radius:24px;
+            padding:28px 24px 24px;
             z-index:9999;
-            box-shadow:0 8px 40px rgba(0,0,0,0.5);
+            box-shadow:0 12px 50px rgba(13,71,161,0.6);
             text-align:center;
-            animation:slideUp .35s ease;
+            animation:slideUp .4s cubic-bezier(.34,1.56,.64,1);
         }
 
         @keyframes slideUp{
-            from{opacity:0;transform:translateX(-50%) translateY(40px);}
-            to{opacity:1;transform:translateX(-50%) translateY(0);}
+            from{opacity:0;transform:translateX(-50%) translateY(60px) scale(.92);}
+            to{opacity:1;transform:translateX(-50%) translateY(0) scale(1);}
         }
 
         .ic-label{
-            color:rgba(255,255,255,0.55);
-            font-size:13px;
-            margin-bottom:6px;
+            color:rgba(255,255,255,0.6);font-size:12px;margin-bottom:6px;
+            letter-spacing:1px;text-transform:uppercase;
         }
 
         .ic-name{
-            color:#fff;
-            font-size:22px;
-            font-weight:800;
-            margin-bottom:4px;
+            color:#fff;font-size:24px;font-weight:800;margin-bottom:3px;
         }
 
         .ic-sub{
-            color:rgba(255,255,255,0.4);
-            font-size:12px;
+            color:rgba(255,255,255,0.5);font-size:13px;margin-bottom:18px;
+        }
+
+        /* Customer message bubble */
+        .ic-message{
+            background:rgba(255,255,255,0.13);
+            border:1px solid rgba(255,255,255,0.22);
+            border-radius:12px;
+            padding:10px 14px;
+            color:rgba(255,255,255,0.88);
+            font-size:13px;
             margin-bottom:20px;
+            text-align:left;
+            display:none;
         }
+        .ic-message.visible{display:block;}
 
-        .ic-avatar{
-            width:72px;height:72px;
-            background:linear-gradient(145deg,#1565C0,#1E88E5);
-            border-radius:50%;
-            margin:0 auto 22px;
-            display:flex;align-items:center;justify-content:center;
-        }
-
-        .ic-avatar svg{width:38px;height:38px;fill:#fff;}
-
-        /* ripple on avatar */
         .ic-avatar-wrap{
-            position:relative;
-            width:72px;
-            margin:0 auto 22px;
+            position:relative;width:80px;margin:0 auto 22px;
         }
-
         .ic-ripple{
-            position:absolute;
-            inset:-10px;
-            border:2px solid rgba(33,150,243,0.4);
+            position:absolute;inset:-12px;
+            border:2px solid rgba(255,255,255,0.25);
             border-radius:50%;
             animation:ripple 1.8s ease-out infinite;
         }
-
-        .ic-ripple:nth-child(2){inset:-22px;border-color:rgba(33,150,243,0.2);animation-delay:.6s;}
-
+        .ic-ripple:nth-child(2){inset:-26px;border-color:rgba(255,255,255,0.12);animation-delay:.6s;}
         @keyframes ripple{
             0%{opacity:1;transform:scale(1);}
             100%{opacity:0;transform:scale(1.5);}
         }
 
-        .ic-controls{
-            display:flex;
-            justify-content:center;
-            gap:28px;
+        .ic-avatar{
+            width:80px;height:80px;
+            background:rgba(255,255,255,0.15);
+            border:2px solid rgba(255,255,255,0.3);
+            border-radius:50%;
+            display:flex;align-items:center;justify-content:center;
+            position:relative;z-index:1;
+            font-size:38px;
         }
+
+        .ic-controls{display:flex;justify-content:center;gap:36px;}
 
         .ic-btn{
             display:flex;flex-direction:column;align-items:center;gap:8px;
@@ -206,69 +126,47 @@
         }
 
         .ic-icon{
-            width:58px;height:58px;
-            border-radius:50%;
+            width:64px;height:64px;border-radius:50%;
             display:flex;align-items:center;justify-content:center;
+            transition:transform .15s;
         }
+        .ic-icon:active{transform:scale(0.9);}
+        .ic-icon.accept{background:#4CAF50;box-shadow:0 4px 18px rgba(76,175,80,0.45);}
+        .ic-icon.decline{background:#F44336;box-shadow:0 4px 18px rgba(244,67,54,0.45);}
+        .ic-icon svg{width:28px;height:28px;stroke:#fff;fill:none;stroke-width:2.5;}
+        .ic-btn-label{color:rgba(255,255,255,0.75);font-size:12px;font-weight:700;letter-spacing:.5px;}
 
-        .ic-icon.accept{background:#4CAF50;}
-        .ic-icon.decline{background:#F44336;}
-        .ic-icon svg{width:26px;height:26px;stroke:#fff;fill:none;stroke-width:2.5;}
-
-        .ic-btn-label{
-            color:rgba(255,255,255,0.65);
-            font-size:12px;
-        }
-
-        /* Active call bar at top */
+        /* Active call bar */
         #activeCallBar{
             display:none;
-            position:fixed;
-            top:0;left:0;right:0;
-            background:#1565C0;
-            color:#fff;
-            padding:10px 20px;
-            font-size:14px;
-            font-weight:700;
-            z-index:9998;
-            display:none;
-            align-items:center;
-            justify-content:space-between;
+            position:fixed;top:0;left:0;right:0;
+            background:#1565C0;color:#fff;
+            padding:10px 20px;font-size:14px;font-weight:700;
+            z-index:9998;align-items:center;justify-content:space-between;
         }
-
         #activeCallBar.show{display:flex;}
-
+        #activeCallTimer{font-size:13px;color:rgba(255,255,255,0.8);font-weight:400;margin-left:8px;}
         #kitchenEndBtn{
-            background:#F44336;
-            color:#fff;
-            border:none;
-            border-radius:8px;
-            padding:6px 14px;
-            font-weight:bold;
-            cursor:pointer;
-            font-size:13px;
+            background:#F44336;color:#fff;border:none;border-radius:8px;
+            padding:6px 14px;font-weight:bold;cursor:pointer;font-size:13px;
         }
     </style>
 </head>
-
 <body>
 
 <h1>👨‍🍳 Kitchen Orders</h1>
 
-<!-- Active Call Bar -->
 <div id="activeCallBar">
-    <span id="activeCallLabel">📞 On call with Table –</span>
+    <span>
+        <span id="activeCallLabel">📞 On call with Table –</span>
+        <span id="activeCallTimer"></span>
+    </span>
     <button id="kitchenEndBtn" onclick="kitchenEndCall()">End Call</button>
 </div>
 
 <div class="top-actions">
-     <button class="clear-btn" id="clearOrdersBtn">
-         🧹 Clear Kitchen Orders
-     </button>
-
-     <button class="clear-btn" id="clearCallsBtn">
-         🔔 Clear Calls
-     </button>
+    <button class="clear-btn" id="clearOrdersBtn">🧹 Clear Kitchen Orders</button>
+    <button class="clear-btn" id="clearCallsBtn">🔔 Clear Calls</button>
 </div>
 
 <div class="notify-box">
@@ -276,18 +174,11 @@
         🔔 Waiter Calls
         <div class="badge" id="callBadge">{{ calls|length }}</div>
     </div>
-
     <div class="notify-list" id="notifyList">
         {% for c in calls %}
         <div class="notify-item">
-            <b>🚨 Table {{ c.get('table', '-') }}</b>
-            <br>Calling waiter now
-            <br><br>
-
-            <button class="done waiter-btn"
-                    data-table="{{ c.get('table', '') }}">
-                I am coming
-            </button>
+            <b>🚨 Table {{ c.get('table', '-') }}</b><br>Calling waiter now<br><br>
+            <button class="done waiter-btn" data-table="{{ c.get('table', '') }}">I am coming</button>
         </div>
         {% endfor %}
     </div>
@@ -298,43 +189,21 @@
 <div id="ordersContainer">
 {% for o in orders %}
 <div class="order" id="order{{ o.id }}">
-
     <h3>Order {{ orders|length - loop.index0 }}</h3>
-
     <p><b>Items:</b></p>
-
     {% set raw_items = o.get('items', '') %}
     {% set item_list = raw_items.split(',') %}
-
     {% for item in item_list %}
         {% if item.strip() %}
         <div class="item-line">• {{ item.strip() }}</div>
         {% endif %}
     {% endfor %}
-
     <p><b>Table:</b> {{ o.get('table', '-') }}</p>
     <p><b>Price:</b> ${{ o.get('price', 0) }}</p>
     <p><b>Time:</b> {{ o.get('created_at', 'N/A') }}</p>
-
-    <p>
-        <b>Status:</b>
-        <span id="status{{ o.id }}">
-            {{ o.get('status', 'pending') }}
-        </span>
-    </p>
-
-    <button class="preparing status-btn"
-            data-id="{{ o.id }}"
-            data-status="preparing">
-        Preparing
-    </button>
-
-    <button class="ready status-btn"
-            data-id="{{ o.id }}"
-            data-status="ready">
-        ✅ Ready
-    </button>
-
+    <p><b>Status:</b> <span id="status{{ o.id }}">{{ o.get('status', 'pending') }}</span></p>
+    <button class="preparing status-btn" data-id="{{ o.id }}" data-status="preparing">Preparing</button>
+    <button class="ready status-btn" data-id="{{ o.id }}" data-status="ready">✅ Ready</button>
 </div>
 {% endfor %}
 </div>
@@ -343,250 +212,358 @@
      INCOMING CALL POPUP
 ══════════════════════════════ -->
 <div id="incomingCallPopup">
-    <div class="ic-label" id="icLabel">Incoming Call...</div>
+    <div class="ic-label">📲 Incoming Call</div>
     <div class="ic-name" id="icName">Table –</div>
-    <div class="ic-sub">Restaurant Guest</div>
+    <div class="ic-sub" id="icSub">Customer</div>
+
+    <div class="ic-message" id="icMessage"></div>
 
     <div class="ic-avatar-wrap">
         <div class="ic-ripple"></div>
         <div class="ic-ripple"></div>
-        <div class="ic-avatar">
-            <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
-                <path d="M32 8C20.95 8 12 16.95 12 28v6a6 6 0 0 0 6 6h2a2 2 0 0 0 2-2V28a2 2 0 0 0-2-2h-1.88A18 18 0 0 1 32 14a18 18 0 0 1 13.88 12H44a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h2a6 6 0 0 0 6-6v-6C52 16.95 43.05 8 32 8z" fill="#fff"/>
-                <rect x="27" y="44" width="10" height="5" rx="2" fill="#fff"/>
-                <rect x="22" y="49" width="20" height="4" rx="2" fill="#fff"/>
-            </svg>
-        </div>
+        <div class="ic-avatar">🧑‍🍽️</div>
     </div>
 
     <div class="ic-controls">
-        <button class="ic-btn" onclick="acceptCall()">
-            <div class="ic-icon accept">
-                <svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07C9.36 17.29 7.52 15.39 6.5 13.08A19.79 19.79 0 0 1 3.42 4.4 2 2 0 0 1 5.41 2.25h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L9.91 9.96a16 16 0 0 0 6.13 6.13l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-            </div>
-            <span class="ic-btn-label">Accept</span>
-        </button>
-
         <button class="ic-btn" onclick="declineCall()">
             <div class="ic-icon decline">
-                <svg viewBox="0 0 24 24"><path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7 2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07C9.44 17.29 7.76 15.36 6.69 13a19.79 19.79 0 0 1-3.07-8.63A2 2 0 0 1 5.61 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L9.69 9.81"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                <svg viewBox="0 0 24 24">
+                    <path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7 2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07C9.44 17.29 7.76 15.36 6.69 13a19.79 19.79 0 0 1-3.07-8.63A2 2 0 0 1 5.61 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L9.69 9.81"/>
+                    <line x1="1" y1="1" x2="23" y2="23"/>
+                </svg>
             </div>
             <span class="ic-btn-label">Decline</span>
+        </button>
+
+        <button class="ic-btn" onclick="acceptCall()">
+            <div class="ic-icon accept">
+                <svg viewBox="0 0 24 24">
+                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07C9.36 17.29 7.52 15.39 6.5 13.08A19.79 19.79 0 0 1 3.42 4.4 2 2 0 0 1 5.41 2.25h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L9.91 9.96a16 16 0 0 0 6.13 6.13l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+                </svg>
+            </div>
+            <span class="ic-btn-label">Answer</span>
         </button>
     </div>
 </div>
 
 <script>
 document.addEventListener("DOMContentLoaded", function(){
-
     const RID = "{{ rid }}";
 
-    /* ── toggle waiter notification ── */
     document.getElementById("notifyHeader").addEventListener("click", function(){
         let box = document.getElementById("notifyList");
         box.style.display = box.style.display === "block" ? "none" : "block";
     });
 
-    /* ── clear kitchen orders ── */
     document.getElementById("clearOrdersBtn").addEventListener("click", function(){
         fetch("/clear_orders/" + RID).then(() => location.reload());
     });
 
-    /* ── clear calls ── */
     document.getElementById("clearCallsBtn").addEventListener("click", function(){
         fetch("/clear_calls/" + RID).then(() => location.reload());
     });
 
-    /* ── waiter buttons ── */
-    document.querySelectorAll(".waiter-btn").forEach(function(btn){
-        btn.addEventListener("click", function(){
-            let table = btn.dataset.table;
-            fetch("/waiter_done/" + RID, {
-                method:"POST",
-                headers:{ "Content-Type":"application/x-www-form-urlencoded" },
-                body:"table=" + table
-            }).then(() => location.reload());
+    function attachWaiterBtns(){
+        document.querySelectorAll(".waiter-btn").forEach(function(btn){
+            btn.addEventListener("click", function(){
+                let table = btn.dataset.table;
+                fetch("/waiter_done/" + RID, {
+                    method:"POST",
+                    headers:{"Content-Type":"application/x-www-form-urlencoded"},
+                    body:"table=" + table
+                }).then(() => location.reload());
+            });
         });
-    });
+    }
+    attachWaiterBtns();
 
-    /* ── status buttons ── */
     document.querySelectorAll(".status-btn").forEach(function(btn){
         btn.addEventListener("click", function(){
-            let id     = btn.dataset.id;
-            let status = btn.dataset.status;
+            let id = btn.dataset.id, status = btn.dataset.status;
             fetch("/update_status/" + RID + "/" + id + "/" + status)
             .then(function(){
-                let statusBox = document.getElementById("status" + id);
-                if(statusBox) statusBox.innerText = status;
+                let s = document.getElementById("status" + id);
+                if(s) s.innerText = status;
             });
         });
     });
 
-    /* ── auto refresh every 3 seconds (orders) ── */
     setInterval(function(){
-        fetch(location.href)
-        .then(r => r.text())
-        .then(html => {
-            let parser  = new DOMParser();
-            let doc     = parser.parseFromString(html, "text/html");
+        fetch(location.href).then(r => r.text()).then(html => {
+            let parser = new DOMParser();
+            let doc = parser.parseFromString(html, "text/html");
             let newOrders = doc.getElementById("ordersContainer");
             let newBadge  = doc.getElementById("callBadge");
             let newList   = doc.getElementById("notifyList");
             if(newOrders) document.getElementById("ordersContainer").innerHTML = newOrders.innerHTML;
             if(newBadge)  document.getElementById("callBadge").innerText = newBadge.innerText;
             if(newList){
-                let currentlyOpen = document.getElementById("notifyList").style.display;
+                let open = document.getElementById("notifyList").style.display;
                 document.getElementById("notifyList").innerHTML = newList.innerHTML;
-                document.getElementById("notifyList").style.display = currentlyOpen;
-                // re-attach waiter buttons
-                document.querySelectorAll(".waiter-btn").forEach(function(btn){
-                    btn.addEventListener("click", function(){
-                        let table = btn.dataset.table;
-                        fetch("/waiter_done/" + RID, {
-                            method:"POST",
-                            headers:{ "Content-Type":"application/x-www-form-urlencoded" },
-                            body:"table=" + table
-                        }).then(() => location.reload());
-                    });
-                });
+                document.getElementById("notifyList").style.display = open;
+                attachWaiterBtns();
             }
-        })
-        .catch(() => {});
+        }).catch(()=>{});
     }, 3000);
-
 });
 
 /* ════════════════════════════════════════
-   WEBRTC SIGNALLING — KITCHEN SIDE
+   80s SYNTH RINGTONE — KITCHEN SIDE
+   Layered sawtooth + square + sub bass
+   Classic "dring-dring" phone pattern
 ════════════════════════════════════════ */
-let kitchenPeer   = null
-let kitchenStream = null
-let kitchenSig    = null
-let incomingTable = ""
-let incomingOffer = null
-let callRingTone  = null
+let _ringNodes = null;
 
-const RID = "{{ rid }}"
+function start80sRing(){
+    stop80sRing();
 
-// ── Ring sound (Web Audio API — no file needed) ──
-function startRing(){
-    stopRing()
-    let ctx = new (window.AudioContext || window.webkitAudioContext)()
-    let osc = ctx.createOscillator()
-    let gain = ctx.createGain()
-    osc.connect(gain); gain.connect(ctx.destination)
-    osc.frequency.value = 480
-    gain.gain.value = 0.3
-    osc.start()
-    // beep pattern
-    callRingTone = { osc, gain, ctx,
-        interval: setInterval(() => {
-            gain.gain.setValueAtTime(0.3, ctx.currentTime)
-            gain.gain.setValueAtTime(0, ctx.currentTime + 0.4)
-        }, 1200)
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+
+    const masterGain = ctx.createGain();
+    masterGain.gain.value = 0;
+    masterGain.connect(ctx.destination);
+    masterGain.gain.linearRampToValueAtTime(0.4, ctx.currentTime + 0.05);
+
+    // ── Delay/echo for depth ──
+    const echo = ctx.createDelay(0.5);
+    echo.delayTime.value = 0.20;
+    const echoGain = ctx.createGain();
+    echoGain.gain.value = 0.3;
+    echo.connect(echoGain);
+    echoGain.connect(masterGain);
+
+    // ── Main osc: sawtooth (very 80s synth) ──
+    const osc1 = ctx.createOscillator();
+    osc1.type = 'sawtooth';
+    const env1 = ctx.createGain();
+    env1.gain.value = 0;
+    osc1.connect(env1);
+    env1.connect(masterGain);
+    env1.connect(echo);
+
+    // ── Second osc: square, slight detune ──
+    const osc2 = ctx.createOscillator();
+    osc2.type = 'square';
+    const env2 = ctx.createGain();
+    env2.gain.value = 0;
+    osc2.connect(env2);
+    env2.connect(masterGain);
+
+    // ── Sub bass ──
+    const sub = ctx.createOscillator();
+    sub.type = 'sine';
+    const envSub = ctx.createGain();
+    envSub.gain.value = 0;
+    sub.connect(envSub);
+    envSub.connect(masterGain);
+
+    osc1.start(); osc2.start(); sub.start();
+
+    // ── Classic phone "dring dring" melody ──
+    // Two quick bursts of 4 notes, then silence, repeat
+    const NOTES = [659, 784, 659, 784]; // E5, G5, E5, G5
+    const NOTE_DUR   = 0.16;
+    const NOTE_GAP   = 0.04;
+    const BURST_GAP  = 0.20;
+    const CYCLE_REST = 1.10;
+
+    function scheduleRing(t){
+        // First burst
+        for(let i = 0; i < 4; i++){
+            let nt = t + i * (NOTE_DUR + NOTE_GAP);
+            let freq = NOTES[i];
+            osc1.frequency.setValueAtTime(freq, nt);
+            osc2.frequency.setValueAtTime(freq * 1.006, nt);
+            sub.frequency.setValueAtTime(freq / 2, nt);
+            // attack
+            env1.gain.setValueAtTime(0, nt);
+            env1.gain.linearRampToValueAtTime(0.5, nt + 0.015);
+            env2.gain.setValueAtTime(0, nt);
+            env2.gain.linearRampToValueAtTime(0.22, nt + 0.015);
+            envSub.gain.setValueAtTime(0, nt);
+            envSub.gain.linearRampToValueAtTime(0.18, nt + 0.015);
+            // release
+            env1.gain.setValueAtTime(0.5, nt + NOTE_DUR - 0.02);
+            env1.gain.linearRampToValueAtTime(0, nt + NOTE_DUR);
+            env2.gain.setValueAtTime(0.22, nt + NOTE_DUR - 0.02);
+            env2.gain.linearRampToValueAtTime(0, nt + NOTE_DUR);
+            envSub.gain.setValueAtTime(0.18, nt + NOTE_DUR - 0.02);
+            envSub.gain.linearRampToValueAtTime(0, nt + NOTE_DUR);
+        }
+        let burstEnd = t + 4 * (NOTE_DUR + NOTE_GAP) + BURST_GAP;
+
+        // Second burst (same pattern)
+        for(let i = 0; i < 4; i++){
+            let nt = burstEnd + i * (NOTE_DUR + NOTE_GAP);
+            let freq = NOTES[i];
+            osc1.frequency.setValueAtTime(freq, nt);
+            osc2.frequency.setValueAtTime(freq * 1.006, nt);
+            sub.frequency.setValueAtTime(freq / 2, nt);
+            env1.gain.setValueAtTime(0, nt);
+            env1.gain.linearRampToValueAtTime(0.5, nt + 0.015);
+            env2.gain.setValueAtTime(0, nt);
+            env2.gain.linearRampToValueAtTime(0.22, nt + 0.015);
+            envSub.gain.setValueAtTime(0, nt);
+            envSub.gain.linearRampToValueAtTime(0.18, nt + 0.015);
+            env1.gain.setValueAtTime(0.5, nt + NOTE_DUR - 0.02);
+            env1.gain.linearRampToValueAtTime(0, nt + NOTE_DUR);
+            env2.gain.setValueAtTime(0.22, nt + NOTE_DUR - 0.02);
+            env2.gain.linearRampToValueAtTime(0, nt + NOTE_DUR);
+            envSub.gain.setValueAtTime(0.18, nt + NOTE_DUR - 0.02);
+            envSub.gain.linearRampToValueAtTime(0, nt + NOTE_DUR);
+        }
+        return burstEnd + 4 * (NOTE_DUR + NOTE_GAP) + CYCLE_REST;
     }
+
+    // Schedule 12 cycles (~30 seconds of ringing)
+    let t = ctx.currentTime + 0.05;
+    for(let c = 0; c < 12; c++){
+        t = scheduleRing(t);
+    }
+
+    _ringNodes = { ctx, masterGain, osc1, osc2, sub };
 }
 
-function stopRing(){
-    if(callRingTone){
-        clearInterval(callRingTone.interval)
-        try { callRingTone.osc.stop(); callRingTone.ctx.close(); } catch(e){}
-        callRingTone = null
-    }
+function stop80sRing(){
+    if(!_ringNodes) return;
+    try {
+        _ringNodes.masterGain.gain.cancelScheduledValues(_ringNodes.ctx.currentTime);
+        _ringNodes.masterGain.gain.setValueAtTime(_ringNodes.masterGain.gain.value, _ringNodes.ctx.currentTime);
+        _ringNodes.masterGain.gain.linearRampToValueAtTime(0, _ringNodes.ctx.currentTime + 0.08);
+        const nodes = _ringNodes;
+        setTimeout(() => {
+            try { nodes.osc1.stop(); nodes.osc2.stop(); nodes.sub.stop(); nodes.ctx.close(); } catch(e){}
+        }, 120);
+    } catch(e){}
+    _ringNodes = null;
 }
 
-// Open kitchen WebSocket listener for ALL tables
+/* ════════════════════════════════════════
+   WEBRTC — KITCHEN SIDE
+════════════════════════════════════════ */
+let kitchenPeer    = null;
+let kitchenStream  = null;
+let kitchenSig     = null;
+let incomingTable  = "";
+let incomingOffer  = null;
+let callTimerInt   = null;
+let callSecs       = 0;
+
+const RID = "{{ rid }}";
+
+function startCallTimer(){
+    callSecs = 0;
+    clearInterval(callTimerInt);
+    callTimerInt = setInterval(() => {
+        callSecs++;
+        let m = String(Math.floor(callSecs/60)).padStart(2,"0");
+        let s = String(callSecs%60).padStart(2,"0");
+        document.getElementById("activeCallTimer").innerText = " • " + m + ":" + s;
+    }, 1000);
+}
+
+function stopCallTimer(){
+    clearInterval(callTimerInt);
+    document.getElementById("activeCallTimer").innerText = "";
+}
+
 function connectKitchenSignalling(){
-    const proto = location.protocol === "https:" ? "wss" : "ws"
-    // kitchen listens on a wildcard room /ws/kitchen/{rid}
-    kitchenSig = new WebSocket(`${proto}://${location.host}/ws/kitchen/${RID}`)
+    const proto = location.protocol === "https:" ? "wss" : "ws";
+    kitchenSig = new WebSocket(`${proto}://${location.host}/ws/kitchen/${RID}`);
 
     kitchenSig.onmessage = async (msg) => {
-        let data = JSON.parse(msg.data)
+        let data = JSON.parse(msg.data);
 
         if(data.type === "offer"){
-            incomingTable = data.table || "?"
-            incomingOffer = data.sdp
+            incomingTable = data.table || "?";
+            incomingOffer = data.sdp;
 
-            // Show incoming call popup
-            document.getElementById("icName").innerText = "Table " + incomingTable
-            document.getElementById("incomingCallPopup").style.display = "block"
-            startRing()
+            document.getElementById("icName").innerText = "Table " + incomingTable;
+            document.getElementById("icSub").innerText  = "Customer is calling...";
+
+            // Show message bubble if customer sent a note
+            let msgEl = document.getElementById("icMessage");
+            if(data.message && data.message.trim()){
+                msgEl.innerText = "💬 " + data.message;
+                msgEl.classList.add("visible");
+            } else {
+                msgEl.textContent = "";
+                msgEl.classList.remove("visible");
+            }
+
+            document.getElementById("incomingCallPopup").style.display = "block";
+            start80sRing();
         }
 
         if(data.type === "ice" && kitchenPeer){
-            try { await kitchenPeer.addIceCandidate(new RTCIceCandidate(data.candidate)) } catch(e){}
+            try { await kitchenPeer.addIceCandidate(new RTCIceCandidate(data.candidate)); } catch(e){}
         }
 
         if(data.type === "end"){
-            kitchenEndCall()
+            kitchenEndCall();
         }
-    }
+    };
 
-    kitchenSig.onclose = () => {
-        // reconnect after 3s
-        setTimeout(connectKitchenSignalling, 3000)
-    }
+    kitchenSig.onclose = () => setTimeout(connectKitchenSignalling, 3000);
 }
 
 async function acceptCall(){
-    stopRing()
-    document.getElementById("incomingCallPopup").style.display = "none"
+    stop80sRing();
+    document.getElementById("incomingCallPopup").style.display = "none";
 
     try {
-        kitchenStream = await navigator.mediaDevices.getUserMedia({ audio:true, video:false })
-    } catch(e){ console.warn("Mic denied:", e) }
+        kitchenStream = await navigator.mediaDevices.getUserMedia({ audio:true, video:false });
+    } catch(e){ console.warn("Mic denied:", e); }
 
-    kitchenPeer = new RTCPeerConnection({ iceServers:[{ urls:"stun:stun.l.google.com:19302" }] })
+    kitchenPeer = new RTCPeerConnection({ iceServers:[{ urls:"stun:stun.l.google.com:19302" }] });
 
     if(kitchenStream){
-        kitchenStream.getTracks().forEach(t => kitchenPeer.addTrack(t, kitchenStream))
+        kitchenStream.getTracks().forEach(t => kitchenPeer.addTrack(t, kitchenStream));
     }
 
     kitchenPeer.ontrack = (e) => {
-        let ra = new Audio()
-        ra.autoplay = true
-        ra.srcObject = e.streams[0]
-    }
+        let ra = new Audio();
+        ra.autoplay = true;
+        ra.srcObject = e.streams[0];
+    };
 
     kitchenPeer.onicecandidate = (e) => {
         if(e.candidate && kitchenSig.readyState === WebSocket.OPEN){
-            kitchenSig.send(JSON.stringify({ type:"ice", candidate:e.candidate, table: incomingTable }))
+            kitchenSig.send(JSON.stringify({ type:"ice", candidate:e.candidate, table: incomingTable }));
         }
-    }
+    };
 
-    await kitchenPeer.setRemoteDescription(new RTCSessionDescription(incomingOffer))
-    const answer = await kitchenPeer.createAnswer()
-    await kitchenPeer.setLocalDescription(answer)
-    kitchenSig.send(JSON.stringify({ type:"answer", sdp: answer, table: incomingTable }))
+    await kitchenPeer.setRemoteDescription(new RTCSessionDescription(incomingOffer));
+    const answer = await kitchenPeer.createAnswer();
+    await kitchenPeer.setLocalDescription(answer);
+    kitchenSig.send(JSON.stringify({ type:"answer", sdp: answer, table: incomingTable }));
 
-    // Show active call bar
-    document.getElementById("activeCallLabel").innerText = "📞 On call with Table " + incomingTable
-    document.getElementById("activeCallBar").classList.add("show")
+    document.getElementById("activeCallLabel").innerText = "📞 On call with Table " + incomingTable;
+    document.getElementById("activeCallBar").classList.add("show");
+    startCallTimer();
 }
 
 function declineCall(){
-    stopRing()
-    document.getElementById("incomingCallPopup").style.display = "none"
+    stop80sRing();
+    document.getElementById("incomingCallPopup").style.display = "none";
     if(kitchenSig && kitchenSig.readyState === WebSocket.OPEN){
-        kitchenSig.send(JSON.stringify({ type:"end", table: incomingTable }))
+        kitchenSig.send(JSON.stringify({ type:"end", table: incomingTable }));
     }
 }
 
 function kitchenEndCall(){
-    stopRing()
-    document.getElementById("incomingCallPopup").style.display = "none"
-    document.getElementById("activeCallBar").classList.remove("show")
+    stop80sRing();
+    stopCallTimer();
+    document.getElementById("incomingCallPopup").style.display = "none";
+    document.getElementById("activeCallBar").classList.remove("show");
     if(kitchenPeer){ kitchenPeer.close(); kitchenPeer = null; }
     if(kitchenStream){ kitchenStream.getTracks().forEach(t=>t.stop()); kitchenStream = null; }
     if(kitchenSig && kitchenSig.readyState === WebSocket.OPEN){
-        kitchenSig.send(JSON.stringify({ type:"end", table: incomingTable }))
+        kitchenSig.send(JSON.stringify({ type:"end", table: incomingTable }));
     }
 }
 
-// Start listening
-connectKitchenSignalling()
+connectKitchenSignalling();
 </script>
-
 </body>
 </html>
