@@ -33,8 +33,20 @@ import re
 from zoneinfo import ZoneInfo
 from datetime import datetime, timedelta, timezone
 
+from flask_sock import Sock
+
 import firebase_admin
 from firebase_admin import credentials, firestore
+
+
+# =========================
+# FLASK APP
+# =========================
+
+app = Flask(__name__)
+
+# Flask Sock
+sock = Sock(app)
 
 # =========================
 # 🚀 FLASK APP
@@ -4006,7 +4018,168 @@ def approve_order(collection, doc_id):
 
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
-    
+
+# ═══════════════════════════════════════════════════════════════
+#  WebSocket Signalling Routes — WebRTC Call (Customer ↔ Kitchen)
+#  
+#  INSTALL: pip install flask-sock
+#  
+#  APP INIT (add near top of app.py, after app = Flask(__name__)):
+#      from flask_sock import Sock
+#      sock = Sock(app)
+#
+#  Then paste the code below into app.py
+# ═══════════════════════════════════════════════════════════════
+
+from flask_sock import Sock
+import json
+import threading
+
+sock = Sock(app)   # <-- haddaad horey u sameysay sock = Sock(app) meel kale, line-kan tuur
+
+# ── In-memory registry: active WebSocket connections ──────────
+# { rid: { table: ws_customer_conn } }
+_customer_sockets = {}
+
+# { rid: set of kitchen ws connections }
+_kitchen_sockets  = {}
+
+_lock = threading.Lock()
+
+
+# ══════════════════════════════════════════════════════════════
+#  Customer WebSocket  →  /ws/call/<rid>/<table>
+#  Customer side ku xidaa halkan; offer/ICE diraa, answer helaa
+# ══════════════════════════════════════════════════════════════
+@sock.route('/ws/call/<rid>/<table>')
+def ws_call_customer(ws, rid, table):
+    """Customer browser ku xidaa — WebRTC offer diraa kitchen-ka."""
+
+    with _lock:
+        if rid not in _customer_sockets:
+            _customer_sockets[rid] = {}
+        _customer_sockets[rid][table] = ws
+
+    try:
+        while True:
+            raw = ws.receive()          # block until message
+            if raw is None:
+                break
+
+            data = json.loads(raw)
+            msg_type = data.get("type")
+
+            # ── Forward offer → all kitchen connections for this rid
+            if msg_type == "offer":
+                data["table"] = table   # kitchen-ka yaqaan table number
+                payload = json.dumps(data)
+                with _lock:
+                    dead = set()
+                    for kws in _kitchen_sockets.get(rid, set()):
+                        try:
+                            kws.send(payload)
+                        except Exception:
+                            dead.add(kws)
+                    for d in dead:
+                        _kitchen_sockets.get(rid, set()).discard(d)
+
+            # ── Forward ICE candidate → kitchen
+            elif msg_type == "ice":
+                data["table"] = table
+                payload = json.dumps(data)
+                with _lock:
+                    dead = set()
+                    for kws in _kitchen_sockets.get(rid, set()):
+                        try:
+                            kws.send(payload)
+                        except Exception:
+                            dead.add(kws)
+                    for d in dead:
+                        _kitchen_sockets.get(rid, set()).discard(d)
+
+            # ── End call → notify kitchen
+            elif msg_type == "end":
+                data["table"] = table
+                payload = json.dumps(data)
+                with _lock:
+                    dead = set()
+                    for kws in _kitchen_sockets.get(rid, set()):
+                        try:
+                            kws.send(payload)
+                        except Exception:
+                            dead.add(kws)
+                    for d in dead:
+                        _kitchen_sockets.get(rid, set()).discard(d)
+
+    except Exception:
+        pass
+
+    finally:
+        with _lock:
+            if rid in _customer_sockets:
+                _customer_sockets[rid].pop(table, None)
+
+
+# ══════════════════════════════════════════════════════════════
+#  Kitchen WebSocket  →  /ws/kitchen/<rid>
+#  Kitchen browser ku xidaa; incoming offer helaa, answer diraa
+# ══════════════════════════════════════════════════════════════
+@sock.route('/ws/kitchen/<rid>')
+def ws_call_kitchen(ws, rid):
+    """Kitchen browser ku xidaa — incoming calls helaa, answer diraysa."""
+
+    with _lock:
+        if rid not in _kitchen_sockets:
+            _kitchen_sockets[rid] = set()
+        _kitchen_sockets[rid].add(ws)
+
+    try:
+        while True:
+            raw = ws.receive()          # block until message
+            if raw is None:
+                break
+
+            data = json.loads(raw)
+            msg_type = data.get("type")
+            table    = data.get("table", "")
+
+            # ── Forward answer → specific customer
+            if msg_type == "answer":
+                with _lock:
+                    cws = _customer_sockets.get(rid, {}).get(table)
+                if cws:
+                    try:
+                        cws.send(json.dumps(data))
+                    except Exception:
+                        pass
+
+            # ── Forward ICE → specific customer
+            elif msg_type == "ice":
+                with _lock:
+                    cws = _customer_sockets.get(rid, {}).get(table)
+                if cws:
+                    try:
+                        cws.send(json.dumps(data))
+                    except Exception:
+                        pass
+
+            # ── End call → notify customer
+            elif msg_type == "end":
+                with _lock:
+                    cws = _customer_sockets.get(rid, {}).get(table)
+                if cws:
+                    try:
+                        cws.send(json.dumps(data))
+                    except Exception:
+                        pass
+
+    except Exception:
+        pass
+
+    finally:
+        with _lock:
+            if rid in _kitchen_sockets:
+                _kitchen_sockets[rid].discard(ws)    
 import os
 
 if __name__ == "__main__":

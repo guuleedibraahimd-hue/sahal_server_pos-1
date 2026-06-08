@@ -526,6 +526,140 @@
             border-radius:20px;
             margin-top:10px;
         }
+
+        /* ══════════════════════════════════
+           CALLING OVERLAY  (sida sawirka)
+        ══════════════════════════════════ */
+        #callingOverlay{
+            display:none;
+            position:fixed;
+            inset:0;
+            background:rgba(15,15,20,0.97);
+            z-index:9999;
+            flex-direction:column;
+            align-items:center;
+            justify-content:center;
+            gap:0;
+            animation:overlayIn .3s ease;
+        }
+
+        #callingOverlay.active{display:flex;}
+
+        @keyframes overlayIn{
+            from{opacity:0;transform:translateY(60px);}
+            to{opacity:1;transform:translateY(0);}
+        }
+
+        /* drag handle */
+        .call-drag{
+            width:40px;height:5px;
+            background:rgba(255,255,255,0.25);
+            border-radius:4px;
+            position:absolute;
+            top:18px;left:50%;transform:translateX(-50%);
+        }
+
+        .call-status-label{
+            color:rgba(255,255,255,0.6);
+            font-size:15px;font-weight:500;
+            margin-bottom:10px;
+            letter-spacing:0.3px;
+        }
+
+        .call-name{
+            color:#fff;
+            font-size:32px;font-weight:800;
+            margin-bottom:6px;
+        }
+
+        .call-sub{
+            color:rgba(255,255,255,0.45);
+            font-size:14px;font-weight:400;
+            margin-bottom:48px;
+        }
+
+        /* avatar with ripple ring */
+        .call-avatar-wrap{
+            position:relative;
+            width:120px;height:120px;
+            margin-bottom:56px;
+        }
+
+        .call-ripple{
+            position:absolute;
+            inset:-18px;
+            border:2px solid rgba(33,150,243,0.3);
+            border-radius:50%;
+            animation:ripple 1.8s ease-out infinite;
+        }
+
+        .call-ripple:nth-child(2){
+            inset:-36px;
+            border-color:rgba(33,150,243,0.18);
+            animation-delay:.5s;
+        }
+
+        .call-ripple:nth-child(3){
+            inset:-54px;
+            border-color:rgba(33,150,243,0.1);
+            animation-delay:1s;
+        }
+
+        @keyframes ripple{
+            0%{opacity:1;transform:scale(1);}
+            100%{opacity:0;transform:scale(1.4);}
+        }
+
+        .call-avatar{
+            width:120px;height:120px;
+            background:linear-gradient(145deg,#1565C0,#1E88E5);
+            border-radius:50%;
+            display:flex;align-items:center;justify-content:center;
+            position:relative;z-index:1;
+        }
+
+        .call-avatar svg{width:64px;height:64px;fill:#fff;stroke:none;}
+
+        /* bottom controls */
+        .call-controls{
+            display:flex;
+            gap:32px;
+            align-items:center;
+        }
+
+        .ctrl-btn{
+            display:flex;flex-direction:column;align-items:center;gap:10px;
+            background:none;border:none;cursor:pointer;
+        }
+
+        .ctrl-icon{
+            width:60px;height:60px;
+            border-radius:50%;
+            display:flex;align-items:center;justify-content:center;
+        }
+
+        .ctrl-icon.dark{background:rgba(255,255,255,0.15);}
+        .ctrl-icon.white{background:#fff;}
+        .ctrl-icon.red{background:#F44336;}
+
+        .ctrl-icon svg{width:26px;height:26px;}
+        .ctrl-icon.dark svg{stroke:#fff;fill:none;}
+        .ctrl-icon.white svg{stroke:#222;fill:none;}
+        .ctrl-icon.red svg{stroke:#fff;fill:none;}
+
+        .ctrl-label{
+            color:rgba(255,255,255,0.7);
+            font-size:12px;font-weight:500;
+        }
+
+        /* connected state */
+        .call-timer{
+            color:#4CAF50;
+            font-size:16px;font-weight:600;
+            margin-bottom:48px;
+            display:none;
+        }
+
     </style>
 </head>
 <body>
@@ -684,13 +818,67 @@
         </div>
     </div>
 
-    <!-- ── MODAL ── -->
+    <!-- ── ITEM MODAL ── -->
     <div class="modal" id="optionModal" onclick="closeModalOutside(event)">
         <div class="modal-content">
             <div class="modal-drag"></div>
             <div class="modal-title" id="modalTitle">Add To Cart</div>
             <button class="modal-confirm" onclick="confirmAdd()">✓ Confirm Add</button>
             <button class="modal-close" onclick="closeModal()">Cancel</button>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════
+         CALLING OVERLAY  (sida sawirka)
+    ══════════════════════════════════ -->
+    <div id="callingOverlay">
+        <div class="call-drag"></div>
+
+        <div class="call-status-label" id="callStatusLabel">Calling...</div>
+        <div class="call-name">Call Waiter</div>
+        <div class="call-sub">Restaurant Support</div>
+
+        <!-- connected timer (hidden until connected) -->
+        <div class="call-timer" id="callTimer">00:00</div>
+
+        <!-- avatar + ripples -->
+        <div class="call-avatar-wrap">
+            <div class="call-ripple"></div>
+            <div class="call-ripple"></div>
+            <div class="call-ripple"></div>
+            <div class="call-avatar">
+                <!-- headset icon -->
+                <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="32" cy="22" r="12" fill="#fff" opacity="0.15"/>
+                    <path d="M32 8C20.95 8 12 16.95 12 28v6a6 6 0 0 0 6 6h2a2 2 0 0 0 2-2V28a2 2 0 0 0-2-2h-1.88A18 18 0 0 1 32 14a18 18 0 0 1 13.88 12H44a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h2a6 6 0 0 0 6-6v-6C52 16.95 43.05 8 32 8z" fill="#fff"/>
+                    <rect x="27" y="44" width="10" height="5" rx="2" fill="#fff"/>
+                    <rect x="22" y="49" width="20" height="4" rx="2" fill="#fff"/>
+                </svg>
+            </div>
+        </div>
+
+        <!-- controls: Mute | Keypad | Speaker | End -->
+        <div class="call-controls">
+            <button class="ctrl-btn" onclick="toggleMute()">
+                <div class="ctrl-icon dark" id="muteIcon">
+                    <svg viewBox="0 0 24 24" stroke-width="2"><line x1="1" y1="1" x2="23" y2="23" id="muteLine" style="display:none"/><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+                </div>
+                <span class="ctrl-label" id="muteLabel">Mute</span>
+            </button>
+
+            <button class="ctrl-btn" onclick="endCall()">
+                <div class="ctrl-icon red">
+                    <svg viewBox="0 0 24 24" stroke-width="2.5"><path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7 2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07C9.44 17.29 7.76 15.36 6.69 13a19.79 19.79 0 0 1-3.07-8.63A2 2 0 0 1 5.61 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L9.69 9.81"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                </div>
+                <span class="ctrl-label">End</span>
+            </button>
+
+            <button class="ctrl-btn" onclick="toggleSpeaker()">
+                <div class="ctrl-icon dark" id="speakerIcon">
+                    <svg viewBox="0 0 24 24" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14" id="speakerLine1"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07" id="speakerLine2"/></svg>
+                </div>
+                <span class="ctrl-label" id="speakerLabel">Speaker</span>
+            </button>
         </div>
     </div>
 
@@ -715,6 +903,9 @@
     </nav>
 
 <script>
+/* ═══════════════════════════════════════════
+   CART LOGIC
+═══════════════════════════════════════════ */
 let cart = []
 let total = 0
 let currentItem = ""
@@ -747,28 +938,15 @@ function confirmAdd(){
     closeModal()
 }
 
-function increase(i){
-    cart[i].qty += 1
-    total += cart[i].price
-    render()
-}
+function increase(i){ cart[i].qty += 1; total += cart[i].price; render() }
 
 function decrease(i){
-    if(cart[i].qty > 1){
-        cart[i].qty -= 1
-        total -= cart[i].price
-    } else {
-        remove(i)
-        return
-    }
+    if(cart[i].qty > 1){ cart[i].qty -= 1; total -= cart[i].price; }
+    else { total -= cart[i].price; cart.splice(i, 1); }
     render()
 }
 
-function remove(i){
-    total -= cart[i].price * cart[i].qty
-    cart.splice(i, 1)
-    render()
-}
+function remove(i){ total -= cart[i].price * cart[i].qty; cart.splice(i, 1); render() }
 
 function render(){
     let html = ""
@@ -785,17 +963,13 @@ function render(){
     })
     document.getElementById("cart").innerHTML = html
     document.getElementById("total").innerText = total.toFixed(2)
-
     let count = cart.reduce((s,x)=>s+x.qty,0)
     document.getElementById("itemCountBadge").innerText = count + " Item" + (count!==1?"s":"")
     document.getElementById("cartBadge").innerText = count
 }
 
 async function sendOrder(){
-    if(cart.length === 0){
-        alert("Please add item first ❌")
-        return
-    }
+    if(cart.length === 0){ alert("Please add item first ❌"); return }
     try {
         let res = await fetch("/order/{{ rid }}", {
             method: "POST",
@@ -811,20 +985,173 @@ async function sendOrder(){
         } else {
             alert("❌ " + (data.error || "Order failed"))
         }
-    } catch(err){
-        alert("❌ Error: " + err.message)
-    }
+    } catch(err){ alert("❌ Error: " + err.message) }
 }
 
-function callWaiter(){
-    fetch("/call_waiter/{{ rid }}", {
+/* ═══════════════════════════════════════════
+   CALLING OVERLAY + WEBRTC AUDIO
+═══════════════════════════════════════════ */
+let callActive   = false
+let peerConn     = null
+let localStream  = null
+let remoteAudio  = null
+let isMuted      = false
+let isSpeaker    = true
+let callTimerInt = null
+let callSeconds  = 0
+
+// WebSocket for signalling between customer & kitchen
+let sigSocket    = null
+const TABLE      = "{{ table }}"
+const RID        = "{{ rid }}"
+
+const iceServers = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] }
+
+function openCallingOverlay(){
+    document.getElementById("callingOverlay").classList.add("active")
+    document.getElementById("callStatusLabel").innerText = "Calling..."
+    document.getElementById("callStatusLabel").style.color = "rgba(255,255,255,0.6)"
+    document.getElementById("callTimer").style.display = "none"
+    callSeconds = 0
+}
+
+function closeCallingOverlay(){
+    document.getElementById("callingOverlay").classList.remove("active")
+    stopCallTimer()
+}
+
+function startCallTimer(){
+    document.getElementById("callTimer").style.display = "block"
+    document.getElementById("callStatusLabel").style.display = "none"
+    callTimerInt = setInterval(() => {
+        callSeconds++
+        let m = String(Math.floor(callSeconds/60)).padStart(2,"0")
+        let s = String(callSeconds%60).padStart(2,"0")
+        document.getElementById("callTimer").innerText = m + ":" + s
+    }, 1000)
+}
+
+function stopCallTimer(){
+    clearInterval(callTimerInt)
+    document.getElementById("callTimer").style.display = "none"
+    document.getElementById("callStatusLabel").style.display = "block"
+}
+
+async function callWaiter(){
+    if(callActive){ endCall(); return; }
+    callActive = true
+    openCallingOverlay()
+
+    // 1. Send HTTP call_waiter so kitchen badge updates
+    await fetch("/call_waiter/{{ rid }}", {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body: "table={{ table }}"
-    }).then(() => alert("Waiter called ✅"))
+    })
+
+    // 2. Start WebRTC voice call via WebSocket signalling
+    try {
+        localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false })
+    } catch(e){
+        // mic permission denied — overlay stays visual only
+        console.warn("Mic denied:", e)
+    }
+
+    // Open signalling websocket
+    const proto = location.protocol === "https:" ? "wss" : "ws"
+    sigSocket = new WebSocket(`${proto}://${location.host}/ws/call/${RID}/${TABLE}`)
+
+    sigSocket.onopen = async () => {
+        // Create peer connection
+        peerConn = new RTCPeerConnection(iceServers)
+
+        if(localStream){
+            localStream.getTracks().forEach(t => peerConn.addTrack(t, localStream))
+        }
+
+        // Remote audio
+        peerConn.ontrack = (e) => {
+            if(!remoteAudio){
+                remoteAudio = new Audio()
+                remoteAudio.autoplay = true
+                remoteAudio.srcObject = e.streams[0]
+            }
+        }
+
+        // ICE candidates
+        peerConn.onicecandidate = (e) => {
+            if(e.candidate && sigSocket.readyState === WebSocket.OPEN){
+                sigSocket.send(JSON.stringify({ type:"ice", candidate: e.candidate }))
+            }
+        }
+
+        // Create offer (customer is caller)
+        const offer = await peerConn.createOffer()
+        await peerConn.setLocalDescription(offer)
+        sigSocket.send(JSON.stringify({ type:"offer", sdp: offer }))
+    }
+
+    sigSocket.onmessage = async (msg) => {
+        let data = JSON.parse(msg.data)
+
+        if(data.type === "answer"){
+            await peerConn.setRemoteDescription(new RTCSessionDescription(data.sdp))
+            // Call is now connected
+            document.getElementById("callStatusLabel").innerText = "Connected ✓"
+            document.getElementById("callStatusLabel").style.color = "#4CAF50"
+            startCallTimer()
+        }
+
+        if(data.type === "ice" && data.candidate){
+            try { await peerConn.addIceCandidate(new RTCIceCandidate(data.candidate)) } catch(e){}
+        }
+
+        if(data.type === "end"){
+            endCall()
+        }
+    }
+
+    sigSocket.onclose = () => {
+        if(callActive) endCall()
+    }
 }
 
-/* ADS AUTO SLIDER */
+function endCall(){
+    callActive = false
+    closeCallingOverlay()
+
+    if(peerConn){ peerConn.close(); peerConn = null; }
+    if(localStream){ localStream.getTracks().forEach(t=>t.stop()); localStream = null; }
+    if(remoteAudio){ remoteAudio.srcObject = null; remoteAudio = null; }
+    if(sigSocket && sigSocket.readyState === WebSocket.OPEN){
+        sigSocket.send(JSON.stringify({ type:"end" }))
+        sigSocket.close()
+    }
+    sigSocket = null
+    isMuted = false
+    isSpeaker = true
+    document.getElementById("muteLabel").innerText = "Mute"
+    document.getElementById("speakerLabel").innerText = "Speaker"
+}
+
+function toggleMute(){
+    isMuted = !isMuted
+    if(localStream) localStream.getAudioTracks().forEach(t => t.enabled = !isMuted)
+    document.getElementById("muteLine").style.display = isMuted ? "block" : "none"
+    document.getElementById("muteIcon").style.background = isMuted ? "rgba(255,255,255,0.35)" : "rgba(255,255,255,0.15)"
+    document.getElementById("muteLabel").innerText = isMuted ? "Unmute" : "Mute"
+}
+
+function toggleSpeaker(){
+    isSpeaker = !isSpeaker
+    if(remoteAudio) remoteAudio.muted = !isSpeaker
+    document.getElementById("speakerIcon").style.background = isSpeaker ? "rgba(255,255,255,0.35)" : "rgba(255,255,255,0.15)"
+    document.getElementById("speakerLabel").innerText = isSpeaker ? "Speaker On" : "Speaker Off"
+}
+
+/* ═══════════════════════════════════════════
+   ADS AUTO SLIDER
+═══════════════════════════════════════════ */
 let currentSlide = 0
 const slides = document.querySelectorAll(".slide")
 
