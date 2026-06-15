@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pharmacy Login</title>
+<style>
+*{ margin:0; padding:0; box-sizing:border-box; }
+
+body{
+    font-family:'Segoe UI', sans-serif;
+    background:linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+}
+
+.login-box{
+    background:rgba(255,255,255,0.05);
+    backdrop-filter:blur(20px);
+    border:1px solid rgba(255,255,255,0.1);
+    border-radius:20px;
+    padding:40px;
+    width:90%;
+    max-width:400px;
+    box-shadow:0 20px 60px rgba(0,0,0,0.4);
+}
+
+.logo{
+    text-align:center;
+    margin-bottom:30px;
+}
+
+.logo-icon{
+    font-size:60px;
+    display:block;
+    margin-bottom:10px;
+}
+
+.logo h2{
+    color:#fff;
+    font-size:24px;
+    font-weight:700;
+}
+
+.logo p{
+    color:rgba(255,255,255,0.5);
+    font-size:13px;
+    margin-top:4px;
+}
+
+.form-group{
+    margin-bottom:18px;
+}
+
+.form-group label{
+    display:block;
+    color:rgba(255,255,255,0.7);
+    font-size:13px;
+    margin-bottom:6px;
+    font-weight:600;
+    letter-spacing:0.5px;
+}
+
+.form-group input{
+    width:100%;
+    padding:14px 16px;
+    background:rgba(255,255,255,0.08);
+    border:1px solid rgba(255,255,255,0.15);
+    border-radius:10px;
+    color:#fff;
+    font-size:15px;
+    outline:none;
+    transition:all 0.3s;
+}
+
+.form-group input:focus{
+    border-color:#00d4ff;
+    background:rgba(0,212,255,0.08);
+    box-shadow:0 0 0 3px rgba(0,212,255,0.15);
+}
+
+.form-group input::placeholder{
+    color:rgba(255,255,255,0.3);
+}
+
+.login-btn{
+    width:100%;
+    padding:14px;
+    background:linear-gradient(135deg, #00d4ff, #0099cc);
+    border:none;
+    border-radius:10px;
+    color:#fff;
+    font-size:16px;
+    font-weight:700;
+    cursor:pointer;
+    margin-top:10px;
+    transition:all 0.3s;
+    letter-spacing:0.5px;
+}
+
+.login-btn:hover{
+    transform:translateY(-2px);
+    box-shadow:0 8px 25px rgba(0,212,255,0.4);
+}
+
+.error-msg{
+    background:rgba(220,53,69,0.2);
+    border:1px solid rgba(220,53,69,0.4);
+    color:#ff6b7a;
+    padding:12px;
+    border-radius:8px;
+    margin-bottom:18px;
+    text-align:center;
+    font-size:14px;
+}
+
+.back-link{
+    text-align:center;
+    margin-top:20px;
+}
+
+.back-link a{
+    color:rgba(255,255,255,0.4);
+    text-decoration:none;
+    font-size:13px;
+    transition:color 0.3s;
+}
+
+.back-link a:hover{
+    color:rgba(255,255,255,0.8);
+}
+</style>
+</head>
+<body>
+
+<div class="login-box">
+
+    <div class="logo">
+        <span class="logo-icon">💊</span>
+        <h2>Pharmacy System</h2>
+        <p>Sahal Server POS</p>
+    </div>
+
+    {% if error %}
+    <div class="error-msg">{{ error }}</div>
+    {% endif %}
+
+    <form method="POST" action="/pharmacy_login">
+
+        <div class="form-group">
+            <label>Username</label>
+            <input
+                type="text"
+                name="username"
+                placeholder="Enter username"
+                required
+                autocomplete="off"
+            >
+        </div>
+
+        <div class="form-group">
+            <label>Password</label>
+            <input
+                type="password"
+                name="password"
+                placeholder="Enter password"
+                required
+            >
+        </div>
+
+        <button type="submit" class="login-btn">
+            🔐 Login to Pharmacy
+        </button>
+
+    </form>
+
+    <div class="back-link">
+        <a href="/">← Back to Home</a>
+    </div>
+
+</div>
+
+</body>
+</html>

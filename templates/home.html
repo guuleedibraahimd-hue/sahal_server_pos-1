@@ -401,6 +401,7 @@ margin:6px 0;
     <div class="menu-btn" onclick="toggleAdminMenu()">⋮</div>
     <div class="admin-menu" id="adminMenu">
       <a href="/admin">🛠️ System Admin</a>
+      <a href="/pharmacy_login">💊 Pharmacy</a>
       <a href="#" onclick="openInfo()">ℹ️ System Info</a>
     </div>
   </div>
@@ -564,7 +565,7 @@ function showMsg(id, text, type) {
 }
 
 /* ================================
-   DHIBIC DAHAB DASHBOARD LOGIN ✅
+   DHIBIC DAHAB DASHBOARD LOGIN
    ================================ */
 async function dashboardLogin() {
 
@@ -577,7 +578,6 @@ async function dashboardLogin() {
     return;
   }
 
-  // Loading state
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span> Checking...';
   showMsg('dashboardMsg', 'Verifying your credentials...', 'info');
@@ -591,8 +591,6 @@ async function dashboardLogin() {
     let res  = await fetch('/dashboard_login', { method: 'POST', body: fd });
     let data = await res.json();
 
-    console.log('Login response:', data);
-
     if (data.success) {
       showMsg('dashboardMsg', '✅ Login successful! Redirecting...', 'success');
       setTimeout(() => { window.location.href = data.redirect; }, 600);
@@ -603,7 +601,6 @@ async function dashboardLogin() {
     }
 
   } catch (e) {
-    console.error('Login error:', e);
     showMsg('dashboardMsg', '⚠️ Server error. Please try again.', 'error');
     btn.disabled = false;
     btn.innerHTML = 'Login to Dashboard';

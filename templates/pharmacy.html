@@ -1,0 +1,1770 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>💊 Pharmacy Management</title>
+<style>
+*{ margin:0; padding:0; box-sizing:border-box; }
+
+body{
+    font-family:'Segoe UI', sans-serif;
+    background:#0d1117;
+    color:#e6edf3;
+    min-height:100vh;
+}
+
+/* ======================== HEADER */
+.header{
+    background:linear-gradient(135deg, #161b22, #21262d);
+    border-bottom:1px solid #30363d;
+    padding:16px 24px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    position:sticky;
+    top:0;
+    z-index:100;
+}
+
+.header-left{
+    display:flex;
+    align-items:center;
+    gap:12px;
+}
+
+.header h1{
+    font-size:20px;
+    font-weight:700;
+    color:#fff;
+}
+
+.header-right{
+    display:flex;
+    align-items:center;
+    gap:10px;
+}
+
+.alert-badge{
+    background:#da3633;
+    color:#fff;
+    padding:4px 10px;
+    border-radius:20px;
+    font-size:12px;
+    font-weight:700;
+    cursor:pointer;
+    animation:pulse 2s infinite;
+}
+
+@keyframes pulse{
+    0%,100%{ opacity:1; }
+    50%{ opacity:0.7; }
+}
+
+.logout-btn{
+    background:#21262d;
+    border:1px solid #30363d;
+    color:#e6edf3;
+    padding:8px 16px;
+    border-radius:8px;
+    text-decoration:none;
+    font-size:13px;
+    font-weight:600;
+    transition:all 0.2s;
+}
+
+.logout-btn:hover{
+    background:#30363d;
+    border-color:#58a6ff;
+}
+
+/* ======================== TABS */
+.tabs{
+    background:#161b22;
+    border-bottom:1px solid #30363d;
+    display:flex;
+    padding:0 24px;
+    overflow-x:auto;
+    gap:4px;
+}
+
+.tab{
+    padding:12px 20px;
+    cursor:pointer;
+    font-size:14px;
+    font-weight:600;
+    color:#8b949e;
+    border-bottom:2px solid transparent;
+    white-space:nowrap;
+    transition:all 0.2s;
+    display:flex;
+    align-items:center;
+    gap:6px;
+}
+
+.tab:hover{ color:#e6edf3; }
+
+.tab.active{
+    color:#58a6ff;
+    border-bottom-color:#58a6ff;
+}
+
+/* ======================== CONTAINER */
+.container{
+    padding:24px;
+    max-width:1400px;
+    margin:auto;
+}
+
+/* ======================== STAT CARDS */
+.stats-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));
+    gap:16px;
+    margin-bottom:24px;
+}
+
+.stat-card{
+    background:#161b22;
+    border:1px solid #30363d;
+    border-radius:12px;
+    padding:20px;
+    transition:border-color 0.2s;
+}
+
+.stat-card:hover{ border-color:#58a6ff; }
+
+.stat-card .stat-icon{
+    font-size:28px;
+    margin-bottom:8px;
+}
+
+.stat-card .stat-value{
+    font-size:28px;
+    font-weight:700;
+    color:#fff;
+}
+
+.stat-card .stat-label{
+    font-size:12px;
+    color:#8b949e;
+    margin-top:4px;
+    text-transform:uppercase;
+    letter-spacing:0.5px;
+}
+
+.stat-green .stat-value{ color:#3fb950; }
+.stat-orange .stat-value{ color:#f0883e; }
+.stat-red .stat-value{ color:#f85149; }
+.stat-blue .stat-value{ color:#58a6ff; }
+
+/* ======================== PANEL */
+.panel{
+    display:none;
+}
+
+.panel.active{
+    display:block;
+}
+
+/* ======================== SECTION */
+.section{
+    background:#161b22;
+    border:1px solid #30363d;
+    border-radius:12px;
+    margin-bottom:20px;
+    overflow:hidden;
+}
+
+.section-header{
+    padding:16px 20px;
+    border-bottom:1px solid #30363d;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:10px;
+}
+
+.section-header h3{
+    font-size:16px;
+    font-weight:700;
+    color:#fff;
+}
+
+.section-body{
+    padding:20px;
+}
+
+/* ======================== SEARCH BAR */
+.search-wrapper{
+    position:relative;
+    margin-bottom:16px;
+}
+
+.search-input{
+    width:100%;
+    padding:12px 16px 12px 44px;
+    background:#0d1117;
+    border:1px solid #30363d;
+    border-radius:10px;
+    color:#e6edf3;
+    font-size:15px;
+    outline:none;
+    transition:border-color 0.2s;
+}
+
+.search-input:focus{
+    border-color:#58a6ff;
+    box-shadow:0 0 0 3px rgba(88,166,255,0.1);
+}
+
+.search-icon{
+    position:absolute;
+    left:14px;
+    top:50%;
+    transform:translateY(-50%);
+    color:#8b949e;
+    font-size:18px;
+}
+
+.search-results{
+    background:#161b22;
+    border:1px solid #30363d;
+    border-radius:10px;
+    margin-top:8px;
+    max-height:300px;
+    overflow-y:auto;
+    display:none;
+}
+
+.search-result-item{
+    padding:12px 16px;
+    border-bottom:1px solid #21262d;
+    cursor:pointer;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    transition:background 0.15s;
+}
+
+.search-result-item:hover{
+    background:#21262d;
+}
+
+.search-result-item:last-child{
+    border-bottom:none;
+}
+
+.result-name{
+    font-weight:600;
+    color:#e6edf3;
+    font-size:14px;
+}
+
+.result-meta{
+    font-size:12px;
+    color:#8b949e;
+    margin-top:2px;
+}
+
+.result-price{
+    font-weight:700;
+    color:#3fb950;
+    font-size:16px;
+}
+
+.result-stock{
+    font-size:11px;
+    color:#8b949e;
+}
+
+/* ======================== CART */
+.cart-section{
+    background:#0d1117;
+    border:1px solid #30363d;
+    border-radius:10px;
+    padding:16px;
+    margin-top:16px;
+}
+
+.cart-title{
+    font-size:14px;
+    font-weight:700;
+    color:#fff;
+    margin-bottom:12px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+}
+
+.cart-empty{
+    text-align:center;
+    color:#8b949e;
+    padding:20px;
+    font-size:14px;
+}
+
+.cart-item{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:10px 0;
+    border-bottom:1px solid #21262d;
+    gap:10px;
+    flex-wrap:wrap;
+}
+
+.cart-item:last-child{
+    border-bottom:none;
+}
+
+.cart-item-name{
+    font-weight:600;
+    font-size:14px;
+    flex:1;
+}
+
+.cart-qty-ctrl{
+    display:flex;
+    align-items:center;
+    gap:8px;
+}
+
+.qty-btn{
+    width:28px;
+    height:28px;
+    background:#21262d;
+    border:1px solid #30363d;
+    border-radius:6px;
+    color:#e6edf3;
+    font-size:16px;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    transition:background 0.2s;
+}
+
+.qty-btn:hover{ background:#30363d; }
+
+.qty-display{
+    font-weight:700;
+    min-width:30px;
+    text-align:center;
+}
+
+.cart-item-price{
+    color:#3fb950;
+    font-weight:700;
+    font-size:15px;
+    min-width:70px;
+    text-align:right;
+}
+
+.remove-btn{
+    background:none;
+    border:none;
+    color:#f85149;
+    cursor:pointer;
+    font-size:18px;
+    padding:0 4px;
+    transition:opacity 0.2s;
+}
+
+.remove-btn:hover{ opacity:0.7; }
+
+.cart-total{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:14px 0 0 0;
+    font-size:18px;
+    font-weight:700;
+    color:#fff;
+}
+
+.cart-total-amount{
+    color:#3fb950;
+    font-size:22px;
+}
+
+.checkout-btn{
+    width:100%;
+    padding:14px;
+    background:linear-gradient(135deg, #238636, #2ea043);
+    border:none;
+    border-radius:10px;
+    color:#fff;
+    font-size:16px;
+    font-weight:700;
+    cursor:pointer;
+    margin-top:14px;
+    transition:all 0.2s;
+}
+
+.checkout-btn:hover{
+    transform:translateY(-1px);
+    box-shadow:0 4px 15px rgba(35,134,54,0.4);
+}
+
+.checkout-btn:disabled{
+    opacity:0.5;
+    cursor:not-allowed;
+    transform:none;
+}
+
+/* ======================== TABLE */
+.table-wrap{
+    overflow-x:auto;
+}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+    min-width:700px;
+}
+
+th{
+    background:#21262d;
+    color:#8b949e;
+    padding:12px 14px;
+    text-align:left;
+    font-size:12px;
+    font-weight:600;
+    text-transform:uppercase;
+    letter-spacing:0.5px;
+}
+
+td{
+    padding:12px 14px;
+    border-bottom:1px solid #21262d;
+    font-size:14px;
+    vertical-align:middle;
+}
+
+tr:hover td{ background:#161b22; }
+
+/* ======================== BADGE */
+.badge{
+    display:inline-block;
+    padding:3px 10px;
+    border-radius:20px;
+    font-size:11px;
+    font-weight:700;
+}
+
+.badge-green{
+    background:rgba(63,185,80,0.15);
+    color:#3fb950;
+    border:1px solid rgba(63,185,80,0.3);
+}
+
+.badge-red{
+    background:rgba(248,81,73,0.15);
+    color:#f85149;
+    border:1px solid rgba(248,81,73,0.3);
+}
+
+.badge-orange{
+    background:rgba(240,136,62,0.15);
+    color:#f0883e;
+    border:1px solid rgba(240,136,62,0.3);
+}
+
+.badge-blue{
+    background:rgba(88,166,255,0.15);
+    color:#58a6ff;
+    border:1px solid rgba(88,166,255,0.3);
+}
+
+/* ======================== FORM */
+.form-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));
+    gap:14px;
+}
+
+.form-group{
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+}
+
+.form-group label{
+    font-size:12px;
+    font-weight:600;
+    color:#8b949e;
+    text-transform:uppercase;
+    letter-spacing:0.5px;
+}
+
+.form-group input,
+.form-group select{
+    padding:10px 12px;
+    background:#0d1117;
+    border:1px solid #30363d;
+    border-radius:8px;
+    color:#e6edf3;
+    font-size:14px;
+    outline:none;
+    transition:border-color 0.2s;
+}
+
+.form-group input:focus,
+.form-group select:focus{
+    border-color:#58a6ff;
+    box-shadow:0 0 0 3px rgba(88,166,255,0.1);
+}
+
+.submit-btn{
+    padding:12px 24px;
+    background:#238636;
+    border:none;
+    border-radius:8px;
+    color:#fff;
+    font-size:14px;
+    font-weight:700;
+    cursor:pointer;
+    transition:all 0.2s;
+    margin-top:14px;
+}
+
+.submit-btn:hover{
+    background:#2ea043;
+    transform:translateY(-1px);
+}
+
+/* ======================== ALERTS */
+.alert-list{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+}
+
+.alert-item{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:12px 16px;
+    border-radius:8px;
+    gap:10px;
+    flex-wrap:wrap;
+}
+
+.alert-item.expired{
+    background:rgba(248,81,73,0.1);
+    border:1px solid rgba(248,81,73,0.3);
+}
+
+.alert-item.expiring{
+    background:rgba(240,136,62,0.1);
+    border:1px solid rgba(240,136,62,0.3);
+}
+
+.alert-item.low{
+    background:rgba(88,166,255,0.1);
+    border:1px solid rgba(88,166,255,0.3);
+}
+
+.alert-name{
+    font-weight:600;
+    font-size:14px;
+}
+
+.alert-detail{
+    font-size:12px;
+    color:#8b949e;
+    margin-top:2px;
+}
+
+/* ======================== REPORT */
+.report-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(150px, 1fr));
+    gap:14px;
+    margin-bottom:20px;
+}
+
+.report-card{
+    background:#0d1117;
+    border:1px solid #30363d;
+    border-radius:10px;
+    padding:16px;
+    text-align:center;
+}
+
+.report-value{
+    font-size:24px;
+    font-weight:700;
+    color:#fff;
+}
+
+.report-label{
+    font-size:11px;
+    color:#8b949e;
+    margin-top:4px;
+    text-transform:uppercase;
+}
+
+.date-filter{
+    display:flex;
+    gap:10px;
+    align-items:flex-end;
+    flex-wrap:wrap;
+    margin-bottom:20px;
+}
+
+/* ======================== SUCCESS / ERROR TOAST */
+.toast{
+    position:fixed;
+    bottom:24px;
+    right:24px;
+    padding:14px 20px;
+    border-radius:10px;
+    font-weight:600;
+    font-size:14px;
+    z-index:9999;
+    transform:translateY(100px);
+    opacity:0;
+    transition:all 0.3s;
+    max-width:320px;
+}
+
+.toast.show{
+    transform:translateY(0);
+    opacity:1;
+}
+
+.toast.success{
+    background:#238636;
+    color:#fff;
+    border:1px solid #2ea043;
+}
+
+.toast.error{
+    background:#da3633;
+    color:#fff;
+    border:1px solid #f85149;
+}
+
+/* ======================== MODAL */
+.modal-overlay{
+    display:none;
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,0.7);
+    z-index:500;
+    align-items:center;
+    justify-content:center;
+}
+
+.modal-overlay.open{
+    display:flex;
+}
+
+.modal{
+    background:#161b22;
+    border:1px solid #30363d;
+    border-radius:16px;
+    padding:28px;
+    width:90%;
+    max-width:600px;
+    max-height:90vh;
+    overflow-y:auto;
+    position:relative;
+}
+
+.modal h3{
+    font-size:18px;
+    font-weight:700;
+    color:#fff;
+    margin-bottom:20px;
+}
+
+.modal-close{
+    position:absolute;
+    top:14px;
+    right:16px;
+    background:none;
+    border:none;
+    color:#8b949e;
+    font-size:22px;
+    cursor:pointer;
+}
+
+.modal-close:hover{ color:#fff; }
+
+/* ======================== RESPONSIVE */
+@media(max-width:768px){
+    .header{ flex-wrap:wrap; gap:10px; }
+    .tabs{ gap:0; }
+    .tab{ padding:10px 14px; font-size:12px; }
+    .stats-grid{ grid-template-columns:repeat(2,1fr); }
+    .container{ padding:14px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ======================== HEADER -->
+<div class="header">
+
+    <div class="header-left">
+        <span style="font-size:28px;">💊</span>
+        <h1>Pharmacy Management</h1>
+    </div>
+
+    <div class="header-right">
+
+        <div class="alert-badge" onclick="switchTab('alerts')" id="alertBadge">
+            🔔 Loading...
+        </div>
+
+        <span style="color:#8b949e; font-size:13px;">
+            👤 {{ session.get('pharmacy_user', 'Pharmacist') }}
+        </span>
+
+        <a href="/pharmacy/logout" class="logout-btn">Logout</a>
+
+    </div>
+
+</div>
+
+<!-- ======================== TABS -->
+<div class="tabs">
+    <div class="tab active" onclick="switchTab('dashboard')" id="tab-dashboard">
+        📊 Dashboard
+    </div>
+    <div class="tab" onclick="switchTab('sell')" id="tab-sell">
+        🛒 Sell / POS
+    </div>
+    <div class="tab" onclick="switchTab('medicines')" id="tab-medicines">
+        💊 Medicines
+    </div>
+    <div class="tab" onclick="switchTab('add')" id="tab-add">
+        ➕ Add Medicine
+    </div>
+    <div class="tab" onclick="switchTab('alerts')" id="tab-alerts">
+        🚨 Alerts
+    </div>
+    <div class="tab" onclick="switchTab('report')" id="tab-report">
+        📑 Reports
+    </div>
+</div>
+
+<!-- ======================== CONTAINER -->
+<div class="container">
+
+    <!-- ======== DASHBOARD PANEL -->
+    <div class="panel active" id="panel-dashboard">
+
+        <!-- STAT CARDS -->
+        <div class="stats-grid">
+
+            <div class="stat-card stat-blue">
+                <div class="stat-icon">💊</div>
+                <div class="stat-value">{{ medicines|length }}</div>
+                <div class="stat-label">Total Medicines</div>
+            </div>
+
+            <div class="stat-card stat-green">
+                <div class="stat-icon">💰</div>
+                <div class="stat-value">${{ today_profit }}</div>
+                <div class="stat-label">Today's Profit</div>
+            </div>
+
+            <div class="stat-card stat-orange">
+                <div class="stat-icon">🛒</div>
+                <div class="stat-value">{{ today_sales }}</div>
+                <div class="stat-label">Sales Today</div>
+            </div>
+
+            <div class="stat-card stat-red">
+                <div class="stat-icon">🚨</div>
+                <div class="stat-value">{{ expiry_alerts|length + expired|length }}</div>
+                <div class="stat-label">Expiry Alerts</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon">📦</div>
+                <div class="stat-value" style="color:#f0883e;">{{ low_stock|length }}</div>
+                <div class="stat-label">Low Stock Items</div>
+            </div>
+
+            <div class="stat-card stat-green">
+                <div class="stat-icon">📦</div>
+                <div class="stat-value">{{ today_qty }}</div>
+                <div class="stat-label">Units Sold Today</div>
+            </div>
+
+        </div>
+
+        <!-- TOP SELLING -->
+        {% if top_selling %}
+        <div class="section">
+            <div class="section-header">
+                <h3>🏆 Top Selling Today</h3>
+            </div>
+            <div class="section-body">
+                <div class="table-wrap">
+                    <table>
+                        <tr>
+                            <th>#</th>
+                            <th>Medicine</th>
+                            <th>Units Sold</th>
+                        </tr>
+                        {% for item in top_selling %}
+                        <tr>
+                            <td>{{ loop.index }}</td>
+                            <td><b>{{ item[0] }}</b></td>
+                            <td><span class="badge badge-green">{{ item[1] }} units</span></td>
+                        </tr>
+                        {% endfor %}
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- QUICK ALERTS PREVIEW -->
+        {% if expired %}
+        <div class="section">
+            <div class="section-header">
+                <h3>❌ Expired Medicines</h3>
+                <span class="badge badge-red">{{ expired|length }}</span>
+            </div>
+            <div class="section-body">
+                <div class="alert-list">
+                    {% for m in expired %}
+                    <div class="alert-item expired">
+                        <div>
+                            <div class="alert-name">{{ m[1] }}</div>
+                            <div class="alert-detail">Barcode: {{ m[2] or 'N/A' }} · Stock: {{ m[5] }}</div>
+                        </div>
+                        <span class="badge badge-red">Expired: {{ m[6] }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if expiry_alerts %}
+        <div class="section">
+            <div class="section-header">
+                <h3>⚠️ Expiring Within 90 Days</h3>
+                <span class="badge badge-orange">{{ expiry_alerts|length }}</span>
+            </div>
+            <div class="section-body">
+                <div class="alert-list">
+                    {% for m in expiry_alerts %}
+                    <div class="alert-item expiring">
+                        <div>
+                            <div class="alert-name">{{ m[1] }}</div>
+                            <div class="alert-detail">Stock: {{ m[5] }} units</div>
+                        </div>
+                        <span class="badge badge-orange">{{ m[6] }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+    </div>
+
+    <!-- ======== SELL / POS PANEL -->
+    <div class="panel" id="panel-sell">
+
+        <div class="section">
+            <div class="section-header">
+                <h3>🛒 Point of Sale</h3>
+                <span style="color:#8b949e; font-size:13px;">Scan barcode or search medicine</span>
+            </div>
+            <div class="section-body">
+
+                <!-- SEARCH -->
+                <div class="search-wrapper">
+                    <span class="search-icon">🔍</span>
+                    <input
+                        type="text"
+                        class="search-input"
+                        id="searchInput"
+                        placeholder="Search medicine name or scan barcode..."
+                        oninput="searchMedicine(this.value)"
+                        onkeydown="handleSearchKey(event)"
+                        autocomplete="off"
+                    >
+                    <div class="search-results" id="searchResults"></div>
+                </div>
+
+                <!-- CART -->
+                <div class="cart-section">
+
+                    <div class="cart-title">
+                        🛒 Cart
+                        <span id="cartCount" style="background:#30363d; padding:2px 8px; border-radius:12px; font-size:12px;">0 items</span>
+                    </div>
+
+                    <div id="cartItems">
+                        <div class="cart-empty">Cart is empty — search and add medicines above</div>
+                    </div>
+
+                    <div class="cart-total" id="cartTotalRow" style="display:none;">
+                        <span>Total:</span>
+                        <span class="cart-total-amount" id="cartTotal">$0.00</span>
+                    </div>
+
+                    <button
+                        class="checkout-btn"
+                        id="checkoutBtn"
+                        onclick="checkout()"
+                        disabled
+                    >
+                        ✅ Complete Sale
+                    </button>
+
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ======== MEDICINES PANEL -->
+    <div class="panel" id="panel-medicines">
+
+        <div class="section">
+            <div class="section-header">
+                <h3>💊 All Medicines</h3>
+                <input
+                    type="text"
+                    placeholder="🔍 Filter..."
+                    oninput="filterTable(this.value)"
+                    style="padding:8px 12px; background:#0d1117; border:1px solid #30363d;
+                           border-radius:8px; color:#e6edf3; font-size:13px; outline:none; width:200px;"
+                >
+            </div>
+            <div class="section-body" style="padding:0;">
+                <div class="table-wrap">
+                    <table id="medicinesTable">
+                        <tr>
+                            <th>Name</th>
+                            <th>Barcode</th>
+                            <th>Category</th>
+                            <th>Cost</th>
+                            <th>Price</th>
+                            <th>Stock</th>
+                            <th>Expiry</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                        {% for m in medicines %}
+                        <tr id="med-row-{{ m[0] }}">
+                            <td><b>{{ m[1] }}</b></td>
+                            <td style="color:#8b949e;">{{ m[2] or '—' }}</td>
+                            <td>
+                                <span class="badge badge-blue">{{ m[7] or 'General' }}</span>
+                            </td>
+                            <td>${{ m[3] }}</td>
+                            <td style="color:#3fb950; font-weight:700;">${{ m[4] }}</td>
+                            <td>
+                                {% if m[5] <= 0 %}
+                                    <span class="badge badge-red">Out of Stock</span>
+                                {% elif m[5] <= 10 %}
+                                    <span class="badge badge-orange">{{ m[5] }} — Low!</span>
+                                {% else %}
+                                    <span class="badge badge-green">{{ m[5] }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if m[6] %}
+                                    <span style="font-size:13px;">{{ m[6] }}</span>
+                                {% else %}
+                                    <span style="color:#8b949e;">—</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if m[6] %}
+                                    {% set today_s = now_date %}
+                                    {% if m[6] < today_s %}
+                                        <span class="badge badge-red">Expired</span>
+                                    {% elif m[6] <= expiry_warn %}
+                                        <span class="badge badge-orange">Expiring</span>
+                                    {% else %}
+                                        <span class="badge badge-green">OK</span>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="badge badge-blue">—</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <button
+                                    onclick="openEditModal(this)"
+                                    data-id="{{ m[0] }}"
+                                    data-name="{{ m[1] | e }}"
+                                    data-barcode="{{ (m[2] or '') | e }}"
+                                    data-cost="{{ m[3] }}"
+                                    data-selling="{{ m[4] }}"
+                                    data-stock="{{ m[5] }}"
+                                    data-expiry="{{ m[6] or '' }}"
+                                    data-category="{{ (m[7] or 'General') | e }}"
+                                    style="background:#1f6feb; border:none; color:#fff; padding:6px 12px;
+                                           border-radius:6px; cursor:pointer; font-size:12px; font-weight:600; margin-right:4px;"
+                                >
+                                    ✏️ Edit
+                                </button>
+                                <button
+                                    onclick="deleteMedicine(this)"
+                                    data-id="{{ m[0] }}"
+                                    data-name="{{ m[1] | e }}"
+                                    style="background:#da3633; border:none; color:#fff; padding:6px 12px;
+                                           border-radius:6px; cursor:pointer; font-size:12px; font-weight:600;"
+                                >
+                                    🗑
+                                </button>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="9" style="text-align:center; color:#8b949e; padding:30px;">
+                                No medicines yet — add your first one!
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ======== ADD MEDICINE PANEL -->
+    <div class="panel" id="panel-add">
+
+        <div class="section">
+            <div class="section-header">
+                <h3>➕ Add New Medicine</h3>
+            </div>
+            <div class="section-body">
+
+                <div class="form-grid">
+
+                    <div class="form-group" style="grid-column: span 2;">
+                        <label>Medicine Name *</label>
+                        <input type="text" id="add_name" placeholder="e.g. Paracetamol 500mg">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Barcode</label>
+                        <input type="text" id="add_barcode" placeholder="Scan or enter barcode">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Category</label>
+                        <select id="add_category">
+                            <option>General</option>
+                            <option>Antibiotic</option>
+                            <option>Painkiller</option>
+                            <option>Vitamin</option>
+                            <option>Antifungal</option>
+                            <option>Antiviral</option>
+                            <option>Cardiovascular</option>
+                            <option>Diabetes</option>
+                            <option>Respiratory</option>
+                            <option>Other</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Cost Price ($)</label>
+                        <input type="number" id="add_cost" placeholder="0.00" step="0.01" min="0">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Selling Price ($)</label>
+                        <input type="number" id="add_selling" placeholder="0.00" step="0.01" min="0">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Stock Quantity</label>
+                        <input type="number" id="add_stock" placeholder="0" min="0">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Expiry Date</label>
+                        <input type="date" id="add_expiry">
+                    </div>
+
+                </div>
+
+                <!-- PROFIT PREVIEW -->
+                <div id="profitPreview" style="margin-top:16px; padding:14px; background:#0d1117;
+                     border:1px solid #30363d; border-radius:8px; display:none;">
+                    <span style="color:#8b949e; font-size:13px;">Profit per unit: </span>
+                    <span id="profitPerUnit" style="color:#3fb950; font-weight:700; font-size:16px;">$0.00</span>
+                    <span style="color:#8b949e; font-size:13px; margin-left:16px;">Margin: </span>
+                    <span id="profitMargin" style="color:#3fb950; font-weight:700;">0%</span>
+                </div>
+
+                <button class="submit-btn" onclick="addMedicine()">
+                    ➕ Add Medicine
+                </button>
+
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ======== ALERTS PANEL -->
+    <div class="panel" id="panel-alerts">
+
+        <div class="section">
+            <div class="section-header">
+                <h3>❌ Expired Medicines</h3>
+                <span class="badge badge-red">{{ expired|length }}</span>
+            </div>
+            <div class="section-body">
+                {% if expired %}
+                <div class="alert-list">
+                    {% for m in expired %}
+                    <div class="alert-item expired">
+                        <div>
+                            <div class="alert-name">{{ m[1] }}</div>
+                            <div class="alert-detail">
+                                Barcode: {{ m[2] or 'N/A' }} · Stock: {{ m[5] }} units · Category: {{ m[7] or 'General' }}
+                            </div>
+                        </div>
+                        <span class="badge badge-red">Expired: {{ m[6] }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div style="text-align:center; color:#8b949e; padding:20px;">No expired medicines ✅</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-header">
+                <h3>⚠️ Expiring Within 90 Days</h3>
+                <span class="badge badge-orange">{{ expiry_alerts|length }}</span>
+            </div>
+            <div class="section-body">
+                {% if expiry_alerts %}
+                <div class="alert-list">
+                    {% for m in expiry_alerts %}
+                    <div class="alert-item expiring">
+                        <div>
+                            <div class="alert-name">{{ m[1] }}</div>
+                            <div class="alert-detail">Stock: {{ m[5] }} units</div>
+                        </div>
+                        <span class="badge badge-orange">{{ m[6] }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div style="text-align:center; color:#8b949e; padding:20px;">No expiring medicines ✅</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-header">
+                <h3>📦 Low Stock (≤ 10 units)</h3>
+                <span class="badge badge-blue">{{ low_stock|length }}</span>
+            </div>
+            <div class="section-body">
+                {% if low_stock %}
+                <div class="alert-list">
+                    {% for m in low_stock %}
+                    <div class="alert-item low">
+                        <div>
+                            <div class="alert-name">{{ m[1] }}</div>
+                            <div class="alert-detail">Expiry: {{ m[6] or 'N/A' }}</div>
+                        </div>
+                        <span class="badge badge-blue">{{ m[5] }} left</span>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div style="text-align:center; color:#8b949e; padding:20px;">All stocks are sufficient ✅</div>
+                {% endif %}
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ======== REPORT PANEL -->
+    <div class="panel" id="panel-report">
+
+        <div class="section">
+            <div class="section-header">
+                <h3>📑 Profit & Loss Report</h3>
+            </div>
+            <div class="section-body">
+
+                <!-- DATE FILTER -->
+                <div class="date-filter">
+                    <div class="form-group">
+                        <label>From Date</label>
+                        <input type="date" id="report_from" value="{{ today }}">
+                    </div>
+                    <div class="form-group">
+                        <label>To Date</label>
+                        <input type="date" id="report_to" value="{{ today }}">
+                    </div>
+                    <button class="submit-btn" onclick="loadReport()" style="margin-top:0;">
+                        📊 Generate Report
+                    </button>
+                </div>
+
+                <!-- REPORT CARDS -->
+                <div class="report-grid" id="reportCards" style="display:none;">
+                    <div class="report-card">
+                        <div class="report-value" id="rep_transactions">—</div>
+                        <div class="report-label">Transactions</div>
+                    </div>
+                    <div class="report-card">
+                        <div class="report-value" id="rep_qty">—</div>
+                        <div class="report-label">Units Sold</div>
+                    </div>
+                    <div class="report-card">
+                        <div class="report-value" style="color:#58a6ff;" id="rep_revenue">—</div>
+                        <div class="report-label">Total Revenue</div>
+                    </div>
+                    <div class="report-card">
+                        <div class="report-value" style="color:#f85149;" id="rep_cost">—</div>
+                        <div class="report-label">Total Cost</div>
+                    </div>
+                    <div class="report-card">
+                        <div class="report-value" style="color:#3fb950;" id="rep_profit">—</div>
+                        <div class="report-label">Net Profit</div>
+                    </div>
+                </div>
+
+                <!-- TOP MEDICINES -->
+                <div id="repTopSection" style="display:none;">
+                    <h4 style="margin-bottom:12px; color:#8b949e; font-size:13px; text-transform:uppercase;">Top Selling Medicines</h4>
+                    <div class="table-wrap">
+                        <table id="repTopTable">
+                            <tr>
+                                <th>#</th>
+                                <th>Medicine</th>
+                                <th>Units Sold</th>
+                                <th>Profit</th>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- DAILY BREAKDOWN -->
+                <div id="repDailySection" style="display:none; margin-top:20px;">
+                    <h4 style="margin-bottom:12px; color:#8b949e; font-size:13px; text-transform:uppercase;">Daily Breakdown</h4>
+                    <div class="table-wrap">
+                        <table id="repDailyTable">
+                            <tr>
+                                <th>Date</th>
+                                <th>Transactions</th>
+                                <th>Units</th>
+                                <th>Profit</th>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+<!-- ======================== EDIT MODAL -->
+<div class="modal-overlay" id="editModal">
+    <div class="modal">
+        <button class="modal-close" onclick="closeEditModal()">✕</button>
+        <h3>✏️ Edit Medicine</h3>
+        <input type="hidden" id="edit_id">
+        <div class="form-grid">
+            <div class="form-group" style="grid-column:span 2;">
+                <label>Name</label>
+                <input type="text" id="edit_name">
+            </div>
+            <div class="form-group">
+                <label>Barcode</label>
+                <input type="text" id="edit_barcode">
+            </div>
+            <div class="form-group">
+                <label>Category</label>
+                <select id="edit_category">
+                    <option>General</option>
+                    <option>Antibiotic</option>
+                    <option>Painkiller</option>
+                    <option>Vitamin</option>
+                    <option>Antifungal</option>
+                    <option>Antiviral</option>
+                    <option>Cardiovascular</option>
+                    <option>Diabetes</option>
+                    <option>Respiratory</option>
+                    <option>Other</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Cost Price</label>
+                <input type="number" id="edit_cost" step="0.01">
+            </div>
+            <div class="form-group">
+                <label>Selling Price</label>
+                <input type="number" id="edit_selling" step="0.01">
+            </div>
+            <div class="form-group">
+                <label>Stock Quantity</label>
+                <input type="number" id="edit_stock">
+            </div>
+            <div class="form-group">
+                <label>Expiry Date</label>
+                <input type="date" id="edit_expiry">
+            </div>
+        </div>
+        <button class="submit-btn" onclick="saveEdit()" style="width:100%; margin-top:20px;">
+            💾 Save Changes
+        </button>
+    </div>
+</div>
+
+<!-- ======================== TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ==========================================
+// STATE
+// ==========================================
+let cart = [];
+
+// ==========================================
+// TABS
+// ==========================================
+function switchTab(name) {
+    document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+    document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
+    document.getElementById("tab-" + name).classList.add("active");
+    document.getElementById("panel-" + name).classList.add("active");
+}
+
+// ==========================================
+// TOAST
+// ==========================================
+function showToast(msg, type = "success") {
+    const t = document.getElementById("toast");
+    t.textContent = msg;
+    t.className   = `toast ${type} show`;
+    setTimeout(() => t.classList.remove("show"), 3000);
+}
+
+// ==========================================
+// LOAD ALERTS COUNT ON LOAD
+// ==========================================
+window.addEventListener("load", () => {
+    fetch("/pharmacy/alerts")
+    .then(r => r.json())
+    .then(data => {
+        const total = data.total_alerts || 0;
+        const badge = document.getElementById("alertBadge");
+        badge.textContent = total > 0 ? `🔔 ${total} Alerts` : "🔔 No Alerts";
+        if (total === 0) {
+            badge.style.background = "#238636";
+        }
+    })
+    .catch(() => {});
+
+    // set today in report
+    const today = new Date().toISOString().split("T")[0];
+    if(document.getElementById("report_from")) document.getElementById("report_from").value = today;
+    if(document.getElementById("report_to"))   document.getElementById("report_to").value   = today;
+});
+
+// ==========================================
+// SEARCH MEDICINE (AJAX)
+// ==========================================
+let searchTimeout;
+
+function searchMedicine(q) {
+    clearTimeout(searchTimeout);
+    const box = document.getElementById("searchResults");
+    if (!q) { box.style.display = "none"; return; }
+
+    searchTimeout = setTimeout(() => {
+        fetch(`/pharmacy/search?q=${encodeURIComponent(q)}`)
+        .then(r => r.json())
+        .then(results => {
+            if (!results.length) {
+                box.innerHTML = `<div class="search-result-item" style="color:#8b949e; cursor:default;">No medicines found</div>`;
+                box.style.display = "block";
+                return;
+            }
+            box.innerHTML = results.map(m => `
+                <div class="search-result-item" onclick="addToCart(${m.medicine_id}, '${escHtml(m.name)}', ${m.selling_price}, ${m.stock_quantity})">
+                    <div>
+                        <div class="result-name">${m.name}</div>
+                        <div class="result-meta">
+                            ${m.barcode || 'No barcode'} · ${m.category || 'General'}
+                            ${m.expiry_date ? ' · Exp: ' + m.expiry_date : ''}
+                        </div>
+                    </div>
+                    <div style="text-align:right;">
+                        <div class="result-price">$${m.selling_price}</div>
+                        <div class="result-stock">
+                            ${m.stock_quantity <= 0 ? '<span style="color:#f85149;">Out of stock</span>'
+                            : m.stock_quantity <= 10 ? `<span style="color:#f0883e;">${m.stock_quantity} left</span>`
+                            : `${m.stock_quantity} in stock`}
+                        </div>
+                    </div>
+                </div>
+            `).join("");
+            box.style.display = "block";
+        })
+        .catch(() => {});
+    }, 300);
+}
+
+function handleSearchKey(e) {
+    if (e.key === "Escape") {
+        document.getElementById("searchResults").style.display = "none";
+    }
+}
+
+document.addEventListener("click", (e) => {
+    if (!e.target.closest(".search-wrapper")) {
+        document.getElementById("searchResults").style.display = "none";
+    }
+});
+
+function escHtml(str) {
+    return str.replace(/'/g, "\\'").replace(/"/g, "&quot;");
+}
+
+// ==========================================
+// CART
+// ==========================================
+function addToCart(id, name, price, stock) {
+    if (stock <= 0) {
+        showToast(`${name} is out of stock ❌`, "error");
+        return;
+    }
+
+    const existing = cart.find(i => i.medicine_id === id);
+    if (existing) {
+        if (existing.quantity >= stock) {
+            showToast(`Only ${stock} units available ❌`, "error");
+            return;
+        }
+        existing.quantity++;
+    } else {
+        cart.push({ medicine_id: id, name, price, quantity: 1, stock });
+    }
+
+    document.getElementById("searchInput").value = "";
+    document.getElementById("searchResults").style.display = "none";
+    renderCart();
+}
+
+function renderCart() {
+    const box = document.getElementById("cartItems");
+
+    if (!cart.length) {
+        box.innerHTML = `<div class="cart-empty">Cart is empty — search and add medicines above</div>`;
+        document.getElementById("cartTotalRow").style.display = "none";
+        document.getElementById("checkoutBtn").disabled = true;
+        document.getElementById("cartCount").textContent = "0 items";
+        return;
+    }
+
+    let total = 0;
+    box.innerHTML = cart.map((item, idx) => {
+        const subtotal = item.price * item.quantity;
+        total += subtotal;
+        return `
+        <div class="cart-item">
+            <div class="cart-item-name">
+                ${item.name}
+                <div style="font-size:11px; color:#8b949e;">$${item.price} each</div>
+            </div>
+            <div class="cart-qty-ctrl">
+                <button class="qty-btn" onclick="changeQty(${idx}, -1)">−</button>
+                <span class="qty-display">${item.quantity}</span>
+                <button class="qty-btn" onclick="changeQty(${idx}, 1)">+</button>
+            </div>
+            <div class="cart-item-price">$${subtotal.toFixed(2)}</div>
+            <button class="remove-btn" onclick="removeFromCart(${idx})">✕</button>
+        </div>`;
+    }).join("");
+
+    document.getElementById("cartTotalRow").style.display = "flex";
+    document.getElementById("cartTotal").textContent = `$${total.toFixed(2)}`;
+    document.getElementById("checkoutBtn").disabled = false;
+    document.getElementById("cartCount").textContent = `${cart.length} item${cart.length > 1 ? "s" : ""}`;
+}
+
+function changeQty(idx, delta) {
+    const item = cart[idx];
+    const newQty = item.quantity + delta;
+    if (newQty <= 0) {
+        cart.splice(idx, 1);
+    } else if (newQty > item.stock) {
+        showToast(`Only ${item.stock} units available ❌`, "error");
+        return;
+    } else {
+        item.quantity = newQty;
+    }
+    renderCart();
+}
+
+function removeFromCart(idx) {
+    cart.splice(idx, 1);
+    renderCart();
+}
+
+// ==========================================
+// CHECKOUT
+// ==========================================
+function checkout() {
+    if (!cart.length) return;
+
+    const btn = document.getElementById("checkoutBtn");
+    btn.disabled = true;
+    btn.textContent = "Processing...";
+
+    fetch("/pharmacy/sell", {
+        method:  "POST",
+        headers: {"Content-Type": "application/json"},
+        body:    JSON.stringify({ cart })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            showToast(`Sale complete! Profit: $${data.total_profit} ✅`, "success");
+            cart = [];
+            renderCart();
+            btn.textContent = "✅ Complete Sale";
+        } else {
+            showToast(data.error || "Sale failed ❌", "error");
+            btn.disabled = false;
+            btn.textContent = "✅ Complete Sale";
+        }
+    })
+    .catch(e => {
+        showToast("Network error ❌", "error");
+        btn.disabled = false;
+        btn.textContent = "✅ Complete Sale";
+    });
+}
+
+// ==========================================
+// ADD MEDICINE
+// ==========================================
+function addMedicine() {
+    const name     = document.getElementById("add_name").value.trim();
+    const barcode  = document.getElementById("add_barcode").value.trim();
+    const cost     = document.getElementById("add_cost").value;
+    const selling  = document.getElementById("add_selling").value;
+    const stock    = document.getElementById("add_stock").value;
+    const expiry   = document.getElementById("add_expiry").value;
+    const category = document.getElementById("add_category").value;
+
+    if (!name) {
+        showToast("Medicine name is required ❌", "error");
+        return;
+    }
+
+    const fd = new FormData();
+    fd.append("name",           name);
+    fd.append("barcode",        barcode);
+    fd.append("cost_price",     cost     || 0);
+    fd.append("selling_price",  selling  || 0);
+    fd.append("stock_quantity", stock    || 0);
+    fd.append("expiry_date",    expiry);
+    fd.append("category",       category);
+
+    fetch("/pharmacy/add_medicine", { method: "POST", body: fd })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            showToast("Medicine added ✅");
+            document.getElementById("add_name").value    = "";
+            document.getElementById("add_barcode").value = "";
+            document.getElementById("add_cost").value    = "";
+            document.getElementById("add_selling").value = "";
+            document.getElementById("add_stock").value   = "";
+            document.getElementById("add_expiry").value  = "";
+            document.getElementById("profitPreview").style.display = "none";
+            setTimeout(() => location.reload(), 1200);
+        } else {
+            showToast(data.error || "Failed ❌", "error");
+        }
+    });
+}
+
+// PROFIT PREVIEW
+document.addEventListener("DOMContentLoaded", () => {
+    const costEl    = document.getElementById("add_cost");
+    const sellingEl = document.getElementById("add_selling");
+
+    if (costEl && sellingEl) {
+        function updateProfit() {
+            const cost    = parseFloat(costEl.value) || 0;
+            const selling = parseFloat(sellingEl.value) || 0;
+            const profit  = selling - cost;
+            const margin  = selling > 0 ? ((profit / selling) * 100).toFixed(1) : 0;
+            const preview = document.getElementById("profitPreview");
+            if (cost > 0 || selling > 0) {
+                preview.style.display = "block";
+                document.getElementById("profitPerUnit").textContent = `$${profit.toFixed(2)}`;
+                document.getElementById("profitMargin").textContent  = `${margin}%`;
+                document.getElementById("profitPerUnit").style.color  = profit >= 0 ? "#3fb950" : "#f85149";
+            }
+        }
+        costEl.addEventListener("input",    updateProfit);
+        sellingEl.addEventListener("input", updateProfit);
+    }
+});
+
+// ==========================================
+// EDIT MEDICINE
+// ==========================================
+function openEditModal(btn) {
+    const d = btn.dataset;
+    document.getElementById("edit_id").value       = d.id;
+    document.getElementById("edit_name").value     = d.name;
+    document.getElementById("edit_barcode").value  = d.barcode;
+    document.getElementById("edit_cost").value     = d.cost;
+    document.getElementById("edit_selling").value  = d.selling;
+    document.getElementById("edit_stock").value    = d.stock;
+    document.getElementById("edit_expiry").value   = d.expiry;
+    document.getElementById("edit_category").value = d.category;
+    document.getElementById("editModal").classList.add("open");
+}
+
+function closeEditModal() {
+    document.getElementById("editModal").classList.remove("open");
+}
+
+function saveEdit() {
+    const id = document.getElementById("edit_id").value;
+
+    fetch(`/pharmacy/edit/${id}`, {
+        method:  "PUT",
+        headers: {"Content-Type": "application/json"},
+        body:    JSON.stringify({
+            name:           document.getElementById("edit_name").value,
+            barcode:        document.getElementById("edit_barcode").value,
+            cost_price:     document.getElementById("edit_cost").value,
+            selling_price:  document.getElementById("edit_selling").value,
+            stock_quantity: document.getElementById("edit_stock").value,
+            expiry_date:    document.getElementById("edit_expiry").value,
+            category:       document.getElementById("edit_category").value
+        })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            showToast("Updated ✅");
+            closeEditModal();
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showToast(data.error || "Failed ❌", "error");
+        }
+    });
+}
+
+// ==========================================
+// DELETE MEDICINE
+// ==========================================
+function deleteMedicine(btn) {
+    const id   = btn.dataset.id;
+    const name = btn.dataset.name;
+    if (!confirm(`Delete "${name}"? This cannot be undone.`)) return;
+
+    fetch(`/pharmacy/delete/${id}`, { method: "DELETE" })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            showToast(`${name} deleted ✅`);
+            const row = document.getElementById(`med-row-${id}`);
+            if (row) row.remove();
+        } else {
+            showToast(data.error || "Failed ❌", "error");
+        }
+    });
+}
+
+// ==========================================
+// FILTER TABLE
+// ==========================================
+function filterTable(q) {
+    const rows = document.querySelectorAll("#medicinesTable tr:not(:first-child)");
+    rows.forEach(row => {
+        row.style.display = row.textContent.toLowerCase().includes(q.toLowerCase()) ? "" : "none";
+    });
+}
+
+// ==========================================
+// REPORT
+// ==========================================
+function loadReport() {
+    const from = document.getElementById("report_from").value;
+    const to   = document.getElementById("report_to").value;
+
+    if (!from || !to) {
+        showToast("Select date range ❌", "error");
+        return;
+    }
+
+    fetch(`/pharmacy/report?from=${from}&to=${to}`)
+    .then(r => r.json())
+    .then(data => {
+        document.getElementById("reportCards").style.display      = "grid";
+        document.getElementById("repTopSection").style.display    = "block";
+        document.getElementById("repDailySection").style.display  = "block";
+
+        document.getElementById("rep_transactions").textContent = data.total_transactions;
+        document.getElementById("rep_qty").textContent          = data.total_qty;
+        document.getElementById("rep_revenue").textContent      = `$${data.total_revenue}`;
+        document.getElementById("rep_cost").textContent         = `$${data.total_cost}`;
+        document.getElementById("rep_profit").textContent       = `$${data.net_profit}`;
+
+        // Top medicines
+        const topTable = document.getElementById("repTopTable");
+        const existRows = topTable.querySelectorAll("tr:not(:first-child)");
+        existRows.forEach(r => r.remove());
+        data.top_medicines.forEach((m, i) => {
+            topTable.innerHTML += `
+            <tr>
+                <td>${i + 1}</td>
+                <td><b>${m.name}</b></td>
+                <td><span class="badge badge-blue">${m.qty} units</span></td>
+                <td style="color:#3fb950; font-weight:700;">$${m.profit}</td>
+            </tr>`;
+        });
+
+        // Daily breakdown
+        const dailyTable = document.getElementById("repDailyTable");
+        const dailyExist = dailyTable.querySelectorAll("tr:not(:first-child)");
+        dailyExist.forEach(r => r.remove());
+        data.daily.forEach(d => {
+            dailyTable.innerHTML += `
+            <tr>
+                <td>${d.date}</td>
+                <td>${d.transactions}</td>
+                <td>${d.qty}</td>
+                <td style="color:#3fb950; font-weight:700;">$${d.profit}</td>
+            </tr>`;
+        });
+    })
+    .catch(e => showToast("Failed to load report ❌", "error"));
+}
+</script>
+
+</body>
+</html>
