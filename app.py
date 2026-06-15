@@ -4932,7 +4932,125 @@ def pharmacy_logout():
 #     except Exception as e:
 #         return jsonify({"success": False, "error": str(e)})
 # ============================================================
+# ==========================================
+# KU DAR APP.PY FASALKA — XIGTA init_db()
+# ==========================================
+# Raadi app.py gudahaaga:
+#     init_db()
+# Xigtiisa ku dar:
+#     init_pharmacy_db()
+#
+# HADDAADAN helin init_pharmacy_db() function-ka,
+# ku copy-garee function-kan hoose app.py:
+# ==========================================
 
+def init_pharmacy_db():
+    conn = sqlite3.connect(DB_PATH)
+    c    = conn.cursor()
+
+    c.execute("""
+    CREATE TABLE IF NOT EXISTS pharmacy_users (
+        id        INTEGER PRIMARY KEY AUTOINCREMENT,
+        username  TEXT UNIQUE,
+        password  TEXT,
+        role      TEXT DEFAULT 'pharmacist'
+    )
+    """)
+
+    c.execute("""
+    CREATE TABLE IF NOT EXISTS medicines (
+        medicine_id    INTEGER PRIMARY KEY AUTOINCREMENT,
+        name           TEXT NOT NULL,
+        barcode        TEXT UNIQUE,
+        cost_price     REAL    DEFAULT 0,
+        selling_price  REAL    DEFAULT 0,
+        stock_quantity INTEGER DEFAULT 0,
+        expiry_date    TEXT,
+        category       TEXT    DEFAULT 'General',
+        created_at     TEXT    DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
+
+    c.execute("""
+    CREATE TABLE IF NOT EXISTS pharmacy_sales (
+        id             INTEGER PRIMARY KEY AUTOINCREMENT,
+        medicine_id    INTEGER,
+        medicine_name  TEXT,
+        barcode        TEXT,
+        quantity_sold  INTEGER,
+        cost_price     REAL,
+        selling_price  REAL,
+        profit         REAL,
+        sale_date      TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
+
+    conn.commit()
+    conn.close()
+    print("PHARMACY DB READY ✅")
+
+
+# ==========================================
+# KU DAR XAL KALE HADDII AADAN RABIN FUNCTION:
+# ==========================================
+# App.py fasalka route-ka /admin/create_pharmacy_user
+# ku beddel sidan:
+# ==========================================
+
+@app.route("/admin/create_pharmacy_user", methods=["POST"])
+def admin_create_pharmacy_user():
+    try:
+        if not session.get("admin_ok"):
+            return jsonify({"success": False, "error": "Unauthorized ❌"}), 401
+
+        data     = request.get_json()
+        username = data.get("username", "").strip()
+        password = data.get("password", "").strip()
+
+        if not username or not password:
+            return jsonify({"success": False, "error": "Fill all fields ❌"})
+
+        conn = sqlite3.connect(DB_PATH)
+        c    = conn.cursor()
+
+        # TABLE HADDAAN JIRIN ABUUR — AUTO FIX
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS pharmacy_users (
+                id        INTEGER PRIMARY KEY AUTOINCREMENT,
+                username  TEXT UNIQUE,
+                password  TEXT,
+                role      TEXT DEFAULT 'pharmacist'
+            )
+        """)
+
+        c.execute("SELECT id FROM pharmacy_users WHERE username=?", (username,))
+        existing = c.fetchone()
+
+        if existing:
+            conn.close()
+            return jsonify({"success": False, "error": f"Username '{username}' already exists ❌"})
+
+        c.execute(
+            "INSERT INTO pharmacy_users (username, password) VALUES (?, ?)",
+            (username, password)
+        )
+        conn.commit()
+        conn.close()
+
+        # FIRESTORE
+        db.collection("pharmacy_users").document(username).set({
+            "username":   username,
+            "password":   password,
+            "created_at": datetime.now().isoformat()
+        })
+
+        return jsonify({
+            "success": True,
+            "message": f"User '{username}' created successfully ✅"
+        })
+
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
 # ══════════════════════════════════════════════════════════════
 #  Kitchen WebSocket  →  /ws/kitchen/<rid>
 #  Kitchen browser ku xidaa; incoming offer helaa, answer diraa
