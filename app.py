@@ -4790,238 +4790,620 @@ def pharmacy_logout_route():
     session.pop("pharmacy_user", None)
     return redirect("/pharmacy_login")
 
-
 # ==========================================
-# 📌 ROUTES LIST — KU DAR app.py FASALKA:
-# ==========================================
-#
-# app.route("/pharmacy_login", methods=["GET","POST"])(pharmacy_login_route)
-# app.route("/pharmacy")(pharmacy_dashboard_route)
-# app.route("/pharmacy/add_medicine", methods=["POST"])(add_medicine_route)
-# app.route("/pharmacy/search")(search_medicine_route)
-# app.route("/pharmacy/sell", methods=["POST"])(sell_medicine_route)
-# app.route("/pharmacy/report")(pharmacy_report_route)
-# app.route("/pharmacy/delete/<int:med_id>", methods=["DELETE"])(delete_medicine_route)
-# app.route("/pharmacy/edit/<int:med_id>", methods=["PUT"])(edit_medicine_route)
-# app.route("/pharmacy/medicines")(get_medicines_route)
-# app.route("/pharmacy/alerts")(pharmacy_alerts_route)
-# app.route("/pharmacy/create_user", methods=["POST"])(create_pharmacy_user_route)
-# app.route("/pharmacy/logout")(pharmacy_logout_route)
-#
+# 💊 PHARMACY — DHAMAAN ROUTES
+# KU COPY-GAREE APP.PY GUDAHIISA
 # ==========================================
 
+import os
+from werkzeug.utils import secure_filename
+
+PHARMACY_IMG_FOLDER = "static/pharmacy"
+os.makedirs(PHARMACY_IMG_FOLDER, exist_ok=True)
+
+
 # ==========================================
-# 💊 PHARMACY — KU DAR APP.PY FASALKA
+# 🗄️ INIT PHARMACY TABLES
 # ==========================================
-# 1. Ku copy-garee functions-yada pharmacy_routes.py
-#    ama ku dar fasalka hoose app.py:
-#
-#    from pharmacy_routes import (
-#        init_pharmacy_db,
-#        pharmacy_login_route,
-#        pharmacy_dashboard_route,
-#        add_medicine_route,
-#        search_medicine_route,
-#        sell_medicine_route,
-#        pharmacy_report_route,
-#        delete_medicine_route,
-#        edit_medicine_route,
-#        get_medicines_route,
-#        pharmacy_alerts_route,
-#        create_pharmacy_user_route,
-#        pharmacy_logout_route
-#    )
-#
-# 2. Ku dar init_db() xigta:
-#    init_pharmacy_db()
-#
-# 3. Ku dar routes-yada hoose app.py gudahiisa
+def init_pharmacy_tables(conn, c):
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS pharmacy_users (
+            id        INTEGER PRIMARY KEY AUTOINCREMENT,
+            username  TEXT UNIQUE,
+            password  TEXT,
+            role      TEXT DEFAULT 'pharmacist'
+        )
+    """)
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS medicines (
+            medicine_id    INTEGER PRIMARY KEY AUTOINCREMENT,
+            name           TEXT NOT NULL,
+            barcode        TEXT UNIQUE,
+            cost_price     REAL    DEFAULT 0,
+            selling_price  REAL    DEFAULT 0,
+            stock_quantity INTEGER DEFAULT 0,
+            expiry_date    TEXT,
+            category       TEXT    DEFAULT 'General',
+            created_at     TEXT    DEFAULT CURRENT_TIMESTAMP,
+            image          TEXT
+        )
+    """)
+    try:
+        c.execute("ALTER TABLE medicines ADD COLUMN image TEXT")
+    except:
+        pass
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS pharmacy_sales (
+            id             INTEGER PRIMARY KEY AUTOINCREMENT,
+            medicine_id    INTEGER,
+            medicine_name  TEXT,
+            barcode        TEXT,
+            quantity_sold  INTEGER,
+            cost_price     REAL,
+            selling_price  REAL,
+            profit         REAL,
+            sale_date      TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS pharmacy_debts (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            name        TEXT NOT NULL,
+            phone       TEXT,
+            type        TEXT DEFAULT 'cash',
+            amount      REAL DEFAULT 0,
+            description TEXT,
+            date        TEXT,
+            status      TEXT DEFAULT 'unpaid',
+            created_at  TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+    conn.commit()
+
+
 # ==========================================
-
-# ============================================================
-# COPY ROUTES-YADAN AH DIRECTLY APP.PY GUDAHIISA
-# ============================================================
-
-from datetime import datetime, timedelta
-
-# ---- INIT (ku dar init_db() xigta) ----
-# init_pharmacy_db()
-
-
+# 🔐 PHARMACY LOGIN
+# ==========================================
 @app.route("/pharmacy_login", methods=["GET", "POST"])
 def pharmacy_login():
-    return pharmacy_login_route()
+    if request.method == "POST":
+        username = request.form.get("username", "").strip()
+        password = request.form.get("password", "").strip()
+        conn     = sqlite3.connect(DB_PATH)
+        c        = conn.cursor()
+        init_pharmacy_tables(conn, c)
+        c.execute(
+            "SELECT * FROM pharmacy_users WHERE username=? AND password=?",
+            (username, password)
+        )
+        user = c.fetchone()
+        conn.close()
+        if user:
+            session["pharmacy_ok"]   = True
+            session["pharmacy_user"] = username
+            return redirect("/pharmacy")
+        return render_template("pharmacy_login.html", error="Wrong username or password ❌")
+    return render_template("pharmacy_login.html")
 
 
-@app.route("/pharmacy")
-def pharmacy():
-    return pharmacy_dashboard_route()
-
-
-@app.route("/pharmacy/add_medicine", methods=["POST"])
-def add_medicine():
-    return add_medicine_route()
-
-
-@app.route("/pharmacy/search")
-def search_medicine():
-    return search_medicine_route()
-
-
-@app.route("/pharmacy/sell", methods=["POST"])
-def sell_medicine():
-    return sell_medicine_route()
-
-
-@app.route("/pharmacy/report")
-def pharmacy_report():
-    return pharmacy_report_route()
-
-
-@app.route("/pharmacy/delete/<int:med_id>", methods=["DELETE"])
-def delete_medicine(med_id):
-    return delete_medicine_route(med_id)
-
-
-@app.route("/pharmacy/edit/<int:med_id>", methods=["PUT"])
-def edit_medicine(med_id):
-    return edit_medicine_route(med_id)
-
-
-@app.route("/pharmacy/medicines")
-def get_medicines():
-    return get_medicines_route()
-
-
-@app.route("/pharmacy/alerts")
-def pharmacy_alerts():
-    return pharmacy_alerts_route()
-
-
-@app.route("/pharmacy/create_user", methods=["POST"])
-def create_pharmacy_user():
-    return create_pharmacy_user_route()
-
-
+# ==========================================
+# 🚪 PHARMACY LOGOUT
+# ==========================================
 @app.route("/pharmacy/logout")
 def pharmacy_logout():
-    return pharmacy_logout_route()
+    session.pop("pharmacy_ok",   None)
+    session.pop("pharmacy_user", None)
+    return redirect("/pharmacy_login")
 
 
-# ============================================================
-# PHARMACY — TEMPLATE VARIABLES FIX
-# ============================================================
-# Pharmacy dashboard-ka wuxuu u baahan yahay laba variable oo
-# Jinja2 template-ka ku jira (now_date iyo expiry_warn).
-# Ku beddel pharmacy_dashboard_route() function-ka fasalka:
-#
-#    from datetime import datetime, timedelta
-#
-#    return render_template(
-#        "pharmacy.html",
-#        medicines     = medicines,
-#        today_sales   = today_sales,
-#        today_qty     = today_qty,
-#        today_profit  = today_profit,
-#        expiry_alerts = expiry_alerts,
-#        expired       = expired,
-#        low_stock     = low_stock,
-#        top_selling   = top_selling,
-#        today         = datetime.now().strftime("%Y-%m-%d"),
-#        now_date      = datetime.now().strftime("%Y-%m-%d"),
-#        expiry_warn   = (datetime.now() + timedelta(days=90)).strftime("%Y-%m-%d")
-#    )
-# ============================================================
-
-
-# ============================================================
-# FIRESTORE — CREATE PHARMACY USER FROM ADMIN PANEL
-# ============================================================
-# Admin-ka wuxuu username iyo password ku abuuri karaa Firestore:
-#
-# @app.route("/admin/create_pharmacy_user", methods=["POST"])
-# def admin_create_pharmacy_user():
-#     if not session.get("admin_ok"):
-#         return jsonify({"success": False, "error": "Unauthorized"}), 401
-#     try:
-#         data     = request.get_json()
-#         username = data.get("username", "").strip()
-#         password = data.get("password", "").strip()
-#         if not username or not password:
-#             return jsonify({"success": False, "error": "Fill all fields"})
-#         # SQLite ku kaydi
-#         conn = sqlite3.connect(DB_PATH)
-#         c    = conn.cursor()
-#         c.execute("INSERT INTO pharmacy_users (username, password) VALUES (?, ?)",
-#                   (username, password))
-#         conn.commit()
-#         conn.close()
-#         # Firestore-na ku kaydi
-#         db.collection("pharmacy_users").document(username).set({
-#             "username":    username,
-#             "password":    password,
-#             "created_at":  datetime.now().isoformat()
-#         })
-#         return jsonify({"success": True, "message": "User created ✅"})
-#     except Exception as e:
-#         return jsonify({"success": False, "error": str(e)})
-# ============================================================
 # ==========================================
-# KU DAR APP.PY FASALKA — XIGTA init_db()
+# 🏠 PHARMACY DASHBOARD
 # ==========================================
-# Raadi app.py gudahaaga:
-#     init_db()
-# Xigtiisa ku dar:
-#     init_pharmacy_db()
-#
-# HADDAADAN helin init_pharmacy_db() function-ka,
-# ku copy-garee function-kan hoose app.py:
+@app.route("/pharmacy")
+def pharmacy():
+    if not session.get("pharmacy_ok"):
+        return redirect("/pharmacy_login")
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        c    = conn.cursor()
+        init_pharmacy_tables(conn, c)
+
+        c.execute("SELECT * FROM medicines ORDER BY name ASC")
+        medicines = c.fetchall()
+
+        today      = datetime.now().strftime("%Y-%m-%d")
+        alert_date = (datetime.now() + timedelta(days=90)).strftime("%Y-%m-%d")
+
+        c.execute("""
+            SELECT COUNT(*), SUM(quantity_sold), SUM(profit)
+            FROM pharmacy_sales WHERE date(sale_date)=?
+        """, (today,))
+        row          = c.fetchone()
+        today_sales  = row[0] or 0
+        today_qty    = row[1] or 0
+        today_profit = round(row[2] or 0, 2)
+
+        c.execute("""
+            SELECT * FROM medicines
+            WHERE expiry_date <= ? AND expiry_date >= ?
+            ORDER BY expiry_date ASC
+        """, (alert_date, today))
+        expiry_alerts = c.fetchall()
+
+        c.execute("""
+            SELECT * FROM medicines
+            WHERE expiry_date < ?
+            ORDER BY expiry_date ASC
+        """, (today,))
+        expired = c.fetchall()
+
+        c.execute("""
+            SELECT * FROM medicines
+            WHERE stock_quantity <= 10
+            ORDER BY stock_quantity ASC
+        """)
+        low_stock = c.fetchall()
+
+        c.execute("""
+            SELECT medicine_name, SUM(quantity_sold) as total
+            FROM pharmacy_sales
+            WHERE date(sale_date)=?
+            GROUP BY medicine_name
+            ORDER BY total DESC LIMIT 5
+        """, (today,))
+        top_selling = c.fetchall()
+
+        conn.close()
+
+        return render_template(
+            "pharmacy.html",
+            medicines     = medicines,
+            today_sales   = today_sales,
+            today_qty     = today_qty,
+            today_profit  = today_profit,
+            expiry_alerts = expiry_alerts,
+            expired       = expired,
+            low_stock     = low_stock,
+            top_selling   = top_selling,
+            today         = today,
+            now_date      = today,
+            expiry_warn   = alert_date
+        )
+    except Exception as e:
+        return f"Pharmacy Error ❌ {str(e)}"
+
+
 # ==========================================
+# ➕ ADD MEDICINE (WITH IMAGE)
+# ==========================================
+@app.route("/pharmacy/add_medicine", methods=["POST"])
+def add_medicine():
+    if not session.get("pharmacy_ok"):
+        return jsonify({"success": False, "error": "Not logged in"}), 401
+    try:
+        name          = request.form.get("name", "").strip()
+        barcode       = request.form.get("barcode", "").strip()
+        cost_price    = float(request.form.get("cost_price", 0))
+        selling_price = float(request.form.get("selling_price", 0))
+        stock_qty     = int(request.form.get("stock_quantity", 0))
+        expiry_date   = request.form.get("expiry_date", "").strip()
+        category      = request.form.get("category", "General").strip()
 
-def init_pharmacy_db():
-    conn = sqlite3.connect(DB_PATH)
-    c    = conn.cursor()
+        if not name:
+            return jsonify({"success": False, "error": "Medicine name required ❌"})
 
-    c.execute("""
-    CREATE TABLE IF NOT EXISTS pharmacy_users (
-        id        INTEGER PRIMARY KEY AUTOINCREMENT,
-        username  TEXT UNIQUE,
-        password  TEXT,
-        role      TEXT DEFAULT 'pharmacist'
-    )
-    """)
+        image_filename = ""
+        image_file     = request.files.get("image")
+        if image_file and image_file.filename:
+            ext            = os.path.splitext(image_file.filename)[1].lower()
+            safe_name      = secure_filename(
+                f"{name.replace(' ','_')}_{int(datetime.now().timestamp())}{ext}"
+            )
+            image_file.save(os.path.join(PHARMACY_IMG_FOLDER, safe_name))
+            image_filename = safe_name
 
-    c.execute("""
-    CREATE TABLE IF NOT EXISTS medicines (
-        medicine_id    INTEGER PRIMARY KEY AUTOINCREMENT,
-        name           TEXT NOT NULL,
-        barcode        TEXT UNIQUE,
-        cost_price     REAL    DEFAULT 0,
-        selling_price  REAL    DEFAULT 0,
-        stock_quantity INTEGER DEFAULT 0,
-        expiry_date    TEXT,
-        category       TEXT    DEFAULT 'General',
-        created_at     TEXT    DEFAULT CURRENT_TIMESTAMP
-    )
-    """)
+        conn = sqlite3.connect(DB_PATH)
+        c    = conn.cursor()
+        init_pharmacy_tables(conn, c)
 
-    c.execute("""
-    CREATE TABLE IF NOT EXISTS pharmacy_sales (
-        id             INTEGER PRIMARY KEY AUTOINCREMENT,
-        medicine_id    INTEGER,
-        medicine_name  TEXT,
-        barcode        TEXT,
-        quantity_sold  INTEGER,
-        cost_price     REAL,
-        selling_price  REAL,
-        profit         REAL,
-        sale_date      TEXT DEFAULT CURRENT_TIMESTAMP
-    )
-    """)
+        c.execute("""
+            INSERT INTO medicines
+            (name, barcode, cost_price, selling_price,
+             stock_quantity, expiry_date, category, image)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """, (name, barcode or None, cost_price, selling_price,
+              stock_qty, expiry_date, category, image_filename))
 
-    conn.commit()
-    conn.close()
-    print("PHARMACY DB READY ✅")
+        conn.commit()
+        conn.close()
+
+        return jsonify({"success": True, "message": "Medicine added ✅"})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+
+# ==========================================
+# 🔍 SEARCH MEDICINE
+# ==========================================
+@app.route("/pharmacy/search")
+def search_medicine():
+    if not session.get("pharmacy_ok"):
+        return jsonify({"error": "Not logged in"}), 401
+    query = request.args.get("q", "").strip()
+    if not query:
+        return jsonify([])
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        c    = conn.cursor()
+        init_pharmacy_tables(conn, c)
+        c.execute("""
+            SELECT medicine_id, name, barcode, selling_price,
+                   stock_quantity, expiry_date, category, image
+            FROM medicines
+            WHERE name LIKE ? OR barcode = ?
+            LIMIT 20
+        """, (f"%{query}%", query))
+        rows    = c.fetchall()
+        conn.close()
+        return jsonify([{
+            "medicine_id":    r[0],
+            "name":           r[1],
+            "barcode":        r[2],
+            "selling_price":  r[3],
+            "stock_quantity": r[4],
+            "expiry_date":    r[5],
+            "category":       r[6],
+            "image":          r[7] or ""
+        } for r in rows])
+    except Exception as e:
+        return jsonify({"error": str(e)})
+
+
+# ==========================================
+# 🛒 SELL MEDICINE
+# ==========================================
+@app.route("/pharmacy/sell", methods=["POST"])
+def sell_medicine():
+    if not session.get("pharmacy_ok"):
+        return jsonify({"success": False, "error": "Not logged in"}), 401
+    try:
+        data = request.get_json()
+        cart = data.get("cart", [])
+        if not cart:
+            return jsonify({"success": False, "error": "Cart is empty ❌"})
+
+        conn         = sqlite3.connect(DB_PATH)
+        c            = conn.cursor()
+        init_pharmacy_tables(conn, c)
+        total_profit = 0
+
+        for item in cart:
+            med_id = item.get("medicine_id")
+            qty    = int(item.get("quantity", 1))
+            c.execute("""
+                SELECT name, barcode, cost_price, selling_price, stock_quantity
+                FROM medicines WHERE medicine_id=?
+            """, (med_id,))
+            med = c.fetchone()
+            if not med:
+                conn.close()
+                return jsonify({"success": False, "error": f"Medicine ID {med_id} not found ❌"})
+            name, barcode, cost_price, selling_price, stock = med
+            if qty > stock:
+                conn.close()
+                return jsonify({"success": False, "error": f"Not enough stock for {name}. Available: {stock} ❌"})
+            profit = (selling_price - cost_price) * qty
+            total_profit += profit
+            c.execute("""
+                INSERT INTO pharmacy_sales
+                (medicine_id, medicine_name, barcode, quantity_sold,
+                 cost_price, selling_price, profit, sale_date)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """, (med_id, name, barcode, qty, cost_price, selling_price,
+                  profit, datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+            c.execute("""
+                UPDATE medicines
+                SET stock_quantity = stock_quantity - ?
+                WHERE medicine_id=?
+            """, (qty, med_id))
+
+        conn.commit()
+        conn.close()
+        return jsonify({"success": True, "message": "Sale recorded ✅",
+                        "total_profit": round(total_profit, 2)})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+
+# ==========================================
+# ✏️ EDIT MEDICINE
+# ==========================================
+@app.route("/pharmacy/edit/<int:med_id>", methods=["PUT"])
+def edit_medicine(med_id):
+    if not session.get("pharmacy_ok"):
+        return jsonify({"success": False, "error": "Not logged in"}), 401
+    try:
+        data = request.get_json()
+        conn = sqlite3.connect(DB_PATH)
+        c    = conn.cursor()
+        c.execute("""
+            UPDATE medicines
+            SET name=?, barcode=?, cost_price=?, selling_price=?,
+                stock_quantity=?, expiry_date=?, category=?
+            WHERE medicine_id=?
+        """, (data.get("name"), data.get("barcode"),
+              float(data.get("cost_price", 0)),
+              float(data.get("selling_price", 0)),
+              int(data.get("stock_quantity", 0)),
+              data.get("expiry_date"),
+              data.get("category"), med_id))
+        conn.commit()
+        conn.close()
+        return jsonify({"success": True, "message": "Updated ✅"})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+
+# ==========================================
+# 🗑 DELETE MEDICINE
+# ==========================================
+@app.route("/pharmacy/delete/<int:med_id>", methods=["DELETE"])
+def delete_medicine(med_id):
+    if not session.get("pharmacy_ok"):
+        return jsonify({"success": False, "error": "Not logged in"}), 401
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        c    = conn.cursor()
+        c.execute("DELETE FROM medicines WHERE medicine_id=?", (med_id,))
+        conn.commit()
+        conn.close()
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+
+# ==========================================
+# 🚨 ALERTS
+# ==========================================
+@app.route("/pharmacy/alerts")
+def pharmacy_alerts():
+    if not session.get("pharmacy_ok"):
+        return jsonify({"error": "Not logged in"}), 401
+    try:
+        today      = datetime.now().strftime("%Y-%m-%d")
+        alert_date = (datetime.now() + timedelta(days=90)).strftime("%Y-%m-%d")
+        conn = sqlite3.connect(DB_PATH)
+        c    = conn.cursor()
+        init_pharmacy_tables(conn, c)
+        c.execute("""
+            SELECT medicine_id, name, stock_quantity, expiry_date
+            FROM medicines WHERE expiry_date<=? AND expiry_date>=?
+            ORDER BY expiry_date ASC
+        """, (alert_date, today))
+        expiring = [{"medicine_id":r[0],"name":r[1],"stock":r[2],"expiry":r[3]}
+                    for r in c.fetchall()]
+        c.execute("""
+            SELECT medicine_id, name, stock_quantity, expiry_date
+            FROM medicines WHERE expiry_date<?
+            ORDER BY expiry_date ASC
+        """, (today,))
+        expired = [{"medicine_id":r[0],"name":r[1],"stock":r[2],"expiry":r[3]}
+                   for r in c.fetchall()]
+        c.execute("""
+            SELECT medicine_id, name, stock_quantity, expiry_date
+            FROM medicines WHERE stock_quantity<=10
+            ORDER BY stock_quantity ASC
+        """)
+        low_stock = [{"medicine_id":r[0],"name":r[1],"stock":r[2],"expiry":r[3]}
+                     for r in c.fetchall()]
+        conn.close()
+        return jsonify({
+            "expiring_soon": expiring,
+            "expired":       expired,
+            "low_stock":     low_stock,
+            "total_alerts":  len(expiring) + len(expired) + len(low_stock)
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)})
+
+
+# ==========================================
+# 📑 REPORT
+# ==========================================
+@app.route("/pharmacy/report")
+def pharmacy_report():
+    if not session.get("pharmacy_ok"):
+        return jsonify({"error": "Not logged in"}), 401
+    try:
+        date_from = request.args.get("from", datetime.now().strftime("%Y-%m-%d"))
+        date_to   = request.args.get("to",   datetime.now().strftime("%Y-%m-%d"))
+        conn = sqlite3.connect(DB_PATH)
+        c    = conn.cursor()
+        c.execute("""
+            SELECT COUNT(*), SUM(quantity_sold),
+                   SUM(selling_price*quantity_sold),
+                   SUM(cost_price*quantity_sold), SUM(profit)
+            FROM pharmacy_sales
+            WHERE date(sale_date) BETWEEN ? AND ?
+        """, (date_from, date_to))
+        row = c.fetchone()
+        c.execute("""
+            SELECT medicine_name, SUM(quantity_sold) as qty, SUM(profit) as profit
+            FROM pharmacy_sales WHERE date(sale_date) BETWEEN ? AND ?
+            GROUP BY medicine_name ORDER BY qty DESC LIMIT 5
+        """, (date_from, date_to))
+        top_medicines = [{"name":r[0],"qty":r[1],"profit":round(r[2],2)}
+                         for r in c.fetchall()]
+        c.execute("""
+            SELECT date(sale_date), COUNT(*), SUM(quantity_sold), SUM(profit)
+            FROM pharmacy_sales WHERE date(sale_date) BETWEEN ? AND ?
+            GROUP BY date(sale_date) ORDER BY date(sale_date) DESC
+        """, (date_from, date_to))
+        daily = [{"date":r[0],"transactions":r[1],"qty":r[2],"profit":round(r[3],2)}
+                 for r in c.fetchall()]
+        conn.close()
+        return jsonify({
+            "from":               date_from,
+            "to":                 date_to,
+            "total_transactions": row[0] or 0,
+            "total_qty":          row[1] or 0,
+            "total_revenue":      round(row[2] or 0, 2),
+            "total_cost":         round(row[3] or 0, 2),
+            "net_profit":         round(row[4] or 0, 2),
+            "top_medicines":      top_medicines,
+            "daily":              daily
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)})
+
+
+# ==========================================
+# 📋 ADD DEBT
+# ==========================================
+@app.route("/pharmacy/add_debt", methods=["POST"])
+def add_debt():
+    if not session.get("pharmacy_ok"):
+        return jsonify({"success": False, "error": "Not logged in"}), 401
+    try:
+        data = request.get_json()
+        name = data.get("name", "").strip()
+        if not name:
+            return jsonify({"success": False, "error": "Name required ❌"})
+        conn = sqlite3.connect(DB_PATH)
+        c    = conn.cursor()
+        init_pharmacy_tables(conn, c)
+        c.execute("""
+            INSERT INTO pharmacy_debts
+            (name, phone, type, amount, description, date, status)
+            VALUES (?, ?, ?, ?, ?, ?, 'unpaid')
+        """, (name,
+              data.get("phone", ""),
+              data.get("type", "cash"),
+              float(data.get("amount", 0)),
+              data.get("description", ""),
+              data.get("date", datetime.now().strftime("%Y-%m-%d"))))
+        conn.commit()
+        conn.close()
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+
+# ==========================================
+# 📋 GET ALL DEBTS
+# ==========================================
+@app.route("/pharmacy/debts")
+def get_debts():
+    if not session.get("pharmacy_ok"):
+        return jsonify({"error": "Not logged in"}), 401
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        c    = conn.cursor()
+        init_pharmacy_tables(conn, c)
+        c.execute("SELECT * FROM pharmacy_debts ORDER BY created_at DESC")
+        rows = c.fetchall()
+        c.execute("SELECT COUNT(*) FROM pharmacy_debts")
+        total = c.fetchone()[0]
+        c.execute("SELECT COUNT(*) FROM pharmacy_debts WHERE type='product' AND status!='paid'")
+        product_count = c.fetchone()[0]
+        c.execute("SELECT SUM(amount) FROM pharmacy_debts WHERE type='cash' AND status!='paid'")
+        cash_total = c.fetchone()[0] or 0
+        c.execute("SELECT COUNT(*) FROM pharmacy_debts WHERE status='paid'")
+        paid_count = c.fetchone()[0]
+        conn.close()
+        debts = [{
+            "id":          r[0],
+            "name":        r[1],
+            "phone":       r[2],
+            "type":        r[3],
+            "amount":      r[4],
+            "description": r[5],
+            "date":        r[6],
+            "status":      r[7],
+            "created_at":  r[8]
+        } for r in rows]
+        return jsonify({
+            "debts":         debts,
+            "total":         total,
+            "product_count": product_count,
+            "cash_total":    round(cash_total, 2),
+            "paid_count":    paid_count
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)})
+
+
+# ==========================================
+# ✅ MARK DEBT PAID
+# ==========================================
+@app.route("/pharmacy/debt_paid/<int:debt_id>", methods=["POST"])
+def mark_debt_paid(debt_id):
+    if not session.get("pharmacy_ok"):
+        return jsonify({"success": False, "error": "Not logged in"}), 401
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        c    = conn.cursor()
+        c.execute("UPDATE pharmacy_debts SET status='paid' WHERE id=?", (debt_id,))
+        conn.commit()
+        conn.close()
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+
+# ==========================================
+# 🗑 DELETE DEBT
+# ==========================================
+@app.route("/pharmacy/delete_debt/<int:debt_id>", methods=["DELETE"])
+def delete_debt(debt_id):
+    if not session.get("pharmacy_ok"):
+        return jsonify({"success": False, "error": "Not logged in"}), 401
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        c    = conn.cursor()
+        c.execute("DELETE FROM pharmacy_debts WHERE id=?", (debt_id,))
+        conn.commit()
+        conn.close()
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+
+# ==========================================
+# 👤 CREATE PHARMACY USER (ADMIN)
+# ==========================================
+@app.route("/admin/create_pharmacy_user", methods=["POST"])
+def admin_create_pharmacy_user():
+    try:
+        if not session.get("admin_ok"):
+            return jsonify({"success": False, "error": "Unauthorized ❌"}), 401
+        data     = request.get_json()
+        username = data.get("username", "").strip()
+        password = data.get("password", "").strip()
+        if not username or not password:
+            return jsonify({"success": False, "error": "Fill all fields ❌"})
+        conn = sqlite3.connect(DB_PATH)
+        c    = conn.cursor()
+        init_pharmacy_tables(conn, c)
+        c.execute("SELECT id FROM pharmacy_users WHERE username=?", (username,))
+        if c.fetchone():
+            conn.close()
+            return jsonify({"success": False, "error": f"Username '{username}' already exists ❌"})
+        c.execute(
+            "INSERT INTO pharmacy_users (username, password) VALUES (?, ?)",
+            (username, password)
+        )
+        conn.commit()
+        conn.close()
+        db.collection("pharmacy_users").document(username).set({
+            "username":   username,
+            "password":   password,
+            "created_at": datetime.now().isoformat()
+        })
+        return jsonify({"success": True, "message": f"User '{username}' created ✅"})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
 # ══════════════════════════════════════════════════════════════
 #  Kitchen WebSocket  →  /ws/kitchen/<rid>
 #  Kitchen browser ku xidaa; incoming offer helaa, answer diraa
