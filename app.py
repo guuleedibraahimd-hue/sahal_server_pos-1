@@ -1418,76 +1418,31 @@ def login():
             "login.html",
             error=f"System Error ❌ {str(e)}"
         )
-# =========================
-# 🛒 REGISTER SUPERMARKET
-# =========================
-@app.route("/register_supermarket", methods=["GET", "POST"])
-def register_supermarket():
-    try:
-        if request.method == "POST":
-            months = int(request.form["months"])
-            expiry = (
-                datetime.now() + timedelta(days=months * 30)
-            ).strftime("%Y-%m-%d")
 
-            data = {
-                "name": request.form["name"],
-                "username": request.form["username"],
-                "password": request.form["password"],
-                "price": request.form["price"],
-                "expiry": expiry,
-                "active": True,
-                "created_at": datetime.now()
-            }
-
-            db.collection("supermarkets").add(data)
-            return redirect("/supermarket_login")
-
-        return render_template("supermarket_register.html")
-
-    except Exception as e:
-        return f"Register Error ❌ {str(e)}"
 
 # ==========================================
-# 🛒 SUPERMARKET ROUTES — KU DAR app.py
+# 🛒 SUPERMARKET — ROUTES IYAGA OO SAX AH
+# KU BEDEL APP.PY GUDIHIISA DHAMAAN
+# SUPERMARKET ROUTES-YADA HORE
 # ==========================================
 
-import sqlite3
-import os
 import json
 import random
 import string
-from datetime import datetime, timedelta
 
 # ==========================================
-# 🗄️ INIT SUPERMARKET TABLES
+# 🗄️ INIT SUPERMARKET SALES TABLE (SQLite)
 # ==========================================
-def init_supermarket_tables(conn, c):
-    c.execute("""
-        CREATE TABLE IF NOT EXISTS supermarket_products (
-            id          INTEGER PRIMARY KEY AUTOINCREMENT,
-            barcode     TEXT,
-            name        TEXT NOT NULL,
-            price       REAL DEFAULT 0,
-            cost_price  REAL DEFAULT 0,
-            stock       INTEGER DEFAULT 0,
-            category    TEXT DEFAULT 'General',
-            unit        TEXT DEFAULT 'pcs',
-            box_qty     INTEGER DEFAULT 0,
-            box_price   REAL DEFAULT 0,
-            market_id   TEXT,
-            created_at  TEXT DEFAULT CURRENT_TIMESTAMP
-        )
-    """)
+def init_supermarket_sales(conn, c):
     c.execute("""
         CREATE TABLE IF NOT EXISTS supermarket_sales (
-            id          INTEGER PRIMARY KEY AUTOINCREMENT,
-            receipt_no  TEXT,
-            market_id   TEXT,
-            total       REAL DEFAULT 0,
-            profit      REAL DEFAULT 0,
-            items_json  TEXT,
-            created_at  TEXT DEFAULT CURRENT_TIMESTAMP
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            receipt_no TEXT,
+            market_id  TEXT,
+            total      REAL DEFAULT 0,
+            profit     REAL DEFAULT 0,
+            items_json TEXT,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP
         )
     """)
     conn.commit()
@@ -1500,20 +1455,41 @@ def init_supermarket_tables(conn, c):
 def supermarket_login():
     try:
         if request.method == "POST":
-            username = request.form["username"].strip()
-            password = request.form["password"].strip()
+            username = request.form.get("username", "").strip()
+            password = request.form.get("password", "").strip()
+
             for doc in db.collection("supermarkets").stream():
                 data = doc.to_dict()
-                if data.get("username") == username and data.get("password") == password:
-                    if not data.get("active", True):
-                        return render_template("supermarket_login.html", error="Account disabled ❌")
-                    session["market_id"]   = doc.id
-                    session["market_name"] = data.get("name", "Supermarket")
+
+                if (data.get("username") == username and
+                        data.get("password") == password):
+
+                    # Hubi active — Firestore wuxuu isticmaalaa "active" ama "status"
+                    is_active = data.get("active", data.get("status", True))
+                    if is_active is False or is_active == "disabled":
+                        return render_template(
+                            "supermarket_login.html",
+                            error="Account disabled ❌"
+                        )
+
+                    session["market_id"]    = doc.id
+                    session["market_name"]  = data.get("name", "Supermarket")
+                    session["market_login"] = True
                     return redirect("/supermarket_dashboard")
-            return render_template("supermarket_login.html", error="Wrong login ❌")
+
+            return render_template(
+                "supermarket_login.html",
+                error="Wrong username or password ❌"
+            )
+
         return render_template("supermarket_login.html")
+
     except Exception as e:
-        return f"Login Error ❌ {str(e)}"
+        print("SUPERMARKET LOGIN ERROR:", e)
+        return render_template(
+            "supermarket_login.html",
+            error=f"System Error ❌ {str(e)}"
+        )
 
 
 # ==========================================
@@ -1526,32 +1502,59 @@ def supermarket_dashboard():
         if not mid:
             return redirect("/supermarket_login")
 
-        conn = sqlite3.connect(DB_PATH)
-        c    = conn.cursor()
-        init_supermarket_tables(conn, c)
+        # PRODUCTS — KA SOO QAAD FIRESTORE
+        products_raw = []
+        try:
+            docs = db.collection("supermarkets").document(mid)\
+                     .collection("products").stream()
+            for doc in docs:
+                p          = doc.to_dict()
+                p["id"]    = doc.id
+                p["name"]  = p.get("name", "")
+                p["barcode"]= p.get("barcode", "")
+                p["price"] = p.get("price", 0)
+                p["cost_price"] = p.get("cost_price", 0)
+                p["stock"] = p.get("stock", 0)
+                p["category"]   = p.get("category", "General")
+                p["unit"]       = p.get("unit", "pcs")
+                p["box_qty"]    = p.get("box_qty", 0)
+                p["box_price"]  = p.get("box_price", 0)
+                products_raw.append(p)
+        except Exception as e:
+            print("Products load error:", e)
 
-        c.execute("SELECT * FROM supermarket_products WHERE market_id=? ORDER BY name ASC", (mid,))
-        products = c.fetchall()
-
-        c.execute("SELECT * FROM supermarket_sales WHERE market_id=? ORDER BY created_at DESC LIMIT 50", (mid,))
-        orders = c.fetchall()
-
-        conn.close()
+        # ORDERS — KA SOO QAAD SQLITE
+        orders = []
+        try:
+            conn = sqlite3.connect(DB_PATH)
+            c    = conn.cursor()
+            init_supermarket_sales(conn, c)
+            c.execute("""
+                SELECT id, receipt_no, total, created_at, items_json
+                FROM supermarket_sales
+                WHERE market_id=?
+                ORDER BY created_at DESC LIMIT 50
+            """, (mid,))
+            orders = c.fetchall()
+            conn.close()
+        except Exception as e:
+            print("Orders load error:", e)
 
         return render_template(
             "supermarket_dashboard.html",
-            products          = products,
+            products          = products_raw,
             supermarket_orders= orders,
             market_name       = session.get("market_name", "Supermarket"),
             market_id         = mid,
             today             = datetime.now().strftime("%Y-%m-%d")
         )
+
     except Exception as e:
         return f"Dashboard Error ❌ {str(e)}"
 
 
 # ==========================================
-# 📦 GET PRODUCTS JSON (for JS)
+# 📦 GET PRODUCTS JSON (for JS barcode scan)
 # ==========================================
 @app.route("/supermarket/products_json")
 def supermarket_products_json():
@@ -1559,24 +1562,32 @@ def supermarket_products_json():
         mid = session.get("market_id")
         if not mid:
             return jsonify([])
-        conn = sqlite3.connect(DB_PATH)
-        c    = conn.cursor()
-        init_supermarket_tables(conn, c)
-        c.execute("SELECT * FROM supermarket_products WHERE market_id=? ORDER BY name ASC", (mid,))
-        rows = c.fetchall()
-        conn.close()
-        return jsonify([{
-            "id":        r[0], "barcode": r[1], "name":     r[2],
-            "price":     r[3], "cost":    r[4], "stock":    r[5],
-            "category":  r[6], "unit":    r[7], "box_qty":  r[8],
-            "box_price": r[9]
-        } for r in rows])
+
+        docs    = db.collection("supermarkets").document(mid)\
+                    .collection("products").stream()
+        results = []
+        for doc in docs:
+            p = doc.to_dict()
+            results.append({
+                "id":        doc.id,
+                "barcode":   p.get("barcode", ""),
+                "name":      p.get("name", ""),
+                "price":     p.get("price", 0),
+                "cost":      p.get("cost_price", 0),
+                "stock":     p.get("stock", 0),
+                "category":  p.get("category", "General"),
+                "unit":      p.get("unit", "pcs"),
+                "box_qty":   p.get("box_qty", 0),
+                "box_price": p.get("box_price", 0)
+            })
+        return jsonify(results)
+
     except Exception as e:
         return jsonify({"error": str(e)})
 
 
 # ==========================================
-# ➕ ADD PRODUCT (JSON)
+# ➕ ADD PRODUCT (JSON) → FIRESTORE
 # ==========================================
 @app.route("/supermarket/add_product_json", methods=["POST"])
 def supermarket_add_product_json():
@@ -1590,83 +1601,71 @@ def supermarket_add_product_json():
         if not name:
             return jsonify({"success": False, "error": "Name required ❌"})
 
-        conn = sqlite3.connect(DB_PATH)
-        c    = conn.cursor()
-        init_supermarket_tables(conn, c)
+        db.collection("supermarkets").document(mid)\
+          .collection("products").add({
+            "barcode":    data.get("barcode", ""),
+            "name":       name,
+            "price":      float(data.get("price", 0)),
+            "cost_price": float(data.get("cost_price", 0)),
+            "stock":      int(data.get("stock", 0)),
+            "category":   data.get("category", "General"),
+            "unit":       data.get("unit", "pcs"),
+            "box_qty":    int(data.get("box_qty", 0)),
+            "box_price":  float(data.get("box_price", 0)),
+            "created_at": datetime.now().isoformat()
+        })
 
-        c.execute("""
-            INSERT INTO supermarket_products
-            (barcode, name, price, cost_price, stock, category, unit, box_qty, box_price, market_id)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """, (
-            data.get("barcode", ""),
-            name,
-            float(data.get("price", 0)),
-            float(data.get("cost_price", 0)),
-            int(data.get("stock", 0)),
-            data.get("category", "General"),
-            data.get("unit", "pcs"),
-            int(data.get("box_qty", 0)),
-            float(data.get("box_price", 0)),
-            mid
-        ))
-        conn.commit()
-        conn.close()
         return jsonify({"success": True})
+
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
 
 
 # ==========================================
-# ✏️ EDIT PRODUCT
+# ✏️ EDIT PRODUCT → FIRESTORE
 # ==========================================
-@app.route("/supermarket/edit_product/<int:pid>", methods=["PUT"])
+@app.route("/supermarket/edit_product/<pid>", methods=["PUT"])
 def supermarket_edit_product(pid):
     try:
         mid = session.get("market_id")
         if not mid:
             return jsonify({"success": False, "error": "Not logged in"}), 401
+
         data = request.get_json()
-        conn = sqlite3.connect(DB_PATH)
-        c    = conn.cursor()
-        c.execute("""
-            UPDATE supermarket_products
-            SET name=?, barcode=?, price=?, cost_price=?, stock=?,
-                category=?, unit=?, box_qty=?, box_price=?
-            WHERE id=? AND market_id=?
-        """, (
-            data.get("name"), data.get("barcode", ""),
-            float(data.get("price", 0)),
-            float(data.get("cost_price", 0)),
-            int(data.get("stock", 0)),
-            data.get("category", "General"),
-            data.get("unit", "pcs"),
-            int(data.get("box_qty", 0)),
-            float(data.get("box_price", 0)),
-            pid, mid
-        ))
-        conn.commit()
-        conn.close()
+        db.collection("supermarkets").document(mid)\
+          .collection("products").document(pid).update({
+            "name":       data.get("name"),
+            "barcode":    data.get("barcode", ""),
+            "price":      float(data.get("price", 0)),
+            "cost_price": float(data.get("cost_price", 0)),
+            "stock":      int(data.get("stock", 0)),
+            "category":   data.get("category", "General"),
+            "unit":       data.get("unit", "pcs"),
+            "box_qty":    int(data.get("box_qty", 0)),
+            "box_price":  float(data.get("box_price", 0))
+        })
+
         return jsonify({"success": True})
+
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
 
 
 # ==========================================
-# 🗑 DELETE PRODUCT
+# 🗑 DELETE PRODUCT → FIRESTORE
 # ==========================================
-@app.route("/supermarket/delete_product/<int:pid>", methods=["DELETE"])
+@app.route("/supermarket/delete_product/<pid>", methods=["DELETE"])
 def supermarket_delete_product(pid):
     try:
         mid = session.get("market_id")
         if not mid:
             return jsonify({"success": False, "error": "Not logged in"}), 401
-        conn = sqlite3.connect(DB_PATH)
-        c    = conn.cursor()
-        c.execute("DELETE FROM supermarket_products WHERE id=? AND market_id=?", (pid, mid))
-        conn.commit()
-        conn.close()
+
+        db.collection("supermarkets").document(mid)\
+          .collection("products").document(pid).delete()
+
         return jsonify({"success": True})
+
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
 
@@ -1686,10 +1685,6 @@ def supermarket_complete_sale():
         if not cart:
             return jsonify({"success": False, "error": "Cart is empty ❌"})
 
-        conn         = sqlite3.connect(DB_PATH)
-        c            = conn.cursor()
-        init_supermarket_tables(conn, c)
-
         total_revenue = 0
         total_profit  = 0
         receipt_items = []
@@ -1700,25 +1695,33 @@ def supermarket_complete_sale():
             price = float(item.get("price", 0))
             label = item.get("label", "pcs")
 
-            c.execute("SELECT name, cost_price, stock, box_qty FROM supermarket_products WHERE id=? AND market_id=?", (pid, mid))
-            product = c.fetchone()
-            if not product:
-                conn.close()
-                return jsonify({"success": False, "error": f"Product ID {pid} not found ❌"})
+            # GET PRODUCT FROM FIRESTORE
+            prod_doc = db.collection("supermarkets").document(mid)\
+                         .collection("products").document(pid).get()
 
-            name, cost_price, stock, box_qty = product
+            if not prod_doc.exists:
+                return jsonify({"success": False, "error": f"Product not found ❌"})
+
+            p         = prod_doc.to_dict()
+            name      = p.get("name", "")
+            cost      = float(p.get("cost_price", 0))
+            stock     = int(p.get("stock", 0))
+            box_qty   = int(p.get("box_qty", 0))
             stock_dec = box_qty * qty if "Box" in label and box_qty else qty
 
             if stock_dec > stock:
-                conn.close()
                 return jsonify({"success": False, "error": f"Not enough stock for {name} ❌"})
 
             revenue = price * qty
-            profit  = (price - cost_price) * qty
+            profit  = (price - cost) * qty
             total_revenue += revenue
             total_profit  += profit
 
-            c.execute("UPDATE supermarket_products SET stock = stock - ? WHERE id=?", (stock_dec, pid))
+            # UPDATE STOCK IN FIRESTORE
+            db.collection("supermarkets").document(mid)\
+              .collection("products").document(pid).update({
+                "stock": stock - stock_dec
+            })
 
             receipt_items.append({
                 "name":  name,
@@ -1730,13 +1733,17 @@ def supermarket_complete_sale():
 
         receipt_no = "RCP-" + "".join(random.choices(string.digits, k=6))
 
+        # SAVE SALE TO SQLITE
+        conn = sqlite3.connect(DB_PATH)
+        c    = conn.cursor()
+        init_supermarket_sales(conn, c)
         c.execute("""
             INSERT INTO supermarket_sales
             (receipt_no, market_id, total, profit, items_json, created_at)
             VALUES (?, ?, ?, ?, ?, ?)
-        """, (receipt_no, mid, round(total_revenue, 2), round(total_profit, 2),
-              json.dumps(receipt_items), datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
-
+        """, (receipt_no, mid, round(total_revenue, 2),
+              round(total_profit, 2), json.dumps(receipt_items),
+              datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
         conn.commit()
         conn.close()
 
@@ -1747,12 +1754,13 @@ def supermarket_complete_sale():
             "profit":     round(total_profit, 2),
             "items":      receipt_items
         })
+
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
 
 
 # ==========================================
-# 🖨️ GET RECEIPT FOR REPRINT
+# 🖨️ REPRINT RECEIPT
 # ==========================================
 @app.route("/supermarket/receipt/<receipt_no>")
 def supermarket_get_receipt(receipt_no):
@@ -1760,20 +1768,32 @@ def supermarket_get_receipt(receipt_no):
         mid = session.get("market_id")
         if not mid:
             return jsonify({"success": False})
+
         conn = sqlite3.connect(DB_PATH)
         c    = conn.cursor()
-        c.execute("SELECT items_json, total FROM supermarket_sales WHERE receipt_no=? AND market_id=?", (receipt_no, mid))
+        init_supermarket_sales(conn, c)
+        c.execute("""
+            SELECT items_json, total FROM supermarket_sales
+            WHERE receipt_no=? AND market_id=?
+        """, (receipt_no, mid))
         row = c.fetchone()
         conn.close()
+
         if not row:
             return jsonify({"success": False})
-        return jsonify({"success": True, "items": json.loads(row[0]), "total": row[1]})
+
+        return jsonify({
+            "success": True,
+            "items":   json.loads(row[0]),
+            "total":   row[1]
+        })
+
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
 
 
 # ==========================================
-# 📤 BULK CSV IMPORT
+# 📤 BULK CSV IMPORT → FIRESTORE
 # ==========================================
 @app.route("/supermarket/bulk_import", methods=["POST"])
 def supermarket_bulk_import():
@@ -1787,39 +1807,32 @@ def supermarket_bulk_import():
         if not products:
             return jsonify({"success": False, "error": "No products ❌"})
 
-        conn     = sqlite3.connect(DB_PATH)
-        c        = conn.cursor()
-        init_supermarket_tables(conn, c)
-        imported = 0
+        imported   = 0
+        prod_ref   = db.collection("supermarkets").document(mid).collection("products")
 
         for p in products:
             name = p.get("name", "").strip()
             if not name:
                 continue
             try:
-                c.execute("""
-                    INSERT OR IGNORE INTO supermarket_products
-                    (barcode, name, price, cost_price, stock, category, unit, box_qty, box_price, market_id)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """, (
-                    p.get("barcode", ""),
-                    name,
-                    float(p.get("price", 0)),
-                    float(p.get("cost_price", 0)),
-                    int(p.get("stock", 0)),
-                    p.get("category", "General"),
-                    p.get("unit", "pcs"),
-                    int(p.get("box_qty", 0)),
-                    float(p.get("box_price", 0)),
-                    mid
-                ))
+                prod_ref.add({
+                    "barcode":    p.get("barcode", ""),
+                    "name":       name,
+                    "price":      float(p.get("price", 0)),
+                    "cost_price": float(p.get("cost_price", 0)),
+                    "stock":      int(p.get("stock", 0)),
+                    "category":   p.get("category", "General"),
+                    "unit":       p.get("unit", "pcs"),
+                    "box_qty":    int(p.get("box_qty", 0)),
+                    "box_price":  float(p.get("box_price", 0)),
+                    "created_at": datetime.now().isoformat()
+                })
                 imported += 1
             except:
                 pass
 
-        conn.commit()
-        conn.close()
         return jsonify({"success": True, "imported": imported})
+
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
 
@@ -1833,29 +1846,40 @@ def supermarket_stats():
         mid = session.get("market_id")
         if not mid:
             return jsonify({})
+
+        # Products count from Firestore
+        prod_docs      = db.collection("supermarkets").document(mid)\
+                           .collection("products").stream()
+        total_products = 0
+        low_stock      = 0
+        for doc in prod_docs:
+            p = doc.to_dict()
+            total_products += 1
+            if int(p.get("stock", 0)) <= 10:
+                low_stock += 1
+
+        # Sales from SQLite
+        today = datetime.now().strftime("%Y-%m-%d")
         conn  = sqlite3.connect(DB_PATH)
         c     = conn.cursor()
-        init_supermarket_tables(conn, c)
-        today = datetime.now().strftime("%Y-%m-%d")
-
-        c.execute("SELECT COUNT(*) FROM supermarket_products WHERE market_id=?", (mid,))
-        total_products = c.fetchone()[0]
-
-        c.execute("SELECT SUM(total), COUNT(*) FROM supermarket_sales WHERE market_id=? AND date(created_at)=?", (mid, today))
-        row          = c.fetchone()
-        today_revenue= round(row[0] or 0, 2)
-        today_orders = row[1] or 0
-
-        c.execute("SELECT COUNT(*) FROM supermarket_products WHERE market_id=? AND stock <= 10", (mid,))
-        low_stock = c.fetchone()[0]
-
+        init_supermarket_sales(conn, c)
+        c.execute("""
+            SELECT SUM(total), COUNT(*)
+            FROM supermarket_sales
+            WHERE market_id=? AND date(created_at)=?
+        """, (mid, today))
+        row           = c.fetchone()
+        today_revenue = round(row[0] or 0, 2)
+        today_orders  = row[1] or 0
         conn.close()
+
         return jsonify({
             "total_products": total_products,
             "today_revenue":  today_revenue,
             "today_orders":   today_orders,
             "low_stock":      low_stock
         })
+
     except Exception as e:
         return jsonify({"error": str(e)})
 
@@ -1869,12 +1893,13 @@ def supermarket_analytics():
         mid       = session.get("market_id")
         if not mid:
             return jsonify({})
+
         date_from = request.args.get("from", datetime.now().strftime("%Y-%m-%d"))
         date_to   = request.args.get("to",   datetime.now().strftime("%Y-%m-%d"))
 
         conn = sqlite3.connect(DB_PATH)
         c    = conn.cursor()
-        init_supermarket_tables(conn, c)
+        init_supermarket_sales(conn, c)
 
         c.execute("""
             SELECT SUM(total), SUM(profit), COUNT(*)
@@ -1887,14 +1912,21 @@ def supermarket_analytics():
             SELECT date(created_at), COUNT(*), SUM(total), SUM(profit)
             FROM supermarket_sales
             WHERE market_id=? AND date(created_at) BETWEEN ? AND ?
-            GROUP BY date(created_at) ORDER BY date(created_at) DESC
+            GROUP BY date(created_at)
+            ORDER BY date(created_at) DESC
         """, (mid, date_from, date_to))
-        daily = [{"date":r[0],"orders":r[1],"revenue":round(r[2],2),"profit":round(r[3],2)}
+        daily = [{"date":r[0],"orders":r[1],
+                  "revenue":round(r[2],2),"profit":round(r[3],2)}
                  for r in c.fetchall()]
 
         # Top products from items_json
-        all_sales   = c.execute("SELECT items_json FROM supermarket_sales WHERE market_id=? AND date(created_at) BETWEEN ? AND ?",
-                                (mid, date_from, date_to)).fetchall()
+        all_sales   = c.execute("""
+            SELECT items_json FROM supermarket_sales
+            WHERE market_id=? AND date(created_at) BETWEEN ? AND ?
+        """, (mid, date_from, date_to)).fetchall()
+
+        conn.close()
+
         product_map = {}
         items_total = 0
         for sale in all_sales:
@@ -1907,10 +1939,11 @@ def supermarket_analytics():
             except:
                 pass
 
-        top_products = sorted([{"name":k,"qty":v} for k,v in product_map.items()],
-                               key=lambda x: x["qty"], reverse=True)[:10]
+        top_products = sorted(
+            [{"name": k, "qty": v} for k, v in product_map.items()],
+            key=lambda x: x["qty"], reverse=True
+        )[:10]
 
-        conn.close()
         return jsonify({
             "revenue":      round(row[0] or 0, 2),
             "profit":       round(row[1] or 0, 2),
@@ -1919,8 +1952,34 @@ def supermarket_analytics():
             "daily":        daily,
             "top_products": top_products
         })
+
     except Exception as e:
         return jsonify({"error": str(e)})
+
+
+# ==========================================
+# 📋 REGISTER SUPERMARKET (ADMIN)
+# ==========================================
+@app.route("/supermarket_register", methods=["GET", "POST"])
+def supermarket_register():
+    try:
+        if request.method == "POST":
+            months = int(request.form.get("months", 1))
+            expiry = (datetime.now() + timedelta(days=months*30)).strftime("%Y-%m-%d")
+            db.collection("supermarkets").add({
+                "name":       request.form.get("name", ""),
+                "username":   request.form.get("username", ""),
+                "password":   request.form.get("password", ""),
+                "price":      request.form.get("price", ""),
+                "payment":    request.form.get("payment", ""),
+                "expiry_date":expiry,
+                "active":     True,
+                "created_at": datetime.now()
+            })
+            return redirect("/supermarket_login")
+        return render_template("supermarket_register.html")
+    except Exception as e:
+        return f"Register Error ❌ {str(e)}"
 
 # =====================================
 # 📊 RESTAURANT DASHBOARD
