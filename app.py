@@ -5369,41 +5369,6 @@ def delete_debt(debt_id):
         return jsonify({"success": False, "error": str(e)})
 
 
-# ==========================================
-# 👤 CREATE PHARMACY USER (ADMIN)
-# ==========================================
-@app.route("/admin/create_pharmacy_user", methods=["POST"])
-def admin_create_pharmacy_user():
-    try:
-        if not session.get("admin_ok"):
-            return jsonify({"success": False, "error": "Unauthorized ❌"}), 401
-        data     = request.get_json()
-        username = data.get("username", "").strip()
-        password = data.get("password", "").strip()
-        if not username or not password:
-            return jsonify({"success": False, "error": "Fill all fields ❌"})
-        conn = sqlite3.connect(DB_PATH)
-        c    = conn.cursor()
-        init_pharmacy_tables(conn, c)
-        c.execute("SELECT id FROM pharmacy_users WHERE username=?", (username,))
-        if c.fetchone():
-            conn.close()
-            return jsonify({"success": False, "error": f"Username '{username}' already exists ❌"})
-        c.execute(
-            "INSERT INTO pharmacy_users (username, password) VALUES (?, ?)",
-            (username, password)
-        )
-        conn.commit()
-        conn.close()
-        db.collection("pharmacy_users").document(username).set({
-            "username":   username,
-            "password":   password,
-            "created_at": datetime.now().isoformat()
-        })
-        return jsonify({"success": True, "message": f"User '{username}' created ✅"})
-    except Exception as e:
-        return jsonify({"success": False, "error": str(e)})
-
 # ══════════════════════════════════════════════════════════════
 #  Kitchen WebSocket  →  /ws/kitchen/<rid>
 #  Kitchen browser ku xidaa; incoming offer helaa, answer diraa
