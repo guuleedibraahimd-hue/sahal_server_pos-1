@@ -1312,6 +1312,369 @@ def renew_restaurant(rid):
         print("RENEW RESTAURANT ERROR:", e)
         return f"Renew error ❌ {e}"
 
+# ==========================================
+# 💊 PHARMACY REGISTRATION ROUTES
+# KU DAR APP.PY GUDAHIISA
+# ==========================================
+
+from datetime import datetime, timedelta
+
+# ==========================================
+# 🗄️ FIRESTORE — PHARMACY COLLECTION
+# pharmacies/{doc_id}
+# {
+#   pharmacy_name, phone, username, password,
+#   monthly_fee, months, total_fee,
+#   created_at, expiry_date, active
+# }
+# ==========================================
+
+
+# ==========================================
+# 🔧 HELPER — LOAD PHARMACIES FOR ADMIN
+# ==========================================
+def get_pharmacies_firestore():
+    pharmacies = []
+    try:
+        today = datetime.now().strftime("%Y-%m-%d")
+        for doc in db.collection("pharmacies").stream():
+            p            = doc.to_dict()
+            p["id"]      = doc.id
+            expiry       = p.get("expiry_date", "")
+            p["active"]  = p.get("active", True)
+
+            # CALCULATE DAYS LEFT
+            if expiry:
+                try:
+                    exp_date     = datetime.strptime(expiry, "%Y-%m-%d")
+                    now          = datetime.now()
+                    p["days_left"] = (exp_date - now).days
+                    # Auto-disable if expired
+                    if p["days_left"] < 0 and p["active"]:
+                        db.collection("pharmacies").document(doc.id).update({
+                            "active": False
+                        })
+                        p["active"] = False
+                except:
+                    p["days_left"] = 0
+            else:
+                p["days_left"] = 0
+
+            pharmacies.append(p)
+
+        # Sort: expiring soon first
+        pharmacies.sort(key=lambda x: x.get("expiry_date", ""))
+    except Exception as e:
+        print("Pharmacies load error:", e)
+    return pharmacies
+
+
+# ==========================================
+# 📋 ADMIN ROUTE — WUXUU U BAAHAN YAHAY
+# pharmacies iyo now_date oo template-ka
+# lagu daro. KU DAR /admin route-ka:
+# ==========================================
+#
+#   pharmacies = get_pharmacies_firestore()
+#   now_date   = datetime.now().strftime("%Y-%m-%d")
+#
+#   return render_template(
+#       "admin.html",
+#       ...
+#       pharmacies = pharmacies,
+#       now_date   = now_date,
+#   )
+# ==========================================
+
+
+# ==========================================
+# ➕ REGISTER NEW PHARMACY
+# ==========================================
+@app.route("/admin/register_pharmacy", methods=["POST"])
+def admin_register_pharmacy():
+    try:
+        if not session.get("admin_ok"):
+            return jsonify({"success": False, "error": "Unauthorized ❌"}), 401
+
+        data          = request.get_json()
+        pharmacy_name = data.get("pharmacy_name", "").strip()
+        phone         = data.get("phone", "").strip()
+        monthly_fee   = float(data.get("monthly_fee", 0))
+        months        = int(data.get("months", 3))
+        username      = data.get("username", "").strip()
+        password      = data.get("password", "").strip()
+
+        if not pharmacy_name or not phone or not username or not password:
+            return jsonify({"success": False, "error": "Fill all required fields ❌"})
+
+        if monthly_fee <= 0:
+            return jsonify({"success": False, "error": "Monthly fee must be > 0 ❌"})
+
+        if months < 1:
+            return jsonify({"success": False, "error": "Minimum 1 month ❌"})
+
+        # CHECK USERNAME DUPLICATE
+        existing = db.collection("pharmacies").where("username","==",username).stream()
+        for _ in existing:
+            return jsonify({"success": False, "error": f"Username '{username}' already exists ❌"})
+
+        # ALSO CHECK pharmacy_users collection
+        pu_doc = db.collection("pharmacy_users").document(username).get()
+        if pu_doc.exists:
+            return jsonify({"success": False, "error": f"Username '{username}' already exists in system ❌"})
+
+        # CALCULATE EXPIRY
+        expiry_date = (datetime.now() + timedelta(days=months * 30)).strftime("%Y-%m-%d")
+        total_fee   = round(monthly_fee * months, 2)
+
+        # SAVE TO FIRESTORE — pharmacies collection (PERMANENT)
+        doc_ref = db.collection("pharmacies").add({
+            "pharmacy_name": pharmacy_name,
+            "phone":         phone,
+            "username":      username,
+            "password":      password,
+            "monthly_fee":   monthly_fee,
+            "months":        months,
+            "total_fee":     total_fee,
+            "created_at":    datetime.now().isoformat(),
+            "expiry_date":   expiry_date,
+            "active":        True,
+            "payment_method": "cash"
+        })
+
+        # ALSO SAVE TO pharmacy_users (for login)
+        db.collection("pharmacy_users").document(username).set({
+            "username":       username,
+            "password":       password,
+            "pharmacy_name":  pharmacy_name,
+            "phone":          phone,
+            "pharmacy_id":    doc_ref[1].id,
+            "created_at":     datetime.now().isoformat()
+        })
+
+        # ALSO SAVE TO SQLite pharmacy_users (for local login)
+        try:
+            conn = sqlite3.connect(DB_PATH)
+            c    = conn.cursor()
+            c.execute("""
+                CREATE TABLE IF NOT EXISTS pharmacy_users (
+                    id       INTEGER PRIMARY KEY AUTOINCREMENT,
+                    username TEXT UNIQUE,
+                    password TEXT,
+                    role     TEXT DEFAULT 'pharmacist'
+                )
+            """)
+            c.execute("""
+                INSERT OR IGNORE INTO pharmacy_users (username, password)
+                VALUES (?, ?)
+            """, (username, password))
+            conn.commit()
+            conn.close()
+        except Exception as e:
+            print("SQLite pharmacy user save error:", e)
+
+        return jsonify({
+            "success":     True,
+            "message":     f"Pharmacy '{pharmacy_name}' registered ✅",
+            "expiry_date": expiry_date,
+            "total_fee":   total_fee
+        })
+
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+
+# ==========================================
+# 🔄 RENEW PHARMACY SUBSCRIPTION
+# ==========================================
+@app.route("/admin/renew_pharmacy/<string:pid>", methods=["POST"])
+def admin_renew_pharmacy(pid):
+    try:
+        if not session.get("admin_ok"):
+            return jsonify({"success": False, "error": "Unauthorized ❌"}), 401
+
+        data   = request.get_json()
+        months = int(data.get("months", 3))
+
+        if months < 1:
+            return jsonify({"success": False, "error": "Minimum 1 month ❌"})
+
+        ph_ref = db.collection("pharmacies").document(pid)
+        ph_doc = ph_ref.get()
+
+        if not ph_doc.exists:
+            return jsonify({"success": False, "error": "Pharmacy not found ❌"})
+
+        ph         = ph_doc.to_dict()
+        today      = datetime.now().strftime("%Y-%m-%d")
+        old_expiry = ph.get("expiry_date", today)
+
+        # If already expired — renew from today
+        # If still active — extend from current expiry
+        try:
+            old_exp_date = datetime.strptime(old_expiry, "%Y-%m-%d")
+            base_date    = max(old_exp_date, datetime.now())
+        except:
+            base_date    = datetime.now()
+
+        new_expiry  = (base_date + timedelta(days=months * 30)).strftime("%Y-%m-%d")
+        monthly_fee = float(ph.get("monthly_fee", 0))
+        extra_fee   = round(monthly_fee * months, 2)
+
+        ph_ref.update({
+            "expiry_date": new_expiry,
+            "active":      True,
+            "last_renewed":datetime.now().isoformat(),
+            "renewed_months": months
+        })
+
+        return jsonify({
+            "success":     True,
+            "message":     f"Renewed for {months} months ✅",
+            "expiry_date": new_expiry,
+            "extra_fee":   extra_fee
+        })
+
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+
+# ==========================================
+# 🗑 DELETE PHARMACY
+# ==========================================
+@app.route("/admin/delete_pharmacy/<string:pid>", methods=["DELETE"])
+def admin_delete_pharmacy(pid):
+    try:
+        if not session.get("admin_ok"):
+            return jsonify({"success": False, "error": "Unauthorized ❌"}), 401
+
+        ph_doc = db.collection("pharmacies").document(pid).get()
+        if not ph_doc.exists:
+            return jsonify({"success": False, "error": "Not found ❌"})
+
+        username = ph_doc.to_dict().get("username", "")
+
+        # Delete from pharmacies
+        db.collection("pharmacies").document(pid).delete()
+
+        # Delete from pharmacy_users (Firestore)
+        if username:
+            try:
+                db.collection("pharmacy_users").document(username).delete()
+            except:
+                pass
+
+        # Delete from SQLite
+        try:
+            conn = sqlite3.connect(DB_PATH)
+            c    = conn.cursor()
+            c.execute("DELETE FROM pharmacy_users WHERE username=?", (username,))
+            conn.commit()
+            conn.close()
+        except:
+            pass
+
+        return jsonify({"success": True})
+
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+
+# ==========================================
+# 🔐 PHARMACY LOGIN — FIRESTORE + SQLITE
+# (LABADABA HUBI)
+# ==========================================
+@app.route("/pharmacy_login", methods=["GET", "POST"])
+def pharmacy_login():
+    if request.method == "POST":
+        username = request.form.get("username", "").strip()
+        password = request.form.get("password", "").strip()
+
+        # STEP 1: pharmacies collection hubi (subscription + active check)
+        try:
+            today = datetime.now().strftime("%Y-%m-%d")
+            for doc in db.collection("pharmacies").where("username","==",username).stream():
+                ph = doc.to_dict()
+                if ph.get("password") == password:
+                    # Check if expired
+                    expiry = ph.get("expiry_date", "")
+                    if expiry and expiry < today:
+                        return render_template(
+                            "pharmacy_login.html",
+                            error="Subscription expired ❌ Please renew with admin."
+                        )
+                    if not ph.get("active", True):
+                        return render_template(
+                            "pharmacy_login.html",
+                            error="Account disabled ❌ Contact admin."
+                        )
+                    session["pharmacy_ok"]      = True
+                    session["pharmacy_user"]    = username
+                    session["pharmacy_name"]    = ph.get("pharmacy_name", username)
+                    session["pharmacy_expiry"]  = expiry
+                    return redirect("/pharmacy")
+        except Exception as e:
+            print("Pharmacy login Firestore error:", e)
+
+        # STEP 2: pharmacy_users collection hubi
+        try:
+            pu_doc = db.collection("pharmacy_users").document(username).get()
+            if pu_doc.exists:
+                pu = pu_doc.to_dict()
+                if pu.get("password") == password:
+                    session["pharmacy_ok"]   = True
+                    session["pharmacy_user"] = username
+                    return redirect("/pharmacy")
+        except Exception as e:
+            print("Pharmacy login pharmacy_users error:", e)
+
+        # STEP 3: SQLite hubi
+        try:
+            conn = sqlite3.connect(DB_PATH)
+            c    = conn.cursor()
+            c.execute("""
+                CREATE TABLE IF NOT EXISTS pharmacy_users (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    username TEXT UNIQUE, password TEXT, role TEXT DEFAULT 'pharmacist'
+                )
+            """)
+            c.execute("SELECT * FROM pharmacy_users WHERE username=? AND password=?", (username, password))
+            user = c.fetchone()
+            conn.close()
+            if user:
+                session["pharmacy_ok"]   = True
+                session["pharmacy_user"] = username
+                return redirect("/pharmacy")
+        except Exception as e:
+            print("Pharmacy login SQLite error:", e)
+
+        return render_template("pharmacy_login.html", error="Wrong username or password ❌")
+
+    return render_template("pharmacy_login.html")
+
+
+# ==========================================
+# ADMIN ROUTE UPDATE — KU DAR pharmacies
+# ==========================================
+# /admin route-ka render_template-ka waxaad
+# ku darsataa:
+#
+#   pharmacies = get_pharmacies_firestore()
+#   now_date   = datetime.now().strftime("%Y-%m-%d")
+#
+#   return render_template(
+#       "admin.html",
+#       restaurants  = restaurants,
+#       supermarkets = supermarkets,
+#       schools      = schools,
+#       orders       = orders,
+#       total        = total,
+#       top_reviews  = top_reviews,
+#       all_info     = all_info,
+#       pharmacies   = pharmacies,       ← CUSUB
+#       now_date     = now_date,         ← CUSUB
+#   )
+# ==========================================
 
 # =========================
 # 📝 REGISTER RESTAURANT
