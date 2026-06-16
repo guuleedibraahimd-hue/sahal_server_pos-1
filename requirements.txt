@@ -1,6 +1,5 @@
 Flask
 Flask-SocketIO
-eventlet
 firebase-admin
 qrcode
 Pillow

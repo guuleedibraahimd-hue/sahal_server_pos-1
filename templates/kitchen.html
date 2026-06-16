@@ -356,7 +356,7 @@ let callTimerInt  = null;
 let callSecs      = 0;
 
 // SocketIO connection
-const sio = io();
+const sio = io({transports:["polling"]});
 
 sio.on("connect", () => {
     sio.emit("kitchen_join", { rid: RID });

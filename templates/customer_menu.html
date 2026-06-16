@@ -459,7 +459,7 @@ const RID="{{ rid }}"
 const iceServers={iceServers:[{urls:"stun:stun.l.google.com:19302"}]}
 
 // SocketIO
-const sio=io()
+const sio=io({transports:["polling"]})
 
 sio.on("connect",()=>{
     sio.emit("customer_join",{rid:RID,table:TABLE})

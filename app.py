@@ -54,15 +54,16 @@ app = Flask(
 app.secret_key = "supersecretkey123"
 
 # =========================
-# 🔌 SOCKET IO — eventlet (WebSocket u shaqeeya)
+# 🔌 SOCKET IO
+# polling keliya — Railway WebSocket proxy dhibaato buu leeyahay
 # =========================
 
 socketio = SocketIO(
     app,
     cors_allowed_origins="*",
-    async_mode="eventlet",
-    logger=False,
-    engineio_logger=False
+    async_mode="threading",
+    allow_upgrades=False,
+    transports=["polling"]
 )
 
 # =========================
