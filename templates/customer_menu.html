@@ -5,447 +5,131 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ restaurant }} Menu</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- SocketIO CDN -->
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 
     <style>
         *{box-sizing:border-box;margin:0;padding:0;}
-
         :root{
-            --blue:#1565C0;
-            --blue-light:#1976D2;
-            --blue-bright:#2196F3;
-            --orange:#FF9800;
-            --orange-dark:#F57C00;
-            --white:#FFFFFF;
-            --bg:#F0F4FF;
-            --card-bg:#FFFFFF;
-            --text:#1A1A2E;
-            --text-muted:#6B7280;
-            --shadow:0 4px 20px rgba(21,101,192,0.12);
-            --shadow-sm:0 2px 10px rgba(0,0,0,0.08);
+            --blue:#1565C0;--blue-light:#1976D2;--blue-bright:#2196F3;
+            --orange:#FF9800;--orange-dark:#F57C00;--white:#FFFFFF;
+            --bg:#F0F4FF;--card-bg:#FFFFFF;--text:#1A1A2E;--text-muted:#6B7280;
+            --shadow:0 4px 20px rgba(21,101,192,0.12);--shadow-sm:0 2px 10px rgba(0,0,0,0.08);
         }
-
-        body{
-            font-family:'Poppins',sans-serif;
-            background:var(--bg);
-            min-height:100vh;
-            padding-bottom:90px;
-            color:var(--text);
-        }
-
-        /* ── HERO HEADER ── */
-        .hero{
-            background:linear-gradient(160deg,#0D47A1 0%,#1565C0 40%,#1976D2 70%,#1E88E5 100%);
-            border-radius:0 0 32px 32px;
-            padding:0 0 28px;
-            position:relative;
-            overflow:hidden;
-            margin-bottom:24px;
-        }
-
-        .hero::before{
-            content:'';
-            position:absolute;
-            top:-60px;right:-60px;
-            width:220px;height:220px;
-            background:rgba(255,255,255,0.06);
-            border-radius:50%;
-        }
-
-        .hero::after{
-            content:'';
-            position:absolute;
-            bottom:-80px;left:-40px;
-            width:180px;height:180px;
-            background:rgba(255,255,255,0.04);
-            border-radius:50%;
-        }
-
-        .topbar{
-            display:flex;
-            align-items:center;
-            justify-content:space-between;
-            padding:16px 20px 0;
-        }
-
-        .topbar-icon{
-            width:44px;height:44px;
-            background:rgba(255,255,255,0.18);
-            border-radius:50%;
-            display:flex;align-items:center;justify-content:center;
-            cursor:pointer;
-            border:none;
-            backdrop-filter:blur(4px);
-        }
-
+        body{font-family:'Poppins',sans-serif;background:var(--bg);min-height:100vh;padding-bottom:90px;color:var(--text);}
+        .hero{background:linear-gradient(160deg,#0D47A1 0%,#1565C0 40%,#1976D2 70%,#1E88E5 100%);border-radius:0 0 32px 32px;padding:0 0 28px;position:relative;overflow:hidden;margin-bottom:24px;}
+        .hero::before{content:'';position:absolute;top:-60px;right:-60px;width:220px;height:220px;background:rgba(255,255,255,0.06);border-radius:50%;}
+        .hero::after{content:'';position:absolute;bottom:-80px;left:-40px;width:180px;height:180px;background:rgba(255,255,255,0.04);border-radius:50%;}
+        .topbar{display:flex;align-items:center;justify-content:space-between;padding:16px 20px 0;}
+        .topbar-icon{width:44px;height:44px;background:rgba(255,255,255,0.18);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;border:none;backdrop-filter:blur(4px);}
         .topbar-icon svg{stroke:#fff;fill:none;width:22px;height:22px;}
         .topbar-right{display:flex;gap:10px;}
-
-        .notif-badge{ position:relative; }
-
-        .badge{
-            position:absolute;
-            top:-4px;right:-4px;
-            width:18px;height:18px;
-            background:var(--orange);
-            border-radius:50%;
-            font-size:10px;font-weight:700;color:#fff;
-            display:flex;align-items:center;justify-content:center;
-        }
-
-        .ads-slider{
-            margin:14px 20px 0;
-            border-radius:18px;
-            overflow:hidden;
-            position:relative;
-            height:200px;
-            background:rgba(255,255,255,0.1);
-        }
-
-        .slide{ display:none;width:100%;height:100%;position:absolute;top:0;left:0; }
+        .notif-badge{position:relative;}
+        .badge{position:absolute;top:-4px;right:-4px;width:18px;height:18px;background:var(--orange);border-radius:50%;font-size:10px;font-weight:700;color:#fff;display:flex;align-items:center;justify-content:center;}
+        .ads-slider{margin:14px 20px 0;border-radius:18px;overflow:hidden;position:relative;height:200px;background:rgba(255,255,255,0.1);}
+        .slide{display:none;width:100%;height:100%;position:absolute;top:0;left:0;}
         .active-slide{display:block;}
-
-        .ad-img{ width:100%;height:180px;object-fit:cover;border-radius:14px; }
-
-        .ad-title{
-            position:absolute;bottom:0;left:0;right:0;
-            background:linear-gradient(transparent,rgba(0,0,0,0.6));
-            color:#fff;padding:10px 14px 6px;
-            font-weight:700;font-size:16px;
-            border-radius:0 0 14px 14px;
-        }
-
+        .ad-img{width:100%;height:180px;object-fit:cover;border-radius:14px;}
+        .ad-title{position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,0.6));color:#fff;padding:10px 14px 6px;font-weight:700;font-size:16px;border-radius:0 0 14px 14px;}
         .ad-audio{width:100%;margin-top:4px;height:32px;}
-
-        .hero-text{ padding:20px 24px 0;position:relative;z-index:1; }
-
-        .hero-welcome{
-            color:var(--orange);font-size:15px;font-weight:600;
-            letter-spacing:0.3px;margin-bottom:4px;
-            display:flex;align-items:center;gap:6px;
-        }
-
+        .hero-text{padding:20px 24px 0;position:relative;z-index:1;}
+        .hero-welcome{color:var(--orange);font-size:15px;font-weight:600;letter-spacing:0.3px;margin-bottom:4px;display:flex;align-items:center;gap:6px;}
         .hero-title{color:#fff;font-size:30px;font-weight:800;line-height:1.15;margin-bottom:6px;}
-
         .hero-sub{color:rgba(255,255,255,0.75);font-size:13px;font-weight:400;}
         .hero-sub span{border-bottom:2px solid var(--orange);padding-bottom:1px;}
-
-        .section-header{
-            display:flex;align-items:center;justify-content:space-between;
-            padding:0 20px;margin-bottom:14px;
-        }
-
-        .section-title{ display:flex;align-items:center;gap:10px;font-size:17px;font-weight:700; }
-
-        .section-icon{
-            width:34px;height:34px;background:var(--blue);
-            border-radius:10px;display:flex;align-items:center;justify-content:center;
-        }
-
+        .section-header{display:flex;align-items:center;justify-content:space-between;padding:0 20px;margin-bottom:14px;}
+        .section-title{display:flex;align-items:center;gap:10px;font-size:17px;font-weight:700;}
+        .section-icon{width:34px;height:34px;background:var(--blue);border-radius:10px;display:flex;align-items:center;justify-content:center;}
         .section-icon svg{stroke:#fff;fill:none;width:18px;height:18px;}
-
-        .view-all{
-            color:var(--blue-bright);font-size:13px;font-weight:600;
-            display:flex;align-items:center;gap:3px;
-            cursor:pointer;background:none;border:none;
-        }
-
-        .grid{
-            display:grid;
-            grid-template-columns:repeat(auto-fill,minmax(155px,1fr));
-            gap:14px;padding:0 20px;margin-bottom:24px;
-        }
-
-        .card{
-            background:var(--card-bg);border-radius:18px;padding:12px;
-            box-shadow:var(--shadow-sm);position:relative;
-            transition:transform .2s,box-shadow .2s;
-        }
-
+        .view-all{color:var(--blue-bright);font-size:13px;font-weight:600;display:flex;align-items:center;gap:3px;cursor:pointer;background:none;border:none;}
+        .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:14px;padding:0 20px;margin-bottom:24px;}
+        .card{background:var(--card-bg);border-radius:18px;padding:12px;box-shadow:var(--shadow-sm);position:relative;transition:transform .2s,box-shadow .2s;}
         .card:active{transform:scale(0.97);}
-
-        .card-img-wrap{
-            position:relative;border-radius:12px;overflow:hidden;
-            height:120px;margin-bottom:10px;
-        }
-
+        .card-img-wrap{position:relative;border-radius:12px;overflow:hidden;height:120px;margin-bottom:10px;}
         .card img{width:100%;height:100%;object-fit:cover;display:block;}
-
-        .heart-btn{
-            position:absolute;top:8px;right:8px;
-            width:28px;height:28px;
-            background:rgba(255,255,255,0.85);border-radius:50%;
-            border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;
-        }
-
+        .heart-btn{position:absolute;top:8px;right:8px;width:28px;height:28px;background:rgba(255,255,255,0.85);border-radius:50%;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;}
         .heart-btn svg{width:14px;height:14px;stroke:#aaa;fill:none;}
-
-        .card h3{
-            font-size:13px;font-weight:600;color:var(--text);
-            margin-bottom:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-        }
-
+        .card h3{font-size:13px;font-weight:600;color:var(--text);margin-bottom:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
         .card-bottom{display:flex;align-items:center;justify-content:space-between;}
-
         .price{font-size:16px;font-weight:700;color:var(--blue-bright);}
-
-        .add-btn{
-            width:30px;height:30px;background:var(--blue);
-            border:none;border-radius:50%;color:#fff;font-size:20px;line-height:1;
-            display:flex;align-items:center;justify-content:center;cursor:pointer;
-            box-shadow:0 3px 10px rgba(21,101,192,0.35);
-            transition:transform .15s,background .15s;
-        }
-
+        .add-btn{width:30px;height:30px;background:var(--blue);border:none;border-radius:50%;color:#fff;font-size:20px;line-height:1;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 3px 10px rgba(21,101,192,0.35);transition:transform .15s,background .15s;}
         .add-btn:active{transform:scale(0.9);background:var(--blue-bright);}
-
-        .cart-box{
-            background:var(--card-bg);border-radius:24px 24px 0 0;
-            box-shadow:0 -4px 24px rgba(21,101,192,0.10);
-            padding:20px 20px 10px;margin:0 0 14px;
-        }
-
+        .cart-box{background:var(--card-bg);border-radius:24px 24px 0 0;box-shadow:0 -4px 24px rgba(21,101,192,0.10);padding:20px 20px 10px;margin:0 0 14px;}
         .cart-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
-
         .cart-title{display:flex;align-items:center;gap:10px;font-size:17px;font-weight:700;}
-
-        .cart-title-icon{
-            width:34px;height:34px;background:var(--blue);
-            border-radius:10px;display:flex;align-items:center;justify-content:center;
-        }
-
+        .cart-title-icon{width:34px;height:34px;background:var(--blue);border-radius:10px;display:flex;align-items:center;justify-content:center;}
         .cart-title-icon svg{stroke:#fff;fill:none;width:18px;height:18px;}
-
-        .item-count-badge{
-            background:var(--bg);color:var(--blue);
-            font-size:12px;font-weight:700;padding:4px 12px;border-radius:20px;
-        }
-
+        .item-count-badge{background:var(--bg);color:var(--blue);font-size:12px;font-weight:700;padding:4px 12px;border-radius:20px;}
         #cart{list-style:none;padding:0;margin-bottom:12px;}
-
-        #cart li{
-            display:flex;align-items:center;padding:8px 0;
-            border-bottom:1px solid #F0F4FF;font-size:13px;gap:6px;
-        }
-
+        #cart li{display:flex;align-items:center;padding:8px 0;border-bottom:1px solid #F0F4FF;font-size:13px;gap:6px;}
         #cart li:last-child{border-bottom:none;}
-
         .cart-item-name{flex:1;font-weight:500;}
         .cart-item-price{font-weight:700;color:var(--blue-bright);min-width:50px;text-align:right;}
-
-        .cart-btn{
-            width:26px;height:26px;border:none;border-radius:8px;
-            font-weight:700;font-size:14px;cursor:pointer;
-            display:flex;align-items:center;justify-content:center;
-        }
-
+        .cart-btn{width:26px;height:26px;border:none;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
         .plus-btn{background:#E8F5E9;color:#2E7D32;}
         .minus-btn{background:#FFF3E0;color:#E65100;}
         .remove-btn{background:#FFEBEE;color:#C62828;font-size:12px;}
-
-        .cart-total-row{
-            display:flex;align-items:center;justify-content:space-between;
-            padding:12px 0 0;border-top:2px solid var(--bg);
-        }
-
+        .cart-total-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0 0;border-top:2px solid var(--bg);}
         .cart-total-label{font-size:15px;font-weight:600;}
         .cart-total-amount{font-size:22px;font-weight:800;color:var(--blue-bright);}
-
-        .payment-box{
-            background:var(--bg);border-radius:16px;padding:14px 16px;
-            margin:16px 0 0;display:flex;align-items:center;gap:14px;
-        }
-
-        .payment-icon{
-            width:46px;height:46px;background:var(--blue);border-radius:14px;
-            display:flex;align-items:center;justify-content:center;flex-shrink:0;
-        }
-
+        .payment-box{background:var(--bg);border-radius:16px;padding:14px 16px;margin:16px 0 0;display:flex;align-items:center;gap:14px;}
+        .payment-icon{width:46px;height:46px;background:var(--blue);border-radius:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
         .payment-icon svg{stroke:#fff;fill:none;width:24px;height:24px;}
-
         .payment-info h4{font-size:14px;font-weight:700;margin-bottom:3px;}
         .payment-info p{font-size:12px;color:var(--text-muted);}
-
-        .secure-badge{
-            margin-left:auto;display:flex;align-items:center;gap:4px;
-            color:#2E7D32;font-size:11px;font-weight:600;flex-shrink:0;
-        }
-
+        .secure-badge{margin-left:auto;display:flex;align-items:center;gap:4px;color:#2E7D32;font-size:11px;font-weight:600;flex-shrink:0;}
         .secure-badge svg{width:14px;height:14px;fill:#2E7D32;}
-
-        .send-btn{
-            width:100%;padding:16px;background:var(--blue);color:#fff;
-            font-family:'Poppins',sans-serif;font-size:15px;font-weight:700;
-            border:none;border-radius:16px;cursor:pointer;
-            display:flex;align-items:center;justify-content:center;gap:8px;
-            margin-top:16px;box-shadow:0 6px 20px rgba(21,101,192,0.35);
-            transition:transform .15s;
-        }
-
+        .send-btn{width:100%;padding:16px;background:var(--blue);color:#fff;font-family:'Poppins',sans-serif;font-size:15px;font-weight:700;border:none;border-radius:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:16px;box-shadow:0 6px 20px rgba(21,101,192,0.35);transition:transform .15s;}
         .send-btn:active{transform:scale(0.98);}
         .send-btn svg{stroke:#fff;fill:none;width:18px;height:18px;}
-
-        .call-btn{
-            width:100%;padding:16px;background:var(--orange);color:#fff;
-            font-family:'Poppins',sans-serif;font-size:15px;font-weight:700;
-            border:none;border-radius:16px;cursor:pointer;
-            display:flex;align-items:center;justify-content:center;gap:8px;
-            margin-top:10px;box-shadow:0 6px 20px rgba(255,152,0,0.35);
-            transition:transform .15s;
-        }
-
+        .call-btn{width:100%;padding:16px;background:var(--orange);color:#fff;font-family:'Poppins',sans-serif;font-size:15px;font-weight:700;border:none;border-radius:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:10px;box-shadow:0 6px 20px rgba(255,152,0,0.35);transition:transform .15s;}
         .call-btn:active{transform:scale(0.98);}
         .call-btn svg{stroke:#fff;fill:none;width:18px;height:18px;}
-
-        #orderSuccess{
-            display:none;background:#E8F5E9;color:#1B5E20;
-            padding:16px;border-radius:14px;text-align:center;margin-top:14px;
-            font-size:15px;font-weight:700;border:1px solid #A5D6A7;
-            animation:fadeIn .4s ease;
-        }
-
-        #orderSuccess span{
-            display:block;font-size:13px;font-weight:400;margin-top:4px;color:#2E7D32;
-        }
-
+        #orderSuccess{display:none;background:#E8F5E9;color:#1B5E20;padding:16px;border-radius:14px;text-align:center;margin-top:14px;font-size:15px;font-weight:700;border:1px solid #A5D6A7;animation:fadeIn .4s ease;}
+        #orderSuccess span{display:block;font-size:13px;font-weight:400;margin-top:4px;color:#2E7D32;}
         @keyframes fadeIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
-
-        .modal{
-            display:none;position:fixed;top:0;left:0;width:100%;height:100%;
-            background:rgba(0,0,0,0.45);z-index:999;backdrop-filter:blur(3px);
-        }
-
-        .modal-content{
-            background:#fff;width:90%;max-width:380px;margin:auto;
-            padding:28px 24px 20px;border-radius:24px;
-            position:absolute;left:50%;bottom:0;transform:translateX(-50%);
-            box-shadow:0 -8px 40px rgba(0,0,0,0.15);
-        }
-
+        .modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.45);z-index:999;backdrop-filter:blur(3px);}
+        .modal-content{background:#fff;width:90%;max-width:380px;margin:auto;padding:28px 24px 20px;border-radius:24px;position:absolute;left:50%;bottom:0;transform:translateX(-50%);box-shadow:0 -8px 40px rgba(0,0,0,0.15);}
         .modal-drag{width:40px;height:4px;background:#E0E0E0;border-radius:4px;margin:0 auto 16px;}
         .modal-title{font-size:18px;font-weight:700;margin-bottom:20px;text-align:center;}
-
-        .modal-confirm{
-            width:100%;padding:15px;background:var(--blue);color:#fff;
-            font-family:'Poppins',sans-serif;font-size:15px;font-weight:700;
-            border:none;border-radius:14px;cursor:pointer;margin-bottom:10px;
-        }
-
-        .modal-close{
-            width:100%;padding:13px;background:#F5F5F5;color:#555;
-            font-family:'Poppins',sans-serif;font-size:14px;font-weight:600;
-            border:none;border-radius:14px;cursor:pointer;
-        }
-
-        .bottom-nav{
-            position:fixed;bottom:0;left:0;right:0;background:#fff;
-            border-top:1px solid #EEF2FF;display:flex;
-            box-shadow:0 -4px 20px rgba(21,101,192,0.10);z-index:100;
-        }
-
-        .nav-item{
-            flex:1;display:flex;flex-direction:column;align-items:center;
-            padding:10px 0 8px;cursor:pointer;color:var(--text-muted);
-            font-size:11px;font-weight:500;gap:4px;
-            background:none;border:none;font-family:'Poppins',sans-serif;
-        }
-
+        .modal-confirm{width:100%;padding:15px;background:var(--blue);color:#fff;font-family:'Poppins',sans-serif;font-size:15px;font-weight:700;border:none;border-radius:14px;cursor:pointer;margin-bottom:10px;}
+        .modal-close{width:100%;padding:13px;background:#F5F5F5;color:#555;font-family:'Poppins',sans-serif;font-size:14px;font-weight:600;border:none;border-radius:14px;cursor:pointer;}
+        .bottom-nav{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #EEF2FF;display:flex;box-shadow:0 -4px 20px rgba(21,101,192,0.10);z-index:100;}
+        .nav-item{flex:1;display:flex;flex-direction:column;align-items:center;padding:10px 0 8px;cursor:pointer;color:var(--text-muted);font-size:11px;font-weight:500;gap:4px;background:none;border:none;font-family:'Poppins',sans-serif;}
         .nav-item.active{color:var(--blue);}
         .nav-item svg{width:22px;height:22px;stroke:currentColor;fill:none;}
         .nav-item.active svg{stroke:var(--blue);}
+        .table-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.18);color:#fff;font-size:12px;font-weight:600;padding:5px 12px;border-radius:20px;margin-top:10px;}
 
-        .table-badge{
-            display:inline-flex;align-items:center;gap:6px;
-            background:rgba(255,255,255,0.18);color:#fff;
-            font-size:12px;font-weight:600;padding:5px 12px;
-            border-radius:20px;margin-top:10px;
-        }
-
-        /* ══════════════════════════════════
-           CALLING OVERLAY
-        ══════════════════════════════════ */
-        #callingOverlay{
-            display:none;
-            position:fixed;inset:0;
-            background:rgba(15,15,20,0.97);
-            z-index:9999;
-            flex-direction:column;
-            align-items:center;justify-content:center;
-            gap:0;
-            animation:overlayIn .3s ease;
-        }
-
+        /* CALLING OVERLAY */
+        #callingOverlay{display:none;position:fixed;inset:0;background:rgba(15,15,20,0.97);z-index:9999;flex-direction:column;align-items:center;justify-content:center;gap:0;animation:overlayIn .3s ease;}
         #callingOverlay.active{display:flex;}
-
-        @keyframes overlayIn{
-            from{opacity:0;transform:translateY(60px);}
-            to{opacity:1;transform:translateY(0);}
-        }
-
-        .call-drag{
-            width:40px;height:5px;background:rgba(255,255,255,0.25);border-radius:4px;
-            position:absolute;top:18px;left:50%;transform:translateX(-50%);
-        }
-
-        .call-status-label{
-            color:rgba(255,255,255,0.6);font-size:15px;font-weight:500;
-            margin-bottom:10px;letter-spacing:0.3px;
-        }
-
+        @keyframes overlayIn{from{opacity:0;transform:translateY(60px);}to{opacity:1;transform:translateY(0);}}
+        .call-drag{width:40px;height:5px;background:rgba(255,255,255,0.25);border-radius:4px;position:absolute;top:18px;left:50%;transform:translateX(-50%);}
+        .call-status-label{color:rgba(255,255,255,0.6);font-size:15px;font-weight:500;margin-bottom:10px;letter-spacing:0.3px;}
         .call-name{color:#fff;font-size:32px;font-weight:800;margin-bottom:6px;}
         .call-sub{color:rgba(255,255,255,0.45);font-size:14px;font-weight:400;margin-bottom:48px;}
-
         .call-avatar-wrap{position:relative;width:120px;height:120px;margin-bottom:56px;}
-
-        .call-ripple{
-            position:absolute;inset:-18px;
-            border:2px solid rgba(33,150,243,0.3);border-radius:50%;
-            animation:ripple 1.8s ease-out infinite;
-        }
-
+        .call-ripple{position:absolute;inset:-18px;border:2px solid rgba(33,150,243,0.3);border-radius:50%;animation:ripple 1.8s ease-out infinite;}
         .call-ripple:nth-child(2){inset:-36px;border-color:rgba(33,150,243,0.18);animation-delay:.5s;}
         .call-ripple:nth-child(3){inset:-54px;border-color:rgba(33,150,243,0.1);animation-delay:1s;}
-
-        @keyframes ripple{
-            0%{opacity:1;transform:scale(1);}
-            100%{opacity:0;transform:scale(1.4);}
-        }
-
-        .call-avatar{
-            width:120px;height:120px;
-            background:linear-gradient(145deg,#1565C0,#1E88E5);
-            border-radius:50%;display:flex;align-items:center;justify-content:center;
-            position:relative;z-index:1;
-        }
-
+        @keyframes ripple{0%{opacity:1;transform:scale(1);}100%{opacity:0;transform:scale(1.4);}}
+        .call-avatar{width:120px;height:120px;background:linear-gradient(145deg,#1565C0,#1E88E5);border-radius:50%;display:flex;align-items:center;justify-content:center;position:relative;z-index:1;}
         .call-avatar svg{width:64px;height:64px;fill:#fff;stroke:none;}
-
         .call-controls{display:flex;gap:32px;align-items:center;}
-
-        .ctrl-btn{
-            display:flex;flex-direction:column;align-items:center;gap:10px;
-            background:none;border:none;cursor:pointer;
-        }
-
+        .ctrl-btn{display:flex;flex-direction:column;align-items:center;gap:10px;background:none;border:none;cursor:pointer;}
         .ctrl-icon{width:60px;height:60px;border-radius:50%;display:flex;align-items:center;justify-content:center;}
         .ctrl-icon.dark{background:rgba(255,255,255,0.15);}
-        .ctrl-icon.white{background:#fff;}
         .ctrl-icon.red{background:#F44336;}
         .ctrl-icon svg{width:26px;height:26px;}
         .ctrl-icon.dark svg{stroke:#fff;fill:none;}
-        .ctrl-icon.white svg{stroke:#222;fill:none;}
         .ctrl-icon.red svg{stroke:#fff;fill:none;}
-
         .ctrl-label{color:rgba(255,255,255,0.7);font-size:12px;font-weight:500;}
-
-        .call-timer{
-            color:#4CAF50;font-size:16px;font-weight:600;
-            margin-bottom:48px;display:none;
-        }
+        .call-timer{color:#4CAF50;font-size:16px;font-weight:600;margin-bottom:48px;display:none;}
     </style>
 </head>
 <body>
 
-    <!-- ── HERO ── -->
     <div class="hero">
         <div class="topbar">
             <button class="topbar-icon">
@@ -509,7 +193,6 @@
         {% endif %}
     </div>
 
-    <!-- ── POPULAR MENU ── -->
     <div class="section-header">
         <div class="section-title">
             <div class="section-icon">
@@ -541,7 +224,6 @@
         {% endfor %}
     </div>
 
-    <!-- ── CART ── -->
     <div class="cart-box">
         <div class="cart-header">
             <div class="cart-title">
@@ -552,14 +234,11 @@
             </div>
             <div class="item-count-badge" id="itemCountBadge">0 Items</div>
         </div>
-
         <ul id="cart"></ul>
-
         <div class="cart-total-row">
             <span class="cart-total-label">Total</span>
             <span class="cart-total-amount">$<span id="total">0.00</span></span>
         </div>
-
         <div class="payment-box">
             <div class="payment-icon">
                 <svg viewBox="0 0 24 24" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
@@ -573,24 +252,20 @@
                 Secure
             </div>
         </div>
-
         <button class="send-btn" onclick="sendOrder()">
             <svg viewBox="0 0 24 24" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
             Send Order
         </button>
-
         <button class="call-btn" onclick="callWaiter()">
             <svg viewBox="0 0 24 24" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
             Call Waiter
         </button>
-
         <div id="orderSuccess">
             ✅ Orderkaaga waa la helay!
             <span>Suug waxaad heshay markuu diyaar yahay 🍽</span>
         </div>
     </div>
 
-    <!-- ── ITEM MODAL ── -->
     <div class="modal" id="optionModal" onclick="closeModalOutside(event)">
         <div class="modal-content">
             <div class="modal-drag"></div>
@@ -600,18 +275,13 @@
         </div>
     </div>
 
-    <!-- ══════════════════════════════════
-         CALLING OVERLAY
-    ══════════════════════════════════ -->
+    <!-- CALLING OVERLAY -->
     <div id="callingOverlay">
         <div class="call-drag"></div>
-
         <div class="call-status-label" id="callStatusLabel">Calling...</div>
         <div class="call-name">Call Waiter</div>
         <div class="call-sub">Restaurant Support</div>
-
         <div class="call-timer" id="callTimer">00:00</div>
-
         <div class="call-avatar-wrap">
             <div class="call-ripple"></div>
             <div class="call-ripple"></div>
@@ -625,7 +295,6 @@
                 </svg>
             </div>
         </div>
-
         <div class="call-controls">
             <button class="ctrl-btn" onclick="toggleMute()">
                 <div class="ctrl-icon dark" id="muteIcon">
@@ -639,7 +308,6 @@
                 </div>
                 <span class="ctrl-label" id="muteLabel">Mute</span>
             </button>
-
             <button class="ctrl-btn" onclick="endCall()">
                 <div class="ctrl-icon red">
                     <svg viewBox="0 0 24 24" stroke-width="2.5">
@@ -649,7 +317,6 @@
                 </div>
                 <span class="ctrl-label">End</span>
             </button>
-
             <button class="ctrl-btn" onclick="toggleSpeaker()">
                 <div class="ctrl-icon dark" id="speakerIcon">
                     <svg viewBox="0 0 24 24" stroke-width="2">
@@ -663,7 +330,6 @@
         </div>
     </div>
 
-    <!-- ── BOTTOM NAV ── -->
     <nav class="bottom-nav">
         <button class="nav-item active">
             <svg viewBox="0 0 24 24" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
@@ -685,355 +351,243 @@
 
 <script>
 /* ═══════════════════════════════════════════
-   80s STYLE RINGTONE — Web Audio API
-   Customer side: plays while calling (outgoing)
+   80s RINGTONE — CUSTOMER SIDE
 ═══════════════════════════════════════════ */
-
 let _audioCtx = null
-
-function getAudioCtx() {
-    if (!_audioCtx || _audioCtx.state === 'closed') {
-        _audioCtx = new (window.AudioContext || window.webkitAudioContext)()
-    }
-    if (_audioCtx.state === 'suspended') {
-        _audioCtx.resume()
-    }
+function getAudioCtx(){
+    if(!_audioCtx || _audioCtx.state==='closed') _audioCtx = new (window.AudioContext||window.webkitAudioContext)()
+    if(_audioCtx.state==='suspended') _audioCtx.resume()
     return _audioCtx
 }
-
-// 80s style outgoing ringback tone — dual-tone like old telephone
-// Uses classic 425Hz ring + synth melody pattern
 let _outgoingRing = null
-
-function start80sOutgoingRing() {
+function start80sOutgoingRing(){
     stop80sOutgoingRing()
     const ctx = getAudioCtx()
-
-    // Create a classic 80s "calling" synth pattern
-    // Pattern: beep-beep ... pause ... beep-beep
-    const notes = [523, 659, 784, 659]  // C5, E5, G5, E5 — retro arpeggio
-    let noteIdx  = 0
-    let beepCount = 0
-
-    const masterGain = ctx.createGain()
-    masterGain.gain.value = 0.25
-    masterGain.connect(ctx.destination)
-
-    // Reverb-like effect using delay node
-    const delay = ctx.createDelay(0.3)
-    delay.delayTime.value = 0.15
-    const delayGain = ctx.createGain()
-    delayGain.gain.value = 0.35
-    delay.connect(delayGain)
-    delayGain.connect(masterGain)
-
-    function playBeep() {
-        if (!_outgoingRing) return
-        const osc  = ctx.createOscillator()
-        const gain = ctx.createGain()
-
-        osc.type = 'square'   // 80s square wave!
-        osc.frequency.value = notes[noteIdx % notes.length]
-        noteIdx++
-
-        gain.gain.setValueAtTime(0, ctx.currentTime)
-        gain.gain.linearRampToValueAtTime(0.8, ctx.currentTime + 0.02)
-        gain.gain.setValueAtTime(0.8, ctx.currentTime + 0.08)
-        gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.15)
-
-        osc.connect(gain)
-        gain.connect(masterGain)
-        gain.connect(delay)
-        osc.start(ctx.currentTime)
-        osc.stop(ctx.currentTime + 0.18)
-
+    const notes = [523,659,784,659]
+    let noteIdx=0, beepCount=0
+    const masterGain = ctx.createGain(); masterGain.gain.value=0.25; masterGain.connect(ctx.destination)
+    const delay = ctx.createDelay(0.3); delay.delayTime.value=0.15
+    const delayGain = ctx.createGain(); delayGain.gain.value=0.35
+    delay.connect(delayGain); delayGain.connect(masterGain)
+    function playBeep(){
+        if(!_outgoingRing) return
+        const osc=ctx.createOscillator(), gain=ctx.createGain()
+        osc.type='square'; osc.frequency.value=notes[noteIdx%notes.length]; noteIdx++
+        gain.gain.setValueAtTime(0,ctx.currentTime)
+        gain.gain.linearRampToValueAtTime(0.8,ctx.currentTime+0.02)
+        gain.gain.setValueAtTime(0.8,ctx.currentTime+0.08)
+        gain.gain.linearRampToValueAtTime(0,ctx.currentTime+0.15)
+        osc.connect(gain); gain.connect(masterGain); gain.connect(delay)
+        osc.start(ctx.currentTime); osc.stop(ctx.currentTime+0.18)
         beepCount++
-
-        if (beepCount < 4) {
-            // 4 quick notes in a row
-            _outgoingRing.timer = setTimeout(playBeep, 180)
-        } else {
-            // pause then repeat
-            beepCount = 0
-            noteIdx = 0
-            _outgoingRing.timer = setTimeout(playBeep, 1400)
-        }
+        if(beepCount<4){ _outgoingRing.timer=setTimeout(playBeep,180) }
+        else { beepCount=0; noteIdx=0; _outgoingRing.timer=setTimeout(playBeep,1400) }
     }
-
-    _outgoingRing = { masterGain, delay, timer: null }
-    playBeep()
+    _outgoingRing={masterGain,delay,timer:null}; playBeep()
 }
-
-function stop80sOutgoingRing() {
-    if (_outgoingRing) {
+function stop80sOutgoingRing(){
+    if(_outgoingRing){
         clearTimeout(_outgoingRing.timer)
-        try {
-            _outgoingRing.masterGain.disconnect()
-            _outgoingRing.delay.disconnect()
-        } catch(e) {}
-        _outgoingRing = null
+        try{_outgoingRing.masterGain.disconnect();_outgoingRing.delay.disconnect()}catch(e){}
+        _outgoingRing=null
     }
 }
 
 /* ═══════════════════════════════════════════
    CART LOGIC
 ═══════════════════════════════════════════ */
-let cart = []
-let total = 0
-let currentItem = ""
-let currentPrice = 0
+let cart=[],total=0,currentItem="",currentPrice=0
 
 function openItemModal(btn){
-    currentItem  = btn.dataset.name
-    currentPrice = parseFloat(btn.dataset.price)
-    document.getElementById("modalTitle").innerText = "Add: " + currentItem
-    document.getElementById("optionModal").style.display = "block"
+    currentItem=btn.dataset.name; currentPrice=parseFloat(btn.dataset.price)
+    document.getElementById("modalTitle").innerText="Add: "+currentItem
+    document.getElementById("optionModal").style.display="block"
 }
-
-function closeModal(){
-    document.getElementById("optionModal").style.display = "none"
-}
-
-function closeModalOutside(e){
-    if(e.target === document.getElementById("optionModal")) closeModal()
-}
-
+function closeModal(){ document.getElementById("optionModal").style.display="none" }
+function closeModalOutside(e){ if(e.target===document.getElementById("optionModal")) closeModal() }
 function confirmAdd(){
-    let found = cart.find(x => x.name === currentItem)
-    if(found){ found.qty += 1 }
-    else { cart.push({ name: currentItem, price: currentPrice, qty: 1 }) }
-    total += currentPrice
-    render()
-    closeModal()
+    let found=cart.find(x=>x.name===currentItem)
+    if(found){found.qty+=1}else{cart.push({name:currentItem,price:currentPrice,qty:1})}
+    total+=currentPrice; render(); closeModal()
 }
-
-function increase(i){ cart[i].qty += 1; total += cart[i].price; render() }
-
+function increase(i){cart[i].qty+=1;total+=cart[i].price;render()}
 function decrease(i){
-    if(cart[i].qty > 1){ cart[i].qty -= 1; total -= cart[i].price; }
-    else { total -= cart[i].price; cart.splice(i, 1); }
+    if(cart[i].qty>1){cart[i].qty-=1;total-=cart[i].price;}
+    else{total-=cart[i].price;cart.splice(i,1);}
     render()
 }
-
-function remove(i){ total -= cart[i].price * cart[i].qty; cart.splice(i, 1); render() }
-
+function remove(i){total-=cart[i].price*cart[i].qty;cart.splice(i,1);render()}
 function render(){
-    let html = ""
-    cart.forEach((item, i) => {
-        html += `
-        <li>
+    let html=""
+    cart.forEach((item,i)=>{
+        html+=`<li>
             <span style="background:#EEF2FF;color:#1565C0;font-weight:700;padding:2px 8px;border-radius:8px;font-size:12px;">${item.qty}x</span>
             <span class="cart-item-name">${item.name}</span>
-            <span class="cart-item-price">$${(item.price * item.qty).toFixed(2)}</span>
-            <button class="cart-btn plus-btn"   onclick="increase(${i})">+</button>
-            <button class="cart-btn minus-btn"  onclick="decrease(${i})">−</button>
+            <span class="cart-item-price">$${(item.price*item.qty).toFixed(2)}</span>
+            <button class="cart-btn plus-btn" onclick="increase(${i})">+</button>
+            <button class="cart-btn minus-btn" onclick="decrease(${i})">−</button>
             <button class="cart-btn remove-btn" onclick="remove(${i})">✕</button>
         </li>`
     })
-    document.getElementById("cart").innerHTML = html
-    document.getElementById("total").innerText = total.toFixed(2)
-    let count = cart.reduce((s,x)=>s+x.qty,0)
-    document.getElementById("itemCountBadge").innerText = count + " Item" + (count!==1?"s":"")
-    document.getElementById("cartBadge").innerText = count
+    document.getElementById("cart").innerHTML=html
+    document.getElementById("total").innerText=total.toFixed(2)
+    let count=cart.reduce((s,x)=>s+x.qty,0)
+    document.getElementById("itemCountBadge").innerText=count+" Item"+(count!==1?"s":"")
+    document.getElementById("cartBadge").innerText=count
 }
-
 async function sendOrder(){
-    if(cart.length === 0){ alert("Please add item first ❌"); return }
-    try {
-        let res = await fetch("/order/{{ rid }}", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ table: "{{ table }}", cart: cart })
-        })
-        let data = await res.json()
+    if(cart.length===0){alert("Please add item first ❌");return}
+    try{
+        let res=await fetch("/order/{{ rid }}",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({table:"{{ table }}",cart:cart})})
+        let data=await res.json()
         if(data.success){
-            cart = []; total = 0; render()
-            let s = document.getElementById("orderSuccess")
-            s.style.display = "block"
-            setTimeout(() => s.style.display = "none", 4000)
-        } else {
-            alert("❌ " + (data.error || "Order failed"))
-        }
-    } catch(err){ alert("❌ Error: " + err.message) }
+            cart=[];total=0;render()
+            let s=document.getElementById("orderSuccess");s.style.display="block"
+            setTimeout(()=>s.style.display="none",4000)
+        }else{alert("❌ "+(data.error||"Order failed"))}
+    }catch(err){alert("❌ Error: "+err.message)}
 }
 
 /* ═══════════════════════════════════════════
-   CALLING OVERLAY + WEBRTC AUDIO
+   WEBRTC CALLING — via SocketIO
 ═══════════════════════════════════════════ */
-let callActive   = false
-let peerConn     = null
-let localStream  = null
-let remoteAudio  = null
-let isMuted      = false
-let isSpeaker    = true
-let callTimerInt = null
-let callSeconds  = 0
-let sigSocket    = null
+let callActive=false,peerConn=null,localStream=null,remoteAudio=null
+let isMuted=false,isSpeaker=true,callTimerInt=null,callSeconds=0
 
-const TABLE = "{{ table }}"
-const RID   = "{{ rid }}"
-const iceServers = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] }
+const TABLE="{{ table }}"
+const RID="{{ rid }}"
+const iceServers={iceServers:[{urls:"stun:stun.l.google.com:19302"}]}
+
+// SocketIO
+const sio=io()
+
+sio.on("connect",()=>{
+    sio.emit("customer_join",{rid:RID,table:TABLE})
+})
+
+// Kitchen answered
+sio.on("webrtc_answer",async(data)=>{
+    if(!peerConn) return
+    stop80sOutgoingRing()
+    await peerConn.setRemoteDescription(new RTCSessionDescription(data.sdp))
+    document.getElementById("callStatusLabel").innerText="Connected ✓"
+    document.getElementById("callStatusLabel").style.color="#4CAF50"
+    startCallTimer()
+})
+
+// ICE from kitchen
+sio.on("webrtc_ice_kitchen",async(data)=>{
+    if(peerConn&&data.candidate){
+        try{await peerConn.addIceCandidate(new RTCIceCandidate(data.candidate))}catch(e){}
+    }
+})
+
+// Call ended
+sio.on("webrtc_end",()=>endCall())
 
 function openCallingOverlay(){
     document.getElementById("callingOverlay").classList.add("active")
-    document.getElementById("callStatusLabel").innerText = "Calling..."
-    document.getElementById("callStatusLabel").style.color = "rgba(255,255,255,0.6)"
-    document.getElementById("callStatusLabel").style.display = "block"
-    document.getElementById("callTimer").style.display = "none"
-    callSeconds = 0
+    document.getElementById("callStatusLabel").innerText="Calling..."
+    document.getElementById("callStatusLabel").style.color="rgba(255,255,255,0.6)"
+    document.getElementById("callStatusLabel").style.display="block"
+    document.getElementById("callTimer").style.display="none"
+    callSeconds=0
 }
-
 function closeCallingOverlay(){
     document.getElementById("callingOverlay").classList.remove("active")
     stopCallTimer()
 }
-
 function startCallTimer(){
-    document.getElementById("callTimer").style.display    = "block"
-    document.getElementById("callStatusLabel").style.display = "none"
-    callTimerInt = setInterval(() => {
+    document.getElementById("callTimer").style.display="block"
+    document.getElementById("callStatusLabel").style.display="none"
+    callTimerInt=setInterval(()=>{
         callSeconds++
-        let m = String(Math.floor(callSeconds/60)).padStart(2,"0")
-        let s = String(callSeconds%60).padStart(2,"0")
-        document.getElementById("callTimer").innerText = m + ":" + s
-    }, 1000)
+        let m=String(Math.floor(callSeconds/60)).padStart(2,"0")
+        let s=String(callSeconds%60).padStart(2,"0")
+        document.getElementById("callTimer").innerText=m+":"+s
+    },1000)
 }
-
 function stopCallTimer(){
     clearInterval(callTimerInt)
-    document.getElementById("callTimer").style.display    = "none"
-    document.getElementById("callStatusLabel").style.display = "block"
+    document.getElementById("callTimer").style.display="none"
+    document.getElementById("callStatusLabel").style.display="block"
 }
 
 async function callWaiter(){
-    if(callActive){ endCall(); return; }
-    callActive = true
+    if(callActive){endCall();return}
+    callActive=true
     openCallingOverlay()
-
-    // ── Start 80s outgoing ring ──
     start80sOutgoingRing()
 
-    // 1. HTTP ping so kitchen badge updates
-    await fetch("/call_waiter/{{ rid }}", {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: "table={{ table }}"
+    await fetch("/call_waiter/{{ rid }}",{
+        method:"POST",
+        headers:{"Content-Type":"application/x-www-form-urlencoded"},
+        body:"table={{ table }}"
     })
 
-    // 2. Get microphone
-    try {
-        localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false })
-    } catch(e){
-        console.warn("Mic denied:", e)
-    }
+    try{localStream=await navigator.mediaDevices.getUserMedia({audio:true,video:false})}
+    catch(e){console.warn("Mic denied:",e)}
 
-    // 3. Open signalling WebSocket
-    const proto = location.protocol === "https:" ? "wss" : "ws"
-    sigSocket = new WebSocket(`${proto}://${location.host}/ws/call/${RID}/${TABLE}`)
+    peerConn=new RTCPeerConnection(iceServers)
 
-    sigSocket.onopen = async () => {
-        peerConn = new RTCPeerConnection(iceServers)
+    if(localStream) localStream.getTracks().forEach(t=>peerConn.addTrack(t,localStream))
 
-        if(localStream){
-            localStream.getTracks().forEach(t => peerConn.addTrack(t, localStream))
-        }
-
-        peerConn.ontrack = (e) => {
-            if(!remoteAudio){
-                remoteAudio = new Audio()
-                remoteAudio.autoplay = true
-                remoteAudio.srcObject = e.streams[0]
-            }
-        }
-
-        peerConn.onicecandidate = (e) => {
-            if(e.candidate && sigSocket.readyState === WebSocket.OPEN){
-                sigSocket.send(JSON.stringify({ type:"ice", candidate: e.candidate }))
-            }
-        }
-
-        const offer = await peerConn.createOffer()
-        await peerConn.setLocalDescription(offer)
-        sigSocket.send(JSON.stringify({ type:"offer", sdp: offer }))
-    }
-
-    sigSocket.onmessage = async (msg) => {
-        let data = JSON.parse(msg.data)
-
-        if(data.type === "answer"){
-            // ── Kitchen picked up → stop ring, show connected ──
-            stop80sOutgoingRing()
-            await peerConn.setRemoteDescription(new RTCSessionDescription(data.sdp))
-            document.getElementById("callStatusLabel").innerText = "Connected ✓"
-            document.getElementById("callStatusLabel").style.color = "#4CAF50"
-            startCallTimer()
-        }
-
-        if(data.type === "ice" && data.candidate){
-            try { await peerConn.addIceCandidate(new RTCIceCandidate(data.candidate)) } catch(e){}
-        }
-
-        if(data.type === "end"){
-            endCall()
+    peerConn.ontrack=(e)=>{
+        if(!remoteAudio){
+            remoteAudio=new Audio(); remoteAudio.autoplay=true; remoteAudio.srcObject=e.streams[0]
         }
     }
 
-    sigSocket.onclose = () => {
-        if(callActive) endCall()
+    peerConn.onicecandidate=(e)=>{
+        if(e.candidate) sio.emit("webrtc_ice_customer",{rid:RID,table:TABLE,candidate:e.candidate})
     }
+
+    const offer=await peerConn.createOffer()
+    await peerConn.setLocalDescription(offer)
+    sio.emit("webrtc_offer",{rid:RID,table:TABLE,sdp:offer})
 }
 
 function endCall(){
-    callActive = false
+    callActive=false
     stop80sOutgoingRing()
     closeCallingOverlay()
-
-    if(peerConn){ peerConn.close(); peerConn = null; }
-    if(localStream){ localStream.getTracks().forEach(t=>t.stop()); localStream = null; }
-    if(remoteAudio){ remoteAudio.srcObject = null; remoteAudio = null; }
-    if(sigSocket && sigSocket.readyState === WebSocket.OPEN){
-        sigSocket.send(JSON.stringify({ type:"end" }))
-        sigSocket.close()
-    }
-    sigSocket = null
-    isMuted = false; isSpeaker = true
-    document.getElementById("muteLabel").innerText    = "Mute"
-    document.getElementById("speakerLabel").innerText = "Speaker"
+    if(peerConn){peerConn.close();peerConn=null}
+    if(localStream){localStream.getTracks().forEach(t=>t.stop());localStream=null}
+    if(remoteAudio){remoteAudio.srcObject=null;remoteAudio=null}
+    sio.emit("webrtc_end_customer",{rid:RID,table:TABLE})
+    isMuted=false;isSpeaker=true
+    document.getElementById("muteLabel").innerText="Mute"
+    document.getElementById("speakerLabel").innerText="Speaker"
 }
 
 function toggleMute(){
-    isMuted = !isMuted
-    if(localStream) localStream.getAudioTracks().forEach(t => t.enabled = !isMuted)
-    document.getElementById("muteLine").style.display  = isMuted ? "block" : "none"
-    document.getElementById("muteIcon").style.background = isMuted ? "rgba(255,255,255,0.35)" : "rgba(255,255,255,0.15)"
-    document.getElementById("muteLabel").innerText      = isMuted ? "Unmute" : "Mute"
+    isMuted=!isMuted
+    if(localStream) localStream.getAudioTracks().forEach(t=>t.enabled=!isMuted)
+    document.getElementById("muteLine").style.display=isMuted?"block":"none"
+    document.getElementById("muteIcon").style.background=isMuted?"rgba(255,255,255,0.35)":"rgba(255,255,255,0.15)"
+    document.getElementById("muteLabel").innerText=isMuted?"Unmute":"Mute"
 }
-
 function toggleSpeaker(){
-    isSpeaker = !isSpeaker
-    if(remoteAudio) remoteAudio.muted = !isSpeaker
-    document.getElementById("speakerIcon").style.background = isSpeaker ? "rgba(255,255,255,0.35)" : "rgba(255,255,255,0.15)"
-    document.getElementById("speakerLabel").innerText        = isSpeaker ? "Speaker On" : "Speaker Off"
+    isSpeaker=!isSpeaker
+    if(remoteAudio) remoteAudio.muted=!isSpeaker
+    document.getElementById("speakerIcon").style.background=isSpeaker?"rgba(255,255,255,0.35)":"rgba(255,255,255,0.15)"
+    document.getElementById("speakerLabel").innerText=isSpeaker?"Speaker On":"Speaker Off"
 }
 
-/* ═══════════════════════════════════════════
-   ADS AUTO SLIDER
-═══════════════════════════════════════════ */
-let currentSlide = 0
-const slides = document.querySelectorAll(".slide")
-
+/* ADS SLIDER */
+let currentSlide=0
+const slides=document.querySelectorAll(".slide")
 function showNextSlide(){
-    if(slides.length === 0) return
+    if(slides.length===0) return
     slides[currentSlide].classList.remove("active-slide")
-    let oldAudio = slides[currentSlide].querySelector(".ad-audio")
-    if(oldAudio){ oldAudio.pause(); oldAudio.currentTime = 0 }
-    currentSlide = (currentSlide + 1) % slides.length
+    let oldAudio=slides[currentSlide].querySelector(".ad-audio")
+    if(oldAudio){oldAudio.pause();oldAudio.currentTime=0}
+    currentSlide=(currentSlide+1)%slides.length
     slides[currentSlide].classList.add("active-slide")
-    let newAudio = slides[currentSlide].querySelector(".ad-audio")
+    let newAudio=slides[currentSlide].querySelector(".ad-audio")
     if(newAudio) newAudio.play().catch(()=>{})
 }
-
-setInterval(showNextSlide, 5000)
+setInterval(showNextSlide,5000)
 </script>
 
 </body>

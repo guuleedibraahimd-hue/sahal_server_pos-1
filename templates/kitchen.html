@@ -42,9 +42,6 @@
         .notify-item{background:yellow;padding:10px;border-radius:8px;margin-bottom:10px;}
         .item-line{margin:4px 0;font-weight:bold;}
 
-        /* ══════════════════════════════
-           INCOMING CALL POPUP — KITCHEN
-        ══════════════════════════════ */
         #incomingCallPopup{
             display:none;
             position:fixed;
@@ -66,80 +63,44 @@
             to{opacity:1;transform:translateX(-50%) translateY(0) scale(1);}
         }
 
-        .ic-label{
-            color:rgba(255,255,255,0.6);font-size:12px;margin-bottom:6px;
-            letter-spacing:1px;text-transform:uppercase;
-        }
+        .ic-label{color:rgba(255,255,255,0.6);font-size:12px;margin-bottom:6px;letter-spacing:1px;text-transform:uppercase;}
+        .ic-name{color:#fff;font-size:24px;font-weight:800;margin-bottom:3px;}
+        .ic-sub{color:rgba(255,255,255,0.5);font-size:13px;margin-bottom:18px;}
 
-        .ic-name{
-            color:#fff;font-size:24px;font-weight:800;margin-bottom:3px;
-        }
-
-        .ic-sub{
-            color:rgba(255,255,255,0.5);font-size:13px;margin-bottom:18px;
-        }
-
-        /* Customer message bubble */
         .ic-message{
-            background:rgba(255,255,255,0.13);
-            border:1px solid rgba(255,255,255,0.22);
-            border-radius:12px;
-            padding:10px 14px;
-            color:rgba(255,255,255,0.88);
-            font-size:13px;
-            margin-bottom:20px;
-            text-align:left;
-            display:none;
+            background:rgba(255,255,255,0.13);border:1px solid rgba(255,255,255,0.22);
+            border-radius:12px;padding:10px 14px;color:rgba(255,255,255,0.88);
+            font-size:13px;margin-bottom:20px;text-align:left;display:none;
         }
         .ic-message.visible{display:block;}
 
-        .ic-avatar-wrap{
-            position:relative;width:80px;margin:0 auto 22px;
-        }
+        .ic-avatar-wrap{position:relative;width:80px;margin:0 auto 22px;}
         .ic-ripple{
             position:absolute;inset:-12px;
-            border:2px solid rgba(255,255,255,0.25);
-            border-radius:50%;
+            border:2px solid rgba(255,255,255,0.25);border-radius:50%;
             animation:ripple 1.8s ease-out infinite;
         }
         .ic-ripple:nth-child(2){inset:-26px;border-color:rgba(255,255,255,0.12);animation-delay:.6s;}
-        @keyframes ripple{
-            0%{opacity:1;transform:scale(1);}
-            100%{opacity:0;transform:scale(1.5);}
-        }
+        @keyframes ripple{0%{opacity:1;transform:scale(1);}100%{opacity:0;transform:scale(1.5);}}
 
         .ic-avatar{
-            width:80px;height:80px;
-            background:rgba(255,255,255,0.15);
-            border:2px solid rgba(255,255,255,0.3);
-            border-radius:50%;
+            width:80px;height:80px;background:rgba(255,255,255,0.15);
+            border:2px solid rgba(255,255,255,0.3);border-radius:50%;
             display:flex;align-items:center;justify-content:center;
-            position:relative;z-index:1;
-            font-size:38px;
+            position:relative;z-index:1;font-size:38px;
         }
 
         .ic-controls{display:flex;justify-content:center;gap:36px;}
-
-        .ic-btn{
-            display:flex;flex-direction:column;align-items:center;gap:8px;
-            background:none;border:none;cursor:pointer;padding:0;
-        }
-
-        .ic-icon{
-            width:64px;height:64px;border-radius:50%;
-            display:flex;align-items:center;justify-content:center;
-            transition:transform .15s;
-        }
+        .ic-btn{display:flex;flex-direction:column;align-items:center;gap:8px;background:none;border:none;cursor:pointer;padding:0;}
+        .ic-icon{width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:transform .15s;}
         .ic-icon:active{transform:scale(0.9);}
         .ic-icon.accept{background:#4CAF50;box-shadow:0 4px 18px rgba(76,175,80,0.45);}
         .ic-icon.decline{background:#F44336;box-shadow:0 4px 18px rgba(244,67,54,0.45);}
         .ic-icon svg{width:28px;height:28px;stroke:#fff;fill:none;stroke-width:2.5;}
         .ic-btn-label{color:rgba(255,255,255,0.75);font-size:12px;font-weight:700;letter-spacing:.5px;}
 
-        /* Active call bar */
         #activeCallBar{
-            display:none;
-            position:fixed;top:0;left:0;right:0;
+            display:none;position:fixed;top:0;left:0;right:0;
             background:#1565C0;color:#fff;
             padding:10px 20px;font-size:14px;font-weight:700;
             z-index:9998;align-items:center;justify-content:space-between;
@@ -208,48 +169,42 @@
 {% endfor %}
 </div>
 
-<!-- ══════════════════════════════
-     INCOMING CALL POPUP
-══════════════════════════════ -->
 <div id="incomingCallPopup">
     <div class="ic-label">📲 Incoming Call</div>
     <div class="ic-name" id="icName">Table –</div>
     <div class="ic-sub" id="icSub">Customer</div>
-
     <div class="ic-message" id="icMessage"></div>
-
     <div class="ic-avatar-wrap">
         <div class="ic-ripple"></div>
         <div class="ic-ripple"></div>
         <div class="ic-avatar">🧑‍🍽️</div>
     </div>
-
     <div class="ic-controls">
         <button class="ic-btn" onclick="declineCall()">
             <div class="ic-icon decline">
-                <svg viewBox="0 0 24 24">
-                    <path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7 2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07C9.44 17.29 7.76 15.36 6.69 13a19.79 19.79 0 0 1-3.07-8.63A2 2 0 0 1 5.61 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L9.69 9.81"/>
-                    <line x1="1" y1="1" x2="23" y2="23"/>
-                </svg>
+                <svg viewBox="0 0 24 24"><path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7 2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07C9.44 17.29 7.76 15.36 6.69 13a19.79 19.79 0 0 1-3.07-8.63A2 2 0 0 1 5.61 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L9.69 9.81"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
             </div>
             <span class="ic-btn-label">Decline</span>
         </button>
-
         <button class="ic-btn" onclick="acceptCall()">
             <div class="ic-icon accept">
-                <svg viewBox="0 0 24 24">
-                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07C9.36 17.29 7.52 15.39 6.5 13.08A19.79 19.79 0 0 1 3.42 4.4 2 2 0 0 1 5.41 2.25h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L9.91 9.96a16 16 0 0 0 6.13 6.13l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
-                </svg>
+                <svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07C9.36 17.29 7.52 15.39 6.5 13.08A19.79 19.79 0 0 1 3.42 4.4 2 2 0 0 1 5.41 2.25h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L9.91 9.96a16 16 0 0 0 6.13 6.13l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
             </div>
             <span class="ic-btn-label">Answer</span>
         </button>
     </div>
 </div>
 
-<script>
-document.addEventListener("DOMContentLoaded", function(){
-    const RID = "{{ rid }}";
+<!-- SocketIO CDN -->
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 
+<script>
+const RID = "{{ rid }}";
+
+/* ══════════════════════════════════════
+   ORDERS POLLING + BUTTONS
+══════════════════════════════════════ */
+document.addEventListener("DOMContentLoaded", function(){
     document.getElementById("notifyHeader").addEventListener("click", function(){
         let box = document.getElementById("notifyList");
         box.style.display = box.style.display === "block" ? "none" : "block";
@@ -309,22 +264,17 @@ document.addEventListener("DOMContentLoaded", function(){
 
 /* ════════════════════════════════════════
    80s SYNTH RINGTONE — KITCHEN SIDE
-   Layered sawtooth + square + sub bass
-   Classic "dring-dring" phone pattern
 ════════════════════════════════════════ */
 let _ringNodes = null;
 
 function start80sRing(){
     stop80sRing();
-
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
-
     const masterGain = ctx.createGain();
     masterGain.gain.value = 0;
     masterGain.connect(ctx.destination);
     masterGain.gain.linearRampToValueAtTime(0.4, ctx.currentTime + 0.05);
 
-    // ── Delay/echo for depth ──
     const echo = ctx.createDelay(0.5);
     echo.delayTime.value = 0.20;
     const echoGain = ctx.createGain();
@@ -332,95 +282,54 @@ function start80sRing(){
     echo.connect(echoGain);
     echoGain.connect(masterGain);
 
-    // ── Main osc: sawtooth (very 80s synth) ──
-    const osc1 = ctx.createOscillator();
-    osc1.type = 'sawtooth';
-    const env1 = ctx.createGain();
-    env1.gain.value = 0;
-    osc1.connect(env1);
-    env1.connect(masterGain);
-    env1.connect(echo);
+    const osc1 = ctx.createOscillator(); osc1.type = 'sawtooth';
+    const env1 = ctx.createGain(); env1.gain.value = 0;
+    osc1.connect(env1); env1.connect(masterGain); env1.connect(echo);
 
-    // ── Second osc: square, slight detune ──
-    const osc2 = ctx.createOscillator();
-    osc2.type = 'square';
-    const env2 = ctx.createGain();
-    env2.gain.value = 0;
-    osc2.connect(env2);
-    env2.connect(masterGain);
+    const osc2 = ctx.createOscillator(); osc2.type = 'square';
+    const env2 = ctx.createGain(); env2.gain.value = 0;
+    osc2.connect(env2); env2.connect(masterGain);
 
-    // ── Sub bass ──
-    const sub = ctx.createOscillator();
-    sub.type = 'sine';
-    const envSub = ctx.createGain();
-    envSub.gain.value = 0;
-    sub.connect(envSub);
-    envSub.connect(masterGain);
+    const sub = ctx.createOscillator(); sub.type = 'sine';
+    const envSub = ctx.createGain(); envSub.gain.value = 0;
+    sub.connect(envSub); envSub.connect(masterGain);
 
     osc1.start(); osc2.start(); sub.start();
 
-    // ── Classic phone "dring dring" melody ──
-    // Two quick bursts of 4 notes, then silence, repeat
-    const NOTES = [659, 784, 659, 784]; // E5, G5, E5, G5
-    const NOTE_DUR   = 0.16;
-    const NOTE_GAP   = 0.04;
-    const BURST_GAP  = 0.20;
-    const CYCLE_REST = 1.10;
+    const NOTES = [659, 784, 659, 784];
+    const NOTE_DUR = 0.16, NOTE_GAP = 0.04, BURST_GAP = 0.20, CYCLE_REST = 1.10;
 
     function scheduleRing(t){
-        // First burst
         for(let i = 0; i < 4; i++){
-            let nt = t + i * (NOTE_DUR + NOTE_GAP);
-            let freq = NOTES[i];
+            let nt = t + i * (NOTE_DUR + NOTE_GAP), freq = NOTES[i];
             osc1.frequency.setValueAtTime(freq, nt);
             osc2.frequency.setValueAtTime(freq * 1.006, nt);
             sub.frequency.setValueAtTime(freq / 2, nt);
-            // attack
-            env1.gain.setValueAtTime(0, nt);
-            env1.gain.linearRampToValueAtTime(0.5, nt + 0.015);
-            env2.gain.setValueAtTime(0, nt);
-            env2.gain.linearRampToValueAtTime(0.22, nt + 0.015);
-            envSub.gain.setValueAtTime(0, nt);
-            envSub.gain.linearRampToValueAtTime(0.18, nt + 0.015);
-            // release
-            env1.gain.setValueAtTime(0.5, nt + NOTE_DUR - 0.02);
-            env1.gain.linearRampToValueAtTime(0, nt + NOTE_DUR);
-            env2.gain.setValueAtTime(0.22, nt + NOTE_DUR - 0.02);
-            env2.gain.linearRampToValueAtTime(0, nt + NOTE_DUR);
-            envSub.gain.setValueAtTime(0.18, nt + NOTE_DUR - 0.02);
-            envSub.gain.linearRampToValueAtTime(0, nt + NOTE_DUR);
+            env1.gain.setValueAtTime(0, nt); env1.gain.linearRampToValueAtTime(0.5, nt + 0.015);
+            env2.gain.setValueAtTime(0, nt); env2.gain.linearRampToValueAtTime(0.22, nt + 0.015);
+            envSub.gain.setValueAtTime(0, nt); envSub.gain.linearRampToValueAtTime(0.18, nt + 0.015);
+            env1.gain.setValueAtTime(0.5, nt + NOTE_DUR - 0.02); env1.gain.linearRampToValueAtTime(0, nt + NOTE_DUR);
+            env2.gain.setValueAtTime(0.22, nt + NOTE_DUR - 0.02); env2.gain.linearRampToValueAtTime(0, nt + NOTE_DUR);
+            envSub.gain.setValueAtTime(0.18, nt + NOTE_DUR - 0.02); envSub.gain.linearRampToValueAtTime(0, nt + NOTE_DUR);
         }
         let burstEnd = t + 4 * (NOTE_DUR + NOTE_GAP) + BURST_GAP;
-
-        // Second burst (same pattern)
         for(let i = 0; i < 4; i++){
-            let nt = burstEnd + i * (NOTE_DUR + NOTE_GAP);
-            let freq = NOTES[i];
+            let nt = burstEnd + i * (NOTE_DUR + NOTE_GAP), freq = NOTES[i];
             osc1.frequency.setValueAtTime(freq, nt);
             osc2.frequency.setValueAtTime(freq * 1.006, nt);
             sub.frequency.setValueAtTime(freq / 2, nt);
-            env1.gain.setValueAtTime(0, nt);
-            env1.gain.linearRampToValueAtTime(0.5, nt + 0.015);
-            env2.gain.setValueAtTime(0, nt);
-            env2.gain.linearRampToValueAtTime(0.22, nt + 0.015);
-            envSub.gain.setValueAtTime(0, nt);
-            envSub.gain.linearRampToValueAtTime(0.18, nt + 0.015);
-            env1.gain.setValueAtTime(0.5, nt + NOTE_DUR - 0.02);
-            env1.gain.linearRampToValueAtTime(0, nt + NOTE_DUR);
-            env2.gain.setValueAtTime(0.22, nt + NOTE_DUR - 0.02);
-            env2.gain.linearRampToValueAtTime(0, nt + NOTE_DUR);
-            envSub.gain.setValueAtTime(0.18, nt + NOTE_DUR - 0.02);
-            envSub.gain.linearRampToValueAtTime(0, nt + NOTE_DUR);
+            env1.gain.setValueAtTime(0, nt); env1.gain.linearRampToValueAtTime(0.5, nt + 0.015);
+            env2.gain.setValueAtTime(0, nt); env2.gain.linearRampToValueAtTime(0.22, nt + 0.015);
+            envSub.gain.setValueAtTime(0, nt); envSub.gain.linearRampToValueAtTime(0.18, nt + 0.015);
+            env1.gain.setValueAtTime(0.5, nt + NOTE_DUR - 0.02); env1.gain.linearRampToValueAtTime(0, nt + NOTE_DUR);
+            env2.gain.setValueAtTime(0.22, nt + NOTE_DUR - 0.02); env2.gain.linearRampToValueAtTime(0, nt + NOTE_DUR);
+            envSub.gain.setValueAtTime(0.18, nt + NOTE_DUR - 0.02); envSub.gain.linearRampToValueAtTime(0, nt + NOTE_DUR);
         }
         return burstEnd + 4 * (NOTE_DUR + NOTE_GAP) + CYCLE_REST;
     }
 
-    // Schedule 12 cycles (~30 seconds of ringing)
     let t = ctx.currentTime + 0.05;
-    for(let c = 0; c < 12; c++){
-        t = scheduleRing(t);
-    }
-
+    for(let c = 0; c < 12; c++) t = scheduleRing(t);
     _ringNodes = { ctx, masterGain, osc1, osc2, sub };
 }
 
@@ -431,25 +340,59 @@ function stop80sRing(){
         _ringNodes.masterGain.gain.setValueAtTime(_ringNodes.masterGain.gain.value, _ringNodes.ctx.currentTime);
         _ringNodes.masterGain.gain.linearRampToValueAtTime(0, _ringNodes.ctx.currentTime + 0.08);
         const nodes = _ringNodes;
-        setTimeout(() => {
-            try { nodes.osc1.stop(); nodes.osc2.stop(); nodes.sub.stop(); nodes.ctx.close(); } catch(e){}
-        }, 120);
+        setTimeout(() => { try { nodes.osc1.stop(); nodes.osc2.stop(); nodes.sub.stop(); nodes.ctx.close(); } catch(e){} }, 120);
     } catch(e){}
     _ringNodes = null;
 }
 
 /* ════════════════════════════════════════
-   WEBRTC — KITCHEN SIDE
+   WEBRTC — KITCHEN SIDE (via SocketIO)
 ════════════════════════════════════════ */
-let kitchenPeer    = null;
-let kitchenStream  = null;
-let kitchenSig     = null;
-let incomingTable  = "";
-let incomingOffer  = null;
-let callTimerInt   = null;
-let callSecs       = 0;
+let kitchenPeer   = null;
+let kitchenStream = null;
+let incomingTable = "";
+let incomingOffer = null;
+let callTimerInt  = null;
+let callSecs      = 0;
 
-const RID = "{{ rid }}";
+// SocketIO connection
+const sio = io();
+
+sio.on("connect", () => {
+    sio.emit("kitchen_join", { rid: RID });
+    console.log("Kitchen connected to SocketIO ✅");
+});
+
+// Incoming offer from customer
+sio.on("webrtc_offer", async (data) => {
+    incomingTable = data.table || "?";
+    incomingOffer = data.sdp;
+
+    document.getElementById("icName").innerText = "Table " + incomingTable;
+    document.getElementById("icSub").innerText  = "Customer is calling...";
+
+    let msgEl = document.getElementById("icMessage");
+    if(data.message && data.message.trim()){
+        msgEl.innerText = "💬 " + data.message;
+        msgEl.classList.add("visible");
+    } else {
+        msgEl.textContent = "";
+        msgEl.classList.remove("visible");
+    }
+
+    document.getElementById("incomingCallPopup").style.display = "block";
+    start80sRing();
+});
+
+// ICE from customer
+sio.on("webrtc_ice_customer", async (data) => {
+    if(kitchenPeer && data.candidate){
+        try { await kitchenPeer.addIceCandidate(new RTCIceCandidate(data.candidate)); } catch(e){}
+    }
+});
+
+// Call ended by customer
+sio.on("webrtc_end", () => { kitchenEndCall(); });
 
 function startCallTimer(){
     callSecs = 0;
@@ -465,46 +408,6 @@ function startCallTimer(){
 function stopCallTimer(){
     clearInterval(callTimerInt);
     document.getElementById("activeCallTimer").innerText = "";
-}
-
-function connectKitchenSignalling(){
-    const proto = location.protocol === "https:" ? "wss" : "ws";
-    kitchenSig = new WebSocket(`${proto}://${location.host}/ws/kitchen/${RID}`);
-
-    kitchenSig.onmessage = async (msg) => {
-        let data = JSON.parse(msg.data);
-
-        if(data.type === "offer"){
-            incomingTable = data.table || "?";
-            incomingOffer = data.sdp;
-
-            document.getElementById("icName").innerText = "Table " + incomingTable;
-            document.getElementById("icSub").innerText  = "Customer is calling...";
-
-            // Show message bubble if customer sent a note
-            let msgEl = document.getElementById("icMessage");
-            if(data.message && data.message.trim()){
-                msgEl.innerText = "💬 " + data.message;
-                msgEl.classList.add("visible");
-            } else {
-                msgEl.textContent = "";
-                msgEl.classList.remove("visible");
-            }
-
-            document.getElementById("incomingCallPopup").style.display = "block";
-            start80sRing();
-        }
-
-        if(data.type === "ice" && kitchenPeer){
-            try { await kitchenPeer.addIceCandidate(new RTCIceCandidate(data.candidate)); } catch(e){}
-        }
-
-        if(data.type === "end"){
-            kitchenEndCall();
-        }
-    };
-
-    kitchenSig.onclose = () => setTimeout(connectKitchenSignalling, 3000);
 }
 
 async function acceptCall(){
@@ -528,15 +431,15 @@ async function acceptCall(){
     };
 
     kitchenPeer.onicecandidate = (e) => {
-        if(e.candidate && kitchenSig.readyState === WebSocket.OPEN){
-            kitchenSig.send(JSON.stringify({ type:"ice", candidate:e.candidate, table: incomingTable }));
+        if(e.candidate){
+            sio.emit("webrtc_ice_kitchen", { rid: RID, table: incomingTable, candidate: e.candidate });
         }
     };
 
     await kitchenPeer.setRemoteDescription(new RTCSessionDescription(incomingOffer));
     const answer = await kitchenPeer.createAnswer();
     await kitchenPeer.setLocalDescription(answer);
-    kitchenSig.send(JSON.stringify({ type:"answer", sdp: answer, table: incomingTable }));
+    sio.emit("webrtc_answer", { rid: RID, table: incomingTable, sdp: answer });
 
     document.getElementById("activeCallLabel").innerText = "📞 On call with Table " + incomingTable;
     document.getElementById("activeCallBar").classList.add("show");
@@ -546,9 +449,7 @@ async function acceptCall(){
 function declineCall(){
     stop80sRing();
     document.getElementById("incomingCallPopup").style.display = "none";
-    if(kitchenSig && kitchenSig.readyState === WebSocket.OPEN){
-        kitchenSig.send(JSON.stringify({ type:"end", table: incomingTable }));
-    }
+    sio.emit("webrtc_end_kitchen", { rid: RID, table: incomingTable });
 }
 
 function kitchenEndCall(){
@@ -558,12 +459,8 @@ function kitchenEndCall(){
     document.getElementById("activeCallBar").classList.remove("show");
     if(kitchenPeer){ kitchenPeer.close(); kitchenPeer = null; }
     if(kitchenStream){ kitchenStream.getTracks().forEach(t=>t.stop()); kitchenStream = null; }
-    if(kitchenSig && kitchenSig.readyState === WebSocket.OPEN){
-        kitchenSig.send(JSON.stringify({ type:"end", table: incomingTable }));
-    }
+    sio.emit("webrtc_end_kitchen", { rid: RID, table: incomingTable });
 }
-
-connectKitchenSignalling();
 </script>
 </body>
 </html>

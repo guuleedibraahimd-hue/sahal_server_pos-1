@@ -4525,137 +4525,78 @@ def approve_order(collection, doc_id):
 
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
-
-# ═══════════════════════════════════════════════════════════════
-#  WebSocket Signalling Routes — WebRTC Call (Customer ↔ Kitchen)
-#  
-#  INSTALL: pip install flask-sock
-#  
-#  APP INIT (add near top of app.py, after app = Flask(__name__)):
-#      from flask_sock import Sock
-#      sock = Sock(app)
+    
+# ══════════════════════════════════════════════════════
+# XALKA: Flask-SocketIO ku bedel flask-sock
+# WebRTC signalling via SocketIO rooms
+# ══════════════════════════════════════════════════════
+# 
+# 1. TIR app.py ka:
+#    - sock = Sock(app)
+#    - _customer_sockets / _kitchen_sockets / _lock
+#    - @sock.route('/ws/call/...') function
+#    - @sock.route('/ws/kitchen/...') function
 #
-#  Then paste the code below into app.py
-# ═══════════════════════════════════════════════════════════════
+# 2. KU DAR app.py ka (socketio events section):
+# ══════════════════════════════════════════════════════
 
-from flask_sock import Sock
-import json
-import threading
+# ── KITCHEN joins its room on page load ──
+@socketio.on("kitchen_join")
+def kitchen_join(data):
+    rid  = data.get("rid", "")
+    room = f"kitchen_{rid}"
+    join_room(room)
+    emit("kitchen_ready", {"room": room})
 
-sock = Sock(app)   # <-- haddaad horey u sameysay sock = Sock(app) meel kale, line-kan tuur
+# ── CUSTOMER joins its room ──
+@socketio.on("customer_join")
+def customer_join(data):
+    rid   = data.get("rid", "")
+    table = data.get("table", "")
+    room  = f"customer_{rid}_{table}"
+    join_room(room)
+    emit("customer_ready", {"room": room})
 
-# ── In-memory registry: active WebSocket connections ──────────
-# { rid: { table: ws_customer_conn } }
-_customer_sockets = {}
+# ── Customer → Kitchen: offer ──
+@socketio.on("webrtc_offer")
+def webrtc_offer(data):
+    rid   = data.get("rid", "")
+    table = data.get("table", "")
+    data["table"] = table
+    emit("webrtc_offer", data, to=f"kitchen_{rid}")
 
-# { rid: set of kitchen ws connections }
-_kitchen_sockets  = {}
+# ── Customer → Kitchen: ICE ──
+@socketio.on("webrtc_ice_customer")
+def webrtc_ice_customer(data):
+    rid = data.get("rid", "")
+    emit("webrtc_ice_customer", data, to=f"kitchen_{rid}")
 
-_lock = threading.Lock()
+# ── Customer → Kitchen: end ──
+@socketio.on("webrtc_end_customer")
+def webrtc_end_customer(data):
+    rid = data.get("rid", "")
+    emit("webrtc_end", data, to=f"kitchen_{rid}")
 
+# ── Kitchen → Customer: answer ──
+@socketio.on("webrtc_answer")
+def webrtc_answer(data):
+    rid   = data.get("rid", "")
+    table = data.get("table", "")
+    emit("webrtc_answer", data, to=f"customer_{rid}_{table}")
 
-# ══════════════════════════════════════════════════════════════
-#  WebRTC WebSocket Signalling — KU DAR APP.PY
-#  (haddaan horey u jirin)
-# ══════════════════════════════════════════════════════════════
-#
-#  TOP of app.py (imports section) ku dar:
-#
-#  from flask_sock import Sock
-#  import json
-#  import threading
-#
-#  sock = Sock(app)
-#
-#  _customer_sockets = {}   # { rid: { table: ws } }
-#  _kitchen_sockets  = {}   # { rid: set of ws }
-#  _lock = threading.Lock()
-#
-# ══════════════════════════════════════════════════════════════
+# ── Kitchen → Customer: ICE ──
+@socketio.on("webrtc_ice_kitchen")
+def webrtc_ice_kitchen(data):
+    rid   = data.get("rid", "")
+    table = data.get("table", "")
+    emit("webrtc_ice_kitchen", data, to=f"customer_{rid}_{table}")
 
-
-# ══════════════════════════════════════════════════════════════
-#  Customer WebSocket  →  /ws/call/<rid>/<table>
-# ══════════════════════════════════════════════════════════════
-@sock.route('/ws/call/<rid>/<table>')
-def ws_call_customer(ws, rid, table):
-    with _lock:
-        if rid not in _customer_sockets:
-            _customer_sockets[rid] = {}
-        _customer_sockets[rid][table] = ws
-
-    try:
-        while True:
-            raw = ws.receive()
-            if raw is None:
-                break
-
-            try:
-                data     = json.loads(raw)
-                msg_type = data.get("type")
-                data["table"] = table
-                payload  = json.dumps(data)
-            except Exception:
-                continue
-
-            # Forward ALL messages to kitchen
-            with _lock:
-                dead = set()
-                for kws in _kitchen_sockets.get(rid, set()):
-                    try:
-                        kws.send(payload)
-                    except Exception:
-                        dead.add(kws)
-                for d in dead:
-                    _kitchen_sockets.get(rid, set()).discard(d)
-
-    except Exception:
-        pass
-    finally:
-        with _lock:
-            if rid in _customer_sockets:
-                _customer_sockets[rid].pop(table, None)
-
-
-# ══════════════════════════════════════════════════════════════
-#  Kitchen WebSocket  →  /ws/kitchen/<rid>
-# ══════════════════════════════════════════════════════════════
-@sock.route('/ws/kitchen/<rid>')
-def ws_call_kitchen(ws, rid):
-    with _lock:
-        if rid not in _kitchen_sockets:
-            _kitchen_sockets[rid] = set()
-        _kitchen_sockets[rid].add(ws)
-
-    try:
-        while True:
-            raw = ws.receive()
-            if raw is None:
-                break
-
-            try:
-                data  = json.loads(raw)
-                table = data.get("table", "")
-                payload = json.dumps(data)
-            except Exception:
-                continue
-
-            # Forward answer/ICE/end → specific customer
-            with _lock:
-                cws = _customer_sockets.get(rid, {}).get(table)
-
-            if cws:
-                try:
-                    cws.send(payload)
-                except Exception:
-                    pass
-
-    except Exception:
-        pass
-    finally:
-        with _lock:
-            if rid in _kitchen_sockets:
-                _kitchen_sockets[rid].discard(ws)
+# ── Kitchen → Customer: end ──
+@socketio.on("webrtc_end_kitchen")
+def webrtc_end_kitchen(data):
+    rid   = data.get("rid", "")
+    table = data.get("table", "")
+    emit("webrtc_end", data, to=f"customer_{rid}_{table}")
 
 # ==========================================
 # 💊 PHARMACY ROUTES — FINAL VERSION
