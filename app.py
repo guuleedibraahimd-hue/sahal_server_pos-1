@@ -5212,6 +5212,58 @@ def delete_debt(debt_id):
         return jsonify({"success": True})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
+    
+@app.route("/admin/register_pharmacy", methods=["POST"])
+def admin_register_pharmacy():
+    try:
+        if not session.get("admin_ok"):
+            return jsonify({"success": False, "error": "Unauthorized"}), 401
+
+        data          = request.get_json()
+        pharmacy_name = data.get("pharmacy_name", "").strip()
+        phone         = data.get("phone", "").strip()
+        monthly_fee   = float(data.get("monthly_fee", 0))
+        months        = int(data.get("months", 3))
+        username      = data.get("username", "").strip()
+        password      = data.get("password", "").strip()
+
+        if not pharmacy_name or not phone or not username or not password:
+            return jsonify({"success": False, "error": "Fill all required fields"})
+
+        expiry_date = (datetime.now() + timedelta(days=months * 30)).strftime("%Y-%m-%d")
+        total_fee   = round(monthly_fee * months, 2)
+
+        doc_ref = db.collection("pharmacies").add({
+            "pharmacy_name": pharmacy_name,
+            "phone":         phone,
+            "username":      username,
+            "password":      password,
+            "monthly_fee":   monthly_fee,
+            "months":        months,
+            "total_fee":     total_fee,
+            "created_at":    datetime.now().isoformat(),
+            "expiry_date":   expiry_date,
+            "active":        True
+        })
+
+        db.collection("pharmacy_users").document(username).set({
+            "username":      username,
+            "password":      password,
+            "pharmacy_name": pharmacy_name,
+            "phone":         phone,
+            "pharmacy_id":   doc_ref[1].id,
+            "created_at":    datetime.now().isoformat()
+        })
+
+        return jsonify({
+            "success":     True,
+            "message":     f"Pharmacy registered",
+            "expiry_date": expiry_date,
+            "total_fee":   total_fee
+        })
+
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
 
 import os
 
