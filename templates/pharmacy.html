@@ -166,7 +166,10 @@ tr:hover td{ background:#161b22; }
 <div class="header">
     <div class="header-left">
         <span style="font-size:28px;">💊</span>
-        <h1>Pharmacy Management</h1>
+        <div>
+            <h1>{{ session.get('pharmacy_name', 'Pharmacy Management') }}</h1>
+            <div style="font-size:11px;color:#8b949e;margin-top:2px;">💊 Pharmacy Management System</div>
+        </div>
     </div>
     <div class="header-right">
         <div class="alert-badge" onclick="switchTab('alerts')" id="alertBadge">🔔 Loading...</div>
