@@ -5653,62 +5653,6 @@ def init_pharmacy_tables(conn, c):
     """)
     conn.commit()
 
-
-# ==========================================
-# 🔐 PHARMACY LOGIN — SAX AH
-# KU BEDEL app.py GUDIHIISA
-# ==========================================
-@app.route("/pharmacy_login", methods=["GET", "POST"])
-def pharmacy_login():
-    if request.method == "POST":
-        username = request.form.get("username", "").strip()
-        password = request.form.get("password", "").strip()
-
-        # ================================
-        # STEP 1: FIRESTORE KA HUBI
-        # ================================
-        try:
-            doc = db.collection("pharmacy_users").document(username).get()
-            if doc.exists:
-                data = doc.to_dict()
-                if data.get("password") == password:
-                    session["pharmacy_ok"]   = True
-                    session["pharmacy_user"] = username
-                    return redirect("/pharmacy")
-        except Exception as e:
-            print("Firestore pharmacy login error:", e)
-
-        # ================================
-        # STEP 2: SQLITE KA HUBI
-        # ================================
-        try:
-            conn = sqlite3.connect(DB_PATH)
-            c    = conn.cursor()
-            init_pharmacy_tables(conn, c)
-            c.execute(
-                "SELECT * FROM pharmacy_users WHERE username=? AND password=?",
-                (username, password)
-            )
-            user = c.fetchone()
-            conn.close()
-            if user:
-                session["pharmacy_ok"]   = True
-                session["pharmacy_user"] = username
-                return redirect("/pharmacy")
-        except Exception as e:
-            print("SQLite pharmacy login error:", e)
-
-        # ================================
-        # LABADABA WAXBA LAMA HELIN
-        # ================================
-        return render_template(
-            "pharmacy_login.html",
-            error="Wrong username or password ❌"
-        )
-
-    return render_template("pharmacy_login.html")
-
-
 # ==========================================
 # 🚪 PHARMACY LOGOUT
 # ==========================================
