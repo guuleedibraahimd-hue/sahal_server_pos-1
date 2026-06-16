@@ -4555,13 +4555,30 @@ _lock = threading.Lock()
 
 
 # ══════════════════════════════════════════════════════════════
+#  WebRTC WebSocket Signalling — KU DAR APP.PY
+#  (haddaan horey u jirin)
+# ══════════════════════════════════════════════════════════════
+#
+#  TOP of app.py (imports section) ku dar:
+#
+#  from flask_sock import Sock
+#  import json
+#  import threading
+#
+#  sock = Sock(app)
+#
+#  _customer_sockets = {}   # { rid: { table: ws } }
+#  _kitchen_sockets  = {}   # { rid: set of ws }
+#  _lock = threading.Lock()
+#
+# ══════════════════════════════════════════════════════════════
+
+
+# ══════════════════════════════════════════════════════════════
 #  Customer WebSocket  →  /ws/call/<rid>/<table>
-#  Customer side ku xidaa halkan; offer/ICE diraa, answer helaa
 # ══════════════════════════════════════════════════════════════
 @sock.route('/ws/call/<rid>/<table>')
 def ws_call_customer(ws, rid, table):
-    """Customer browser ku xidaa — WebRTC offer diraa kitchen-ka."""
-
     with _lock:
         if rid not in _customer_sockets:
             _customer_sockets[rid] = {}
@@ -4569,62 +4586,76 @@ def ws_call_customer(ws, rid, table):
 
     try:
         while True:
-            raw = ws.receive()          # block until message
+            raw = ws.receive()
             if raw is None:
                 break
 
-            data = json.loads(raw)
-            msg_type = data.get("type")
-
-            # ── Forward offer → all kitchen connections for this rid
-            if msg_type == "offer":
-                data["table"] = table   # kitchen-ka yaqaan table number
-                payload = json.dumps(data)
-                with _lock:
-                    dead = set()
-                    for kws in _kitchen_sockets.get(rid, set()):
-                        try:
-                            kws.send(payload)
-                        except Exception:
-                            dead.add(kws)
-                    for d in dead:
-                        _kitchen_sockets.get(rid, set()).discard(d)
-
-            # ── Forward ICE candidate → kitchen
-            elif msg_type == "ice":
+            try:
+                data     = json.loads(raw)
+                msg_type = data.get("type")
                 data["table"] = table
-                payload = json.dumps(data)
-                with _lock:
-                    dead = set()
-                    for kws in _kitchen_sockets.get(rid, set()):
-                        try:
-                            kws.send(payload)
-                        except Exception:
-                            dead.add(kws)
-                    for d in dead:
-                        _kitchen_sockets.get(rid, set()).discard(d)
+                payload  = json.dumps(data)
+            except Exception:
+                continue
 
-            # ── End call → notify kitchen
-            elif msg_type == "end":
-                data["table"] = table
-                payload = json.dumps(data)
-                with _lock:
-                    dead = set()
-                    for kws in _kitchen_sockets.get(rid, set()):
-                        try:
-                            kws.send(payload)
-                        except Exception:
-                            dead.add(kws)
-                    for d in dead:
-                        _kitchen_sockets.get(rid, set()).discard(d)
+            # Forward ALL messages to kitchen
+            with _lock:
+                dead = set()
+                for kws in _kitchen_sockets.get(rid, set()):
+                    try:
+                        kws.send(payload)
+                    except Exception:
+                        dead.add(kws)
+                for d in dead:
+                    _kitchen_sockets.get(rid, set()).discard(d)
 
     except Exception:
         pass
-
     finally:
         with _lock:
             if rid in _customer_sockets:
                 _customer_sockets[rid].pop(table, None)
+
+
+# ══════════════════════════════════════════════════════════════
+#  Kitchen WebSocket  →  /ws/kitchen/<rid>
+# ══════════════════════════════════════════════════════════════
+@sock.route('/ws/kitchen/<rid>')
+def ws_call_kitchen(ws, rid):
+    with _lock:
+        if rid not in _kitchen_sockets:
+            _kitchen_sockets[rid] = set()
+        _kitchen_sockets[rid].add(ws)
+
+    try:
+        while True:
+            raw = ws.receive()
+            if raw is None:
+                break
+
+            try:
+                data  = json.loads(raw)
+                table = data.get("table", "")
+                payload = json.dumps(data)
+            except Exception:
+                continue
+
+            # Forward answer/ICE/end → specific customer
+            with _lock:
+                cws = _customer_sockets.get(rid, {}).get(table)
+
+            if cws:
+                try:
+                    cws.send(payload)
+                except Exception:
+                    pass
+
+    except Exception:
+        pass
+    finally:
+        with _lock:
+            if rid in _kitchen_sockets:
+                _kitchen_sockets[rid].discard(ws)
 
 # ==========================================
 # 💊 PHARMACY ROUTES — FINAL VERSION
