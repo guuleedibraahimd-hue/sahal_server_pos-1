@@ -4599,18 +4599,16 @@ def webrtc_end_kitchen(data):
 
 # ==========================================
 # 💊 PHARMACY ROUTES — FINAL VERSION
-# KAN KU BEDEL APP.PY GUDIHIISA
-# DHAMAAN PHARMACY CODE-KA HORE
 # ==========================================
 # Medicines  → Firestore (permanent)
 # Sales      → SQLite
 # Debts      → SQLite
+# Images     → static/uploads/ (same as restaurant)
 # ==========================================
 
 import os
 from werkzeug.utils import secure_filename
 
-# SAX
 PHARMACY_IMG_FOLDER = "static/uploads"
 os.makedirs(PHARMACY_IMG_FOLDER, exist_ok=True)
 
@@ -4619,37 +4617,27 @@ os.makedirs(PHARMACY_IMG_FOLDER, exist_ok=True)
 # GET PHARMACY FIRESTORE REF
 # ==========================================
 def get_pharmacy_ref():
-    """Always returns correct Firestore ref for current pharmacy medicines"""
     pharmacy_id = session.get("pharmacy_id")
     username    = session.get("pharmacy_user", "")
-
     try:
-        # Step 1: Verify stored pharmacy_id is valid
         if pharmacy_id:
             doc = db.collection("pharmacies").document(pharmacy_id).get()
             if not doc.exists:
-                pharmacy_id = None  # stored ID is wrong, reset
-
-        # Step 2: Search pharmacies by username
+                pharmacy_id = None
         if not pharmacy_id:
             for doc in db.collection("pharmacies").where("username", "==", username).stream():
                 pharmacy_id = doc.id
                 session["pharmacy_id"] = pharmacy_id
                 break
-
-        # Step 3: pharmacy_users collection fallback
         if not pharmacy_id:
             pu = db.collection("pharmacy_users").document(username).get()
             if pu.exists:
                 pharmacy_id = pu.to_dict().get("pharmacy_id", "")
                 session["pharmacy_id"] = pharmacy_id
-
     except Exception as e:
         print("get_pharmacy_ref error:", e)
-
     if not pharmacy_id:
         pharmacy_id = username
-
     session["pharmacy_id"] = pharmacy_id
     return db.collection("pharmacies").document(pharmacy_id).collection("medicines")
 
@@ -4705,8 +4693,6 @@ def pharmacy_login():
     if request.method == "POST":
         username = request.form.get("username", "").strip()
         password = request.form.get("password", "").strip()
-
-        # STEP 1: pharmacies collection (subscription + expiry check)
         try:
             today = datetime.now().strftime("%Y-%m-%d")
             for doc in db.collection("pharmacies").where("username", "==", username).stream():
@@ -4714,11 +4700,9 @@ def pharmacy_login():
                 if ph.get("password") == password:
                     expiry = ph.get("expiry_date", "")
                     if expiry and expiry < today:
-                        return render_template("pharmacy_login.html",
-                            error="Subscription expired - Please renew with admin.")
+                        return render_template("pharmacy_login.html", error="Subscription expired - Please renew with admin.")
                     if not ph.get("active", True):
-                        return render_template("pharmacy_login.html",
-                            error="Account disabled - Contact admin.")
+                        return render_template("pharmacy_login.html", error="Account disabled - Contact admin.")
                     session["pharmacy_ok"]     = True
                     session["pharmacy_user"]   = username
                     session["pharmacy_name"]   = ph.get("pharmacy_name", username)
@@ -4727,8 +4711,6 @@ def pharmacy_login():
                     return redirect("/pharmacy")
         except Exception as e:
             print("Pharmacy login pharmacies error:", e)
-
-        # STEP 2: pharmacy_users collection
         try:
             pu_doc = db.collection("pharmacy_users").document(username).get()
             if pu_doc.exists:
@@ -4741,16 +4723,13 @@ def pharmacy_login():
                     return redirect("/pharmacy")
         except Exception as e:
             print("Pharmacy login pharmacy_users error:", e)
-
-        # STEP 3: SQLite
         try:
             conn = sqlite3.connect(DB_PATH)
             c    = conn.cursor()
             c.execute("""CREATE TABLE IF NOT EXISTS pharmacy_users (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 username TEXT UNIQUE, password TEXT, role TEXT DEFAULT 'pharmacist')""")
-            c.execute("SELECT * FROM pharmacy_users WHERE username=? AND password=?",
-                      (username, password))
+            c.execute("SELECT * FROM pharmacy_users WHERE username=? AND password=?", (username, password))
             user = c.fetchone()
             conn.close()
             if user:
@@ -4761,9 +4740,7 @@ def pharmacy_login():
                 return redirect("/pharmacy")
         except Exception as e:
             print("Pharmacy login SQLite error:", e)
-
-        return render_template("pharmacy_login.html",
-                               error="Wrong username or password")
+        return render_template("pharmacy_login.html", error="Wrong username or password")
     return render_template("pharmacy_login.html")
 
 
@@ -4804,17 +4781,14 @@ def pharmacy():
                 m.get("created_at", ""),
                 m.get("image", "")
             ))
-
         today      = datetime.now().strftime("%Y-%m-%d")
         alert_date = (datetime.now() + timedelta(days=90)).strftime("%Y-%m-%d")
         pid        = session.get("pharmacy_id", "")
-
         conn = sqlite3.connect(DB_PATH)
         c    = conn.cursor()
         init_pharmacy_sql(conn, c)
         c.execute("""SELECT COUNT(*), SUM(quantity_sold), SUM(profit)
-                     FROM pharmacy_sales
-                     WHERE pharmacy_id=? AND date(sale_date)=?""", (pid, today))
+                     FROM pharmacy_sales WHERE pharmacy_id=? AND date(sale_date)=?""", (pid, today))
         row          = c.fetchone()
         today_sales  = row[0] or 0
         today_qty    = row[1] or 0
@@ -4824,24 +4798,15 @@ def pharmacy():
                      GROUP BY medicine_name ORDER BY total DESC LIMIT 5""", (pid, today))
         top_selling = c.fetchall()
         conn.close()
-
         expired       = [m for m in medicines if m[6] and m[6] < today]
         expiry_alerts = [m for m in medicines if m[6] and today <= m[6] <= alert_date]
-        low_stock     = [m for m in medicines if int(m[5]) <= 10]
-
+        low_stock     = [m for m in medicines if int(m[5]) <= 3]
         return render_template(
             "pharmacy.html",
-            medicines     = medicines,
-            today_sales   = today_sales,
-            today_qty     = today_qty,
-            today_profit  = today_profit,
-            expiry_alerts = expiry_alerts,
-            expired       = expired,
-            low_stock     = low_stock,
-            top_selling   = top_selling,
-            today         = today,
-            now_date      = today,
-            expiry_warn   = alert_date
+            medicines=medicines, today_sales=today_sales, today_qty=today_qty,
+            today_profit=today_profit, expiry_alerts=expiry_alerts, expired=expired,
+            low_stock=low_stock, top_selling=top_selling, today=today,
+            now_date=today, expiry_warn=alert_date
         )
     except Exception as e:
         return f"Pharmacy Error: {str(e)}"
@@ -4862,31 +4827,22 @@ def add_medicine():
         stock_qty     = int(request.form.get("stock_quantity", 0))
         expiry_date   = request.form.get("expiry_date", "").strip()
         category      = request.form.get("category", "General").strip()
-
         if not name:
             return jsonify({"success": False, "error": "Medicine name required"})
-
         image_filename = ""
         image_file     = request.files.get("image")
         if image_file and image_file.filename:
             ext       = os.path.splitext(image_file.filename)[1].lower()
-            safe_name = secure_filename(
-                f"{name.replace(' ','_')}_{int(datetime.now().timestamp())}{ext}"
-            )
+            safe_name = secure_filename(f"{name.replace(' ','_')}_{int(datetime.now().timestamp())}{ext}")
             image_file.save(os.path.join(PHARMACY_IMG_FOLDER, safe_name))
             image_filename = safe_name
-
         ref = get_pharmacy_ref()
         ref.add({
-            "name":           name,
-            "barcode":        barcode or "",
-            "cost_price":     cost_price,
-            "selling_price":  selling_price,
-            "stock_quantity": stock_qty,
-            "expiry_date":    expiry_date,
-            "category":       category,
-            "image":          image_filename,
-            "created_at":     datetime.now().isoformat()
+            "name": name, "barcode": barcode or "",
+            "cost_price": cost_price, "selling_price": selling_price,
+            "stock_quantity": stock_qty, "expiry_date": expiry_date,
+            "category": category, "image": image_filename,
+            "created_at": datetime.now().isoformat()
         })
         return jsonify({"success": True, "message": "Medicine added"})
     except Exception as e:
@@ -4937,21 +4893,19 @@ def sell_medicine():
         cart = data.get("cart", [])
         if not cart:
             return jsonify({"success": False, "error": "Cart is empty"})
-
         ref          = get_pharmacy_ref()
         pid          = session.get("pharmacy_id", "")
         total_profit = 0
         conn         = sqlite3.connect(DB_PATH)
         c            = conn.cursor()
         init_pharmacy_sql(conn, c)
-
         for item in cart:
             med_id  = item.get("medicine_id")
             qty     = int(item.get("quantity", 1))
-            med_doc = ref.document(med_id).get()
+            med_doc = ref.document(str(med_id)).get()
             if not med_doc.exists:
                 conn.close()
-                return jsonify({"success": False, "error": "Medicine not found"})
+                return jsonify({"success": False, "error": f"Medicine not found: {med_id}"})
             m     = med_doc.to_dict()
             name  = m.get("name", "")
             bc    = m.get("barcode", "")
@@ -4960,22 +4914,21 @@ def sell_medicine():
             stock = int(m.get("stock_quantity", 0))
             if qty > stock:
                 conn.close()
-                return jsonify({"success": False,
-                                "error": f"Not enough stock for {name}. Available: {stock}"})
+                return jsonify({"success": False, "error": f"Not enough stock for {name}. Available: {stock}"})
             profit = (sell - cost) * qty
             total_profit += profit
-            ref.document(med_id).update({"stock_quantity": stock - qty})
+            ref.document(str(med_id)).update({"stock_quantity": stock - qty})
             c.execute("""INSERT INTO pharmacy_sales
                 (pharmacy_id, medicine_id, medicine_name, barcode,
                  quantity_sold, cost_price, selling_price, profit, sale_date)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (pid, med_id, name, bc, qty, cost, sell,
                  profit, datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
-
         conn.commit()
         conn.close()
         return jsonify({"success": True, "message": "Sale recorded",
-                        "total_profit": round(total_profit, 2)})
+                        "total_profit": round(total_profit, 2),
+                        "items_sold": len(cart)})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
 
@@ -5030,28 +4983,18 @@ def pharmacy_alerts():
         today      = datetime.now().strftime("%Y-%m-%d")
         alert_date = (datetime.now() + timedelta(days=90)).strftime("%Y-%m-%d")
         ref        = get_pharmacy_ref()
-        expiring = []
-        expired  = []
-        low_st   = []
+        expiring = []; expired = []; low_st = []
         for doc in ref.stream():
             m     = doc.to_dict()
             exp   = m.get("expiry_date", "")
             stock = int(m.get("stock_quantity", 0))
-            entry = {"medicine_id": doc.id, "name": m.get("name", ""),
-                     "stock": stock, "expiry": exp}
+            entry = {"medicine_id": doc.id, "name": m.get("name",""), "stock": stock, "expiry": exp}
             if exp:
-                if exp < today:
-                    expired.append(entry)
-                elif exp <= alert_date:
-                    expiring.append(entry)
-            if stock <= 10:
-                low_st.append(entry)
-        return jsonify({
-            "expiring_soon": expiring,
-            "expired":       expired,
-            "low_stock":     low_st,
-            "total_alerts":  len(expiring) + len(expired) + len(low_st)
-        })
+                if exp < today: expired.append(entry)
+                elif exp <= alert_date: expiring.append(entry)
+            if stock <= 3: low_st.append(entry)
+        return jsonify({"expiring_soon": expiring, "expired": expired, "low_stock": low_st,
+                        "total_alerts": len(expiring) + len(expired) + len(low_st)})
     except Exception as e:
         return jsonify({"error": str(e)})
 
@@ -5071,38 +5014,23 @@ def pharmacy_report():
         c         = conn.cursor()
         init_pharmacy_sql(conn, c)
         c.execute("""SELECT COUNT(*), SUM(quantity_sold),
-                     SUM(selling_price*quantity_sold),
-                     SUM(cost_price*quantity_sold), SUM(profit)
-                     FROM pharmacy_sales
-                     WHERE pharmacy_id=? AND date(sale_date) BETWEEN ? AND ?""",
+                     SUM(selling_price*quantity_sold), SUM(cost_price*quantity_sold), SUM(profit)
+                     FROM pharmacy_sales WHERE pharmacy_id=? AND date(sale_date) BETWEEN ? AND ?""",
                   (pid, date_from, date_to))
         row = c.fetchone()
         c.execute("""SELECT medicine_name, SUM(quantity_sold) as qty, SUM(profit) as profit
-                     FROM pharmacy_sales
-                     WHERE pharmacy_id=? AND date(sale_date) BETWEEN ? AND ?
-                     GROUP BY medicine_name ORDER BY qty DESC LIMIT 5""",
-                  (pid, date_from, date_to))
-        top_medicines = [{"name":r[0],"qty":r[1],"profit":round(r[2],2)}
-                         for r in c.fetchall()]
+                     FROM pharmacy_sales WHERE pharmacy_id=? AND date(sale_date) BETWEEN ? AND ?
+                     GROUP BY medicine_name ORDER BY qty DESC LIMIT 5""", (pid, date_from, date_to))
+        top_medicines = [{"name":r[0],"qty":r[1],"profit":round(r[2],2)} for r in c.fetchall()]
         c.execute("""SELECT date(sale_date), COUNT(*), SUM(quantity_sold), SUM(profit)
-                     FROM pharmacy_sales
-                     WHERE pharmacy_id=? AND date(sale_date) BETWEEN ? AND ?
-                     GROUP BY date(sale_date) ORDER BY date(sale_date) DESC""",
-                  (pid, date_from, date_to))
-        daily = [{"date":r[0],"transactions":r[1],"qty":r[2],"profit":round(r[3],2)}
-                 for r in c.fetchall()]
+                     FROM pharmacy_sales WHERE pharmacy_id=? AND date(sale_date) BETWEEN ? AND ?
+                     GROUP BY date(sale_date) ORDER BY date(sale_date) DESC""", (pid, date_from, date_to))
+        daily = [{"date":r[0],"transactions":r[1],"qty":r[2],"profit":round(r[3],2)} for r in c.fetchall()]
         conn.close()
-        return jsonify({
-            "from":               date_from,
-            "to":                 date_to,
-            "total_transactions": row[0] or 0,
-            "total_qty":          row[1] or 0,
-            "total_revenue":      round(row[2] or 0, 2),
-            "total_cost":         round(row[3] or 0, 2),
-            "net_profit":         round(row[4] or 0, 2),
-            "top_medicines":      top_medicines,
-            "daily":              daily
-        })
+        return jsonify({"from": date_from, "to": date_to,
+                        "total_transactions": row[0] or 0, "total_qty": row[1] or 0,
+                        "total_revenue": round(row[2] or 0, 2), "total_cost": round(row[3] or 0, 2),
+                        "net_profit": round(row[4] or 0, 2), "top_medicines": top_medicines, "daily": daily})
     except Exception as e:
         return jsonify({"error": str(e)})
 
@@ -5127,7 +5055,7 @@ def add_debt():
             (pharmacy_id, name, phone, type, amount, description, date, status)
             VALUES (?, ?, ?, ?, ?, ?, ?, 'unpaid')""",
             (pid, name, data.get("phone",""), data.get("type","cash"),
-             float(data.get("amount", 0)), data.get("description",""),
+             float(data.get("amount",0)), data.get("description",""),
              data.get("date", datetime.now().strftime("%Y-%m-%d"))))
         conn.commit()
         conn.close()
@@ -5162,10 +5090,8 @@ def get_debts():
         debts = [{"id":r[0],"name":r[2],"phone":r[3],"type":r[4],
                   "amount":r[5],"description":r[6],"date":r[7],
                   "status":r[8],"created_at":r[9]} for r in rows]
-        return jsonify({"debts":debts,"total":total,
-                        "product_count":product_count,
-                        "cash_total":round(cash_total,2),
-                        "paid_count":paid_count})
+        return jsonify({"debts":debts,"total":total,"product_count":product_count,
+                        "cash_total":round(cash_total,2),"paid_count":paid_count})
     except Exception as e:
         return jsonify({"error": str(e)})
 
@@ -5214,7 +5140,6 @@ def admin_register_pharmacy():
     try:
         if not session.get("admin_ok"):
             return jsonify({"success": False, "error": "Unauthorized"}), 401
-
         data          = request.get_json()
         pharmacy_name = data.get("pharmacy_name", "").strip()
         phone         = data.get("phone", "").strip()
@@ -5222,42 +5147,23 @@ def admin_register_pharmacy():
         months        = int(data.get("months", 3))
         username      = data.get("username", "").strip()
         password      = data.get("password", "").strip()
-
         if not pharmacy_name or not phone or not username or not password:
             return jsonify({"success": False, "error": "Fill all required fields"})
-
         expiry_date = (datetime.now() + timedelta(days=months * 30)).strftime("%Y-%m-%d")
         total_fee   = round(monthly_fee * months, 2)
-
         doc_ref = db.collection("pharmacies").add({
-            "pharmacy_name": pharmacy_name,
-            "phone":         phone,
-            "username":      username,
-            "password":      password,
-            "monthly_fee":   monthly_fee,
-            "months":        months,
-            "total_fee":     total_fee,
-            "created_at":    datetime.now().isoformat(),
-            "expiry_date":   expiry_date,
-            "active":        True
+            "pharmacy_name": pharmacy_name, "phone": phone,
+            "username": username, "password": password,
+            "monthly_fee": monthly_fee, "months": months, "total_fee": total_fee,
+            "created_at": datetime.now().isoformat(), "expiry_date": expiry_date, "active": True
         })
-
         db.collection("pharmacy_users").document(username).set({
-            "username":      username,
-            "password":      password,
-            "pharmacy_name": pharmacy_name,
-            "phone":         phone,
-            "pharmacy_id":   doc_ref[1].id,
-            "created_at":    datetime.now().isoformat()
+            "username": username, "password": password,
+            "pharmacy_name": pharmacy_name, "phone": phone,
+            "pharmacy_id": doc_ref[1].id, "created_at": datetime.now().isoformat()
         })
-
-        return jsonify({
-            "success":     True,
-            "message":     "Pharmacy registered",
-            "expiry_date": expiry_date,
-            "total_fee":   total_fee
-        })
-
+        return jsonify({"success": True, "message": "Pharmacy registered",
+                        "expiry_date": expiry_date, "total_fee": total_fee})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
 
@@ -5277,19 +5183,14 @@ def admin_renew_pharmacy(pid):
         if not ph_doc.exists:
             return jsonify({"success": False, "error": "Pharmacy not found"})
         ph         = ph_doc.to_dict()
-        today      = datetime.now().strftime("%Y-%m-%d")
-        old_expiry = ph.get("expiry_date", today)
+        old_expiry = ph.get("expiry_date", datetime.now().strftime("%Y-%m-%d"))
         try:
             base = max(datetime.strptime(old_expiry, "%Y-%m-%d"), datetime.now())
         except:
             base = datetime.now()
         new_expiry = (base + timedelta(days=months * 30)).strftime("%Y-%m-%d")
-        ph_ref.update({
-            "expiry_date":    new_expiry,
-            "active":         True,
-            "last_renewed":   datetime.now().isoformat(),
-            "renewed_months": months
-        })
+        ph_ref.update({"expiry_date": new_expiry, "active": True,
+                       "last_renewed": datetime.now().isoformat(), "renewed_months": months})
         return jsonify({"success": True, "expiry_date": new_expiry})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
@@ -5314,6 +5215,39 @@ def admin_delete_pharmacy(pid):
             except:
                 pass
         return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+
+# ==========================================
+# CREATE PHARMACY USER (ADMIN)
+# ==========================================
+@app.route("/admin/create_pharmacy_user", methods=["POST"])
+def admin_create_pharmacy_user():
+    try:
+        if not session.get("admin_ok"):
+            return jsonify({"success": False, "error": "Unauthorized"}), 401
+        data     = request.get_json()
+        username = data.get("username", "").strip()
+        password = data.get("password", "").strip()
+        if not username or not password:
+            return jsonify({"success": False, "error": "Fill all fields"})
+        conn = sqlite3.connect(DB_PATH)
+        c    = conn.cursor()
+        c.execute("""CREATE TABLE IF NOT EXISTS pharmacy_users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT UNIQUE, password TEXT, role TEXT DEFAULT 'pharmacist')""")
+        c.execute("SELECT id FROM pharmacy_users WHERE username=?", (username,))
+        if c.fetchone():
+            conn.close()
+            return jsonify({"success": False, "error": "Username already exists"})
+        c.execute("INSERT INTO pharmacy_users (username, password) VALUES (?, ?)", (username, password))
+        conn.commit()
+        conn.close()
+        db.collection("pharmacy_users").document(username).set({
+            "username": username, "password": password, "created_at": datetime.now().isoformat()
+        })
+        return jsonify({"success": True, "message": "User created"})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
 
