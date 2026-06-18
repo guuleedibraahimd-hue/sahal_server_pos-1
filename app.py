@@ -5219,40 +5219,6 @@ def admin_delete_pharmacy(pid):
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
 
-
-# ==========================================
-# CREATE PHARMACY USER (ADMIN)
-# ==========================================
-@app.route("/admin/create_pharmacy_user1", methods=["POST"])
-def admin_create_pharmacy_user():
-    try:
-        if not session.get("admin_ok"):
-            return jsonify({"success": False, "error": "Unauthorized"}), 401
-        data     = request.get_json()
-        username = data.get("username", "").strip()
-        password = data.get("password", "").strip()
-        if not username or not password:
-            return jsonify({"success": False, "error": "Fill all fields"})
-        conn = sqlite3.connect(DB_PATH)
-        c    = conn.cursor()
-        c.execute("""CREATE TABLE IF NOT EXISTS pharmacy_users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT UNIQUE, password TEXT, role TEXT DEFAULT 'pharmacist')""")
-        c.execute("SELECT id FROM pharmacy_users WHERE username=?", (username,))
-        if c.fetchone():
-            conn.close()
-            return jsonify({"success": False, "error": "Username already exists"})
-        c.execute("INSERT INTO pharmacy_users (username, password) VALUES (?, ?)", (username, password))
-        conn.commit()
-        conn.close()
-        db.collection("pharmacy_users").document(username).set({
-            "username": username, "password": password, "created_at": datetime.now().isoformat()
-        })
-        return jsonify({"success": True, "message": "User created"})
-    except Exception as e:
-        return jsonify({"success": False, "error": str(e)})
-
-
 import os
 
 if __name__ == "__main__":
