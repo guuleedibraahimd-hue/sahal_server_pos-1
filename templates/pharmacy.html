@@ -735,7 +735,8 @@ function renderSearchList(results, box) {
                 ? '<span style="color:#f0883e;">' + m.stock_quantity + ' left</span>'
                 : '<span style="color:#8b949e;">' + m.stock_quantity + ' in stock</span>';
 
-        return '<div class="search-result-item" onclick="selectFromList(' + m.medicine_id + ')">' +
+        
+return '<div class="search-result-item" data-id="' + m.medicine_id + '" onclick="handleSelect(this)">' +
             '<div style="display:flex;align-items:center;gap:8px;">' +
                 imgHtml +
                 '<div>' +
