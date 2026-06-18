@@ -4610,7 +4610,8 @@ def webrtc_end_kitchen(data):
 import os
 from werkzeug.utils import secure_filename
 
-PHARMACY_IMG_FOLDER = "static/pharmacy"
+# SAX
+PHARMACY_IMG_FOLDER = "static/uploads"
 os.makedirs(PHARMACY_IMG_FOLDER, exist_ok=True)
 
 
