@@ -280,7 +280,7 @@ tr:hover td{ background:#161b22; }
                     <tr id="med-row-{{ m[0] }}">
                         <td>
                             {% if m[9] %}
-                            <img src="/static/uploads/{{ m[9] }}" class="med-img" onerror="this.style.display='none'">
+                            <img src="/static/pharmacy/{{ m[9] }}" class="med-img" onerror="this.style.display='none'">
                             {% else %}
                             <div class="med-img-placeholder">💊</div>
                             {% endif %}
@@ -695,68 +695,77 @@ function searchMedicine(q) {
     }, 300);
 }
 
+// Show product flash + auto-add to cart on barcode scan
 function showFlash(m) {
     const box = document.getElementById("searchResults");
     const inp = document.getElementById("searchInput");
 
-    const imgHtml = m.image
-        ? '<img src="/static/uploads/' + m.image + '" style="width:40px;height:40px;object-fit:cover;border-radius:8px;">'
-        : '<div style="width:40px;height:40px;background:#21262d;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;">💊</div>';
-
-    box.innerHTML =
-        '<div class="search-result-item" style="background:rgba(63,185,80,0.1);border-left:3px solid #3fb950;">' +
-            '<div style="display:flex;align-items:center;gap:10px;">' +
-                imgHtml +
-                '<div>' +
-                    '<div style="font-weight:700;color:#3fb950;font-size:15px;">✅ ' + m.name + '</div>' +
-                    '<div style="font-size:12px;color:#8b949e;">' + m.barcode + ' · $' + m.selling_price + ' · ' + m.stock_quantity + ' in stock</div>' +
-                '</div>' +
-            '</div>' +
-            '<div style="color:#3fb950;font-weight:700;font-size:18px;">+1 Added</div>' +
-        '</div>';
-
+    // Show a quick flash in the search box
+    box.innerHTML = `
+        <div class="search-result-item" style="background:rgba(63,185,80,0.1);border-left:3px solid #3fb950;">
+            <div style="display:flex;align-items:center;gap:10px;">
+                ${m.image ? `<img src="/static/pharmacy/${m.image}" style="width:40px;height:40px;object-fit:cover;border-radius:8px;">` : `<div style="width:40px;height:40px;background:#21262d;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;">💊</div>`}
+                <div>
+                    <div style="font-weight:700;color:#3fb950;font-size:15px;">✅ ${m.name}</div>
+                    <div style="font-size:12px;color:#8b949e;">${m.barcode} · $${m.selling_price} · ${m.stock_quantity} in stock</div>
+                </div>
+            </div>
+            <div style="color:#3fb950;font-weight:700;font-size:18px;">+1 Added</div>
+        </div>`;
     box.style.display = "block";
 
+    // Auto-add to cart
     addToCart(m.medicine_id, m.name, m.selling_price, m.stock_quantity);
 
+    // Clear input and hide flash after 1.5s
     inp.value = "";
     setTimeout(() => { box.style.display = "none"; }, 1500);
 }
 
+// Render name search dropdown list
 function renderSearchList(results, box) {
-    box.innerHTML = results.map(function(m) {
-        const imgHtml = m.image
-            ? '<img src="/static/uploads/' + m.image + '" style="width:36px;height:36px;object-fit:cover;border-radius:6px;">'
-            : '<div style="width:36px;height:36px;background:#21262d;border-radius:6px;display:flex;align-items:center;justify-content:center;">💊</div>';
-
-        const stockHtml = m.stock_quantity <= 0
-            ? '<span style="color:#f85149;">Out of stock</span>'
-            : m.stock_quantity <= 10
-                ? '<span style="color:#f0883e;">' + m.stock_quantity + ' left</span>'
-                : '<span style="color:#8b949e;">' + m.stock_quantity + ' in stock</span>';
-
-        
-return '<div class="search-result-item" data-id="' + m.medicine_id + '" onclick="handleSelect(this)">' +
-            '<div style="display:flex;align-items:center;gap:8px;">' +
-                imgHtml +
-                '<div>' +
-                    '<div class="result-name">' + m.name + '</div>' +
-                    '<div class="result-meta">' + (m.barcode||'No barcode') + ' · ' + (m.category||'General') + (m.expiry_date ? ' · Exp: '+m.expiry_date : '') + '</div>' +
-                '</div>' +
-            '</div>' +
-            '<div style="text-align:right;">' +
-                '<div class="result-price">$' + m.selling_price + '</div>' +
-                '<div class="result-stock">' + stockHtml + '</div>' +
-            '</div>' +
-        '</div>';
-    }).join("");
+    box.innerHTML = results.map(m => `
+        <div class="search-result-item" onclick="selectFromList(${m.medicine_id})">
+            <div>
+                <div style="display:flex;align-items:center;gap:8px;">
+                    ${m.image ? `<img src="/static/pharmacy/${m.image}" style="width:36px;height:36px;object-fit:cover;border-radius:6px;">` : `<div style="width:36px;height:36px;background:#21262d;border-radius:6px;display:flex;align-items:center;justify-content:center;">💊</div>`}
+                    <div>
+                        <div class="result-name">${m.name}</div>
+                        <div class="result-meta">${m.barcode||'No barcode'} · ${m.category||'General'}${m.expiry_date ? ' · Exp: '+m.expiry_date : ''}</div>
+                    </div>
+                </div>
+            </div>
+            <div style="text-align:right;">
+                <div class="result-price">$${m.selling_price}</div>
+                <div class="result-stock">
+                    ${m.stock_quantity<=0 ? '<span style="color:#f85149;">Out of stock</span>'
+                    : m.stock_quantity<=10 ? `<span style="color:#f0883e;">${m.stock_quantity} left</span>`
+                    : `<span style="color:#8b949e;">${m.stock_quantity} in stock</span>`}
+                </div>
+            </div>
+        </div>
+    `).join("");
     box.style.display = "block";
 
-    results.forEach(function(m) {
-        if(!allMedicines.find(function(x){ return x.medicine_id === m.medicine_id; })) {
+    // Cache results
+    results.forEach(m => {
+        if(!allMedicines.find(x => x.medicine_id === m.medicine_id)) {
             allMedicines.push(m);
         }
     });
+}
+
+// Handle click on search result item
+function handleSelect(el) {
+    const id = el.dataset.id;
+    if(!id) return;
+    const m = allMedicines.find(x => x.medicine_id === id || x.medicine_id == id);
+    if(m) {
+        addToCart(m.medicine_id, m.name, m.selling_price, m.stock_quantity);
+        document.getElementById("searchInput").value = "";
+        document.getElementById("searchResults").style.display = "none";
+        showToast(m.name + " added to cart ✅");
+    }
 }
 
 // Select from name search list
