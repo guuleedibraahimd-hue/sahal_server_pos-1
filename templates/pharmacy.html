@@ -723,34 +723,36 @@ function showFlash(m) {
     setTimeout(() => { box.style.display = "none"; }, 1500);
 }
 
-// Render name search dropdown list
 function renderSearchList(results, box) {
-    box.innerHTML = results.map(m => `
-        <div class="search-result-item" onclick="selectFromList(${m.medicine_id})">
-            <div>
-                <div style="display:flex;align-items:center;gap:8px;">
-                    ${m.image ? `src="/static/uploads/${m.image}" style="width:36px;height:36px;object-fit:cover;border-radius:6px;">` : `<div style="width:36px;height:36px;background:#21262d;border-radius:6px;display:flex;align-items:center;justify-content:center;">💊</div>`}
-                    <div>
-                        <div class="result-name">${m.name}</div>
-                        <div class="result-meta">${m.barcode||'No barcode'} · ${m.category||'General'}${m.expiry_date ? ' · Exp: '+m.expiry_date : ''}</div>
-                    </div>
-                </div>
-            </div>
-            <div style="text-align:right;">
-                <div class="result-price">$${m.selling_price}</div>
-                <div class="result-stock">
-                    ${m.stock_quantity<=0 ? '<span style="color:#f85149;">Out of stock</span>'
-                    : m.stock_quantity<=10 ? `<span style="color:#f0883e;">${m.stock_quantity} left</span>`
-                    : `<span style="color:#8b949e;">${m.stock_quantity} in stock</span>`}
-                </div>
-            </div>
-        </div>
-    `).join("");
+    box.innerHTML = results.map(function(m) {
+        const imgHtml = m.image
+            ? '<img src="/static/uploads/' + m.image + '" style="width:36px;height:36px;object-fit:cover;border-radius:6px;">'
+            : '<div style="width:36px;height:36px;background:#21262d;border-radius:6px;display:flex;align-items:center;justify-content:center;">💊</div>';
+
+        const stockHtml = m.stock_quantity <= 0
+            ? '<span style="color:#f85149;">Out of stock</span>'
+            : m.stock_quantity <= 10
+                ? '<span style="color:#f0883e;">' + m.stock_quantity + ' left</span>'
+                : '<span style="color:#8b949e;">' + m.stock_quantity + ' in stock</span>';
+
+        return '<div class="search-result-item" onclick="selectFromList(' + m.medicine_id + ')">' +
+            '<div style="display:flex;align-items:center;gap:8px;">' +
+                imgHtml +
+                '<div>' +
+                    '<div class="result-name">' + m.name + '</div>' +
+                    '<div class="result-meta">' + (m.barcode||'No barcode') + ' · ' + (m.category||'General') + (m.expiry_date ? ' · Exp: '+m.expiry_date : '') + '</div>' +
+                '</div>' +
+            '</div>' +
+            '<div style="text-align:right;">' +
+                '<div class="result-price">$' + m.selling_price + '</div>' +
+                '<div class="result-stock">' + stockHtml + '</div>' +
+            '</div>' +
+        '</div>';
+    }).join("");
     box.style.display = "block";
 
-    // Cache results
-    results.forEach(m => {
-        if(!allMedicines.find(x => x.medicine_id === m.medicine_id)) {
+    results.forEach(function(m) {
+        if(!allMedicines.find(function(x){ return x.medicine_id === m.medicine_id; })) {
             allMedicines.push(m);
         }
     });
