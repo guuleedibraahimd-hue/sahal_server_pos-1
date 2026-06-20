@@ -70,8 +70,8 @@ body{ font-family:'Segoe UI', sans-serif; background:#0d1117; color:#e6edf3; min
 .table-wrap{ overflow-x:auto; }
 table{ width:100%; border-collapse:collapse; min-width:700px; }
 th{ background:#21262d; color:#8b949e; padding:12px 14px; text-align:left; font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; }
-td{ padding:12px 14px; border-bottom:1px solid #21262d; font-size:14px; vertical-align:middle; }
-tr:hover td{ background:#161b22; }
+td{ padding:10px 14px; border-bottom:1px solid #21262d; font-size:14px; vertical-align:middle; }
+tr:hover td{ background:#1a1f26; }
 .badge{ display:inline-block; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:700; }
 .badge-green{ background:rgba(63,185,80,0.15); color:#3fb950; border:1px solid rgba(63,185,80,0.3); }
 .badge-red{ background:rgba(248,81,73,0.15); color:#f85149; border:1px solid rgba(248,81,73,0.3); }
@@ -112,12 +112,41 @@ tr:hover td{ background:#161b22; }
 /* ===== IMAGE UPLOAD ===== */
 .img-upload-box{ border:2px dashed #30363d; border-radius:12px; padding:24px; text-align:center; cursor:pointer; transition:all 0.2s; position:relative; margin-top:10px; }
 .img-upload-box:hover{ border-color:#58a6ff; background:rgba(88,166,255,0.05); }
-.img-upload-box input[type=file]{ position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%; }
 .img-upload-box .upload-icon{ font-size:36px; margin-bottom:8px; }
 .img-upload-box p{ color:#8b949e; font-size:13px; }
 .img-preview{ width:100%; max-height:200px; object-fit:contain; border-radius:10px; margin-top:10px; display:none; border:1px solid #30363d; }
-.med-img{ width:50px; height:50px; object-fit:cover; border-radius:8px; border:1px solid #30363d; }
-.med-img-placeholder{ width:50px; height:50px; background:#21262d; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:20px; border:1px solid #30363d; }
+
+/* ===== MEDICINE IMAGE in TABLE ===== */
+.med-img-wrap{
+    width:56px; height:56px;
+    border-radius:10px;
+    overflow:hidden;
+    background:#21262d;
+    border:1px solid #30363d;
+    display:flex; align-items:center; justify-content:center;
+    flex-shrink:0;
+    position:relative;
+}
+.med-img-wrap img{
+    width:100%; height:100%;
+    object-fit:cover;
+    border-radius:10px;
+    display:block;
+    transition:transform 0.2s;
+}
+.med-img-wrap:hover img{ transform:scale(1.08); }
+.med-img-wrap .img-placeholder{
+    font-size:26px;
+    line-height:1;
+}
+/* Zoom on hover */
+.med-img-wrap:hover::after{
+    content:'';
+    position:absolute;
+    inset:0;
+    border:2px solid #58a6ff;
+    border-radius:10px;
+}
 
 /* ===== DEBT TRACKER ===== */
 .debt-card{ background:#0d1117; border:1px solid #30363d; border-radius:12px; padding:16px; margin-bottom:12px; }
@@ -151,12 +180,8 @@ tr:hover td{ background:#161b22; }
 .cart-item-wrap:last-child{ border-bottom:none; }
 .cart-item-row{ display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; }
 .cart-item-editor{
-    background:#0d1117;
-    border:1px solid #58a6ff;
-    border-radius:10px;
-    padding:12px 14px;
-    margin-top:8px;
-    width:100%;
+    background:#0d1117; border:1px solid #58a6ff; border-radius:10px;
+    padding:12px 14px; margin-top:8px; width:100%;
     box-shadow:0 4px 20px rgba(88,166,255,0.15);
     animation:editorIn 0.18s ease;
 }
@@ -187,6 +212,7 @@ tr:hover td{ background:#161b22; }
     .tab{ padding:10px 14px; font-size:12px; }
     .stats-grid{ grid-template-columns:repeat(2,1fr); }
     .container{ padding:14px; }
+    .med-img-wrap{ width:44px; height:44px; }
 }
 </style>
 </head>
@@ -299,32 +325,59 @@ tr:hover td{ background:#161b22; }
     <div class="section">
         <div class="section-header">
             <h3>💊 All Medicines</h3>
-            <input type="text" placeholder="🔍 Filter..." oninput="filterTable(this.value)" style="padding:8px 12px;background:#0d1117;border:1px solid #30363d;border-radius:8px;color:#e6edf3;font-size:13px;outline:none;width:200px;">
+            <input type="text" placeholder="🔍 Filter..." oninput="filterTable(this.value)"
+                style="padding:8px 12px;background:#0d1117;border:1px solid #30363d;border-radius:8px;color:#e6edf3;font-size:13px;outline:none;width:200px;">
         </div>
         <div class="section-body" style="padding:0;">
             <div class="table-wrap">
                 <table id="medicinesTable">
-                    <tr><th>Image</th><th>Name</th><th>Barcode</th><th>Category</th><th>Cost</th><th>Price</th><th>Stock</th><th>Expiry</th><th>Status</th><th>Actions</th></tr>
+                    <tr>
+                        <th style="width:70px;">Image</th>
+                        <th>Name</th>
+                        <th>Barcode</th>
+                        <th>Category</th>
+                        <th>Cost</th>
+                        <th>Price</th>
+                        <th>Stock</th>
+                        <th>Expiry</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
                     {% for m in medicines %}
                     <tr id="med-row-{{ m[0] }}">
+                        <!-- IMAGE CELL — m[9]=filename, m[10]=imageUrl -->
                         <td>
-                            {% if m[9] %}
-                            <img src="/static/uploads/{{ m[9] }}" class="med-img" onerror="this.style.display='none'">
-                            {% else %}
-                            <div class="med-img-placeholder">💊</div>
-                            {% endif %}
+                            <div class="med-img-wrap">
+                                {% if m[10] %}
+                                    {# External imageUrl (e.g. Firebase Storage) #}
+                                    <img src="{{ m[10] }}"
+                                         alt="{{ m[1] }}"
+                                         loading="lazy"
+                                         onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+                                    <div class="img-placeholder" style="display:none;">💊</div>
+                                {% elif m[9] %}
+                                    {# Local upload file #}
+                                    <img src="/static/uploads/{{ m[9] }}"
+                                         alt="{{ m[1] }}"
+                                         loading="lazy"
+                                         onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+                                    <div class="img-placeholder" style="display:none;">💊</div>
+                                {% else %}
+                                    <div class="img-placeholder">💊</div>
+                                {% endif %}
+                            </div>
                         </td>
-                        <td><b>{{ m[1] }}</b></td>
-                        <td style="color:#8b949e;">{{ m[2] or '—' }}</td>
+                        <td><b style="font-size:15px;">{{ m[1] }}</b></td>
+                        <td style="color:#8b949e;font-size:13px;">{{ m[2] or '—' }}</td>
                         <td><span class="badge badge-blue">{{ m[7] or 'General' }}</span></td>
-                        <td>${{ m[3] }}</td>
-                        <td style="color:#3fb950;font-weight:700;">${{ m[4] }}</td>
+                        <td style="color:#8b949e;">${{ m[3] }}</td>
+                        <td style="color:#3fb950;font-weight:700;font-size:15px;">${{ m[4] }}</td>
                         <td>
                             {% if m[5] <= 0 %}<span class="badge badge-red">Out of Stock</span>
                             {% elif m[5] <= 3 %}<span class="badge badge-orange">{{ m[5] }} — Low!</span>
                             {% else %}<span class="badge badge-green">{{ m[5] }}</span>{% endif %}
                         </td>
-                        <td>{% if m[6] %}<span style="font-size:13px;">{{ m[6] }}</span>{% else %}<span style="color:#8b949e;">—</span>{% endif %}</td>
+                        <td style="font-size:13px;">{% if m[6] %}{{ m[6] }}{% else %}<span style="color:#8b949e;">—</span>{% endif %}</td>
                         <td>
                             {% if m[6] %}
                                 {% if m[6] < now_date %}<span class="badge badge-red">Expired</span>
@@ -338,14 +391,17 @@ tr:hover td{ background:#161b22; }
                                 data-barcode="{{ (m[2] or '')|e }}" data-cost="{{ m[3] }}"
                                 data-selling="{{ m[4] }}" data-stock="{{ m[5] }}"
                                 data-expiry="{{ m[6] or '' }}" data-category="{{ (m[7] or 'General')|e }}"
-                                style="background:#1f6feb;border:none;color:#fff;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;margin-right:4px;">✏️ Edit</button>
+                                style="background:#1f6feb;border:none;color:#fff;padding:7px 14px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;margin-right:4px;">✏️ Edit</button>
                             <button onclick="deleteMedicine(this)"
                                 data-id="{{ m[0] }}" data-name="{{ m[1]|e }}"
-                                style="background:#da3633;border:none;color:#fff;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;">🗑</button>
+                                style="background:#da3633;border:none;color:#fff;padding:7px 12px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;">🗑</button>
                         </td>
                     </tr>
                     {% else %}
-                    <tr><td colspan="10" style="text-align:center;color:#8b949e;padding:30px;">No medicines yet — add your first one!</td></tr>
+                    <tr><td colspan="10" style="text-align:center;color:#8b949e;padding:40px;">
+                        <div style="font-size:40px;margin-bottom:12px;">💊</div>
+                        No medicines yet — add your first one!
+                    </td></tr>
                     {% endfor %}
                 </table>
             </div>
@@ -396,7 +452,7 @@ tr:hover td{ background:#161b22; }
                     <div class="img-upload-box" id="uploadBox" onclick="document.getElementById('add_image').click()">
                         <input type="file" id="add_image" accept="image/*" style="display:none" onchange="previewImage(this)">
                         <div class="upload-icon">📷</div>
-                        <p>Click to select image from gallery</p>
+                        <p id="uploadLabel">Click to select image from gallery</p>
                         <p style="font-size:11px;margin-top:4px;">JPG, PNG, WEBP supported</p>
                     </div>
                     <img id="imgPreview" class="img-preview" alt="Preview">
@@ -415,8 +471,6 @@ tr:hover td{ background:#161b22; }
 
 <!-- ======== DEBT TRACKER -->
 <div class="panel" id="panel-debt">
-
-    <!-- ADD DEBT -->
     <div class="section">
         <div class="section-header"><h3>➕ Add New Debt Record</h3></div>
         <div class="section-body">
@@ -453,11 +507,11 @@ tr:hover td{ background:#161b22; }
         </div>
     </div>
 
-    <!-- DEBT LIST -->
     <div class="section">
         <div class="section-header">
             <h3>📋 All Debt Records</h3>
-            <input type="text" placeholder="🔍 Search by name..." oninput="filterDebts(this.value)" style="padding:8px 12px;background:#0d1117;border:1px solid #30363d;border-radius:8px;color:#e6edf3;font-size:13px;outline:none;width:200px;">
+            <input type="text" placeholder="🔍 Search by name..." oninput="filterDebts(this.value)"
+                style="padding:8px 12px;background:#0d1117;border:1px solid #30363d;border-radius:8px;color:#e6edf3;font-size:13px;outline:none;width:200px;">
         </div>
         <div class="section-body">
             <div class="debt-summary" id="debtSummary">
@@ -551,12 +605,11 @@ tr:hover td{ background:#161b22; }
 
 </div><!-- end container -->
 
-<!-- ADD TO CART MODAL — custom price -->
+<!-- ADD TO CART MODAL -->
 <div class="modal-overlay" id="addCartModal">
     <div class="modal" style="max-width:420px;">
         <button class="modal-close" onclick="document.getElementById('addCartModal').classList.remove('open')">✕</button>
         <h3 id="addCartModalTitle">➕ Add to Cart</h3>
-
         <div style="background:#0d1117;border:1px solid #30363d;border-radius:10px;padding:16px;margin-bottom:16px;">
             <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
                 <span style="color:#8b949e;font-size:13px;">Medicine:</span>
@@ -571,20 +624,18 @@ tr:hover td{ background:#161b22; }
                 <span id="addCartDefaultPrice" style="color:#3fb950;font-weight:700;font-size:16px;"></span>
             </div>
         </div>
-
         <div class="form-group" style="margin-bottom:14px;">
             <label>Quantity</label>
-            <input type="number" id="addCartQty" value="1" min="1" style="padding:10px 12px;background:#0d1117;border:1px solid #30363d;border-radius:8px;color:#e6edf3;font-size:16px;outline:none;width:100%;" oninput="calcAddCartProfit()">
+            <input type="number" id="addCartQty" value="1" min="1"
+                style="padding:10px 12px;background:#0d1117;border:1px solid #30363d;border-radius:8px;color:#e6edf3;font-size:16px;outline:none;width:100%;"
+                oninput="calcAddCartProfit()">
         </div>
-
         <div class="form-group" style="margin-bottom:14px;">
             <label>Amount Customer Paid ($)</label>
             <input type="number" id="addCartPaidPrice" placeholder="Enter amount paid..." step="0.01" min="0"
                 style="padding:12px 16px;background:#0d1117;border:2px solid #58a6ff;border-radius:8px;color:#fff;font-size:18px;font-weight:700;outline:none;width:100%;"
                 oninput="calcAddCartProfit()">
         </div>
-
-        <!-- Live profit preview -->
         <div id="addCartProfitPreview" style="display:none;background:#0d1117;border:1px solid #30363d;border-radius:10px;padding:14px;margin-bottom:16px;">
             <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
                 <span style="color:#8b949e;font-size:13px;">Total Revenue:</span>
@@ -599,8 +650,8 @@ tr:hover td{ background:#161b22; }
                 <span id="previewProfit" style="font-weight:800;font-size:20px;">$0.00</span>
             </div>
         </div>
-
-        <button onclick="confirmAddToCart()" style="width:100%;padding:14px;background:linear-gradient(135deg,#238636,#2ea043);border:none;border-radius:10px;color:#fff;font-size:16px;font-weight:700;cursor:pointer;">
+        <button onclick="confirmAddToCart()"
+            style="width:100%;padding:14px;background:linear-gradient(135deg,#238636,#2ea043);border:none;border-radius:10px;color:#fff;font-size:16px;font-weight:700;cursor:pointer;">
             🛒 Add to Cart
         </button>
     </div>
@@ -631,15 +682,6 @@ tr:hover td{ background:#161b22; }
     </div>
 </div>
 
-<!-- DEBT VIEW MODAL -->
-<div class="modal-overlay" id="debtViewModal">
-    <div class="modal">
-        <button class="modal-close" onclick="document.getElementById('debtViewModal').classList.remove('open')">✕</button>
-        <div id="debtModalContent"></div>
-    </div>
-</div>
-
-
 <!-- SALE RECEIPT MODAL -->
 <div class="modal-overlay" id="saleReceiptModal">
     <div class="modal" style="max-width:500px;">
@@ -661,7 +703,7 @@ tr:hover td{ background:#161b22; }
 let cart   = [];
 let allDebts = [];
 let currentDebtFilter = 'all';
-let openEditorIdx = null; // tracks which cart item has its inline editor open
+let openEditorIdx = null;
 
 /* ==========================================
    TABS
@@ -711,13 +753,12 @@ window.addEventListener("load", () => {
 function previewImage(input) {
     const file    = input.files[0];
     const preview = document.getElementById("imgPreview");
-    const box     = document.getElementById("uploadBox");
     if(file) {
         const reader = new FileReader();
         reader.onload = e => {
             preview.src           = e.target.result;
             preview.style.display = "block";
-            box.querySelector("p").textContent = file.name;
+            document.getElementById("uploadLabel").textContent = "✅ " + file.name;
         };
         reader.readAsDataURL(file);
     }
@@ -736,10 +777,19 @@ function loadMedicineCache() {
     .catch(()=>{});
 }
 
+function getMedImg(m, size=36) {
+    const src = m.imageUrl || (m.image ? `/static/uploads/${m.image}` : "");
+    if(src) {
+        return `<img src="${src}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"
+            style="width:${size}px;height:${size}px;object-fit:cover;border-radius:8px;flex-shrink:0;">
+            <div style="display:none;width:${size}px;height:${size}px;background:#21262d;border-radius:8px;align-items:center;justify-content:center;font-size:${Math.round(size*0.5)}px;">💊</div>`;
+    }
+    return `<div style="width:${size}px;height:${size}px;background:#21262d;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:${Math.round(size*0.5)}px;">💊</div>`;
+}
+
 function searchMedicine(q) {
     clearTimeout(searchTimeout);
     const box = document.getElementById("searchResults");
-    const inp = document.getElementById("searchInput");
     if(!q){ box.style.display="none"; return; }
 
     const isBarcode = /^\d{4,}$/.test(q.trim());
@@ -782,16 +832,10 @@ function searchMedicine(q) {
 
 function showFlash(m) {
     const box = document.getElementById("searchResults");
-    const inp = document.getElementById("searchInput");
-
-    const imgHtml = m.image
-        ? `<img src="/static/uploads/${m.image}" onerror="this.style.display='none'" style="width:40px;height:40px;object-fit:cover;border-radius:8px;">`
-        : `<div style="width:40px;height:40px;background:#21262d;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;">💊</div>`;
-
     box.innerHTML =
         `<div class="search-result-item" style="background:rgba(63,185,80,0.1);border-left:3px solid #3fb950;">
             <div style="display:flex;align-items:center;gap:10px;">
-                ${imgHtml}
+                ${getMedImg(m, 40)}
                 <div>
                     <div style="font-weight:700;color:#3fb950;font-size:15px;">✅ ${m.name}</div>
                     <div style="font-size:12px;color:#8b949e;">${m.barcode} · $${m.selling_price} · ${m.stock_quantity} in stock</div>
@@ -799,9 +843,8 @@ function showFlash(m) {
             </div>
             <div style="color:#3fb950;font-weight:700;font-size:18px;">+1 Added</div>
         </div>`;
-
     box.style.display = "block";
-    inp.value = "";
+    document.getElementById("searchInput").value = "";
     setTimeout(() => {
         box.style.display = "none";
         openAddCartModal(m);
@@ -810,20 +853,15 @@ function showFlash(m) {
 
 function renderSearchList(results, box) {
     box.innerHTML = results.map(function(m) {
-        const imgHtml = m.image
-            ? `<img src="/static/uploads/${m.image}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" style="width:36px;height:36px;object-fit:cover;border-radius:6px;"><div style="display:none;width:36px;height:36px;background:#21262d;border-radius:6px;align-items:center;justify-content:center;">💊</div>`
-            : `<div style="width:36px;height:36px;background:#21262d;border-radius:6px;display:flex;align-items:center;justify-content:center;">💊</div>`;
-
         const stockHtml = m.stock_quantity <= 0
             ? '<span style="color:#f85149;">Out of stock</span>'
             : m.stock_quantity <= 10
                 ? `<span style="color:#f0883e;">${m.stock_quantity} left</span>`
                 : `<span style="color:#8b949e;">${m.stock_quantity} in stock</span>`;
-
         const safeId = String(m.medicine_id).replace(/['"]/g, "");
         return `<div class="search-result-item" data-id="${safeId}" onclick="handleSelect(this)">
             <div style="display:flex;align-items:center;gap:8px;">
-                ${imgHtml}
+                ${getMedImg(m, 36)}
                 <div>
                     <div class="result-name">${m.name}</div>
                     <div class="result-meta">${m.barcode||'No barcode'} · ${m.category||'General'}${m.expiry_date ? ' · Exp: '+m.expiry_date : ''}</div>
@@ -836,7 +874,6 @@ function renderSearchList(results, box) {
         </div>`;
     }).join("");
     box.style.display = "block";
-
     results.forEach(function(m) {
         if(!allMedicines.find(function(x){ return String(x.medicine_id) === String(m.medicine_id); })) {
             allMedicines.push(m);
@@ -857,15 +894,15 @@ function handleSelect(el) {
     }
     const nameEl  = el.querySelector(".result-name");
     const priceEl = el.querySelector(".result-price");
-    const name  = nameEl  ? nameEl.textContent.trim()  : id;
-    const price = priceEl ? parseFloat(priceEl.textContent.replace("$","")) : 0;
+    const name    = nameEl  ? nameEl.textContent.trim()  : id;
+    const price   = priceEl ? parseFloat(priceEl.textContent.replace("$","")) : 0;
     openAddCartModal({ medicine_id: id, name, selling_price: price, cost_price: 0, stock_quantity: 999 });
     document.getElementById("searchResults").style.display = "none";
 }
 
 function openAddCartModal(m) {
     pendingMedicine = m;
-    document.getElementById("addCartModalTitle").textContent = "➕ " + m.name;
+    document.getElementById("addCartModalTitle").textContent  = "➕ " + m.name;
     document.getElementById("addCartName").textContent        = m.name;
     document.getElementById("addCartCost").textContent        = "$" + parseFloat(m.cost_price || 0).toFixed(2);
     document.getElementById("addCartDefaultPrice").textContent= "$" + parseFloat(m.selling_price).toFixed(2);
@@ -882,21 +919,14 @@ function calcAddCartProfit() {
     const qty  = parseInt(document.getElementById("addCartQty").value) || 1;
     const paid = parseFloat(document.getElementById("addCartPaidPrice").value) || 0;
     const cost = parseFloat(pendingMedicine.cost_price || 0);
-
-    if(paid <= 0) {
-        document.getElementById("addCartProfitPreview").style.display = "none";
-        return;
-    }
-
+    if(paid <= 0) { document.getElementById("addCartProfitPreview").style.display = "none"; return; }
     const totalRevenue = paid * qty;
     const totalCost    = cost * qty;
     const profit       = totalRevenue - totalCost;
-    const profitColor  = profit >= 0 ? "#3fb950" : "#f85149";
-
     document.getElementById("previewRevenue").textContent = "$" + totalRevenue.toFixed(2);
     document.getElementById("previewCost").textContent    = "$" + totalCost.toFixed(2);
     document.getElementById("previewProfit").textContent  = (profit >= 0 ? "+" : "") + "$" + profit.toFixed(2);
-    document.getElementById("previewProfit").style.color  = profitColor;
+    document.getElementById("previewProfit").style.color  = profit >= 0 ? "#3fb950" : "#f85149";
     document.getElementById("addCartProfitPreview").style.display = "block";
 }
 
@@ -904,13 +934,10 @@ function confirmAddToCart() {
     if(!pendingMedicine) return;
     const qty       = parseInt(document.getElementById("addCartQty").value) || 1;
     const paidPrice = parseFloat(document.getElementById("addCartPaidPrice").value);
-
     if(!paidPrice || paidPrice <= 0) {
         document.getElementById("addCartPaidPrice").style.borderColor = "#f85149";
-        document.getElementById("addCartPaidPrice").placeholder = "❌ Enter amount!";
         return;
     }
-
     const m = pendingMedicine;
     for(let i = 0; i < qty; i++) {
         const existing = cart.find(x => x.medicine_id === m.medicine_id);
@@ -919,18 +946,11 @@ function confirmAddToCart() {
             existing.quantity++;
             existing.price = paidPrice;
         } else {
-            cart.push({
-                medicine_id: m.medicine_id,
-                name: m.name,
-                price: paidPrice,
-                cost_price: m.cost_price || 0,
-                quantity: 1,
-                stock: m.stock_quantity
-            });
+            cart.push({ medicine_id: m.medicine_id, name: m.name, price: paidPrice,
+                        cost_price: m.cost_price || 0, quantity: 1, stock: m.stock_quantity });
             break;
         }
     }
-
     document.getElementById("addCartModal").classList.remove("open");
     document.getElementById("searchInput").value = "";
     renderCart();
@@ -938,27 +958,13 @@ function confirmAddToCart() {
     pendingMedicine = null;
 }
 
-function selectFromList(id) {
-    const m = allMedicines.find(x => x.medicine_id === id);
-    if(m) {
-        addToCart(m.medicine_id, m.name, m.selling_price, m.stock_quantity);
-        document.getElementById("searchInput").value = "";
-        document.getElementById("searchResults").style.display = "none";
-        showToast(`${m.name} added to cart ✅`);
-    }
-}
-
 function handleSearchKey(e){
     if(e.key === "Escape") document.getElementById("searchResults").style.display = "none";
-    if(e.key === "Enter") {
-        const q = document.getElementById("searchInput").value.trim();
-        if(q) searchMedicine(q);
-    }
+    if(e.key === "Enter") { const q = document.getElementById("searchInput").value.trim(); if(q) searchMedicine(q); }
 }
 document.addEventListener("click", e => {
-    if(!e.target.closest(".search-wrapper") && !e.target.closest("#searchResults")) {
+    if(!e.target.closest(".search-wrapper") && !e.target.closest("#searchResults"))
         document.getElementById("searchResults").style.display = "none";
-    }
 });
 function escStr(str){ return String(str).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;'); }
 
@@ -979,9 +985,6 @@ function addToCart(id, name, price, stock) {
     renderCart();
 }
 
-/* ==========================================
-   RENDER CART — with inline price editor
-   ========================================== */
 function renderCart() {
     const box = document.getElementById("cartItems");
     if(!cart.length){
@@ -992,20 +995,15 @@ function renderCart() {
         document.getElementById("cartCount").textContent       = "0 items";
         return;
     }
-
     let total = 0;
-    let html = '';
-
+    let html  = '';
     cart.forEach((item, idx) => {
-        const sub          = item.price * item.quantity;
-        const cost         = parseFloat(item.cost_price || 0);
-        const profitPerItem= (item.price - cost) * item.quantity;
-        const pColor       = profitPerItem >= 0 ? "#3fb950" : "#f85149";
+        const sub           = item.price * item.quantity;
+        const cost          = parseFloat(item.cost_price || 0);
+        const profitPerItem = (item.price - cost) * item.quantity;
+        const pColor        = profitPerItem >= 0 ? "#3fb950" : "#f85149";
         total += sub;
-
         const isOpen = (openEditorIdx === idx);
-
-        // Inline editor HTML
         const editorHtml = isOpen ? `
         <div class="cart-item-editor" id="editor-${idx}">
             <div class="editor-meta">
@@ -1016,8 +1014,7 @@ function renderCart() {
             <div class="editor-input-row">
                 <label>💵 Lacagta Customer-ku bixiyay:</label>
                 <input class="editor-price-input" id="eprice-${idx}" type="number"
-                    value="${parseFloat(item.price).toFixed(2)}"
-                    step="0.01" min="0"
+                    value="${parseFloat(item.price).toFixed(2)}" step="0.01" min="0"
                     oninput="calcInlineProfit(${idx})"
                     onkeydown="if(event.key==='Enter') applyInlinePrice(${idx})">
             </div>
@@ -1029,7 +1026,6 @@ function renderCart() {
             </div>
             <button class="editor-apply-btn" onclick="applyInlinePrice(${idx})">✅ Apply Price</button>
         </div>` : '';
-
         html += `
         <div class="cart-item-wrap" id="wrap-${idx}">
             <div class="cart-item-row">
@@ -1045,72 +1041,46 @@ function renderCart() {
                     <span class="qty-display">${item.quantity}</span>
                     <button class="qty-btn" onclick="changeQty(${idx},1)">+</button>
                 </div>
-                <div class="cart-item-price" onclick="toggleEditor(${idx})" title="Click to change price">
-                    $${sub.toFixed(2)}
-                </div>
+                <div class="cart-item-price" onclick="toggleEditor(${idx})" title="Click to change price">$${sub.toFixed(2)}</div>
                 <button class="remove-btn" onclick="removeFromCart(${idx})">✕</button>
             </div>
             ${editorHtml}
         </div>`;
     });
-
     box.innerHTML = html;
-
-    // Auto-focus the price input if editor is open
     if(openEditorIdx !== null) {
         const inp = document.getElementById(`eprice-${openEditorIdx}`);
         if(inp) { inp.focus(); inp.select(); }
     }
-
     document.getElementById("cartTotalRow").style.display = "flex";
     document.getElementById("cartTotal").textContent      = `$${total.toFixed(2)}`;
     document.getElementById("checkoutBtn").disabled       = false;
     document.getElementById("cartCount").textContent      = `${cart.length} item${cart.length>1?"s":""}`;
 }
 
-/* Toggle inline editor open/close */
-function toggleEditor(idx) {
-    openEditorIdx = (openEditorIdx === idx) ? null : idx;
-    renderCart();
-}
+function toggleEditor(idx) { openEditorIdx = (openEditorIdx === idx) ? null : idx; renderCart(); }
 
-/* Live profit calc inside the inline editor */
 function calcInlineProfit(idx) {
-    const item   = cart[idx];
-    if(!item) return;
-    const inp    = document.getElementById(`eprice-${idx}`);
-    const pEl    = document.getElementById(`eprofit-${idx}`);
+    const item = cart[idx]; if(!item) return;
+    const inp  = document.getElementById(`eprice-${idx}`);
+    const pEl  = document.getElementById(`eprofit-${idx}`);
     if(!inp || !pEl) return;
-
     const paid   = parseFloat(inp.value) || 0;
     const cost   = parseFloat(item.cost_price || 0);
     const profit = (paid - cost) * item.quantity;
-    const color  = profit >= 0 ? "#3fb950" : "#f85149";
-
-    pEl.textContent  = (profit >= 0 ? "+" : "") + "$" + profit.toFixed(2);
-    pEl.style.color  = color;
+    pEl.textContent = (profit >= 0 ? "+" : "") + "$" + profit.toFixed(2);
+    pEl.style.color = profit >= 0 ? "#3fb950" : "#f85149";
 }
 
-/* Apply new price from inline editor */
 function applyInlinePrice(idx) {
-    const item = cart[idx];
-    if(!item) return;
-    const inp  = document.getElementById(`eprice-${idx}`);
-    if(!inp) return;
+    const item = cart[idx]; if(!item) return;
+    const inp  = document.getElementById(`eprice-${idx}`); if(!inp) return;
     const newPrice = parseFloat(inp.value);
-    if(!newPrice || newPrice <= 0) {
-        inp.style.borderColor = "#f85149";
-        inp.focus();
-        return;
-    }
-    item.price   = newPrice;
+    if(!newPrice || newPrice <= 0) { inp.style.borderColor = "#f85149"; inp.focus(); return; }
+    item.price    = newPrice;
     openEditorIdx = null;
     renderCart();
     showToast("Price updated ✅");
-}
-
-function editCartItemPrice(idx) {
-    toggleEditor(idx);
 }
 
 function changeQty(idx, delta){
@@ -1131,9 +1101,7 @@ function checkout(){
     if(!cart.length) return;
     const btn = document.getElementById("checkoutBtn");
     btn.disabled = true; btn.textContent = "Processing...";
-
     const receiptCart = cart.map(i => ({...i}));
-
     fetch("/pharmacy/sell",{ method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({cart}) })
     .then(r=>r.json())
     .then(data=>{
@@ -1148,16 +1116,14 @@ function checkout(){
 }
 
 function showSaleReceipt(items, _backendProfit) {
-    let totalRevenue = 0;
-    let totalProfit  = 0; // xisaabinta JS-ka laftiisa — lacagta dhabta ah
-
+    let totalRevenue = 0, totalProfit = 0;
     const rows = items.map(item => {
         const revenue  = parseFloat(item.price) * item.quantity;
         const costAmt  = parseFloat(item.cost_price || 0) * item.quantity;
         const profit   = revenue - costAmt;
         const pColor   = profit >= 0 ? "#3fb950" : "#f85149";
         totalRevenue  += revenue;
-        totalProfit   += profit; // ku dar profit-ka dhabta ah
+        totalProfit   += profit;
         return `<tr>
             <td style="padding:8px 10px;border-bottom:1px solid #30363d;">${item.name}</td>
             <td style="padding:8px 10px;border-bottom:1px solid #30363d;text-align:center;">${item.quantity}</td>
@@ -1166,29 +1132,23 @@ function showSaleReceipt(items, _backendProfit) {
             <td style="padding:8px 10px;border-bottom:1px solid #30363d;text-align:right;font-weight:700;color:${pColor};">${profit>=0?"+":""}$${profit.toFixed(2)}</td>
         </tr>`;
     }).join("");
-
     const profitColor = totalProfit >= 0 ? "#3fb950" : "#f85149";
-
     document.getElementById("saleReceiptContent").innerHTML = `
         <div style="text-align:center;margin-bottom:20px;">
             <div style="font-size:40px;">✅</div>
             <div style="font-size:20px;font-weight:700;color:#3fb950;margin-top:8px;">Sale Complete!</div>
             <div style="font-size:13px;color:#8b949e;margin-top:4px;">${new Date().toLocaleString()}</div>
         </div>
-
         <table style="width:100%;border-collapse:collapse;margin-bottom:16px;">
-            <thead>
-                <tr style="background:#21262d;">
-                    <th style="padding:10px;text-align:left;font-size:12px;color:#8b949e;text-transform:uppercase;">Medicine</th>
-                    <th style="padding:10px;text-align:center;font-size:12px;color:#8b949e;text-transform:uppercase;">Qty</th>
-                    <th style="padding:10px;text-align:right;font-size:12px;color:#8b949e;text-transform:uppercase;">Unit Price</th>
-                    <th style="padding:10px;text-align:right;font-size:12px;color:#8b949e;text-transform:uppercase;">Total</th>
-                    <th style="padding:10px;text-align:right;font-size:12px;color:#8b949e;text-transform:uppercase;">Profit/Loss</th>
-                </tr>
-            </thead>
+            <thead><tr style="background:#21262d;">
+                <th style="padding:10px;text-align:left;font-size:12px;color:#8b949e;text-transform:uppercase;">Medicine</th>
+                <th style="padding:10px;text-align:center;font-size:12px;color:#8b949e;text-transform:uppercase;">Qty</th>
+                <th style="padding:10px;text-align:right;font-size:12px;color:#8b949e;text-transform:uppercase;">Unit Price</th>
+                <th style="padding:10px;text-align:right;font-size:12px;color:#8b949e;text-transform:uppercase;">Total</th>
+                <th style="padding:10px;text-align:right;font-size:12px;color:#8b949e;text-transform:uppercase;">Profit/Loss</th>
+            </tr></thead>
             <tbody>${rows}</tbody>
         </table>
-
         <div style="background:#0d1117;border:1px solid #30363d;border-radius:10px;padding:16px;">
             <div style="display:flex;justify-content:space-between;margin-bottom:10px;">
                 <span style="color:#8b949e;">Total Revenue:</span>
@@ -1199,7 +1159,6 @@ function showSaleReceipt(items, _backendProfit) {
                 <span style="font-weight:700;font-size:20px;color:${profitColor};">$${parseFloat(totalProfit).toFixed(2)}</span>
             </div>
         </div>
-
         <button onclick="printSaleReceipt()" style="width:100%;margin-top:16px;padding:12px;background:#1f6feb;border:none;border-radius:8px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;">🖨️ Print Receipt</button>
         <button onclick="document.getElementById('saleReceiptModal').classList.remove('open')" style="width:100%;margin-top:8px;padding:12px;background:#21262d;border:1px solid #30363d;border-radius:8px;color:#e6edf3;font-size:14px;font-weight:600;cursor:pointer;">✕ Close</button>
     `;
@@ -1207,7 +1166,7 @@ function showSaleReceipt(items, _backendProfit) {
 }
 
 function printSaleReceipt() {
-    const content = document.getElementById("saleReceiptContent").innerHTML;
+    const content   = document.getElementById("saleReceiptContent").innerHTML;
     const printArea = document.getElementById("printArea");
     printArea.innerHTML = `<div style="font-family:monospace;max-width:320px;margin:auto;padding:20px;">${content}</div>`;
     window.print();
@@ -1219,7 +1178,6 @@ function printSaleReceipt() {
 function addMedicine(){
     const name = document.getElementById("add_name").value.trim();
     if(!name){ showToast("Medicine name is required ❌","error"); return; }
-
     const fd = new FormData();
     fd.append("name",           name);
     fd.append("barcode",        document.getElementById("add_barcode").value.trim());
@@ -1228,10 +1186,8 @@ function addMedicine(){
     fd.append("stock_quantity", document.getElementById("add_stock").value   || 0);
     fd.append("expiry_date",    document.getElementById("add_expiry").value);
     fd.append("category",       document.getElementById("add_category").value);
-
     const imgFile = document.getElementById("add_image").files[0];
     if(imgFile) fd.append("image", imgFile);
-
     fetch("/pharmacy/add_medicine",{ method:"POST", body:fd })
     .then(r=>r.json())
     .then(data=>{
@@ -1239,8 +1195,8 @@ function addMedicine(){
             showToast("Medicine added ✅");
             ["add_name","add_barcode","add_cost","add_selling","add_stock","add_expiry"].forEach(id=>document.getElementById(id).value="");
             document.getElementById("imgPreview").style.display = "none";
-            document.getElementById("uploadBox").querySelector("p").textContent = "Click to select image from gallery";
-            document.getElementById("add_image").value = "";
+            document.getElementById("uploadLabel").textContent  = "Click to select image from gallery";
+            document.getElementById("add_image").value          = "";
             document.getElementById("profitPreview").style.display = "none";
             setTimeout(()=>location.reload(), 1200);
         } else {
@@ -1334,10 +1290,8 @@ function addDebt(){
     const amount = parseFloat(document.getElementById("debt_amount").value)||0;
     const desc   = document.getElementById("debt_desc").value.trim();
     const date   = document.getElementById("debt_date").value;
-
     if(!name){ showToast("Customer name is required ❌","error"); return; }
     if(!amount){ showToast("Amount is required ❌","error"); return; }
-
     fetch("/pharmacy/add_debt",{
         method:"POST", headers:{"Content-Type":"application/json"},
         body:JSON.stringify({ name, phone, type, amount, description:desc, date })
@@ -1358,11 +1312,8 @@ function addDebt(){
 function loadDebts(){
     fetch("/pharmacy/debts")
     .then(r=>r.json())
-    .then(data=>{
-        allDebts = data.debts || [];
-        updateDebtSummary(data);
-        renderDebts(allDebts);
-    }).catch(()=>{});
+    .then(data=>{ allDebts = data.debts || []; updateDebtSummary(data); renderDebts(allDebts); })
+    .catch(()=>{});
 }
 
 function updateDebtSummary(data){
@@ -1374,10 +1325,7 @@ function updateDebtSummary(data){
 
 function renderDebts(debts){
     const box = document.getElementById("debtList");
-    if(!debts.length){
-        box.innerHTML = `<div style="text-align:center;color:#8b949e;padding:30px;">No records found</div>`;
-        return;
-    }
+    if(!debts.length){ box.innerHTML = `<div style="text-align:center;color:#8b949e;padding:30px;">No records found</div>`; return; }
     box.innerHTML = debts.map(d => {
         const isPaid    = d.status === "paid";
         const typeClass = isPaid ? "debt-type-paid" : (d.type==="product" ? "debt-type-product" : "debt-type-cash");
@@ -1446,8 +1394,7 @@ function printDebt(id){
     printArea.innerHTML = `
         <div style="font-family:monospace;max-width:300px;margin:auto;padding:20px;border:2px solid #000;">
             <h2 style="text-align:center;border-bottom:1px solid #000;padding-bottom:10px;">💊 PHARMACY RECEIPT</h2>
-            <p style="text-align:center;font-size:12px;">Sahal Server POS</p>
-            <br>
+            <p style="text-align:center;font-size:12px;">Sahal Server POS</p><br>
             <p><b>Customer:</b> ${debt.name}</p>
             <p><b>Phone:</b> ${debt.phone||'N/A'}</p>
             <p><b>Date:</b> ${debt.date||'N/A'}</p>
