@@ -575,10 +575,9 @@ def save_supermarket_firestore(data):
 def save_order_firestore(data):
     db.collection("orders").add(data)
 
-
 @app.route("/")
 def home():
-    return render_template("index.html")
+    return render_template("home.html")
 
 
 @app.route("/index")
