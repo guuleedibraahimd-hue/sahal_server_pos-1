@@ -694,4 +694,108 @@ button.portal-row{width:100%;border:none;font-family:inherit;text-align:left;}
 </div>
 
 <div class="fab-popup apps-pos" id="appsPopup">
-    <a href="https://wa.me/252628276993" target="_blank" class="p-green">💬 WhatsApp Support
+    <a href="https://wa.me/252628276993" target="_blank" class="p-green">💬 WhatsApp Support</a>
+    <a href="mailto:moodirmanooge@gmail.com" class="p-blue">✉️ Send Email</a>
+</div>
+
+<script>
+function openPopup(id) {
+    closeAll();
+    document.getElementById(id).classList.add('show');
+    document.getElementById('overlay').classList.add('show');
+}
+function closePopup(id) {
+    document.getElementById(id).classList.remove('show');
+    document.getElementById('overlay').classList.remove('show');
+}
+function closeAll() {
+    document.querySelectorAll('.popup').forEach(p => p.classList.remove('show'));
+    document.querySelectorAll('.fab-popup').forEach(p => p.classList.remove('show'));
+    document.getElementById('overlay').classList.remove('show');
+    document.getElementById('adminMenu').style.display = 'none';
+}
+function toggleFab(id) {
+    let p = document.getElementById(id);
+    let isOpen = p.classList.contains('show');
+    document.querySelectorAll('.fab-popup').forEach(x => x.classList.remove('show'));
+    if (!isOpen) p.classList.add('show');
+}
+function toggleAdminMenu() {
+    let m = document.getElementById('adminMenu');
+    m.style.display = m.style.display === 'block' ? 'none' : 'block';
+}
+function showMsg(id, text, type) {
+    let el = document.getElementById(id);
+    el.className = 'msg-box msg-' + type;
+    el.innerHTML = text;
+    el.style.display = 'block';
+}
+
+async function dashboardLogin() {
+    let email = document.getElementById('dashboard_email').value.trim();
+    let password = document.getElementById('dashboard_password').value.trim();
+    let btn = document.getElementById('dashboardLoginBtn');
+    if (!email || !password) {
+        showMsg('dashboardMsg', '⚠️ Please enter email and password.', 'error');
+        return;
+    }
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Checking...';
+    showMsg('dashboardMsg', 'Verifying your credentials...', 'info');
+    let fd = new FormData();
+    fd.append('email', email);
+    fd.append('password', password);
+    try {
+        let res = await fetch('/dashboard_login', { method: 'POST', body: fd });
+        let data = await res.json();
+        if (data.success) {
+            showMsg('dashboardMsg', '✅ Login successful! Redirecting...', 'success');
+            setTimeout(() => { window.location.href = data.redirect; }, 600);
+        } else {
+            showMsg('dashboardMsg', '❌ ' + (data.error || 'Invalid credentials'), 'error');
+            btn.disabled = false;
+            btn.innerHTML = 'Login to Dashboard';
+        }
+    } catch (e) {
+        showMsg('dashboardMsg', '⚠️ Server error. Please try again.', 'error');
+        btn.disabled = false;
+        btn.innerHTML = 'Login to Dashboard';
+    }
+}
+
+document.getElementById('dashboard_password').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') dashboardLogin();
+});
+document.getElementById('dashboard_email').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') document.getElementById('dashboard_password').focus();
+});
+
+document.getElementById('teacherLoginForm').onsubmit = async (e) => {
+    e.preventDefault();
+    let fd = new FormData(e.target);
+    showMsg('teacherMsg', 'Checking...', 'info');
+    try {
+        let res = await fetch('/teacher_login', { method: 'POST', body: fd });
+        let data = await res.json();
+        if (data.success) {
+            window.location.href = data.redirect || '/teacher_dashboard';
+        } else {
+            showMsg('teacherMsg', '❌ ' + data.error, 'error');
+        }
+    } catch {
+        showMsg('teacherMsg', '⚠️ Server Error!', 'error');
+    }
+};
+async function checkStudent() {}
+
+// PWA Service Worker registration
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register("/static/sw.js")
+            .then(reg => console.log("Service Worker Registered!", reg))
+            .catch(err => console.error("Service Worker Failed!", err));
+    });
+}
+</script>
+</body>
+</html>
