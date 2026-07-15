@@ -2,316 +2,627 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Restaurant Admin Panel</title>
+<title>{{ r.name }} - Admin Panel</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
+:root{
+    --sidebar-bg:#12122b;
+    --sidebar-active:#7c5cff;
+    --bg:#f5f6fb;
+    --card-radius:16px;
+    --purple:#7c5cff;
+    --purple-light:#efeaff;
+    --green:#17c37b;
+    --green-light:#e7faf1;
+    --red:#ff4d67;
+    --red-light:#ffe9ec;
+    --blue:#2f8bff;
+    --blue-light:#e8f2ff;
+    --text-dark:#1a1a2e;
+    --text-muted:#8a8aa3;
+}
+
+*{box-sizing:border-box;}
+
 body{
-    font-family:Arial, sans-serif;
-    background:#f4f6f9;
-    padding:20px;
+    font-family:'Segoe UI', Arial, sans-serif;
+    background:var(--bg);
     margin:0;
+    color:var(--text-dark);
 }
 
-.top{
+.layout{
     display:flex;
-    justify-content:space-between;
+    min-height:100vh;
+}
+
+/* ---------- SIDEBAR ---------- */
+.sidebar{
+    width:250px;
+    background:var(--sidebar-bg);
+    color:#cfcfe6;
+    padding:20px 0;
+    flex-shrink:0;
+    position:sticky;
+    top:0;
+    height:100vh;
+    overflow-y:auto;
+}
+
+.brand{
+    display:flex;
     align-items:center;
-    margin-bottom:20px;
-    flex-wrap:wrap;
     gap:10px;
+    padding:0 20px 20px 20px;
+    border-bottom:1px solid rgba(255,255,255,0.08);
+    margin-bottom:15px;
 }
 
-.logout{
-    background:#dc3545;
-    color:white;
-    padding:10px 15px;
-    border-radius:8px;
+.brand .logo{
+    width:38px;
+    height:38px;
+    border-radius:10px;
+    background:var(--purple);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:20px;
+}
+
+.brand h1{
+    font-size:16px;
+    margin:0;
+    color:#fff;
+}
+
+.brand span{
+    font-size:11px;
+    color:var(--text-muted);
+}
+
+.nav-item{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding:12px 20px;
     text-decoration:none;
-    font-weight:bold;
-}
-
-.cards{
-    display:grid;
-    grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
-    gap:15px;
-    margin-bottom:25px;
-}
-
-.card{
-    background:white;
-    padding:20px;
-    border-radius:12px;
-    box-shadow:0 0 8px rgba(0,0,0,0.08);
-}
-
-.card h3{
-    margin:0 0 10px 0;
-}
-
-.num{
-    font-size:28px;
-    font-weight:bold;
-    color:#007bff;
-}
-
-.section{
-    background:white;
-    padding:20px;
-    border-radius:12px;
-    box-shadow:0 0 8px rgba(0,0,0,0.08);
-    margin-bottom:25px;
-}
-
-input{
-    width:100%;
-    padding:10px;
-    margin:8px 0;
-    border:1px solid #ddd;
-    border-radius:5px;
-    box-sizing:border-box;
-}
-
-button{
-    width:100%;
-    padding:10px;
-    background:#0a7cff;
-    color:white;
-    border:none;
-    border-radius:5px;
+    color:#cfcfe6;
+    font-size:14px;
+    font-weight:500;
+    margin:2px 10px;
+    border-radius:10px;
     cursor:pointer;
-    font-weight:bold;
 }
 
-.item{
+.nav-item:hover{
+    background:rgba(255,255,255,0.06);
+}
+
+.nav-item.active{
+    background:var(--purple);
+    color:#fff;
+}
+
+.nav-item .icon{
+    font-size:16px;
+    width:20px;
+    text-align:center;
+}
+
+.nav-disabled{
+    opacity:0.35;
+    cursor:not-allowed;
+}
+
+/* ---------- MAIN ---------- */
+.main{
+    flex:1;
+    padding:24px 30px;
+    min-width:0;
+}
+
+.topbar{
     display:flex;
     justify-content:space-between;
     align-items:center;
-    padding:10px;
-    border-bottom:1px solid #eee;
+    margin-bottom:24px;
+    flex-wrap:wrap;
+    gap:12px;
 }
 
-img{
-    width:60px;
-    height:60px;
-    object-fit:cover;
-    border-radius:8px;
+.topbar .search{
+    flex:1;
+    min-width:200px;
+    max-width:420px;
+    background:white;
+    border-radius:10px;
+    padding:10px 15px;
+    box-shadow:0 1px 3px rgba(0,0,0,0.06);
+    color:var(--text-muted);
+    font-size:14px;
 }
 
-.delete-btn{
-    background:red;
+.topbar-right{
+    display:flex;
+    align-items:center;
+    gap:14px;
+}
+
+.icon-btn{
+    background:white;
+    border-radius:10px;
+    width:38px;
+    height:38px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    box-shadow:0 1px 3px rgba(0,0,0,0.06);
+    text-decoration:none;
+    color:var(--text-dark);
+    font-weight:bold;
+}
+
+.logout-btn{
+    background:var(--red);
     color:white;
+}
+
+.page-title h2{
+    margin:0 0 4px 0;
+    font-size:26px;
+}
+
+.page-title p{
+    margin:0 0 20px 0;
+    color:var(--text-muted);
+    font-size:14px;
+}
+
+/* ---------- CARDS ---------- */
+.stat-cards{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(230px,1fr));
+    gap:16px;
+    margin-bottom:24px;
+}
+
+.stat-card{
+    border-radius:var(--card-radius);
+    padding:20px;
+    color:#fff;
+    position:relative;
+    overflow:hidden;
+}
+
+.stat-card.purple{background:linear-gradient(135deg,#8a6bff,#6a4ee0);}
+.stat-card.green{background:linear-gradient(135deg,#e9fbf3,#e9fbf3);color:var(--text-dark);}
+.stat-card.red{background:linear-gradient(135deg,#ff5c7a,#ff3b58);}
+.stat-card.blue{background:linear-gradient(135deg,#eaf3ff,#eaf3ff);color:var(--text-dark);}
+
+.stat-card .stat-icon{
+    width:44px;height:44px;
+    border-radius:12px;
+    background:rgba(255,255,255,0.25);
+    display:flex;align-items:center;justify-content:center;
+    font-size:20px;
+    margin-bottom:12px;
+}
+
+.stat-card.green .stat-icon, .stat-card.blue .stat-icon{
+    background:rgba(0,0,0,0.05);
+}
+
+.stat-card h3{
+    margin:0 0 8px 0;
+    font-size:14px;
+    font-weight:600;
+    opacity:0.9;
+}
+
+.stat-card .val{
+    font-size:26px;
+    font-weight:800;
+}
+
+/* ---------- GRID SECTIONS ---------- */
+.grid-2{
+    display:grid;
+    grid-template-columns:2fr 1fr;
+    gap:16px;
+    margin-bottom:16px;
+}
+
+.grid-3{
+    display:grid;
+    grid-template-columns:1fr 1fr 1fr;
+    gap:16px;
+    margin-bottom:16px;
+}
+
+@media (max-width:900px){
+    .grid-2, .grid-3{grid-template-columns:1fr;}
+    .sidebar{position:relative;height:auto;}
+}
+
+.panel{
+    background:white;
+    border-radius:var(--card-radius);
+    padding:20px;
+    box-shadow:0 1px 4px rgba(0,0,0,0.05);
+}
+
+.panel h3{
+    margin:0 0 16px 0;
+    font-size:16px;
+}
+
+.panel-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:16px;
+}
+
+select, .range-select{
     padding:8px 12px;
     border-radius:8px;
-    text-decoration:none;
-    font-weight:bold;
-}
-
-.clear-btn{
-    background:#dc3545;
-    color:white;
-    padding:10px 15px;
-    border-radius:8px;
-    text-decoration:none;
-    font-weight:bold;
-    display:inline-block;
-    margin-top:15px;
-}
-
-.order-box{
+    border:1px solid #eee;
     background:#fafafa;
-    padding:15px;
+    font-size:13px;
+}
+
+/* top selling / list rows */
+.list-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:10px 0;
+    border-bottom:1px solid #f2f2f7;
+}
+
+.list-row:last-child{border-bottom:none;}
+
+.list-row img{
+    width:42px;height:42px;
     border-radius:10px;
-    margin-bottom:12px;
-    border:1px solid #ddd;
+    object-fit:cover;
+    margin-right:10px;
+    background:#eee;
+}
+
+.list-left{
+    display:flex;
+    align-items:center;
+}
+
+.list-name{font-weight:600;font-size:14px;}
+.list-sub{font-size:12px;color:var(--text-muted);}
+.list-price{font-weight:700;font-size:14px;text-align:right;}
+
+/* status badges */
+.badge{
+    padding:4px 10px;
+    border-radius:20px;
+    font-size:12px;
+    font-weight:600;
+}
+.badge.completed{background:var(--green-light);color:var(--green);}
+.badge.pending{background:#fff4de;color:#f2a93b;}
+.badge.preparing{background:var(--blue-light);color:var(--blue);}
+.badge.cancelled{background:var(--red-light);color:var(--red);}
+
+/* forms */
+.form-panel input{
+    width:100%;
+    padding:10px 12px;
+    margin:6px 0 14px 0;
+    border:1px solid #e5e5ee;
+    border-radius:8px;
+    box-sizing:border-box;
+    font-size:14px;
+}
+
+.form-panel label{
+    font-size:13px;
+    font-weight:600;
+    color:var(--text-muted);
+}
+
+.btn-primary{
+    background:var(--purple);
+    color:white;
+    border:none;
+    padding:12px 18px;
+    border-radius:10px;
+    font-weight:700;
+    cursor:pointer;
+    width:100%;
+    font-size:14px;
+}
+
+.btn-danger{
+    background:var(--red);
+    color:white;
+    border:none;
+    padding:12px 18px;
+    border-radius:10px;
+    font-weight:700;
+    cursor:pointer;
+    text-decoration:none;
+    display:inline-block;
+    font-size:14px;
+}
+
+/* menu grid */
+.menu-item{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:12px 0;
+    border-bottom:1px solid #f2f2f7;
+}
+
+.menu-item:last-child{border-bottom:none;}
+
+.menu-item img{
+    width:54px;height:54px;
+    border-radius:10px;
+    object-fit:cover;
+    margin-right:12px;
 }
 
 .empty{
-    color:#777;
+    color:var(--text-muted);
     text-align:center;
+    padding:20px 0;
+    font-size:14px;
 }
+
+canvas{max-width:100%;}
 </style>
 </head>
 <body>
 
-<div class="top">
-    <h1>🍽 Restaurant Admin Panel</h1>
-    <a href="/logout_restaurant" class="logout">Logout</a>
-</div>
+<div class="layout">
 
-<div style="text-align:right;margin-bottom:10px;">
-    <button onclick="toggleMenu()" style="width:auto;padding:8px 14px;">⋮</button>
-
-    <div id="menu3dots"
-         style="display:none;background:white;
-                border:1px solid #ddd;
-                padding:10px;
-                border-radius:8px;
-                margin-top:8px;
-                width:150px;
-                margin-left:auto;">
-        <a href="?range=day">Last Day</a><br>
-        <a href="?range=week">Last Week</a><br>
-        <a href="?range=month">Last Month</a><br>
-        <a href="?range=year">Last Year</a>
-    </div>
-</div>
-
-<div class="section">
-    <div style="display:flex;justify-content:space-between;align-items:center;">
-        <h2>📊 Analytics</h2>
-
-        <select id="rangeFilter" onchange="changeRange()"
-                style="padding:8px;border-radius:8px;">
-            <option value="day">Last Day</option>
-            <option value="week">Last Week</option>
-            <option value="month">Last Month</option>
-            <option value="year">Last Year</option>
-        </select>
-    </div>
-
-    <div class="cards">
-        <div class="card">
-            <h3>💰 Revenue</h3>
-            <div class="num">${{ total }}</div>
-        </div>
-
-        <div class="card">
-            <h3>📈 Profit</h3>
-            <div class="num">${{ profit }}</div>
-        </div>
-
-        <div class="card">
-            <h3>📉 Loss</h3>
-            <div class="num">${{ loss }}</div>
-        </div>
-    </div>
-
-    <p>
-        <b>Comparison:</b>
-        {{ compare_text }}
-    </p>
-</div>
-
-<div class="cards">
-    <div class="card">
-        <h3>📦 Total Orders</h3>
-        <div class="num">{{ orders|length }}</div>
-    </div>
-
-    <div class="card">
-        <h3>💰 Total Revenue</h3>
-        <div class="num">${{ total }}</div>
-    </div>
-
-    <div class="card">
-        <h3>🍽 Menu Items</h3>
-        <div class="num">{{ menu|length }}</div>
-    </div>
-</div>
-
-<div class="section">
-    <h2>⚙️ Restaurant Settings</h2>
-
-    <form method="post">
-        <label>Restaurant Name</label>
-        <input name="name" value="{{ r.name }}" required>
-
-        <label>Username</label>
-        <input name="username" value="{{ r.username }}" required>
-
-        <label>Login Password</label>
-        <input name="password" value="{{ r.password }}" required>
-
-        <label>Kitchen Password</label>
-        <input name="kitchen_password" value="{{ r.kitchen_password }}" required>
-
-        <label>Admin Password</label>
-        <input name="restaurant_admin_password"
-               value="{{ r.restaurant_admin_password or r['resturen_admin password'] }}"
-               required>
-
-        <button type="submit">Update Settings</button>
-    </form>
-</div>
-
-<div class="section">
-    <h2>🍽 Menu</h2>
-
-    {% if menu %}
-        {% for m in menu %}
-        <div class="item">
-            <div style="display:flex;gap:10px;align-items:center;">
-                <img src="/static/uploads/{{ m.image }}"
-                     onerror="this.style.display='none'">
-
-                <div>
-                    <b>{{ m.name }}</b><br>
-                    ${{ m.price }}
-                </div>
+    <!-- ============ SIDEBAR ============ -->
+    <div class="sidebar">
+        <div class="brand">
+            <div class="logo">🍽</div>
+            <div>
+                <h1>{{ r.name }}</h1>
+                <span>Restaurant Admin Panel</span>
             </div>
+        </div>
 
-            <a href="/delete_menu/{{m.id}}/{{rid}}" class="delete-btn">
-                Delete
+        <a class="nav-item active" href="#dashboard-top">
+            <span class="icon">📊</span> Dashboard
+        </a>
+        <a class="nav-item" href="#orders-section">
+            <span class="icon">📦</span> Orders
+        </a>
+        <a class="nav-item" href="#menu-section">
+            <span class="icon">🍽</span> Menu Items
+        </a>
+        <a class="nav-item" href="#settings-section">
+            <span class="icon">⚙️</span> Settings
+        </a>
+        <a class="nav-item" href="#system-section">
+            <span class="icon">🧹</span> System Controls
+        </a>
+
+        <div style="margin:20px 10px 0 10px;padding-top:15px;border-top:1px solid rgba(255,255,255,0.08);">
+            <a href="/logout_restaurant" class="nav-item" style="color:#ff8a99;">
+                <span class="icon">🚪</span> Logout
             </a>
         </div>
-        {% endfor %}
-    {% else %}
-        <p class="empty">No menu items found</p>
-    {% endif %}
-</div>
-
-<div class="section">
-    <h2>🧹 System Controls</h2>
-
-    <a href="/clear_kitchen_orders/{{rid}}"
-       onclick="return confirm('Delete all kitchen orders?')"
-       class="clear-btn">
-       🗑 Clear Kitchen Orders
-    </a>
-
-    <br><br>
-
-    <a href="/clear_ads/{{rid}}"
-       onclick="return confirm('Delete all ads?')"
-       class="clear-btn">
-       📢 Clear Ads
-    </a>
-</div>
-
-<div class="section">
-    <div onclick="toggleOrders()"
-         style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;">
-        <h2>📦 Orders History</h2>
-        <button type="button" style="width:auto;padding:8px 15px;">
-            ⬇ View Orders
-        </button>
     </div>
 
-    <div id="ordersHistoryBox" style="display:none;margin-top:15px;">
-        {% if orders %}
-            {% for o in orders %}
-            <div class="order-box">
-                <p><b>Table:</b> {{ o.table or "-" }}</p>
-                <p><b>Items:</b> {{ o.items_text }}</p>
-                <p><b>Total:</b> ${{ o.price or 0 }}</p>
-                <p><b>Time:</b> {{ o.created_at }}</p>
-                <p><b>Status:</b> {{ o.status or "pending" }}</p>
+    <!-- ============ MAIN ============ -->
+    <div class="main" id="dashboard-top">
+
+        <div class="topbar">
+            <div class="search">🔍 Search anything…</div>
+            <div class="topbar-right">
+                <a href="#" class="icon-btn logout-btn" style="text-decoration:none;" title="Logout" onclick="window.location.href='/logout_restaurant';return false;">⏻</a>
             </div>
-            {% endfor %}
-        {% else %}
-            <p class="empty">No orders yet</p>
-        {% endif %}
+        </div>
+
+        <div class="page-title">
+            <h2>Dashboard</h2>
+            <p>Welcome back! Here's what's happening with {{ r.name }} today.</p>
+        </div>
+
+        <!-- range filter -->
+        <div style="text-align:right;margin-bottom:14px;">
+            <select id="rangeFilter" class="range-select" onchange="changeRange()">
+                <option value="day" {% if range=='day' %}selected{% endif %}>Last Day</option>
+                <option value="week" {% if range=='week' %}selected{% endif %}>Last Week</option>
+                <option value="month" {% if range=='month' %}selected{% endif %}>Last Month</option>
+                <option value="year" {% if range=='year' %}selected{% endif %}>Last Year</option>
+            </select>
+        </div>
+
+        <!-- STAT CARDS -->
+        <div class="stat-cards">
+            <div class="stat-card purple">
+                <div class="stat-icon">💰</div>
+                <h3>Total Revenue</h3>
+                <div class="val">${{ total }}</div>
+            </div>
+            <div class="stat-card green">
+                <div class="stat-icon">📈</div>
+                <h3>Total Profit</h3>
+                <div class="val">${{ profit }}</div>
+            </div>
+            <div class="stat-card red">
+                <div class="stat-icon">📉</div>
+                <h3>Total Loss</h3>
+                <div class="val">${{ loss }}</div>
+            </div>
+            <div class="stat-card blue">
+                <div class="stat-icon">📦</div>
+                <h3>Total Orders</h3>
+                <div class="val">{{ orders|length }}</div>
+            </div>
+        </div>
+
+        <p style="color:var(--text-muted);font-size:14px;margin:-8px 0 20px 0;">
+            <b style="color:var(--text-dark);">Comparison:</b> {{ compare_text }}
+        </p>
+
+        <!-- OVERVIEW + TOP SELLING + QUICK ACTIONS -->
+        <div class="grid-3">
+            <div class="panel" style="grid-column:span 2;">
+                <div class="panel-head">
+                    <h3>Overview (Revenue &amp; Orders)</h3>
+                </div>
+                <canvas id="overviewChart" height="110"></canvas>
+            </div>
+
+            <div class="panel">
+                <div class="panel-head">
+                    <h3>Order Status</h3>
+                </div>
+                <canvas id="statusChart" height="180"></canvas>
+                <div style="margin-top:12px;font-size:13px;">
+                    {% for s in status_breakdown %}
+                    <div style="display:flex;justify-content:space-between;padding:4px 0;">
+                        <span>{{ s.label }}</span>
+                        <span style="color:var(--text-muted);">{{ s.count }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <div class="grid-2">
+            <div class="panel">
+                <div class="panel-head">
+                    <h3>🏆 Top Selling Items</h3>
+                </div>
+                {% if top_items %}
+                    {% for t in top_items %}
+                    <div class="list-row">
+                        <div class="list-left">
+                            <img src="/static/uploads/{{ t.image }}" onerror="this.style.display='none'">
+                            <div>
+                                <div class="list-name">{{ t.name }}</div>
+                                <div class="list-sub">{{ t.qty }} orders</div>
+                            </div>
+                        </div>
+                        <div class="list-price">${{ t.revenue }}</div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="empty">No sales data yet</p>
+                {% endif %}
+            </div>
+
+            <div class="panel">
+                <div class="panel-head">
+                    <h3>📊 Revenue by Category</h3>
+                </div>
+                <canvas id="categoryChart" height="180"></canvas>
+            </div>
+        </div>
+
+        <!-- ORDERS SECTION -->
+        <div class="panel" id="orders-section" style="margin-bottom:16px;">
+            <div class="panel-head" style="cursor:pointer;" onclick="toggleOrders()">
+                <h3>📦 Orders History</h3>
+                <button type="button" class="range-select" style="cursor:pointer;">⬇ View Orders</button>
+            </div>
+
+            <div id="ordersHistoryBox" style="display:none;">
+                {% if orders %}
+                    {% for o in orders %}
+                    <div class="list-row">
+                        <div>
+                            <div class="list-name">Table {{ o.table or "-" }} — {{ o.items_text }}</div>
+                            <div class="list-sub">{{ o.created_at }}</div>
+                        </div>
+                        <div style="text-align:right;">
+                            <div class="list-price">${{ o.price or 0 }}</div>
+                            <span class="badge {{ (o.status or 'pending')|lower }}">{{ o.status or "pending" }}</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="empty">No orders yet</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- MENU SECTION -->
+        <div class="panel" id="menu-section" style="margin-bottom:16px;">
+            <h3>🍽 Menu</h3>
+            {% if menu %}
+                {% for m in menu %}
+                <div class="menu-item">
+                    <div style="display:flex;align-items:center;">
+                        <img src="/static/uploads/{{ m.image }}" onerror="this.style.display='none'">
+                        <div>
+                            <div class="list-name">{{ m.name }}</div>
+                            <div class="list-sub">${{ m.price }}</div>
+                        </div>
+                    </div>
+                    <a href="/delete_menu/{{m.id}}/{{rid}}" class="btn-danger">Delete</a>
+                </div>
+                {% endfor %}
+            {% else %}
+                <p class="empty">No menu items found</p>
+            {% endif %}
+        </div>
+
+        <!-- SETTINGS -->
+        <div class="panel form-panel" id="settings-section" style="margin-bottom:16px;">
+            <h3>⚙️ Restaurant Settings</h3>
+            <form method="post">
+                <label>Restaurant Name</label>
+                <input name="name" value="{{ r.name }}" required>
+
+                <label>Username</label>
+                <input name="username" value="{{ r.username }}" required>
+
+                <label>Login Password</label>
+                <input name="password" value="{{ r.password }}" required>
+
+                <label>Kitchen Password</label>
+                <input name="kitchen_password" value="{{ r.kitchen_password }}" required>
+
+                <label>Admin Password</label>
+                <input name="restaurant_admin_password"
+                       value="{{ r.restaurant_admin_password or r['resturen_admin password'] }}"
+                       required>
+
+                <button type="submit" class="btn-primary">Update Settings</button>
+            </form>
+        </div>
+
+        <!-- SYSTEM CONTROLS -->
+        <div class="panel" id="system-section" style="margin-bottom:30px;">
+            <h3>🧹 System Controls</h3>
+            <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:10px;">
+                <a href="/clear_kitchen_orders/{{rid}}"
+                   onclick="return confirm('Delete all kitchen orders?')"
+                   class="btn-danger">
+                   🗑 Clear Kitchen Orders
+                </a>
+
+                <a href="/clear_ads/{{rid}}"
+                   onclick="return confirm('Delete all ads?')"
+                   class="btn-danger">
+                   📢 Clear Ads
+                </a>
+            </div>
+        </div>
+
     </div>
 </div>
 
 <script>
-function toggleMenu(){
-    let box = document.getElementById("menu3dots");
-    box.style.display =
-        box.style.display == "block" ? "none" : "block";
-}
-
 function changeRange(){
     let value = document.getElementById("rangeFilter").value;
     window.location.href = "?range=" + value;
@@ -319,13 +630,87 @@ function changeRange(){
 
 function toggleOrders(){
     let box = document.getElementById("ordersHistoryBox");
-
-    if(box.style.display === "block"){
-        box.style.display = "none";
-    }else{
-        box.style.display = "block";
-    }
+    box.style.display = (box.style.display === "block") ? "none" : "block";
 }
+
+// ---- Chart data injected from Flask (real Firestore-derived data) ----
+const overviewLabels = {{ chart_labels|tojson }};
+const overviewRevenue = {{ chart_revenue|tojson }};
+const overviewOrders  = {{ chart_orders|tojson }};
+
+const statusLabels = {{ status_labels|tojson }};
+const statusCounts = {{ status_counts|tojson }};
+
+const categoryLabels = {{ category_labels|tojson }};
+const categoryValues = {{ category_values|tojson }};
+
+new Chart(document.getElementById('overviewChart'), {
+    type: 'line',
+    data: {
+        labels: overviewLabels,
+        datasets: [
+            {
+                label: 'Revenue',
+                data: overviewRevenue,
+                borderColor: '#7c5cff',
+                backgroundColor: 'rgba(124,92,255,0.12)',
+                tension: 0.35,
+                fill: true,
+                yAxisID: 'y'
+            },
+            {
+                label: 'Orders',
+                data: overviewOrders,
+                borderColor: '#17c37b',
+                backgroundColor: 'rgba(23,195,123,0.08)',
+                tension: 0.35,
+                fill: true,
+                yAxisID: 'y1'
+            }
+        ]
+    },
+    options: {
+        responsive: true,
+        interaction: {mode:'index', intersect:false},
+        scales: {
+            y: {type:'linear', position:'left'},
+            y1: {type:'linear', position:'right', grid:{drawOnChartArea:false}}
+        }
+    }
+});
+
+new Chart(document.getElementById('statusChart'), {
+    type: 'doughnut',
+    data: {
+        labels: statusLabels,
+        datasets: [{
+            data: statusCounts,
+            backgroundColor: ['#17c37b','#2f8bff','#f2a93b','#ff4d67','#c3c3d9']
+        }]
+    },
+    options: {
+        responsive:true,
+        plugins:{legend:{display:false}}
+    }
+});
+
+new Chart(document.getElementById('categoryChart'), {
+    type: 'bar',
+    data: {
+        labels: categoryLabels,
+        datasets: [{
+            label: 'Revenue',
+            data: categoryValues,
+            backgroundColor: '#7c5cff',
+            borderRadius: 8
+        }]
+    },
+    options: {
+        responsive:true,
+        plugins:{legend:{display:false}},
+        scales:{y:{beginAtZero:true}}
+    }
+});
 </script>
 
 </body>

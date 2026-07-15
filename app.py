@@ -2117,6 +2117,38 @@ def sales_data(rid):
 # =====================================
 # 🍽 RESTAURANT ADMIN PANEL
 # =====================================
+from collections import defaultdict
+from datetime import datetime, timezone, timedelta
+
+
+def _parse_created_at(value):
+    """Waxay isku dayaysaa in ay convert-garayso created_at (Firestore timestamp,
+    datetime, ama string) una soo celiso datetime object oo timezone-aware.
+    Haddii ay fashilanto waxay soo celisaa None."""
+    if value is None:
+        return None
+    if isinstance(value, datetime):
+        return value if value.tzinfo else value.replace(tzinfo=timezone.utc)
+    try:
+        # Firestore DatetimeWithNanoseconds ama string ISO
+        return datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    except Exception:
+        return None
+
+
+def _range_start(range_key, now):
+    """Waxay soo celisaa taariikhda bilowga range-ka la doortay (day/week/month/year)."""
+    if range_key == "day":
+        return now - timedelta(days=1)
+    if range_key == "week":
+        return now - timedelta(days=7)
+    if range_key == "month":
+        return now - timedelta(days=30)
+    if range_key == "year":
+        return now - timedelta(days=365)
+    return now - timedelta(days=7)  # default = week
+
+
 @app.route("/restaurant_admin/<rid>", methods=["GET", "POST"])
 def restaurant_admin(rid):
     try:
@@ -2144,24 +2176,97 @@ def restaurant_admin(rid):
             restaurant_ref.update(update_data)
             return redirect(f"/restaurant_admin/{rid}")
 
+        # ---------- Range filter (?range=day/week/month/year) ----------
+        range_key = request.args.get("range", "week")
+        now = datetime.now(timezone.utc)
+        range_start = _range_start(range_key, now)
+
+        # ---------- Menu ----------
         menu = []
+        menu_by_id = {}
         menu_docs = restaurant_ref.collection("menu").stream()
         for doc in menu_docs:
             item = doc.to_dict()
             item["id"] = doc.id
             menu.append(item)
+            menu_by_id[doc.id] = item
 
+        # ---------- Orders ----------
         orders = []
-        total = 0
+        total = 0.0
         order_docs = restaurant_ref.collection("orders").stream()
+
+        # Xogta chart-yada ee waxaan ka soo xisaabin doono orders-ka dhabta ah
+        daily_revenue = defaultdict(float)   # {date_str: revenue}
+        daily_orders = defaultdict(int)      # {date_str: order count}
+        status_counts = defaultdict(int)     # {status: count}
+        item_sales = defaultdict(lambda: {"qty": 0, "revenue": 0.0, "image": "", "name": ""})
+        category_revenue = defaultdict(float)  # {category: revenue}
+
         for doc in order_docs:
             order = doc.to_dict()
             order["id"] = doc.id
+
             try:
-                total += float(order.get("price", 0))
-            except:
-                pass
+                price = float(order.get("price", 0))
+            except Exception:
+                price = 0.0
+            total += price
             orders.append(order)
+
+            created_at = _parse_created_at(order.get("created_at"))
+            status = str(order.get("status") or "pending").lower()
+            status_counts[status] += 1
+
+            # Only bucket into the range-filtered charts if we have a valid date
+            if created_at and created_at >= range_start:
+                if range_key == "day":
+                    bucket = created_at.strftime("%H:00")
+                elif range_key == "year":
+                    bucket = created_at.strftime("%b")
+                else:
+                    bucket = created_at.strftime("%b %d")
+
+                daily_revenue[bucket] += price
+                daily_orders[bucket] += 1
+
+            # Line items for top-selling & category breakdown, if the order stores them
+            items = order.get("items")
+            if isinstance(items, list):
+                for it in items:
+                    name = it.get("name") or "Unknown"
+                    qty = int(it.get("qty", it.get("quantity", 1)) or 1)
+                    line_price = float(it.get("price", 0) or 0)
+                    item_sales[name]["qty"] += qty
+                    item_sales[name]["revenue"] += line_price * qty
+                    item_sales[name]["name"] = name
+
+                    menu_match = next((m for m in menu if m.get("name") == name), None)
+                    item_sales[name]["image"] = menu_match.get("image", "") if menu_match else it.get("image", "")
+
+                    category = (menu_match.get("category") if menu_match else it.get("category")) or "Other"
+                    category_revenue[category] += line_price * qty
+
+        # ---------- Order status breakdown (for template list + donut chart) ----------
+        status_breakdown = [
+            {"label": s.title(), "count": c} for s, c in sorted(status_counts.items())
+        ]
+        status_labels = [s["label"] for s in status_breakdown] or ["No Data"]
+        status_counts_list = [s["count"] for s in status_breakdown] or [1]
+
+        # ---------- Overview chart (revenue + orders over time) ----------
+        chart_labels = sorted(daily_revenue.keys(), key=lambda k: k)
+        chart_revenue = [round(daily_revenue[k], 2) for k in chart_labels]
+        chart_orders = [daily_orders[k] for k in chart_labels]
+
+        # ---------- Top selling items ----------
+        top_items = sorted(item_sales.values(), key=lambda x: x["qty"], reverse=True)[:5]
+        for t in top_items:
+            t["revenue"] = round(t["revenue"], 2)
+
+        # ---------- Revenue by category ----------
+        category_labels = list(category_revenue.keys()) or ["No Data"]
+        category_values = [round(v, 2) for v in category_revenue.values()] or [0]
 
         return render_template(
             "restaurant_admin.html",
@@ -2172,7 +2277,17 @@ def restaurant_admin(rid):
             profit=round(total, 2),
             loss=0,
             compare_text="System working",
-            rid=rid
+            rid=rid,
+            range=range_key,
+            status_breakdown=status_breakdown,
+            status_labels=status_labels,
+            status_counts=status_counts_list,
+            chart_labels=chart_labels,
+            chart_revenue=chart_revenue,
+            chart_orders=chart_orders,
+            top_items=top_items,
+            category_labels=category_labels,
+            category_values=category_values,
         )
 
     except Exception as e:
