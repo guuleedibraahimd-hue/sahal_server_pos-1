@@ -12,9 +12,11 @@
 
     <style>
         :root{
-            --gold:#f5c842;
+            --gold:#f5a623;
+            --gold-2:#e0a800;
             --teal:#009688;
-            --dark:#0a0f1e;
+            --dark:#0a1128;
+            --dark-2:#0d1a3a;
             --card:#ffffff;
             --text:#111;
             --muted:#666;
@@ -25,7 +27,10 @@
 
         body{
             font-family:'DM Sans',sans-serif;
-            background:var(--dark);
+            background:
+                radial-gradient(circle at 8% 6%, rgba(47,111,237,0.20) 0%, transparent 40%),
+                radial-gradient(circle at 95% 0%, rgba(47,111,237,0.14) 0%, transparent 40%),
+                linear-gradient(180deg,#0a1128 0%,#0a1024 100%);
             min-height:100vh;
             overflow-x:hidden;
             color:white;
@@ -38,7 +43,7 @@
             position:fixed;
             top:-200px;left:-200px;
             width:700px;height:700px;
-            background:radial-gradient(circle,rgba(0,150,136,0.18) 0%,transparent 70%);
+            background:radial-gradient(circle,rgba(47,111,237,0.14) 0%,transparent 70%);
             pointer-events:none;
             z-index:0;
         }
@@ -47,7 +52,7 @@
             position:fixed;
             bottom:-200px;right:-100px;
             width:600px;height:600px;
-            background:radial-gradient(circle,rgba(245,200,66,0.10) 0%,transparent 70%);
+            background:radial-gradient(circle,rgba(245,166,35,0.08) 0%,transparent 70%);
             pointer-events:none;
             z-index:0;
         }
@@ -57,35 +62,47 @@
             display:flex;
             justify-content:space-between;
             align-items:center;
-            padding:20px 28px;
+            padding:22px 28px;
             position:relative;
             z-index:10;
         }
 
-        .brand{
-            font-family:'Syne',sans-serif;
-            font-weight:800;
-            font-size:18px;
-            letter-spacing:2px;
-            color:var(--gold);
-        }
-
         .menu-btn{
-            font-size:26px;
+            width:40px;height:40px;
+            border-radius:10px;
+            background:rgba(255,255,255,0.06);
+            border:1px solid rgba(255,255,255,0.08);
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            font-size:18px;
             cursor:pointer;
             color:white;
-            user-select:none;
-            padding:6px 10px;
-            border-radius:8px;
             transition:.2s;
         }
-        .menu-btn:hover{background:rgba(255,255,255,0.08);}
+        .menu-btn:hover{background:rgba(255,255,255,0.12);}
+
+        .theme-toggle{
+            display:flex;
+            align-items:center;
+            gap:6px;
+            padding:9px 16px;
+            border-radius:20px;
+            background:rgba(255,255,255,0.06);
+            border:1px solid rgba(255,255,255,0.08);
+            color:white;
+            font-size:13px;
+            font-weight:600;
+            cursor:pointer;
+            transition:.2s;
+        }
+        .theme-toggle:hover{background:rgba(255,255,255,0.12);}
 
         .admin-menu{
             display:none;
             position:absolute;
-            top:60px;
-            right:28px;
+            top:52px;
+            left:0;
             background:white;
             border-radius:14px;
             box-shadow:0 8px 30px rgba(0,0,0,0.35);
@@ -110,9 +127,9 @@
 
         /* CONTAINER */
         .container{
-            max-width:520px;
+            max-width:640px;
             margin:0 auto;
-            padding:0 20px 60px;
+            padding:10px 24px 50px;
             position:relative;
             z-index:5;
         }
@@ -120,90 +137,227 @@
         /* LOGO + TITLE */
         .hero{
             text-align:center;
-            padding:10px 0 30px;
+            padding:10px 0 26px;
         }
-        .logo{
-            width:100px;
-            display:block;
-            margin:0 auto 20px;
-            filter:drop-shadow(0 4px 20px rgba(245,200,66,0.3));
+        .logo-badge{
+            width:78px;height:78px;
+            margin:0 auto 18px;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+        }
+        .logo-badge img{
+            width:78px;
+            height:auto;
+            object-fit:contain;
         }
         .hero h1{
             font-family:'Syne',sans-serif;
             font-weight:800;
-            font-size:32px;
-            letter-spacing:1px;
+            font-size:34px;
+            letter-spacing:0.5px;
             color:white;
-            margin-bottom:6px;
+            margin-bottom:14px;
         }
-        .hero p{
-            color:rgba(255,255,255,0.45);
-            font-size:14px;
-            letter-spacing:1px;
-            text-transform:uppercase;
+        .hero h1 .accent{color:var(--gold);}
+        .hero .welcome{
+            font-family:'Syne',sans-serif;
+            font-weight:800;
+            font-size:30px;
+            color:white;
+            margin-bottom:8px;
         }
-
-        /* CARD */
-        .card{
-            background:rgba(255,255,255,0.04);
-            border:1px solid rgba(255,255,255,0.08);
-            backdrop-filter:blur(20px);
-            padding:24px;
-            border-radius:24px;
+        .hero .subtitle{
+            color:rgba(255,255,255,0.55);
+            font-size:15px;
+        }
+        .hero .mini-divider{
+            width:60px;
+            height:3px;
+            border-radius:3px;
+            background:var(--gold);
+            margin:16px auto 0;
         }
 
         /* SECTION LABEL */
         .section-label{
-            font-size:11px;
-            font-weight:600;
-            letter-spacing:2px;
-            text-transform:uppercase;
-            color:rgba(255,255,255,0.35);
-            margin:20px 0 10px;
-            padding-left:4px;
+            display:flex;
+            align-items:center;
+            gap:8px;
+            font-size:14px;
+            font-weight:700;
+            color:rgba(255,255,255,0.85);
+            margin:26px 0 14px;
         }
-        .section-label:first-child{margin-top:0;}
+        .section-label:first-of-type{margin-top:0;}
 
-        /* BUTTONS */
-        .btn{
+        /* BUSINESS GRID */
+        .grid-2x2{
+            display:grid;
+            grid-template-columns:1fr 1fr;
+            gap:14px;
+        }
+        @media (max-width:520px){
+            .grid-2x2{grid-template-columns:1fr 1fr;gap:10px;}
+        }
+
+        .tile{
+            position:relative;
+            border-radius:20px;
+            padding:22px 16px 18px;
+            text-align:center;
+            text-decoration:none;
+            color:white;
+            overflow:hidden;
+            border:none;
+            cursor:pointer;
+            font-family:'DM Sans',sans-serif;
+            transition:transform .15s ease, box-shadow .15s ease;
+            min-height:210px;
+            display:flex;
+            flex-direction:column;
+            align-items:center;
+        }
+        .tile:hover{transform:translateY(-3px);}
+        .tile:active{transform:translateY(0);}
+
+        .tile-restaurant{background:linear-gradient(160deg,#c85a2e 0%,#8a3a1c 100%);}
+        .tile-supermarket{background:linear-gradient(160deg,#1f8a4c 0%,#0f5c30 100%);}
+        .tile-kitchen{background:linear-gradient(160deg,#3d3a8a 0%,#221f5c 100%);}
+        .tile-school{background:linear-gradient(160deg,#1f6fb8 0%,#123a66 100%);}
+
+        .tile-icon{
+            width:64px;height:64px;
+            border-radius:50%;
+            background:#fff;
             display:flex;
             align-items:center;
             justify-content:center;
-            gap:10px;
-            padding:15px 20px;
-            margin:8px 0;
-            text-decoration:none;
-            border-radius:14px;
-            text-align:center;
-            font-weight:600;
-            font-size:15px;
-            border:none;
-            width:100%;
-            cursor:pointer;
-            transition:all .2s ease;
-            letter-spacing:0.3px;
-            position:relative;
-            overflow:hidden;
+            font-size:28px;
+            margin:0 auto 14px;
+            box-shadow:0 6px 18px rgba(0,0,0,0.25);
         }
-        .btn::after{
-            content:'';
-            position:absolute;
-            inset:0;
-            background:rgba(255,255,255,0);
-            transition:.2s;
-        }
-        .btn:hover::after{background:rgba(255,255,255,0.08);}
-        .btn:active{transform:scale(0.98);}
-
-        .btn-blue{background:#1565c0;color:white;}
-        .btn-purple{background:#6a1b9a;color:white;}
-        .btn-orange{background:#e65100;color:white;}
-        .btn-teal{background:var(--teal);color:white;}
-        .btn-gold{
-            background:linear-gradient(135deg,#f5c842,#e0a800);
-            color:#1a1000;
+        .tile h3{
+            font-size:16px;
             font-weight:700;
-            box-shadow:0 4px 20px rgba(245,200,66,0.3);
+            margin-bottom:6px;
+        }
+        .tile p{
+            font-size:12px;
+            color:rgba(255,255,255,0.8);
+            line-height:1.35;
+            flex:1;
+        }
+        .tile-arrow{
+            width:32px;height:32px;
+            border-radius:50%;
+            border:1.5px solid rgba(255,255,255,0.6);
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            font-size:15px;
+            margin:10px auto 0;
+        }
+
+        /* WIDE ROW CARDS (staff / ecommerce) */
+        .wide-row{
+            position:relative;
+            display:flex;
+            align-items:center;
+            gap:18px;
+            border-radius:20px;
+            padding:20px;
+            margin-bottom:14px;
+            text-decoration:none;
+            color:white;
+            border:none;
+            cursor:pointer;
+            font-family:'DM Sans',sans-serif;
+            width:100%;
+            text-align:left;
+            overflow:hidden;
+            transition:transform .15s ease;
+        }
+        .wide-row:hover{transform:translateY(-2px);}
+        .wide-row:active{transform:translateY(0);}
+
+        .wide-teacher{background:linear-gradient(115deg,#0e7d7a 0%,#0a4f52 100%);}
+        .wide-parent{background:linear-gradient(115deg,#9c2e78 0%,#5c1a52 100%);}
+        .wide-dashboard{background:linear-gradient(115deg,#e0a020 0%,#a86c10 100%);}
+
+        .wide-icon{
+            width:56px;height:56px;
+            border-radius:50%;
+            background:#fff;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            font-size:24px;
+            flex-shrink:0;
+            box-shadow:0 6px 18px rgba(0,0,0,0.25);
+        }
+        .wide-text{flex:1;}
+        .wide-text h3{font-size:17px;font-weight:700;margin-bottom:3px;}
+        .wide-text p{font-size:13px;color:rgba(255,255,255,0.85);}
+        .wide-arrow{
+            width:36px;height:36px;
+            border-radius:50%;
+            border:1.5px solid rgba(255,255,255,0.6);
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            font-size:16px;
+            flex-shrink:0;
+        }
+
+        /* FEATURE STRIP */
+        .feature-strip{
+            display:grid;
+            grid-template-columns:1fr 1fr;
+            gap:18px;
+            background:rgba(255,255,255,0.04);
+            border:1px solid rgba(255,255,255,0.08);
+            border-radius:20px;
+            padding:22px;
+            margin-top:30px;
+        }
+        @media (min-width:520px){
+            .feature-strip{grid-template-columns:1fr 1fr 1fr 1fr;}
+        }
+        .feature-item{
+            display:flex;
+            align-items:flex-start;
+            gap:10px;
+        }
+        .feature-icon{
+            font-size:18px;
+            color:var(--gold);
+            flex-shrink:0;
+            margin-top:2px;
+        }
+        .feature-item h4{
+            font-size:13.5px;
+            font-weight:700;
+            color:white;
+            margin-bottom:3px;
+        }
+        .feature-item p{
+            font-size:11.5px;
+            color:rgba(255,255,255,0.5);
+            line-height:1.35;
+        }
+
+        /* FOOTER */
+        .page-footer{
+            text-align:center;
+            margin-top:26px;
+            padding-top:20px;
+            border-top:1px solid rgba(255,255,255,0.06);
+        }
+        .page-footer p{
+            color:rgba(255,255,255,0.4);
+            font-size:12.5px;
+            line-height:1.7;
         }
 
         /* OVERLAY / BACKDROP */
@@ -387,6 +541,11 @@
             background:rgba(255,255,255,0.06);
             margin:6px 0;
         }
+
+        @media (max-width:480px){
+            .hero h1{font-size:26px;}
+            .hero .welcome{font-size:24px;}
+        }
     </style>
 </head>
 
@@ -397,40 +556,122 @@
 
 <!-- TOP BAR -->
 <div class="top-bar">
-    <div class="brand">⚡ SAHAL</div>
     <div style="position:relative;">
-        <div class="menu-btn" onclick="toggleAdminMenu()">⋮</div>
+        <div class="menu-btn" onclick="toggleAdminMenu()">⠿</div>
         <div class="admin-menu" id="adminMenu">
             <a href="/admin">🛠️ System Admin</a>
             <a href="/pharmacy_login">💊 Pharmacy</a>
             <a href="#" onclick="openInfo()">ℹ️ System Info</a>
         </div>
     </div>
+    <div class="theme-toggle" onclick="toggleFab('supportPopup')" style="pointer-events:none;">🌙 Dark</div>
 </div>
 
 <!-- MAIN CONTAINER -->
 <div class="container">
     <div class="hero">
-        <img src="{{ url_for('static', filename='logo.png') }}" class="logo" onerror="this.style.display='none'">
-        <h1>Sahal Server POS</h1>
-        <p>Point of Sale Management System</p>
+        <div class="logo-badge">
+            <img src="{{ url_for('static', filename='logo.png') }}" onerror="this.style.display='none'">
+        </div>
+        <h1><span class="accent">SAHAL</span> SERVER POS</h1>
+        <div class="welcome">Welcome Back!</div>
+        <p class="subtitle">Choose your portal to continue</p>
+        <div class="mini-divider"></div>
     </div>
 
-    <div class="card">
-        <div class="section-label">🏪 Business Portals</div>
-        <a href="/login" class="btn btn-blue">🔐 Restaurant Login</a>
-        <a href="/supermarket_login" class="btn btn-blue">🛒 Supermarket Login</a>
-        <a href="/kitchen/1" class="btn btn-purple">👨‍🍳 Kitchen Screen</a>
-        <a href="/school_login" class="btn btn-blue">🏫 School Login</a>
+    <div class="section-label">🏢 Business Portals</div>
+    <div class="grid-2x2">
+        <a href="/login" class="tile tile-restaurant">
+            <div class="tile-icon">🏪</div>
+            <h3>Restaurant Login</h3>
+            <p>Access restaurant management</p>
+            <div class="tile-arrow">›</div>
+        </a>
 
-        <div class="divider"></div>
-        <div class="section-label">👥 Staff Portals</div>
-        <button class="btn btn-purple" onclick="openPopup('teacherPopup')">👨‍🏫 Teacher Portal</button>
-        <button class="btn btn-orange" onclick="openPopup('parentPopup')">👨‍¼️ Parent View</button>
+        <a href="/supermarket_login" class="tile tile-supermarket">
+            <div class="tile-icon">🛒</div>
+            <h3>Supermarket Login</h3>
+            <p>Access supermarket management</p>
+            <div class="tile-arrow">›</div>
+        </a>
 
-        <div class="divider"></div>
-        <div class="section-label">💰 E-Commerce</div>
-        <button class="btn btn-gold" onclick="openPopup('dashboardPopup')">💎 Dhibic Dahab Dashboard</button>
+        <a href="/kitchen/1" class="tile tile-kitchen">
+            <div class="tile-icon">👨‍🍳</div>
+            <h3>Kitchen Screen</h3>
+            <p>View kitchen orders and manage</p>
+            <div class="tile-arrow">›</div>
+        </a>
+
+        <a href="/school_login" class="tile tile-school">
+            <div class="tile-icon">🎓</div>
+            <h3>School Login</h3>
+            <p>Access school management system</p>
+            <div class="tile-arrow">›</div>
+        </a>
+    </div>
+
+    <div class="section-label">👥 Staff Portals</div>
+    <button class="wide-row wide-teacher" onclick="openPopup('teacherPopup')">
+        <div class="wide-icon">👨‍🏫</div>
+        <div class="wide-text">
+            <h3>Teacher Portal</h3>
+            <p>Login to teacher dashboard</p>
+        </div>
+        <div class="wide-arrow">›</div>
+    </button>
+
+    <button class="wide-row wide-parent" onclick="openPopup('parentPopup')">
+        <div class="wide-icon">👪</div>
+        <div class="wide-text">
+            <h3>Parent View</h3>
+            <p>Check your child's status</p>
+        </div>
+        <div class="wide-arrow">›</div>
+    </button>
+
+    <div class="section-label">🛍️ E-Commerce</div>
+    <button class="wide-row wide-dashboard" onclick="openPopup('dashboardPopup')">
+        <div class="wide-icon">💎</div>
+        <div class="wide-text">
+            <h3>Dhibic Dahab Dashboard</h3>
+            <p>Manage your e-commerce account</p>
+        </div>
+        <div class="wide-arrow">›</div>
+    </button>
+
+    <div class="feature-strip">
+        <div class="feature-item">
+            <div class="feature-icon">🛡️</div>
+            <div>
+                <h4>Secure Access</h4>
+                <p>Your data is safe with us</p>
+            </div>
+        </div>
+        <div class="feature-item">
+            <div class="feature-icon">⚡</div>
+            <div>
+                <h4>Fast &amp; Reliable</h4>
+                <p>Built for speed and performance</p>
+            </div>
+        </div>
+        <div class="feature-item">
+            <div class="feature-icon">📊</div>
+            <div>
+                <h4>Smart Analytics</h4>
+                <p>Make better decisions with real-time data</p>
+            </div>
+        </div>
+        <div class="feature-item">
+            <div class="feature-icon">🎧</div>
+            <div>
+                <h4>24/7 Support</h4>
+                <p>We're here to help you anytime</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="page-footer">
+        <p>© 2026 Sahal Server POS. All rights reserved.<br>Powering your business, education, and e-commerce in one platform.</p>
     </div>
 </div>
 
