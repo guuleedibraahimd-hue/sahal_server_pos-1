@@ -95,11 +95,28 @@ body {
     cursor: pointer; letter-spacing: 2px;
 }
 .print-btn:hover { background: #444; }
+.paper-size-toggle {
+    display: flex; justify-content: center; gap: 8px; margin-bottom: 10px;
+}
+.size-btn {
+    padding: 6px 16px; background: #fff; color: #444; border: 1px solid #bbb;
+    border-radius: 6px; font-size: 12px; font-family: 'Courier New', monospace;
+    cursor: pointer; letter-spacing: 1px;
+}
+.size-btn.active { background: #1a1a1a; color: #fff; border-color: #1a1a1a; }
+@media print { .paper-size-toggle { display: none !important; } }
+
+body.paper-58 .receipt-wrapper,
+body.paper-58 .receipt,
+body.paper-58 .receipt-top,
+body.paper-58 .receipt-bottom {
+    width: 232px;
+}
 
 @media print {
 
     @page {
-        size: 80mm;
+        size: 80mm auto;
         margin: 0;
     }
 
@@ -110,31 +127,65 @@ body {
         margin: 0 !important;
         padding: 0 !important;
         background: #fff !important;
-        overflow: hidden;
+        overflow: visible !important;
     }
 
     body{
         display:block !important;
+        align-items: initial !important;
     }
 
     .receipt-wrapper{
-        width:80mm !important;
-        margin:0 auto !important;
-        padding:0 !important;
+        width: 80mm !important;
+        max-width: 80mm !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        position: static !important;
     }
 
     .receipt{
-        width:72mm !important;
-        margin:0 auto !important;
-        padding:4mm !important;
-        box-shadow:none !important;
-        border:none !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding: 3mm 4mm !important;
+        box-shadow: none !important;
+        border: none !important;
+        box-sizing: border-box !important;
     }
 
     .receipt-top,
     .receipt-bottom,
     .print-btn-area{
         display:none !important;
+    }
+
+    * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    .item-row, .total-row, .grand-total-row, .meta-row, .col-headers {
+        page-break-inside: avoid;
+    }
+}
+
+/* 58mm printer support: add class="paper-58" on <body> for narrower rolls */
+@page paper-58-size {
+    size: 58mm auto;
+    margin: 0;
+}
+@media print {
+    body.paper-58 {
+        page: paper-58-size;
+        width: 58mm !important;
+        max-width: 58mm !important;
+    }
+    body.paper-58 .receipt-wrapper {
+        width: 58mm !important;
+        max-width: 58mm !important;
+    }
+    body.paper-58 .receipt {
+        padding: 2mm 3mm !important;
     }
 }
 </style>
@@ -222,10 +273,30 @@ body {
 </div>
 
 <div class="print-btn-area">
+    <div class="paper-size-toggle">
+        <button type="button" class="size-btn active" id="btn58" onclick="setPaperSize('58')">58mm</button>
+        <button type="button" class="size-btn" id="btn80" onclick="setPaperSize('80')">80mm</button>
+    </div>
     <button class="print-btn" onclick="window.print()">🖨 PRINT RECEIPT</button>
 </div>
 
 <script>
+// Paper size toggle (58mm / 80mm)
+function setPaperSize(size){
+    const body = document.body;
+    const btn58 = document.getElementById("btn58");
+    const btn80 = document.getElementById("btn80");
+    if(size === "58"){
+        body.classList.add("paper-58");
+        btn58.classList.add("active");
+        btn80.classList.remove("active");
+    } else {
+        body.classList.remove("paper-58");
+        btn80.classList.add("active");
+        btn58.classList.remove("active");
+    }
+}
+
 // Barcode
 (function(){
     const el = document.getElementById("barcodeEl");
