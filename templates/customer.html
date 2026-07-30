@@ -138,7 +138,7 @@ let opt=document.getElementById(optId).value;
 let finalName=opt?name+" ("+opt+")":name;
 
 let existing=cart.find(i=>i.name===finalName);
-
+//
 if(existing){
 existing.qty+=1;
 }else{
