@@ -1,3 +1,4 @@
+//template for receipt.htmls
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -96,10 +97,24 @@ body {
 }
 .print-btn:hover { background: #444; }
 @media print {
-    body { background: #fff; padding: 0; }
+    @page {
+        size: 80mm auto;
+        margin: 0;
+    }
+    html, body {
+        width: 80mm;
+        background: #fff;
+        padding: 0;
+        margin: 0;
+    }
     .print-btn-area { display: none !important; }
     .receipt-top, .receipt-bottom { display: none; }
-    .receipt { width: 100%; padding: 10px; }
+    .receipt-wrapper { width: 80mm; }
+    .receipt {
+        width: 80mm;
+        padding: 4mm 4mm;
+        margin: 0;
+    }
 }
 </style>
 </head>
