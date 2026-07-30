@@ -1,4 +1,3 @@
-//template for receipt.htmls
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -95,6 +94,8 @@ body {
     border-radius: 8px; font-size: 15px; font-family: 'Courier New', monospace;
     cursor: pointer; letter-spacing: 2px;
 }
+.print-btn:hover { background: #444; }
+
 @media print {
 
     @page {
@@ -136,3 +137,113 @@ body {
         display:none !important;
     }
 }
+</style>
+</head>
+<body>
+
+<div class="receipt-wrapper">
+    <div class="receipt-top"></div>
+    <div class="receipt">
+
+        <div class="restaurant-name">{{ restaurant_name }}</div>
+        <div class="restaurant-sub">RESTAURANT &amp; CAFÉ</div>
+        {% if phone %}
+        <div class="restaurant-phone">📞 {{ phone }}</div>
+        {% endif %}
+
+        <div class="divider-double"></div>
+        <div class="invoice-title">★ SALES INVOICE ★</div>
+
+        <div class="meta-row">
+            <span>📅 {% if created_at %}{{ created_at.strftime('%Y-%m-%d') }}{% endif %}</span>
+            <span>🕐 {% if created_at %}{{ created_at.strftime('%H:%M') }}{% endif %}</span>
+        </div>
+        <div class="meta-row">
+            <span>Table: <strong>{{ table }}</strong></span>
+            <span>Ref: {{ ref }}</span>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="col-headers">
+            <span>Item</span><span>Qty</span><span>Rate</span><span>Amt</span>
+        </div>
+        <div class="divider"></div>
+
+        {% for item in items %}
+        <div class="item-row">
+            <span class="item-name">{{ item.food }}</span>
+            <span>{{ item.qty }}</span>
+            <span>${{ "%.2f"|format(item.price) }}</span>
+            <span>${{ "%.2f"|format(item.total) }}</span>
+        </div>
+        {% endfor %}
+
+        <div class="divider"></div>
+
+        <div class="total-row">
+            <span>Sub-total</span>
+            <span>${{ "%.2f"|format(subtotal) }}</span>
+        </div>
+        <div class="total-row">
+            <span>VAT (5%)</span>
+            <span>${{ "%.2f"|format(vat) }}</span>
+        </div>
+
+        <div class="divider-double"></div>
+
+        <div class="grand-total-row">
+            <span>TOTAL</span>
+            <span>${{ "%.2f"|format(total) }}</span>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="payment-box">
+            <div class="pay-label">💳 Payment Info</div>
+            <div class="pay-code">{{ payment or "—" }}</div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="barcode-area">
+            <div class="barcode-bars" id="barcodeEl"></div>
+            <div class="barcode-text">{{ ref }}</div>
+        </div>
+
+        <div class="divider"></div>
+        <div class="thank-you">★ THANK YOU ★</div>
+        <div class="footer-note">We appreciate your business!</div>
+        <div class="footer-note">• PLEASE COME AGAIN •</div>
+        <div class="powered">Powered by Sahal Server</div>
+
+    </div>
+    <div class="receipt-bottom"></div>
+</div>
+
+<div class="print-btn-area">
+    <button class="print-btn" onclick="window.print()">🖨 PRINT RECEIPT</button>
+</div>
+
+<script>
+// Barcode
+(function(){
+    const el = document.getElementById("barcodeEl");
+    const p = [3,1,2,1,3,2,1,2,1,3,1,2,2,1,3,1,2,1,2,3,1,1,2,3,1,2,1,2,1,3];
+    p.forEach(w => {
+        const b = document.createElement("span");
+        b.style.width = (w*2)+"px"; b.style.marginRight="1px";
+        el.appendChild(b);
+        const g = document.createElement("span");
+        g.style.width="2px"; g.style.background="white";
+        el.appendChild(g);
+    });
+})();
+
+// ✅ Auto print - CUSTOMER KALIYA MA DAABACDO
+// Haddaad rabto auto-print ka saar comment-ka
+// setTimeout(() => window.print(), 800);
+</script>
+
+</body>
+</html>
