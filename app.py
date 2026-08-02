@@ -393,16 +393,14 @@ def save_order_firestore(data):
 
 @app.route("/")
 def home():
-    return render_template("index.html")
+    return render_template("home.html")
 
 
 @app.route("/index")
 def index():
     return render_template("index.html")
 
-@app.route("/")
-def home():
-    return render_template("home.html")   # kii hore wuxuu ahaa "index.html"
+
 
 @app.route("/submit_order", methods=["POST"])
 def submit_order():
