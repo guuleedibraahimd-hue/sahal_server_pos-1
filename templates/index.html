@@ -623,32 +623,7 @@
             <div class="tile-arrow">›</div>
         </a>
 
-        <a href="/school_login" class="tile tile-school">
-            <div class="tile-icon">🎓</div>
-            <h3>School Login</h3>
-            <p>Access school management system</p>
-            <div class="tile-arrow">›</div>
-        </a>
     </div>
-
-    <div class="section-label">👥 Staff Portals</div>
-    <button class="wide-row wide-teacher" onclick="openPopup('teacherPopup')">
-        <div class="wide-icon">👨‍🏫</div>
-        <div class="wide-text">
-            <h3>Teacher Portal</h3>
-            <p>Login to teacher dashboard</p>
-        </div>
-        <div class="wide-arrow">›</div>
-    </button>
-
-    <button class="wide-row wide-parent" onclick="openPopup('parentPopup')">
-        <div class="wide-icon">👪</div>
-        <div class="wide-text">
-            <h3>Parent View</h3>
-            <p>Check your child's status</p>
-        </div>
-        <div class="wide-arrow">›</div>
-    </button>
 
     <div class="section-label">🛍️ E-Commerce</div>
     <button class="wide-row wide-dashboard" onclick="openPopup('dashboardPopup')">
@@ -706,36 +681,8 @@
     <button class="close-btn" onclick="closePopup('dashboardPopup')">Cancel</button>
 </div>
 
-<!-- TEACHER LOGIN POPUP -->
-<div class="popup" id="teacherPopup">
-    <h3>👨‍🏫 Teacher Login</h3>
-    <form id="teacherLoginForm">
-        <input type="text" name="username" id="t_username" placeholder="Username" required>
-        <input type="password" name="password" id="t_password" placeholder="Password" required>
-        <div class="msg-box" id="teacherMsg"></div>
-        <button type="submit" class="popup-btn p-purple">Login to Dashboard</button>
-    </form>
-    <button class="close-btn" onclick="closePopup('teacherPopup')">Cancel</button>
-</div>
-
-<!-- PARENT POPUP -->
-<div class="popup" id="parentPopup">
-    <h3>🔍 Student Status</h3>
-    <input id="p_std_id" placeholder="Student ID">
-    <input type="password" id="p_password" placeholder="Password">
-    <button onclick="checkStudent()" class="popup-btn p-blue">Check Status</button>
-    <div id="studentResult" class="res-box"></div>
-    <button class="close-btn" onclick="closePopup('parentPopup')">Cancel</button>
-</div>
-
 <!-- FABS -->
-<button class="fab fab-student" onclick="toggleFab('studentPopup')">🎓</button>
 <button class="fab fab-apps" onclick="toggleFab('appsPopup')">⠿</button>
-
-<div class="fab-popup student-pos" id="studentPopup">
-    <a href="/register_student" class="popup-btn p-blue">📝 Student Register</a>
-    <a href="/screen_login" class="popup-btn p-purple">🖥️ Student Screen</a>
-</div>
 
 <div class="fab-popup apps-pos" id="appsPopup">
     <a href="https://wa.me/252628276993" target="_blank" class="popup-btn p-green">💬 WhatsApp Support</a>
@@ -813,24 +760,6 @@ document.getElementById('dashboard_password').addEventListener('keydown', functi
 document.getElementById('dashboard_email').addEventListener('keydown', function(e) {
     if (e.key === 'Enter') document.getElementById('dashboard_password').focus();
 });
-
-document.getElementById('teacherLoginForm').onsubmit = async (e) => {
-    e.preventDefault();
-    let fd = new FormData(e.target);
-    showMsg('teacherMsg', 'Checking...', 'info');
-    try {
-        let res = await fetch('/teacher_login', { method: 'POST', body: fd });
-        let data = await res.json();
-        if (data.success) {
-            window.location.href = data.redirect || '/teacher_dashboard';
-        } else {
-            showMsg('teacherMsg', '❌ ' + data.error, 'error');
-        }
-    } catch {
-        showMsg('teacherMsg', '⚠️ Server Error!', 'error');
-    }
-};
-async function checkStudent() {}
 
 // KANI WAA REGISTRATION-KA RAGMIGA AH EE SERVICE WORKER-KA PWA
 if ('serviceWorker' in navigator) {
