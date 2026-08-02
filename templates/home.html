@@ -3,12 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sahal Server POS</title>
+    <title>Sahal Server POS | All-in-One POS System</title>
+
+    <meta name="description" content="Sahal Server POS waa nidaam casri ah oo maamulka ganacsiga: makhaayado, supermarket, farmasi iyo ganacsiyo kale — meel keliya.">
+    <meta name="theme-color" content="#0a1128">
+    <link rel="icon" type="image/png" href="/static/logo.png">
 
     <!-- Kani waa xiriiriyaha rasmiga ah ee PWA -->
     <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
 
-    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
     <style>
         :root{
@@ -22,529 +26,447 @@
             --muted:#666;
             --radius:16px;
         }
-
         *{margin:0;padding:0;box-sizing:border-box;}
 
         body{
             font-family:'DM Sans',sans-serif;
             background:
-                radial-gradient(circle at 8% 6%, rgba(47,111,237,0.20) 0%, transparent 40%),
-                radial-gradient(circle at 95% 0%, rgba(47,111,237,0.14) 0%, transparent 40%),
+                radial-gradient(circle at 92% 8%, rgba(47,111,237,0.22) 0%, transparent 45%),
+                radial-gradient(circle at 4% 4%, rgba(47,111,237,0.14) 0%, transparent 40%),
                 linear-gradient(180deg,#0a1128 0%,#0a1024 100%);
             min-height:100vh;
             overflow-x:hidden;
             color:white;
             position:relative;
         }
-
-        /* BG EFFECTS */
-        body::before{
-            content:'';
-            position:fixed;
-            top:-200px;left:-200px;
-            width:700px;height:700px;
-            background:radial-gradient(circle,rgba(47,111,237,0.14) 0%,transparent 70%);
-            pointer-events:none;
-            z-index:0;
-        }
         body::after{
             content:'';
             position:fixed;
             bottom:-200px;right:-100px;
             width:600px;height:600px;
-            background:radial-gradient(circle,rgba(245,166,35,0.08) 0%,transparent 70%);
+            background:radial-gradient(circle,rgba(245,166,35,0.06) 0%,transparent 70%);
             pointer-events:none;
             z-index:0;
         }
 
-        /* TOP BAR */
-        .top-bar{
+        /* ===== NAVBAR ===== */
+        .nav{
             display:flex;
+            align-items:center;
             justify-content:space-between;
-            align-items:center;
-            padding:22px 28px;
+            padding:18px 40px;
             position:relative;
-            z-index:10;
+            z-index:20;
+            max-width:1320px;
+            margin:0 auto;
         }
-
-        .menu-btn{
-            width:40px;height:40px;
-            border-radius:10px;
-            background:rgba(255,255,255,0.06);
-            border:1px solid rgba(255,255,255,0.08);
+        .nav-logo{
             display:flex;
             align-items:center;
-            justify-content:center;
-            font-size:18px;
-            cursor:pointer;
-            color:white;
-            transition:.2s;
+            gap:12px;
+            font-family:'Syne',sans-serif;
+            font-weight:800;
+            font-size:22px;
+            letter-spacing:0.5px;
         }
-        .menu-btn:hover{background:rgba(255,255,255,0.12);}
+        .nav-logo .mark{
+            width:42px;height:42px;
+            border-radius:11px;
+            background:linear-gradient(135deg,var(--gold),var(--gold-2));
+            display:flex;align-items:center;justify-content:center;
+            font-size:22px;color:#1a1000;
+        }
+        .nav-logo .mark img{width:42px;height:42px;object-fit:contain;border-radius:11px;}
+        .nav-logo .accent{color:var(--gold);}
 
+        .nav-links{
+            display:flex;
+            align-items:center;
+            gap:34px;
+            list-style:none;
+        }
+        .nav-links a{
+            color:rgba(255,255,255,0.75);
+            text-decoration:none;
+            font-size:15px;
+            font-weight:500;
+            cursor:pointer;
+            transition:.2s;
+            position:relative;
+        }
+        .nav-links a:hover{color:white;}
+        .nav-links a.active{color:var(--gold);}
+        .nav-links a.active::after{
+            content:'';
+            position:absolute;
+            left:0;bottom:-8px;
+            width:100%;height:2px;
+            background:var(--gold);
+            border-radius:2px;
+        }
+
+        .nav-right{display:flex;align-items:center;gap:14px;}
         .theme-toggle{
-            display:flex;
-            align-items:center;
-            gap:6px;
+            display:flex;align-items:center;gap:7px;
             padding:9px 16px;
-            border-radius:20px;
+            border-radius:22px;
             background:rgba(255,255,255,0.06);
-            border:1px solid rgba(255,255,255,0.08);
-            color:white;
-            font-size:13px;
-            font-weight:600;
-            cursor:pointer;
-            transition:.2s;
+            border:1px solid rgba(255,255,255,0.1);
+            color:white;font-size:13px;font-weight:600;cursor:pointer;transition:.2s;
         }
         .theme-toggle:hover{background:rgba(255,255,255,0.12);}
 
+        /* three-dots admin (only admin now) */
+        .admin-wrap{position:relative;}
+        .menu-btn{
+            width:40px;height:40px;border-radius:11px;
+            background:rgba(255,255,255,0.06);
+            border:1px solid rgba(255,255,255,0.1);
+            display:flex;align-items:center;justify-content:center;
+            font-size:18px;cursor:pointer;color:white;transition:.2s;
+        }
+        .menu-btn:hover{background:rgba(255,255,255,0.12);}
         .admin-menu{
-            display:none;
-            position:absolute;
-            top:52px;
-            left:0;
-            background:white;
-            border-radius:14px;
+            display:none;position:absolute;top:50px;right:0;
+            background:white;border-radius:14px;
             box-shadow:0 8px 30px rgba(0,0,0,0.35);
-            min-width:190px;
-            z-index:9999;
-            overflow:hidden;
+            min-width:190px;z-index:9999;overflow:hidden;
         }
         .admin-menu a{
-            display:flex;
-            align-items:center;
-            gap:10px;
-            padding:14px 18px;
-            color:#111;
-            text-decoration:none;
-            font-weight:600;
-            font-size:14px;
-            border-bottom:1px solid #f0f0f0;
-            transition:.15s;
+            display:flex;align-items:center;gap:10px;
+            padding:14px 18px;color:#111;text-decoration:none;
+            font-weight:600;font-size:14px;transition:.15s;
         }
-        .admin-menu a:last-child{border-bottom:none;}
         .admin-menu a:hover{background:#f4f4f4;}
 
-        /* CONTAINER */
-        .container{
-            max-width:640px;
+        .mobile-nav-toggle{display:none;}
+
+        /* ===== HERO ===== */
+        .hero{
+            max-width:1320px;
             margin:0 auto;
-            padding:10px 24px 50px;
+            padding:40px 40px 20px;
+            display:grid;
+            grid-template-columns:1.05fr 1fr;
+            gap:40px;
+            align-items:center;
             position:relative;
             z-index:5;
         }
-
-        /* LOGO + TITLE */
-        .hero{
-            text-align:center;
-            padding:10px 0 26px;
-        }
-        .logo-badge{
-            width:78px;height:78px;
-            margin:0 auto 18px;
-            display:flex;
-            align-items:center;
-            justify-content:center;
-        }
-        .logo-badge img{
-            width:78px;
-            height:auto;
-            object-fit:contain;
+        .badge-pill{
+            display:inline-flex;align-items:center;gap:8px;
+            padding:8px 16px;border-radius:22px;
+            background:rgba(245,166,35,0.12);
+            border:1px solid rgba(245,166,35,0.3);
+            color:var(--gold);font-size:12.5px;font-weight:700;
+            letter-spacing:0.5px;text-transform:uppercase;
+            margin-bottom:26px;
         }
         .hero h1{
             font-family:'Syne',sans-serif;
             font-weight:800;
-            font-size:34px;
-            letter-spacing:0.5px;
-            color:white;
-            margin-bottom:14px;
+            font-size:56px;
+            line-height:1.05;
+            letter-spacing:-0.5px;
+            margin-bottom:22px;
         }
         .hero h1 .accent{color:var(--gold);}
-        .hero .welcome{
-            font-family:'Syne',sans-serif;
-            font-weight:800;
-            font-size:30px;
-            color:white;
-            margin-bottom:8px;
+        .hero-sub{
+            color:rgba(255,255,255,0.6);
+            font-size:17px;
+            line-height:1.7;
+            max-width:480px;
+            margin-bottom:34px;
         }
-        .hero .subtitle{
-            color:rgba(255,255,255,0.55);
-            font-size:15px;
+        .hero-cta{display:flex;align-items:center;gap:20px;flex-wrap:wrap;}
+        .btn-primary{
+            display:inline-flex;align-items:center;gap:12px;
+            padding:15px 30px;border-radius:30px;
+            background:linear-gradient(135deg,#f5c842,var(--gold-2));
+            color:#1a1000;font-weight:700;font-size:16px;
+            text-decoration:none;border:none;cursor:pointer;
+            font-family:'DM Sans',sans-serif;transition:.2s;
+            box-shadow:0 8px 24px rgba(245,166,35,0.3);
         }
-        .hero .mini-divider{
-            width:60px;
-            height:3px;
-            border-radius:3px;
-            background:var(--gold);
-            margin:16px auto 0;
+        .btn-primary:hover{transform:translateY(-2px);box-shadow:0 12px 30px rgba(245,166,35,0.4);}
+        .btn-ghost{
+            display:inline-flex;align-items:center;gap:12px;
+            background:none;border:none;color:white;cursor:pointer;
+            font-family:'DM Sans',sans-serif;font-size:16px;font-weight:600;
         }
+        .btn-ghost .play{
+            width:44px;height:44px;border-radius:50%;
+            border:1.5px solid rgba(255,255,255,0.3);
+            display:flex;align-items:center;justify-content:center;
+            font-size:15px;transition:.2s;
+        }
+        .btn-ghost:hover .play{background:rgba(255,255,255,0.1);border-color:var(--gold);}
 
-        /* SECTION LABEL */
-        .section-label{
-            display:flex;
-            align-items:center;
-            gap:8px;
-            font-size:14px;
-            font-weight:700;
-            color:rgba(255,255,255,0.85);
-            margin:26px 0 14px;
+        /* HERO MOCKUP */
+        .hero-visual{position:relative;}
+        .mock{
+            background:#0f1c3d;
+            border:1px solid rgba(255,255,255,0.1);
+            border-radius:16px;
+            padding:14px;
+            box-shadow:0 30px 70px rgba(0,0,0,0.5);
         }
-        .section-label:first-of-type{margin-top:0;}
-
-        /* BUSINESS GRID */
-        .grid-2x2{
+        .mock-inner{
+            background:#f4f6fb;
+            border-radius:11px;
             display:grid;
-            grid-template-columns:1fr 1fr;
-            gap:14px;
-        }
-        @media (max-width:520px){
-            .grid-2x2{grid-template-columns:1fr 1fr;gap:10px;}
-        }
-
-        .tile{
-            position:relative;
-            border-radius:20px;
-            padding:22px 16px 18px;
-            text-align:center;
-            text-decoration:none;
-            color:white;
+            grid-template-columns:96px 1fr;
             overflow:hidden;
-            border:none;
-            cursor:pointer;
-            font-family:'DM Sans',sans-serif;
-            transition:transform .15s ease, box-shadow .15s ease;
-            min-height:210px;
-            display:flex;
-            flex-direction:column;
-            align-items:center;
+            min-height:300px;
         }
-        .tile:hover{transform:translateY(-3px);}
-        .tile:active{transform:translateY(0);}
+        .mock-side{background:#0e1730;padding:16px 10px;}
+        .mock-side .brand{display:flex;align-items:center;gap:6px;color:white;font-size:11px;font-weight:700;margin-bottom:16px;}
+        .mock-side .dot{width:16px;height:16px;border-radius:5px;background:var(--gold);}
+        .mock-nav{display:flex;flex-direction:column;gap:9px;}
+        .mock-nav span{font-size:9.5px;color:rgba(255,255,255,0.5);padding:6px 8px;border-radius:6px;}
+        .mock-nav span.on{background:var(--gold);color:#1a1000;font-weight:700;}
+        .mock-main{padding:16px;color:#1a2340;}
+        .mock-main h4{font-size:13px;font-weight:800;margin-bottom:12px;color:#0e1730;}
+        .mock-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px;}
+        .mock-stat{background:white;border-radius:8px;padding:9px;box-shadow:0 2px 8px rgba(0,0,0,0.05);}
+        .mock-stat .lbl{font-size:7.5px;color:#8a93a8;font-weight:600;}
+        .mock-stat .val{font-size:14px;font-weight:800;color:#0e1730;margin:2px 0;}
+        .mock-stat .up{font-size:7.5px;color:#1f9d55;font-weight:700;}
+        .mock-chart{background:white;border-radius:8px;padding:10px;box-shadow:0 2px 8px rgba(0,0,0,0.05);}
+        .mock-chart .ctitle{font-size:8.5px;color:#8a93a8;font-weight:700;margin-bottom:6px;}
+        .mock-bars{display:flex;align-items:flex-end;gap:5px;height:56px;}
+        .mock-bars i{flex:1;background:linear-gradient(180deg,#2f6fed,#7aa5f5);border-radius:3px 3px 0 0;display:block;}
 
-        .tile-restaurant{background:linear-gradient(160deg,#c85a2e 0%,#8a3a1c 100%);}
-        .tile-supermarket{background:linear-gradient(160deg,#1f8a4c 0%,#0f5c30 100%);}
-        .tile-kitchen{background:linear-gradient(160deg,#3d3a8a 0%,#221f5c 100%);}
-        .tile-school{background:linear-gradient(160deg,#1f6fb8 0%,#123a66 100%);}
-
-        .tile-icon{
-            width:64px;height:64px;
-            border-radius:50%;
-            background:#fff;
-            display:flex;
-            align-items:center;
+        /* ===== PORTAL SECTION ===== */
+        .section-head{text-align:center;margin:60px auto 8px;position:relative;z-index:5;}
+        .section-head .eyebrow{
+            display:inline-flex;align-items:center;gap:12px;
+            font-family:'Syne',sans-serif;font-weight:800;font-size:30px;
             justify-content:center;
-            font-size:28px;
-            margin:0 auto 14px;
-            box-shadow:0 6px 18px rgba(0,0,0,0.25);
         }
-        .tile h3{
-            font-size:16px;
-            font-weight:700;
-            margin-bottom:6px;
-        }
-        .tile p{
-            font-size:12px;
-            color:rgba(255,255,255,0.8);
-            line-height:1.35;
-            flex:1;
-        }
-        .tile-arrow{
-            width:32px;height:32px;
-            border-radius:50%;
-            border:1.5px solid rgba(255,255,255,0.6);
-            display:flex;
-            align-items:center;
-            justify-content:center;
-            font-size:15px;
-            margin:10px auto 0;
-        }
+        .section-head .eyebrow .rule{width:34px;height:3px;background:var(--gold);border-radius:3px;}
+        .section-head .eyebrow .grid-ic{color:var(--gold);font-size:24px;}
+        .section-head p{color:rgba(255,255,255,0.55);font-size:15px;margin-top:12px;}
 
-        /* WIDE ROW CARDS (staff / ecommerce) */
-        .wide-row{
+        .portals{
+            max-width:1320px;margin:36px auto 0;
+            padding:0 40px;
+            display:grid;
+            grid-template-columns:repeat(4,1fr);
+            gap:22px;
+            position:relative;z-index:5;
+        }
+        .portal{
             position:relative;
-            display:flex;
-            align-items:center;
-            gap:18px;
             border-radius:20px;
-            padding:20px;
-            margin-bottom:14px;
+            padding:26px 22px 24px;
+            min-height:290px;
+            overflow:hidden;
             text-decoration:none;
             color:white;
-            border:none;
-            cursor:pointer;
+            border:none;cursor:pointer;
             font-family:'DM Sans',sans-serif;
-            width:100%;
             text-align:left;
-            overflow:hidden;
-            transition:transform .15s ease;
+            display:flex;flex-direction:column;
+            transition:transform .18s ease, box-shadow .18s ease;
         }
-        .wide-row:hover{transform:translateY(-2px);}
-        .wide-row:active{transform:translateY(0);}
-
-        .wide-teacher{background:linear-gradient(115deg,#0e7d7a 0%,#0a4f52 100%);}
-        .wide-parent{background:linear-gradient(115deg,#9c2e78 0%,#5c1a52 100%);}
-        .wide-dashboard{background:linear-gradient(115deg,#e0a020 0%,#a86c10 100%);}
-
-        .wide-icon{
-            width:56px;height:56px;
-            border-radius:50%;
-            background:#fff;
-            display:flex;
-            align-items:center;
-            justify-content:center;
-            font-size:24px;
-            flex-shrink:0;
-            box-shadow:0 6px 18px rgba(0,0,0,0.25);
+        .portal:hover{transform:translateY(-6px);box-shadow:0 20px 44px rgba(0,0,0,0.4);}
+        .p-restaurant{background:linear-gradient(160deg,#d0682e 0%,#9a3d14 100%);}
+        .p-supermarket{background:linear-gradient(160deg,#1f9a52 0%,#0f5c30 100%);}
+        .p-pharmacy{background:linear-gradient(160deg,#7b3fb5 0%,#4a1f7a 100%);}
+        .p-dhibic{background:linear-gradient(160deg,#1f6fd0 0%,#123a80 100%);}
+        .portal .p-ic{
+            width:60px;height:60px;border-radius:50%;
+            background:#fff;display:flex;align-items:center;justify-content:center;
+            font-size:26px;margin-bottom:64px;
+            box-shadow:0 6px 18px rgba(0,0,0,0.28);
         }
-        .wide-text{flex:1;}
-        .wide-text h3{font-size:17px;font-weight:700;margin-bottom:3px;}
-        .wide-text p{font-size:13px;color:rgba(255,255,255,0.85);}
-        .wide-arrow{
-            width:36px;height:36px;
-            border-radius:50%;
-            border:1.5px solid rgba(255,255,255,0.6);
-            display:flex;
-            align-items:center;
-            justify-content:center;
-            font-size:16px;
-            flex-shrink:0;
+        .portal h3{font-family:'Syne',sans-serif;font-size:21px;font-weight:800;margin-bottom:10px;}
+        .portal p{font-size:13.5px;color:rgba(255,255,255,0.85);line-height:1.5;flex:1;}
+        .portal .access{
+            display:inline-flex;align-items:center;gap:8px;
+            margin-top:16px;padding:10px 18px;
+            background:rgba(255,255,255,0.95);
+            color:#1a1a1a;border-radius:24px;
+            font-size:13px;font-weight:700;width:fit-content;
         }
+        .portal .access .arr{transition:.2s;}
+        .portal:hover .access .arr{transform:translateX(4px);}
 
-        /* FEATURE STRIP */
-        .feature-strip{
-            display:grid;
-            grid-template-columns:1fr 1fr;
-            gap:18px;
+        /* ===== FEATURE STRIP ===== */
+        .features{
+            max-width:1320px;margin:34px auto 0;
+            padding:0 40px;position:relative;z-index:5;
+        }
+        .features-inner{
+            display:grid;grid-template-columns:repeat(4,1fr);gap:14px;
             background:rgba(255,255,255,0.04);
             border:1px solid rgba(255,255,255,0.08);
-            border-radius:20px;
-            padding:22px;
-            margin-top:30px;
+            border-radius:20px;padding:26px 30px;
         }
-        @media (min-width:520px){
-            .feature-strip{grid-template-columns:1fr 1fr 1fr 1fr;}
+        .feat{display:flex;align-items:center;gap:14px;}
+        .feat .fic{
+            width:48px;height:48px;border-radius:12px;flex-shrink:0;
+            display:flex;align-items:center;justify-content:center;font-size:20px;
         }
-        .feature-item{
-            display:flex;
-            align-items:flex-start;
-            gap:10px;
-        }
-        .feature-icon{
-            font-size:18px;
-            color:var(--gold);
-            flex-shrink:0;
-            margin-top:2px;
-        }
-        .feature-item h4{
-            font-size:13.5px;
-            font-weight:700;
-            color:white;
-            margin-bottom:3px;
-        }
-        .feature-item p{
-            font-size:11.5px;
-            color:rgba(255,255,255,0.5);
-            line-height:1.35;
-        }
+        .feat.f1 .fic{background:rgba(31,111,208,0.2);}
+        .feat.f2 .fic{background:rgba(245,166,35,0.2);}
+        .feat.f3 .fic{background:rgba(123,63,181,0.2);}
+        .feat.f4 .fic{background:rgba(31,154,82,0.2);}
+        .feat h4{font-size:14.5px;font-weight:700;margin-bottom:3px;}
+        .feat p{font-size:12px;color:rgba(255,255,255,0.5);line-height:1.4;}
 
-        /* FOOTER */
-        .page-footer{
-            text-align:center;
-            margin-top:26px;
-            padding-top:20px;
-            border-top:1px solid rgba(255,255,255,0.06);
+        /* ===== CONTACT BAR ===== */
+        .contact-bar{
+            max-width:1320px;margin:22px auto 40px;
+            padding:0 40px;position:relative;z-index:5;
         }
-        .page-footer p{
-            color:rgba(255,255,255,0.4);
-            font-size:12.5px;
-            line-height:1.7;
+        .contact-inner{
+            display:grid;grid-template-columns:repeat(4,1fr);gap:20px;
+            background:#ffffff;border-radius:18px;padding:22px 30px;
         }
+        .cinfo{display:flex;align-items:center;gap:14px;}
+        .cinfo .cic{
+            width:46px;height:46px;border-radius:50%;flex-shrink:0;
+            display:flex;align-items:center;justify-content:center;font-size:19px;color:white;
+        }
+        .cinfo.c1 .cic{background:#1565c0;}
+        .cinfo.c2 .cic{background:#6a3fb5;}
+        .cinfo.c3 .cic{background:#1f9a52;}
+        .cinfo.c4 .cic{background:#e0651f;}
+        .cinfo .clbl{font-size:12px;color:#8a93a8;font-weight:600;}
+        .cinfo .cval{font-size:14px;color:#1a1a2e;font-weight:700;}
+        .cinfo a{color:inherit;text-decoration:none;}
 
-        /* OVERLAY / BACKDROP */
+        .page-footer{text-align:center;padding:8px 20px 34px;position:relative;z-index:5;}
+        .page-footer p{color:rgba(255,255,255,0.4);font-size:12.5px;line-height:1.7;}
+
+        /* ===== OVERLAY + POPUPS ===== */
         .overlay{
-            display:none;
-            position:fixed;
-            inset:0;
-            background:rgba(0,0,0,0.6);
-            backdrop-filter:blur(4px);
-            z-index:100;
+            display:none;position:fixed;inset:0;
+            background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);z-index:100;
         }
         .overlay.show{display:block;}
-
-        /* POPUPS */
         .popup{
-            display:none;
-            position:fixed;
-            top:50%;left:50%;
+            display:none;position:fixed;top:50%;left:50%;
             transform:translate(-50%,-50%) scale(0.95);
-            background:white;
-            padding:28px 24px;
-            border-radius:22px;
-            width:92%;
-            max-width:360px;
+            background:white;padding:28px 26px;border-radius:22px;
+            width:92%;max-width:380px;
             box-shadow:0 20px 60px rgba(0,0,0,0.4);
-            z-index:200;
-            color:#111;
+            z-index:200;color:#111;opacity:0;
             transition:transform .2s ease, opacity .2s ease;
-            opacity:0;
         }
-        .popup.show{
-            display:block;
-            transform:translate(-50%,-50%) scale(1);
-            opacity:1;
-        }
-
-        .popup h3{
-            font-family:'Syne',sans-serif;
-            font-weight:800;
-            font-size:20px;
-            margin-bottom:18px;
-            color:#111;
-        }
-
+        .popup.show{display:block;transform:translate(-50%,-50%) scale(1);opacity:1;}
+        .popup.wide{max-width:520px;}
+        .popup h3{font-family:'Syne',sans-serif;font-weight:800;font-size:21px;margin-bottom:16px;color:#111;}
         .popup input{
-            width:100%;
-            padding:13px 15px;
-            margin:6px 0;
-            border:1.5px solid #e0e0e0;
-            border-radius:10px;
-            box-sizing:border-box;
-            font-size:15px;
-            font-family:'DM Sans',sans-serif;
-            transition:.2s;
-            outline:none;
-            color:#111;
-            background:#fafafa;
+            width:100%;padding:13px 15px;margin:6px 0;
+            border:1.5px solid #e0e0e0;border-radius:10px;box-sizing:border-box;
+            font-size:15px;font-family:'DM Sans',sans-serif;outline:none;
+            color:#111;background:#fafafa;transition:.2s;
         }
-        .popup input:focus{
-            border-color:var(--teal);
-            background:white;
-            box-shadow:0 0 0 3px rgba(0,150,136,0.1);
-        }
-
+        .popup input:focus{border-color:var(--teal);background:white;box-shadow:0 0 0 3px rgba(0,150,136,0.1);}
         .popup-btn{
-            display:block;
-            text-decoration:none;
-            padding:13px;
-            margin:8px 0;
-            border-radius:10px;
-            color:white;
-            font-weight:600;
-            font-size:15px;
-            text-align:center;
-            border:none;
-            width:100%;
-            cursor:pointer;
-            transition:.2s;
+            display:block;text-decoration:none;padding:13px;margin:8px 0;
+            border-radius:10px;color:white;font-weight:600;font-size:15px;
+            text-align:center;border:none;width:100%;cursor:pointer;transition:.2s;
             font-family:'DM Sans',sans-serif;
         }
         .popup-btn:hover{opacity:.9;}
-        .popup-btn:active{transform:scale(0.98);}
-
-        .p-teal{background:var(--teal);}
         .p-blue{background:#1565c0;}
         .p-green{background:#25D366;}
         .p-purple{background:#6a1b9a;}
+        .p-orange{background:#e0651f;}
         .p-gold{background:linear-gradient(135deg,#f5c842,#e0a800);color:#1a1000;}
-
         .close-btn{
-            display:block;
-            width:100%;
-            padding:11px;
-            margin-top:10px;
-            background:none;
-            border:1.5px solid #ddd;
-            border-radius:10px;
-            color:#666;
-            font-size:14px;
-            font-weight:600;
-            cursor:pointer;
-            font-family:'DM Sans',sans-serif;
-            transition:.2s;
+            display:block;width:100%;padding:11px;margin-top:10px;
+            background:none;border:1.5px solid #ddd;border-radius:10px;
+            color:#666;font-size:14px;font-weight:600;cursor:pointer;
+            font-family:'DM Sans',sans-serif;transition:.2s;
         }
         .close-btn:hover{background:#f5f5f5;}
-
-        .msg-box{
-            padding:10px 14px;
-            border-radius:8px;
-            font-size:13px;
-            margin-top:8px;
-            display:none;
-        }
+        .msg-box{padding:10px 14px;border-radius:8px;font-size:13px;margin-top:8px;display:none;}
         .msg-error{background:#fff0f0;color:#c62828;border-left:4px solid #c62828;}
         .msg-success{background:#f0fff4;color:#2e7d32;border-left:4px solid #2e7d32;}
         .msg-info{background:#f0f8ff;color:#1565c0;border-left:4px solid #1565c0;}
-
-        /* LOADING SPINNER */
         .spinner{
-            display:inline-block;
-            width:16px;height:16px;
-            border:2px solid rgba(255,255,255,0.3);
-            border-top:2px solid white;
-            border-radius:50%;
-            animation:spin .7s linear infinite;
-            margin-right:6px;
-            vertical-align:middle;
+            display:inline-block;width:16px;height:16px;
+            border:2px solid rgba(255,255,255,0.3);border-top:2px solid white;
+            border-radius:50%;animation:spin .7s linear infinite;margin-right:6px;vertical-align:middle;
         }
         @keyframes spin{to{transform:rotate(360deg);}}
 
-        /* SUPPORT / STUDENT FABS */
+        /* INFO MODAL SOMALI CONTENT */
+        .info-body{color:#333;font-size:14.5px;line-height:1.75;max-height:60vh;overflow-y:auto;}
+        .info-body p{margin-bottom:12px;}
+        .info-body ul{margin:6px 0 14px 20px;}
+        .info-body li{margin-bottom:7px;}
+        .info-body .tag{
+            display:inline-block;background:#f0f4ff;color:#1565c0;
+            padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700;margin-bottom:14px;
+        }
+        .info-choose{display:flex;flex-direction:column;gap:10px;}
+        .info-choice{
+            display:flex;align-items:center;gap:14px;
+            padding:16px;border-radius:14px;border:1.5px solid #eee;
+            cursor:pointer;transition:.15s;background:#fafafa;text-align:left;width:100%;
+            font-family:'DM Sans',sans-serif;
+        }
+        .info-choice:hover{border-color:var(--teal);background:#f4fdfb;transform:translateX(3px);}
+        .info-choice .ci{width:44px;height:44px;border-radius:12px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:22px;color:white;}
+        .info-choice.r .ci{background:#d0682e;}
+        .info-choice.s .ci{background:#1f9a52;}
+        .info-choice.p .ci{background:#7b3fb5;}
+        .info-choice .ctxt h4{font-size:15px;font-weight:700;color:#1a1a2e;margin-bottom:2px;}
+        .info-choice .ctxt p{font-size:12.5px;color:#888;}
+
+        /* ===== FAB ===== */
         .fab{
-            position:fixed;
-            bottom:24px;
-            width:56px;height:56px;
-            border-radius:50%;
-            color:white;
-            font-size:22px;
-            border:none;
-            cursor:pointer;
-            box-shadow:0 4px 16px rgba(0,0,0,0.35);
-            z-index:50;
-            transition:.2s;
+            position:fixed;bottom:24px;right:24px;
+            width:56px;height:56px;border-radius:50%;
+            color:white;font-size:22px;border:none;cursor:pointer;
+            box-shadow:0 4px 16px rgba(0,0,0,0.35);z-index:50;
+            background:#25D366;transition:.2s;
         }
         .fab:hover{transform:scale(1.08);}
-        .fab:active{transform:scale(0.95);}
-
-        .fab-support{right:24px;background:#25D366;}
-        .fab-student{left:24px;background:#1565c0;}
-
-        /* FAB POPUPS */
         .fab-popup{
-            display:none;
-            position:fixed;
-            background:white;
-            padding:18px;
-            border-radius:16px;
-            width:240px;
-            box-shadow:0 8px 30px rgba(0,0,0,0.25);
-            z-index:200;
-            color:#111;
+            display:none;position:fixed;bottom:90px;right:24px;
+            background:white;padding:18px;border-radius:16px;width:240px;
+            box-shadow:0 8px 30px rgba(0,0,0,0.25);z-index:200;color:#111;
         }
-        .fab-popup.support-pos{bottom:90px;right:24px;}
-        .fab-popup.student-pos{bottom:90px;left:24px;}
         .fab-popup.show{display:block;}
 
-        .res-box{
-            background:#f8f9fa;
-            padding:12px;
-            border-radius:8px;
-            margin-top:10px;
-            font-size:13px;
-            display:none;
-            border-left:4px solid #ff9800;
-            color:#333;
+        /* ===== RESPONSIVE ===== */
+        @media (max-width:1024px){
+            .portals{grid-template-columns:1fr 1fr;}
+            .features-inner{grid-template-columns:1fr 1fr;}
+            .contact-inner{grid-template-columns:1fr 1fr;}
         }
-
-        /* DIVIDER */
-        .divider{
-            height:1px;
-            background:rgba(255,255,255,0.06);
-            margin:6px 0;
+        @media (max-width:860px){
+            .hero{grid-template-columns:1fr;padding-top:24px;}
+            .hero-visual{order:-1;}
+            .hero h1{font-size:42px;}
+            .nav-links{
+                display:none;position:absolute;top:70px;right:20px;left:20px;
+                flex-direction:column;gap:0;align-items:stretch;
+                background:#0f1c3d;border:1px solid rgba(255,255,255,0.1);
+                border-radius:14px;padding:8px;z-index:9998;
+            }
+            .nav-links.open{display:flex;}
+            .nav-links a{padding:14px 16px;border-radius:10px;}
+            .nav-links a.active::after{display:none;}
+            .nav-links a:hover{background:rgba(255,255,255,0.06);}
+            .mobile-nav-toggle{display:flex;}
         }
-
-        @media (max-width:480px){
-            .hero h1{font-size:26px;}
-            .hero .welcome{font-size:24px;}
+        @media (max-width:560px){
+            .nav{padding:16px 20px;}
+            .hero{padding:20px;}
+            .hero h1{font-size:34px;}
+            .portals,.features,.contact-bar{padding:0 20px;}
+            .portals{grid-template-columns:1fr;}
+            .features-inner,.contact-inner{grid-template-columns:1fr;}
+            .section-head .eyebrow{font-size:23px;}
+            .theme-toggle span{display:none;}
         }
     </style>
 </head>
@@ -554,128 +476,248 @@
 <!-- OVERLAY -->
 <div class="overlay" id="overlay" onclick="closeAll()"></div>
 
-<!-- TOP BAR -->
-<div class="top-bar">
-    <div style="position:relative;">
-        <div class="menu-btn" onclick="toggleAdminMenu()">⠿</div>
-        <div class="admin-menu" id="adminMenu">
-            <a href="/admin">🛠️ System Admin</a>
-            <a href="/pharmacy_login">💊 Pharmacy</a>
-            <a href="#" onclick="openInfo()">ℹ️ System Info</a>
+<!-- ===== NAVBAR ===== -->
+<nav class="nav">
+    <div class="nav-logo">
+        <div class="mark"><img src="{{ url_for('static', filename='logo.png') }}" onerror="this.parentNode.innerHTML='S'"></div>
+        <span><span class="accent">SAHAL</span> SERVER POS</span>
+    </div>
+
+    <ul class="nav-links" id="navLinks">
+        <li><a href="/" class="active">Home</a></li>
+        <li><a onclick="openPopup('aboutPopup')">About</a></li>
+        <li><a onclick="openPopup('infoChoosePopup')">Info</a></li>
+        <li><a onclick="openPopup('contactPopup')">Contact</a></li>
+    </ul>
+
+    <div class="nav-right">
+        <div class="theme-toggle" onclick="toggleFab('supportPopup')">🌙 <span>Support</span></div>
+        <div class="admin-wrap">
+            <div class="menu-btn" onclick="toggleAdminMenu()">⠿</div>
+            <div class="admin-menu" id="adminMenu">
+                <a href="/admin">🛠️ System Admin</a>
+            </div>
+        </div>
+        <div class="menu-btn mobile-nav-toggle" onclick="toggleMobileNav()">☰</div>
+    </div>
+</nav>
+
+<!-- ===== HERO ===== -->
+<section class="hero">
+    <div class="hero-text">
+        <div class="badge-pill">✦ Smart POS Solution</div>
+        <h1>All-in-One POS<br>System for Your<br><span class="accent">Business</span></h1>
+        <p class="hero-sub">Sahal Server POS wuxuu kaa caawiyaa maamulka makhaayadaha, farmasiyada, iyo dukaamada waaweyn si sahal iyo hufan. Deg deg, ammaan iyo la isku halleyn karo.</p>
+        <div class="hero-cta">
+            <a href="#portals" class="btn-primary">Get Started <span>→</span></a>
+            <button class="btn-ghost" onclick="openPopup('aboutPopup')"><span class="play">▶</span> Watch Demo</button>
         </div>
     </div>
-    <div class="theme-toggle" onclick="toggleFab('supportPopup')" style="pointer-events:none;">🌙 Dark</div>
+
+    <div class="hero-visual">
+        <div class="mock">
+            <div class="mock-inner">
+                <div class="mock-side">
+                    <div class="brand"><div class="dot"></div> Dashboard</div>
+                    <div class="mock-nav">
+                        <span class="on">Overview</span>
+                        <span>Orders</span>
+                        <span>Products</span>
+                        <span>Customers</span>
+                        <span>Reports</span>
+                        <span>Settings</span>
+                    </div>
+                </div>
+                <div class="mock-main">
+                    <h4>Dashboard</h4>
+                    <div class="mock-stats">
+                        <div class="mock-stat"><div class="lbl">Today's Sales</div><div class="val">$2,350</div><div class="up">▲ 12.5%</div></div>
+                        <div class="mock-stat"><div class="lbl">Orders</div><div class="val">48</div><div class="up">▲ 8.3%</div></div>
+                        <div class="mock-stat"><div class="lbl">Products</div><div class="val">128</div><div class="up">▲ 6.1%</div></div>
+                    </div>
+                    <div class="mock-chart">
+                        <div class="ctitle">Sales Overview</div>
+                        <div class="mock-bars">
+                            <i style="height:40%"></i><i style="height:62%"></i><i style="height:48%"></i>
+                            <i style="height:78%"></i><i style="height:58%"></i><i style="height:88%"></i><i style="height:70%"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ===== CHOOSE YOUR PORTAL ===== -->
+<div class="section-head" id="portals">
+    <div class="eyebrow"><span class="rule"></span><span class="grid-ic">▦</span> Choose Your Portal <span class="rule"></span></div>
+    <p>Select a portal to access your management system</p>
 </div>
 
-<!-- MAIN CONTAINER -->
-<div class="container">
-    <div class="hero">
-        <div class="logo-badge">
-            <img src="{{ url_for('static', filename='logo.png') }}" onerror="this.style.display='none'">
-        </div>
-        <h1><span class="accent">SAHAL</span> SERVER POS</h1>
-        <div class="welcome">Welcome Back!</div>
-        <p class="subtitle">Choose your portal to continue</p>
-        <div class="mini-divider"></div>
-    </div>
+<div class="portals">
+    <a href="/login" class="portal p-restaurant">
+        <div class="p-ic">🍽️</div>
+        <h3>Restaurant Login</h3>
+        <p>Manage your restaurant, menu, orders and staff efficiently.</p>
+        <span class="access">Access Portal <span class="arr">→</span></span>
+    </a>
 
-    <div class="section-label">🏢 Business Portals</div>
-    <div class="grid-2x2">
-        <a href="/login" class="tile tile-restaurant">
-            <div class="tile-icon">🏪</div>
-            <h3>Restaurant Login</h3>
-            <p>Access restaurant management</p>
-            <div class="tile-arrow">›</div>
-        </a>
+    <a href="/supermarket_login" class="portal p-supermarket">
+        <div class="p-ic">🛒</div>
+        <h3>Supermarket Login</h3>
+        <p>Manage products, stock, sales and inventory easily.</p>
+        <span class="access">Access Portal <span class="arr">→</span></span>
+    </a>
 
-        <a href="/supermarket_login" class="tile tile-supermarket">
-            <div class="tile-icon">🛒</div>
-            <h3>Supermarket Login</h3>
-            <p>Access supermarket management</p>
-            <div class="tile-arrow">›</div>
-        </a>
+    <a href="/pharmacy_login" class="portal p-pharmacy">
+        <div class="p-ic">💊</div>
+        <h3>Pharmacy Login</h3>
+        <p>Manage medicines, prescriptions, sales and inventory with ease.</p>
+        <span class="access">Access Portal <span class="arr">→</span></span>
+    </a>
 
-        <a href="/kitchen/1" class="tile tile-kitchen">
-            <div class="tile-icon">👨‍🍳</div>
-            <h3>Kitchen Screen</h3>
-            <p>View kitchen orders and manage</p>
-            <div class="tile-arrow">›</div>
-        </a>
-
-        <a href="/school_login" class="tile tile-school">
-            <div class="tile-icon">🎓</div>
-            <h3>School Login</h3>
-            <p>Access school management system</p>
-            <div class="tile-arrow">›</div>
-        </a>
-    </div>
-
-    <div class="section-label">👥 Staff Portals</div>
-    <button class="wide-row wide-teacher" onclick="openPopup('teacherPopup')">
-        <div class="wide-icon">👨‍🏫</div>
-        <div class="wide-text">
-            <h3>Teacher Portal</h3>
-            <p>Login to teacher dashboard</p>
-        </div>
-        <div class="wide-arrow">›</div>
+    <button class="portal p-dhibic" onclick="openPopup('dashboardPopup')">
+        <div class="p-ic">💎</div>
+        <h3>Dhibic Dahab Dashboard</h3>
+        <p>Access your e-commerce dashboard and manage your online business.</p>
+        <span class="access">Go to Dashboard <span class="arr">→</span></span>
     </button>
+</div>
 
-    <button class="wide-row wide-parent" onclick="openPopup('parentPopup')">
-        <div class="wide-icon">👪</div>
-        <div class="wide-text">
-            <h3>Parent View</h3>
-            <p>Check your child's status</p>
-        </div>
-        <div class="wide-arrow">›</div>
-    </button>
-
-    <div class="section-label">🛍️ E-Commerce</div>
-    <button class="wide-row wide-dashboard" onclick="openPopup('dashboardPopup')">
-        <div class="wide-icon">💎</div>
-        <div class="wide-text">
-            <h3>Dhibic Dahab Dashboard</h3>
-            <p>Manage your e-commerce account</p>
-        </div>
-        <div class="wide-arrow">›</div>
-    </button>
-
-    <div class="feature-strip">
-        <div class="feature-item">
-            <div class="feature-icon">🛡️</div>
-            <div>
-                <h4>Secure Access</h4>
-                <p>Your data is safe with us</p>
-            </div>
-        </div>
-        <div class="feature-item">
-            <div class="feature-icon">⚡</div>
-            <div>
-                <h4>Fast &amp; Reliable</h4>
-                <p>Built for speed and performance</p>
-            </div>
-        </div>
-        <div class="feature-item">
-            <div class="feature-icon">📊</div>
-            <div>
-                <h4>Smart Analytics</h4>
-                <p>Make better decisions with real-time data</p>
-            </div>
-        </div>
-        <div class="feature-item">
-            <div class="feature-icon">🎧</div>
-            <div>
-                <h4>24/7 Support</h4>
-                <p>We're here to help you anytime</p>
-            </div>
-        </div>
-    </div>
-
-    <div class="page-footer">
-        <p>© 2026 Sahal Server POS. All rights reserved.<br>Powering your business, education, and e-commerce in one platform.</p>
+<!-- ===== FEATURE STRIP ===== -->
+<div class="features">
+    <div class="features-inner">
+        <div class="feat f1"><div class="fic">🛡️</div><div><h4>Secure &amp; Reliable</h4><p>Your data is protected with advanced security.</p></div></div>
+        <div class="feat f2"><div class="fic">⚡</div><div><h4>Fast &amp; Efficient</h4><p>Save time and manage your business more efficiently.</p></div></div>
+        <div class="feat f3"><div class="fic">📊</div><div><h4>Real-time Reports</h4><p>Get real-time insights and grow your business.</p></div></div>
+        <div class="feat f4"><div class="fic">🎧</div><div><h4>24/7 Support</h4><p>We're here to support you anytime, anywhere.</p></div></div>
     </div>
 </div>
 
-<!-- DHIBIC DAHAB LOGIN POPUP -->
+<!-- ===== CONTACT BAR ===== -->
+<div class="contact-bar">
+    <div class="contact-inner">
+        <div class="cinfo c1"><div class="cic">📞</div><div><div class="clbl">Call Us</div><div class="cval"><a href="tel:+252612345678">+252 61 234 5678</a></div></div></div>
+        <div class="cinfo c2"><div class="cic">✉️</div><div><div class="clbl">Email Us</div><div class="cval"><a href="mailto:support@sahalserver.com">support@sahalserver.com</a></div></div></div>
+        <div class="cinfo c3"><div class="cic">🌐</div><div><div class="clbl">Visit Our Website</div><div class="cval"><a href="https://sahalserver.com">www.sahalserver.com</a></div></div></div>
+        <div class="cinfo c4"><div class="cic">📍</div><div><div class="clbl">Our Location</div><div class="cval">Mogadishu, Somalia</div></div></div>
+    </div>
+</div>
+
+<div class="page-footer">
+    <p>© 2026 Sahal Server POS. Dhammaan xuquuqda way dhowran tahay.<br>Ganacsigaaga, waxbarashadaada iyo e-commerce-kaaga hal goob.</p>
+</div>
+
+<!-- ===== ABOUT POPUP (Somali) ===== -->
+<div class="popup wide" id="aboutPopup">
+    <h3>ℹ️ Ku saabsan Sahal Server POS</h3>
+    <div class="info-body">
+        <span class="tag">Nidaamka Maamulka Ganacsiga #1 ee Soomaaliya</span>
+        <p><strong>Sahal Server POS</strong> waa nidaam casri ah oo Soomaali u dhashay, loogu talagalay in uu fududeeyo maamulka ganacsiga. Hal goob ayaad ka maamuli kartaa makhaayado, dukaamada waaweyn (supermarket), farmasiyada, iyo dugsiyada.</p>
+        <p>Nidaamku wuxuu si buuxda ugu shaqeeyaa internet-ka (cloud), taasoo kuu ogolaanaysa inaad ka maamusho ganacsigaaga meel kasta oo aad joogto, adigoo isticmaalaya taleefan, kombuyuutar ama tablet.</p>
+        <p><strong>Waxa uu kuu qabtaa:</strong></p>
+        <ul>
+            <li>Iib degdeg ah oo sahlan, iyo rasiidh (receipt) daabacaad.</li>
+            <li>Xisaabinta faa'iidada iyo khasaaraha si otomaatig ah.</li>
+            <li>La socodka kaydka (stock) iyo digniin marka alaab dhammaanayso.</li>
+            <li>Warbixino wakhtiga-dhabta ah oo iibka iyo horumarka muujiya.</li>
+            <li>Amni sare oo ilaaliya xogtaada iyo lacagtaada.</li>
+        </ul>
+        <p>Hadafkeenu waa inaan Soomaalida siino aalado casri ah oo ganacsigoodu ku kobco, ku hufmo, oo ku ammaan galo.</p>
+    </div>
+    <button class="close-btn" onclick="closePopup('aboutPopup')">Xir</button>
+</div>
+
+<!-- ===== INFO CHOOSE POPUP ===== -->
+<div class="popup" id="infoChoosePopup">
+    <h3>📚 Dooro macluumaadka aad rabto</h3>
+    <div class="info-choose">
+        <button class="info-choice r" onclick="openPopup('infoRestaurant')">
+            <div class="ci">🍽️</div>
+            <div class="ctxt"><h4>Restaurant Info</h4><p>Nidaamka makhaayadaha</p></div>
+        </button>
+        <button class="info-choice s" onclick="openPopup('infoSupermarket')">
+            <div class="ci">🛒</div>
+            <div class="ctxt"><h4>Supermarket Info</h4><p>Nidaamka dukaanka weyn</p></div>
+        </button>
+        <button class="info-choice p" onclick="openPopup('infoPharmacy')">
+            <div class="ci">💊</div>
+            <div class="ctxt"><h4>Pharmacy Info</h4><p>Nidaamka farmasiga</p></div>
+        </button>
+    </div>
+    <button class="close-btn" onclick="closePopup('infoChoosePopup')">Xir</button>
+</div>
+
+<!-- ===== INFO: RESTAURANT (Somali) ===== -->
+<div class="popup wide" id="infoRestaurant">
+    <h3>🍽️ Nidaamka Makhaayadaha</h3>
+    <div class="info-body">
+        <span class="tag">Restaurant POS</span>
+        <p>Nidaamkan wuxuu makhaayadaada u fududeeyaa maamulka liiska cuntada, dalabaadka, shaqaalaha, iyo iibka — dhammaan si degdeg ah oo hufan.</p>
+        <ul>
+            <li><strong>QR Ordering:</strong> Macaamiishu waxay dalab ku bixin karaan iyagoo QR code ka sawiraya miiska.</li>
+            <li><strong>Kitchen Screen:</strong> Dalabku si toos ah ayuu u gaaraa shaashadda jikada, taasoo yareysa qaladaadka.</li>
+            <li><strong>Maamulka Menu-ga:</strong> Si fudud u kordhi, u tafatir, ama u tirtir cuntooyinka iyo qiimahooda.</li>
+            <li><strong>Warbixin maalinle ah:</strong> Arag iibka, faa'iidada, iyo cuntooyinka ugu iibka badan.</li>
+            <li><strong>Maamulka shaqaalaha:</strong> La soco shaqada iyo waxqabadka kooxda.</li>
+        </ul>
+        <p>Ku habboon makhaayado yaryar iyo kuwa waaweynba.</p>
+    </div>
+    <a href="/login" class="popup-btn p-orange">Gal Restaurant Portal →</a>
+    <button class="close-btn" onclick="closePopup('infoRestaurant')">Dib u noqo</button>
+</div>
+
+<!-- ===== INFO: SUPERMARKET (Somali) ===== -->
+<div class="popup wide" id="infoSupermarket">
+    <h3>🛒 Nidaamka Dukaanka Weyn</h3>
+    <div class="info-body">
+        <span class="tag">Supermarket POS</span>
+        <p>Nidaamkan wuxuu kuu fududeeyaa maamulka alaabta, kaydka, iibka, iyo inventory-ga si sahlan oo saxsan.</p>
+        <ul>
+            <li><strong>Barcode Scanner:</strong> Si degdeg ah u iibi alaabta adigoo isticmaalaya barcode.</li>
+            <li><strong>Digniinta Kaydka:</strong> Ogow marka alaab dhammaanayso (low-stock alert) ka hor inta aysan ku dhammaan.</li>
+            <li><strong>Rasiidh Daabacaad:</strong> Sii macaamiisha rasiidh rasmi ah oo iib kasta ka dib.</li>
+            <li><strong>Bulk Import:</strong> Hal mar ku dar alaab tiro badan (Excel/CSV) si aad waqti u badbaadiso.</li>
+            <li><strong>Xisaabaadka Faa'iidada:</strong> Arag faa'iidada iib kasta iyo isu-geynta maalinlaha ah.</li>
+        </ul>
+        <p>Wuxuu ku habboon yahay dukaamada waaweyn iyo mini-market-yada.</p>
+    </div>
+    <a href="/supermarket_login" class="popup-btn p-green">Gal Supermarket Portal →</a>
+    <button class="close-btn" onclick="closePopup('infoSupermarket')">Dib u noqo</button>
+</div>
+
+<!-- ===== INFO: PHARMACY (Somali) ===== -->
+<div class="popup wide" id="infoPharmacy">
+    <h3>💊 Nidaamka Farmasiga</h3>
+    <div class="info-body">
+        <span class="tag">Pharmacy POS</span>
+        <p>Nidaamkan waxaa loogu talagalay farmasiyada si ay u maamulaan daawooyinka, iibka, deynta, iyo kaydka si ammaan ah.</p>
+        <ul>
+            <li><strong>Maamulka Daawooyinka:</strong> Kayd Firestore ah oo ammaan ah ayaad ku keydisaa daawooyinka iyo faahfaahintooda.</li>
+            <li><strong>Tafatiraha Qiimaha:</strong> Beddel qiimaha adigoo isla markaana arkaya faa'iido/khasaare (profit/loss preview).</li>
+            <li><strong>La socodka Deynta:</strong> Diiwaan geli oo la soco macaamiisha wax deyn ku qaata.</li>
+            <li><strong>Digniinta Daawada:</strong> Ogow marka daawo dhammaanayso ama dhicitaanka taariikhda (expiry).</li>
+            <li><strong>Warbixin Iib:</strong> Arag iibka iyo faa'iidada maalin, toddobaad, ama bil kasta.</li>
+        </ul>
+        <p>Wuxuu farmasiyaha ka caawiyaa in ay xogtooda si hufan u maamulaan.</p>
+    </div>
+    <a href="/pharmacy_login" class="popup-btn p-purple">Gal Pharmacy Portal →</a>
+    <button class="close-btn" onclick="closePopup('infoPharmacy')">Dib u noqo</button>
+</div>
+
+<!-- ===== CONTACT POPUP ===== -->
+<div class="popup" id="contactPopup">
+    <h3>📞 Nala soo xiriir</h3>
+    <div class="info-body">
+        <p>Su'aal ma qabtaa ama caawimaad ma u baahan tahay? Waan diyaar u nahay 24/7.</p>
+    </div>
+    <a href="https://wa.me/252628276993" target="_blank" class="popup-btn p-green">💬 WhatsApp Support</a>
+    <a href="mailto:support@sahalserver.com" class="popup-btn p-blue">✉️ Email Us</a>
+    <a href="tel:+252612345678" class="popup-btn p-gold">📞 +252 61 234 5678</a>
+    <button class="close-btn" onclick="closePopup('contactPopup')">Xir</button>
+</div>
+
+<!-- ===== DHIBIC DAHAB LOGIN POPUP ===== -->
 <div class="popup" id="dashboardPopup">
     <h3>💎 Dhibic Dahab Login</h3>
     <input id="dashboard_email" type="email" placeholder="Email Address" autocomplete="email">
@@ -685,138 +727,87 @@
     <button class="close-btn" onclick="closePopup('dashboardPopup')">Cancel</button>
 </div>
 
-<!-- TEACHER LOGIN POPUP -->
-<div class="popup" id="teacherPopup">
-    <h3>👨‍🏫 Teacher Login</h3>
-    <form id="teacherLoginForm">
-        <input type="text" name="username" id="t_username" placeholder="Username" required>
-        <input type="password" name="password" id="t_password" placeholder="Password" required>
-        <div class="msg-box" id="teacherMsg"></div>
-        <button type="submit" class="popup-btn p-purple">Login to Dashboard</button>
-    </form>
-    <button class="close-btn" onclick="closePopup('teacherPopup')">Cancel</button>
-</div>
-
-<!-- PARENT POPUP -->
-<div class="popup" id="parentPopup">
-    <h3>🔍 Student Status</h3>
-    <input id="p_std_id" placeholder="Student ID">
-    <input type="password" id="p_password" placeholder="Password">
-    <button onclick="checkStudent()" class="popup-btn p-blue">Check Status</button>
-    <div id="studentResult" class="res-box"></div>
-    <button class="close-btn" onclick="closePopup('parentPopup')">Cancel</button>
-</div>
-
-<!-- FABS -->
-<button class="fab fab-support" onclick="toggleFab('supportPopup')">📱</button>
-<button class="fab fab-student" onclick="toggleFab('studentPopup')">🎓</button>
-
-<div class="fab-popup support-pos" id="supportPopup">
+<!-- ===== SUPPORT FAB ===== -->
+<button class="fab" onclick="toggleFab('supportPopup')">💬</button>
+<div class="fab-popup" id="supportPopup">
     <a href="https://wa.me/252628276993" target="_blank" class="popup-btn p-green">💬 WhatsApp Support</a>
-    <a href="mailto:moodirmanooge@gmail.com" class="popup-btn p-blue">✉️ Send Email</a>
-</div>
-
-<div class="fab-popup student-pos" id="studentPopup">
-    <a href="/register_student" class="popup-btn p-blue">📝 Student Register</a>
-    <a href="/screen_login" class="popup-btn p-purple">🖥️ Student Screen</a>
+    <a href="mailto:support@sahalserver.com" class="popup-btn p-blue">✉️ Send Email</a>
 </div>
 
 <script>
-function openPopup(id) {
+function openPopup(id){
     closeAll();
     document.getElementById(id).classList.add('show');
     document.getElementById('overlay').classList.add('show');
 }
-function closePopup(id) {
+function closePopup(id){
     document.getElementById(id).classList.remove('show');
     document.getElementById('overlay').classList.remove('show');
 }
-function closeAll() {
-    document.querySelectorAll('.popup').forEach(p => p.classList.remove('show'));
-    document.querySelectorAll('.fab-popup').forEach(p => p.classList.remove('show'));
+function closeAll(){
+    document.querySelectorAll('.popup').forEach(p=>p.classList.remove('show'));
+    document.querySelectorAll('.fab-popup').forEach(p=>p.classList.remove('show'));
     document.getElementById('overlay').classList.remove('show');
-    document.getElementById('adminMenu').style.display = 'none';
+    document.getElementById('adminMenu').style.display='none';
 }
-function toggleFab(id) {
-    let p = document.getElementById(id);
-    let isOpen = p.classList.contains('show');
-    document.querySelectorAll('.fab-popup').forEach(x => x.classList.remove('show'));
-    if (!isOpen) p.classList.add('show');
+function toggleFab(id){
+    let p=document.getElementById(id);
+    let isOpen=p.classList.contains('show');
+    document.querySelectorAll('.fab-popup').forEach(x=>x.classList.remove('show'));
+    if(!isOpen) p.classList.add('show');
 }
-function toggleAdminMenu() {
-    let m = document.getElementById('adminMenu');
-    m.style.display = m.style.display === 'block' ? 'none' : 'block';
+function toggleAdminMenu(){
+    let m=document.getElementById('adminMenu');
+    m.style.display = m.style.display==='block' ? 'none' : 'block';
 }
-function showMsg(id, text, type) {
-    let el = document.getElementById(id);
-    el.className = 'msg-box msg-' + type;
-    el.innerHTML = text;
-    el.style.display = 'block';
+function toggleMobileNav(){
+    document.getElementById('navLinks').classList.toggle('open');
+}
+function showMsg(id,text,type){
+    let el=document.getElementById(id);
+    el.className='msg-box msg-'+type;
+    el.innerHTML=text;
+    el.style.display='block';
 }
 
-async function dashboardLogin() {
-    let email = document.getElementById('dashboard_email').value.trim();
-    let password = document.getElementById('dashboard_password').value.trim();
-    let btn = document.getElementById('dashboardLoginBtn');
-    if (!email || !password) {
-        showMsg('dashboardMsg', '⚠️ Please enter email and password.', 'error');
+async function dashboardLogin(){
+    let email=document.getElementById('dashboard_email').value.trim();
+    let password=document.getElementById('dashboard_password').value.trim();
+    let btn=document.getElementById('dashboardLoginBtn');
+    if(!email||!password){
+        showMsg('dashboardMsg','⚠️ Please enter email and password.','error');
         return;
     }
-    btn.disabled = true;
-    btn.innerHTML = '<span class="spinner"></span> Checking...';
-    showMsg('dashboardMsg', 'Verifying your credentials...', 'info');
-    let fd = new FormData();
-    fd.append('email', email);
-    fd.append('password', password);
-    try {
-        let res = await fetch('/dashboard_login', { method: 'POST', body: fd });
-        let data = await res.json();
-        if (data.success) {
-            showMsg('dashboardMsg', '✅ Login successful! Redirecting...', 'success');
-            setTimeout(() => { window.location.href = data.redirect; }, 600);
-        } else {
-            showMsg('dashboardMsg', '❌ ' + (data.error || 'Invalid credentials'), 'error');
-            btn.disabled = false;
-            btn.innerHTML = 'Login to Dashboard';
+    btn.disabled=true;
+    btn.innerHTML='<span class="spinner"></span> Checking...';
+    showMsg('dashboardMsg','Verifying your credentials...','info');
+    let fd=new FormData();
+    fd.append('email',email);
+    fd.append('password',password);
+    try{
+        let res=await fetch('/dashboard_login',{method:'POST',body:fd});
+        let data=await res.json();
+        if(data.success){
+            showMsg('dashboardMsg','✅ Login successful! Redirecting...','success');
+            setTimeout(()=>{window.location.href=data.redirect;},600);
+        }else{
+            showMsg('dashboardMsg','❌ '+(data.error||'Invalid credentials'),'error');
+            btn.disabled=false;btn.innerHTML='Login to Dashboard';
         }
-    } catch (e) {
-        showMsg('dashboardMsg', '⚠️ Server error. Please try again.', 'error');
-        btn.disabled = false;
-        btn.innerHTML = 'Login to Dashboard';
+    }catch(e){
+        showMsg('dashboardMsg','⚠️ Server error. Please try again.','error');
+        btn.disabled=false;btn.innerHTML='Login to Dashboard';
     }
 }
+document.getElementById('dashboard_password').addEventListener('keydown',function(e){if(e.key==='Enter')dashboardLogin();});
+document.getElementById('dashboard_email').addEventListener('keydown',function(e){if(e.key==='Enter')document.getElementById('dashboard_password').focus();});
 
-document.getElementById('dashboard_password').addEventListener('keydown', function(e) {
-    if (e.key === 'Enter') dashboardLogin();
-});
-document.getElementById('dashboard_email').addEventListener('keydown', function(e) {
-    if (e.key === 'Enter') document.getElementById('dashboard_password').focus();
-});
-
-document.getElementById('teacherLoginForm').onsubmit = async (e) => {
-    e.preventDefault();
-    let fd = new FormData(e.target);
-    showMsg('teacherMsg', 'Checking...', 'info');
-    try {
-        let res = await fetch('/teacher_login', { method: 'POST', body: fd });
-        let data = await res.json();
-        if (data.success) {
-            window.location.href = data.redirect || '/teacher_dashboard';
-        } else {
-            showMsg('teacherMsg', '❌ ' + data.error, 'error');
-        }
-    } catch {
-        showMsg('teacherMsg', '⚠️ Server Error!', 'error');
-    }
-};
-async function checkStudent() {}
-
-// KANI WAA REGISTRATION-KA RAGMIGA AH EE SERVICE WORKER-KA PWA
-if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
+// PWA service worker
+if('serviceWorker' in navigator){
+    window.addEventListener('load',()=>{
         navigator.serviceWorker.register("/static/sw.js")
-            .then(reg => console.log("Service Worker Registered!", reg))
-            .catch(err => console.error("Service Worker Failed!", err));
+            .then(reg=>console.log("Service Worker Registered!",reg))
+            .catch(err=>console.error("Service Worker Failed!",err));
     });
 }
 </script>
