@@ -50,19 +50,19 @@ body {
     letter-spacing: 2px; margin: 6px 0;
 }
 .col-headers {
-    display: grid; grid-template-columns: 1fr 40px 55px 55px;
-    font-size: 10px; font-weight: bold; letter-spacing: 1px;
-    text-transform: uppercase; padding: 4px 0; color: #111;
+    display: grid; grid-template-columns: 1fr 32px 54px 56px;
+    font-size: 11px; font-weight: bold; letter-spacing: 0.5px;
+    text-transform: uppercase; padding: 5px 0; color: #000;
 }
 .col-headers span:not(:first-child) { text-align: right; }
 .item-row {
-    display: grid; grid-template-columns: 1fr 40px 55px 55px;
-    font-size: 11px; padding: 4px 0; color: #222; border-bottom: 1px dotted #ddd;
+    display: grid; grid-template-columns: 1fr 32px 54px 56px;
+    font-size: 12px; padding: 6px 0; color: #000; align-items: start;
 }
 .item-row span:not(:first-child) { text-align: right; }
 .item-name {
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    padding-right: 4px; text-transform: capitalize;
+    white-space: normal; word-break: break-word;
+    padding-right: 6px; text-transform: capitalize; line-height: 1.3;
 }
 .total-row {
     display: flex; justify-content: space-between;
@@ -162,7 +162,18 @@ body.paper-58 .receipt-bottom {
     * {
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
+        color: #000 !important;
+        background: transparent !important;
+        box-shadow: none !important;
+        filter: grayscale(100%) !important;
     }
+
+    .receipt { background: #fff !important; }
+    .barcode-bars span { background: #000 !important; }
+    .payment-box { background: #fff !important; border: 1px dashed #000 !important; }
+    .divider { border-top: 1px dashed #000 !important; }
+    .divider-double { border-top: 2px solid #000 !important; border-bottom: 1px solid #000 !important; }
+    .item-row { border-bottom: 1px dotted #000 !important; }
 
     .item-row, .total-row, .grand-total-row, .meta-row, .col-headers {
         page-break-inside: avoid;
@@ -278,6 +289,9 @@ body.paper-58 .receipt-bottom {
         <button type="button" class="size-btn" id="btn80" onclick="setPaperSize('80')">80mm</button>
     </div>
     <button class="print-btn" onclick="window.print()">🖨 PRINT RECEIPT</button>
+    <div style="margin-top:10px;">
+        <button type="button" class="size-btn" onclick="resetAutoPrint()">⚙ Beddel Auto-Print</button>
+    </div>
 </div>
 
 <script>
@@ -311,9 +325,41 @@ function setPaperSize(size){
     });
 })();
 
-// ✅ Auto print - CUSTOMER KALIYA MA DAABACDO
-// Haddaad rabto auto-print ka saar comment-ka
-// setTimeout(() => window.print(), 800);
+const AUTOPRINT_KEY = "sahal_autoprint";
+
+// Beddel/tirtir doorashada auto-print (dib ayaa lagu weydiin doonaa)
+function resetAutoPrint(){
+    try { localStorage.removeItem(AUTOPRINT_KEY); } catch(e) {}
+    alert("Waa la tirtiray. Marka xigta ee rasiidh la furo ayaa dib laguu weydiin doonaa.");
+}
+
+// ✅ AUTO-PRINT LOGIC — mar hal mar la weydiiyo, kadib mar walba otomaatig ah
+(function(){
+    const KEY = AUTOPRINT_KEY;                // xusuusta doorashada (localStorage)
+    let choice = null;
+    try { choice = localStorage.getItem(KEY); } catch(e) {}
+
+    function doAutoPrint(){
+        // Sug in barcode-ka iyo qoraalku soo dhammaadaan kadib daabac
+        setTimeout(() => window.print(), 700);
+    }
+
+    if(choice === "yes"){
+        // Hore ayuu u ogolaaday — toos u daabac, waxba ha weydiin
+        doAutoPrint();
+    } else if(choice === "no"){
+        // Hore ayuu u diiday — waxba ha samayn (gacanta ayuu ku daaban karaa)
+    } else {
+        // Marka ugu horreysa ee printer-ka la xiro — hal mar weydii
+        const ok = confirm(
+            "Ma rabtaa in rasiidka si otomaatig ah loo daabaco (auto-print) mar walba oo dalab cusub yimaado?\n\n" +
+            "OK  = Haa, mar walba iska daabac\n" +
+            "Cancel = Maya, gacanta ayaan ku daaban doonaa"
+        );
+        try { localStorage.setItem(KEY, ok ? "yes" : "no"); } catch(e) {}
+        if(ok) doAutoPrint();
+    }
+})();
 </script>
 
 </body>
