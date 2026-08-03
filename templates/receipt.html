@@ -29,7 +29,7 @@ body {
 }
 .restaurant-name {
     font-size: 20px; font-weight: 900; text-align: center;
-    letter-spacing: 3px; text-transform: uppercase; color: #111; margin-bottom: 2px;
+    letter-spacing: 2px; text-transform: uppercase; color: #111; margin-bottom: 2px;
 }
 .restaurant-sub {
     text-align: center; font-size: 10px; letter-spacing: 2px;
@@ -37,17 +37,17 @@ body {
 }
 .restaurant-phone { text-align: center; font-size: 11px; color: #333; margin-bottom: 4px; }
 .divider-double {
-    border: none; border-top: 2px solid #111; border-bottom: 1px solid #111;
+    border: none; border-top: 2px solid #000; border-bottom: 1px solid #000;
     height: 4px; margin: 8px 0;
 }
-.divider { border: none; border-top: 1px dashed #999; margin: 8px 0; }
+.divider { border: none; border-top: 1px dashed #000; margin: 8px 0; }
 .meta-row {
     display: flex; justify-content: space-between;
-    font-size: 11px; color: #333; margin: 3px 0;
+    font-size: 11px; color: #000; margin: 3px 0;
 }
 .invoice-title {
     text-align: center; font-size: 12px; font-weight: bold;
-    letter-spacing: 2px; margin: 6px 0;
+    letter-spacing: 2px; margin: 6px 0; color: #000;
 }
 .col-headers {
     display: grid; grid-template-columns: 1fr 32px 54px 56px;
@@ -66,28 +66,28 @@ body {
 }
 .total-row {
     display: flex; justify-content: space-between;
-    font-size: 11px; padding: 3px 0; color: #333;
+    font-size: 11px; padding: 3px 0; color: #000;
 }
 .grand-total-row {
     display: flex; justify-content: space-between;
     font-size: 15px; font-weight: 900; padding: 6px 0; color: #000; letter-spacing: 1px;
 }
 .payment-box {
-    background: #f7f7f7; border: 1px solid #ddd; border-radius: 4px;
-    padding: 8px 10px; margin: 6px 0; text-align: center; font-size: 11px; color: #333;
+    background: #f7f7f7; border: 1px solid #000; border-radius: 4px;
+    padding: 8px 10px; margin: 6px 0; text-align: center; font-size: 11px; color: #000;
 }
-.pay-label { font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #888; margin-bottom: 3px; }
-.pay-code { font-size: 14px; font-weight: bold; color: #111; letter-spacing: 1px; }
+.pay-label { font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #000; margin-bottom: 3px; font-weight: bold; }
+.pay-code { font-size: 14px; font-weight: bold; color: #000; letter-spacing: 1px; }
 .thank-you {
     text-align: center; font-size: 13px; font-weight: bold;
-    letter-spacing: 3px; margin: 8px 0 2px; text-transform: uppercase;
+    letter-spacing: 3px; margin: 8px 0 2px; text-transform: uppercase; color: #000;
 }
-.footer-note { text-align: center; font-size: 9px; color: #888; letter-spacing: 1px; margin-bottom: 6px; }
-.powered { text-align: center; font-size: 9px; color: #aaa; letter-spacing: 1px; margin-top: 4px; }
+.footer-note { text-align: center; font-size: 9px; color: #000; letter-spacing: 1px; margin-bottom: 6px; }
+.powered { text-align: center; font-size: 9px; color: #000; letter-spacing: 1px; margin-top: 4px; }
 .barcode-area { text-align: center; margin: 8px 0 2px; }
 .barcode-bars { display: inline-flex; height: 35px; align-items: flex-end; }
 .barcode-bars span { display: inline-block; background: #000; height: 100%; }
-.barcode-text { font-size: 8px; letter-spacing: 2px; color: #555; margin-top: 2px; }
+.barcode-text { font-size: 8px; letter-spacing: 2px; color: #000; margin-top: 2px; font-weight: bold; }
 .print-btn-area { margin-top: 20px; text-align: center; }
 .print-btn {
     padding: 12px 30px; background: #1a1a1a; color: white; border: none;
@@ -104,8 +104,8 @@ body {
     cursor: pointer; letter-spacing: 1px;
 }
 .size-btn.active { background: #1a1a1a; color: #fff; border-color: #1a1a1a; }
-@media print { .paper-size-toggle { display: none !important; } }
 
+/* 58mm Interactive UI Preview */
 body.paper-58 .receipt-wrapper,
 body.paper-58 .receipt,
 body.paper-58 .receipt-top,
@@ -113,29 +113,35 @@ body.paper-58 .receipt-bottom {
     width: 232px;
 }
 
+/* ==========================================
+   OPTIMIZED BLACK & WHITE PRINT STYLES
+   ========================================== */
 @media print {
-
+    /* Auto page size for 80mm thermal printers */
     @page {
         size: 80mm auto;
         margin: 0;
     }
 
-    html,
-    body {
+    html, body {
         width: 80mm !important;
         max-width: 80mm !important;
         margin: 0 !important;
         padding: 0 !important;
-        background: #fff !important;
+        background: #ffffff !important;
+        color: #000000 !important;
         overflow: visible !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        filter: grayscale(100%) contrast(200%) !important;
     }
 
-    body{
-        display:block !important;
+    body {
+        display: block !important;
         align-items: initial !important;
     }
 
-    .receipt-wrapper{
+    .receipt-wrapper {
         width: 80mm !important;
         max-width: 80mm !important;
         margin: 0 !important;
@@ -143,48 +149,62 @@ body.paper-58 .receipt-bottom {
         position: static !important;
     }
 
-    .receipt{
+    .receipt {
         width: 100% !important;
         max-width: 100% !important;
         margin: 0 !important;
-        padding: 3mm 4mm !important;
+        padding: 4mm 4mm !important;
         box-shadow: none !important;
         border: none !important;
         box-sizing: border-box !important;
+        background: #ffffff !important;
     }
 
+    /* Qari qaybaha aan loo baahnayn marka la daabacayo */
     .receipt-top,
     .receipt-bottom,
-    .print-btn-area{
-        display:none !important;
+    .print-btn-area,
+    .paper-size-toggle {
+        display: none !important;
     }
 
+    /* B&W High Contrast for all internal elements */
     * {
-        -webkit-print-color-adjust: exact !important;
-        print-color-adjust: exact !important;
-        color: #000 !important;
+        color: #000000 !important;
         background: transparent !important;
         box-shadow: none !important;
-        filter: grayscale(100%) !important;
+        text-shadow: none !important;
     }
 
-    .receipt { background: #fff !important; }
-    .barcode-bars span { background: #000 !important; }
-    .payment-box { background: #fff !important; border: 1px dashed #000 !important; }
-    .divider { border-top: 1px dashed #000 !important; }
-    .divider-double { border-top: 2px solid #000 !important; border-bottom: 1px solid #000 !important; }
-    .item-row { border-bottom: 1px dotted #000 !important; }
+    .barcode-bars span {
+        background: #000000 !important;
+    }
+
+    .payment-box {
+        background: #ffffff !important;
+        border: 1px dashed #000000 !important;
+    }
+
+    .divider { 
+        border-top: 1px dashed #000000 !important; 
+    }
+
+    .divider-double { 
+        border-top: 2px solid #000000 !important; 
+        border-bottom: 1px solid #000000 !important; 
+    }
 
     .item-row, .total-row, .grand-total-row, .meta-row, .col-headers {
         page-break-inside: avoid;
     }
 }
 
-/* 58mm printer support: add class="paper-58" on <body> for narrower rolls */
+/* Specific support for 58mm width paper */
 @page paper-58-size {
     size: 58mm auto;
     margin: 0;
 }
+
 @media print {
     body.paper-58 {
         page: paper-58-size;
@@ -196,7 +216,12 @@ body.paper-58 .receipt-bottom {
         max-width: 58mm !important;
     }
     body.paper-58 .receipt {
-        padding: 2mm 3mm !important;
+        padding: 2mm 2mm !important;
+    }
+    body.paper-58 .col-headers,
+    body.paper-58 .item-row {
+        grid-template-columns: 1fr 24px 44px 46px !important;
+        font-size: 10px !important;
     }
 }
 </style>
@@ -311,7 +336,7 @@ function setPaperSize(size){
     }
 }
 
-// Barcode
+// Barcode Generator
 (function(){
     const el = document.getElementById("barcodeEl");
     const p = [3,1,2,1,3,2,1,2,1,3,1,2,2,1,3,1,2,1,2,3,1,1,2,3,1,2,1,2,1,3];
@@ -327,30 +352,27 @@ function setPaperSize(size){
 
 const AUTOPRINT_KEY = "sahal_autoprint";
 
-// Beddel/tirtir doorashada auto-print (dib ayaa lagu weydiin doonaa)
+// Beddel/tirtir doorashada auto-print
 function resetAutoPrint(){
     try { localStorage.removeItem(AUTOPRINT_KEY); } catch(e) {}
     alert("Waa la tirtiray. Marka xigta ee rasiidh la furo ayaa dib laguu weydiin doonaa.");
 }
 
-// ✅ AUTO-PRINT LOGIC — mar hal mar la weydiiyo, kadib mar walba otomaatig ah
+// AUTO-PRINT LOGIC
 (function(){
-    const KEY = AUTOPRINT_KEY;                // xusuusta doorashada (localStorage)
+    const KEY = AUTOPRINT_KEY;
     let choice = null;
     try { choice = localStorage.getItem(KEY); } catch(e) {}
 
     function doAutoPrint(){
-        // Sug in barcode-ka iyo qoraalku soo dhammaadaan kadib daabac
         setTimeout(() => window.print(), 700);
     }
 
     if(choice === "yes"){
-        // Hore ayuu u ogolaaday — toos u daabac, waxba ha weydiin
         doAutoPrint();
     } else if(choice === "no"){
-        // Hore ayuu u diiday — waxba ha samayn (gacanta ayuu ku daaban karaa)
+        // User said no, manual print only
     } else {
-        // Marka ugu horreysa ee printer-ka la xiro — hal mar weydii
         const ok = confirm(
             "Ma rabtaa in rasiidka si otomaatig ah loo daabaco (auto-print) mar walba oo dalab cusub yimaado?\n\n" +
             "OK  = Haa, mar walba iska daabac\n" +
