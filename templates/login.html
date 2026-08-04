@@ -83,6 +83,46 @@
             color: rgba(255,255,255,0.3);
         }
 
+        /* Password field wrapper — eye icon */
+        .password-wrapper {
+            position: relative;
+        }
+
+        .password-wrapper input {
+            padding-right: 46px;
+        }
+
+        .toggle-eye {
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .toggle-eye svg {
+            width: 20px;
+            height: 20px;
+            stroke: rgba(255,255,255,0.45);
+            fill: none;
+            stroke-width: 2;
+            transition: stroke 0.2s;
+        }
+
+        .toggle-eye:hover svg {
+            stroke: #4facfe;
+        }
+
+        .eye-off {
+            display: none;
+        }
+
         .btn-login {
             width: 100%;
             padding: 14px;
@@ -162,12 +202,25 @@
 
         <div class="form-group">
             <label>Password</label>
-            <input
-                type="password"
-                name="password"
-                placeholder="Enter password"
-                required
-            >
+            <div class="password-wrapper">
+                <input
+                    type="password"
+                    name="password"
+                    id="passwordField"
+                    placeholder="Enter password"
+                    required
+                >
+                <button type="button" class="toggle-eye" onclick="togglePassword()" aria-label="Show password" tabindex="-1">
+                    <svg class="eye-on" id="eyeOn" viewBox="0 0 24 24">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                        <circle cx="12" cy="12" r="3"/>
+                    </svg>
+                    <svg class="eye-off" id="eyeOff" viewBox="0 0 24 24">
+                        <path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-7 0-11-8-11-8a18.7 18.7 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                        <line x1="1" y1="1" x2="23" y2="23"/>
+                    </svg>
+                </button>
+            </div>
         </div>
 
         <button type="submit" class="btn-login">
@@ -181,6 +234,23 @@
     </div>
 
 </div>
+
+<script>
+function togglePassword(){
+    const field = document.getElementById("passwordField");
+    const eyeOn = document.getElementById("eyeOn");
+    const eyeOff = document.getElementById("eyeOff");
+    if(field.type === "password"){
+        field.type = "text";
+        eyeOn.style.display = "none";
+        eyeOff.style.display = "block";
+    } else {
+        field.type = "password";
+        eyeOn.style.display = "block";
+        eyeOff.style.display = "none";
+    }
+}
+</script>
 
 </body>
 </html>
