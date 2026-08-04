@@ -2044,13 +2044,17 @@ def get_calls(rid):
 @app.route("/add_menu/<rid>", methods=["POST"])
 def add_menu(rid):
     try:
-        name = request.form["name"]
-        price = request.form["price"]
-        image_file = request.files["image"]
+        name = request.form.get("name", "").strip()
+        price = request.form.get("price", "").strip()
+        image_file = request.files.get("image")
 
-        filename = secure_filename(image_file.filename)
-        image_path = os.path.join(UPLOAD_FOLDER, filename)
-        image_file.save(image_path)
+        if not name or not price:
+            return jsonify({"success": False, "error": "Name/Price required ❌"})
+
+        filename = ""
+        if image_file and image_file.filename:
+            filename = secure_filename(image_file.filename)
+            image_file.save(os.path.join(UPLOAD_FOLDER, filename))
 
         menu_data = {
             "name": name,
@@ -2060,10 +2064,11 @@ def add_menu(rid):
         }
 
         db.collection("restaurants").document(rid).collection("menu").add(menu_data)
-        return redirect(f"/dashboard/{rid}")
+
+        return jsonify({"success": True, "message": "Menu added ✅"})
 
     except Exception as e:
-        return f"Add Menu Error ❌ {str(e)}"
+        return jsonify({"success": False, "error": str(e)})
 
 
 # =====================================
