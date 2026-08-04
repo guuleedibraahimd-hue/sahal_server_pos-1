@@ -115,6 +115,13 @@ body.paper-58 .receipt-bottom {
 
 /* ==========================================
    OPTIMIZED BLACK & WHITE PRINT STYLES
+   Sixitaan: qoraalka khafiifka ah (light weight)
+   ma daabacmayo si fiican thermal printer-yada
+   qaarkood — waxaan ka saarnay filter-ka
+   grayscale/contrast oo waxaan ku dartay
+   font-weight adag + text-shadow si loo
+   "buuxiyo" xarfaha (fake-bold) oo aan la
+   qarin karin.
    ========================================== */
 @media print {
     /* Auto page size for 80mm thermal printers */
@@ -133,7 +140,9 @@ body.paper-58 .receipt-bottom {
         overflow: visible !important;
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
-        filter: grayscale(100%) contrast(200%) !important;
+        /* filter-kii hore (grayscale/contrast) ayaa
+           printer qaarkood ka dhigi jiray qoraalka
+           mid faded ah — waa la saaray */
     }
 
     body {
@@ -153,7 +162,7 @@ body.paper-58 .receipt-bottom {
         width: 100% !important;
         max-width: 100% !important;
         margin: 0 !important;
-        padding: 4mm 4mm !important;
+        padding: 3mm 3mm !important;
         box-shadow: none !important;
         border: none !important;
         box-sizing: border-box !important;
@@ -168,12 +177,40 @@ body.paper-58 .receipt-bottom {
         display: none !important;
     }
 
-    /* B&W High Contrast for all internal elements */
+    /* B&W High Contrast + BOLD force — dhammaan qoraalka
+       waa in uu si adag/mugdi ah u soo baxaa, gaar
+       ahaan item-rows-ka oo hore u qarmi jiray */
     * {
         color: #000000 !important;
         background: transparent !important;
         box-shadow: none !important;
         text-shadow: none !important;
+        -webkit-font-smoothing: none !important;
+        font-weight: 700 !important;
+        text-rendering: optimizeLegibility !important;
+    }
+
+    .item-name,
+    .item-row span,
+    .total-row span,
+    .meta-row span,
+    .col-headers span,
+    .footer-note,
+    .barcode-text,
+    .pay-code,
+    .restaurant-sub,
+    .restaurant-phone {
+        font-weight: 700 !important;
+        -webkit-text-stroke: 0.3px #000000;
+    }
+
+    .grand-total-row,
+    .restaurant-name,
+    .invoice-title,
+    .thank-you,
+    .pay-label {
+        font-weight: 900 !important;
+        -webkit-text-stroke: 0.4px #000000;
     }
 
     .barcode-bars span {
@@ -182,16 +219,16 @@ body.paper-58 .receipt-bottom {
 
     .payment-box {
         background: #ffffff !important;
-        border: 1px dashed #000000 !important;
+        border: 1.5px dashed #000000 !important;
     }
 
-    .divider { 
-        border-top: 1px dashed #000000 !important; 
+    .divider {
+        border-top: 1.5px dashed #000000 !important;
     }
 
-    .divider-double { 
-        border-top: 2px solid #000000 !important; 
-        border-bottom: 1px solid #000000 !important; 
+    .divider-double {
+        border-top: 2.5px solid #000000 !important;
+        border-bottom: 1.5px solid #000000 !important;
     }
 
     .item-row, .total-row, .grand-total-row, .meta-row, .col-headers {
@@ -220,8 +257,8 @@ body.paper-58 .receipt-bottom {
     }
     body.paper-58 .col-headers,
     body.paper-58 .item-row {
-        grid-template-columns: 1fr 24px 44px 46px !important;
-        font-size: 10px !important;
+        grid-template-columns: 1fr 22px 40px 42px !important;
+        font-size: 9px !important;
     }
 }
 </style>
