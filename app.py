@@ -2044,32 +2044,26 @@ def get_calls(rid):
 @app.route("/add_menu/<rid>", methods=["POST"])
 def add_menu(rid):
     try:
-        name = request.form.get("name", "").strip()
-        price = request.form.get("price", "").strip()
-        image_file = request.files.get("image")
+        name = request.form["name"]
+        price = request.form["price"]
+        image_file = request.files["image"]
 
-        if not name or not price:
-            flash("Food Name iyo Price waa loo baahan yahay ❌")
-            return redirect(f"/dashboard/{rid}")
+        filename = secure_filename(image_file.filename)
+        image_path = os.path.join(UPLOAD_FOLDER, filename)
+        image_file.save(image_path)
 
-        filename = ""
-        if image_file and image_file.filename:
-            filename = secure_filename(image_file.filename)
-            image_file.save(os.path.join(UPLOAD_FOLDER, filename))
-
-        db.collection("restaurants").document(rid).collection("menu").add({
+        menu_data = {
             "name": name,
             "price": price,
             "image": filename,
             "created_at": datetime.now()
-        })
+        }
 
+        db.collection("restaurants").document(rid).collection("menu").add(menu_data)
         return redirect(f"/dashboard/{rid}")
 
     except Exception as e:
-        print("ADD MENU ERROR:", e)
-        flash(f"Add Menu Error ❌ {str(e)}")
-        return redirect(f"/dashboard/{rid}")
+        return f"Add Menu Error ❌ {str(e)}"
 
 
 # =====================================
