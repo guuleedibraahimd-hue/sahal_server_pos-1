@@ -828,6 +828,15 @@ hr{border:none;border-top:1px solid var(--border);margin:0;}
     </div>
 </div>
 
+{% with messages = get_flashed_messages() %}
+  {% if messages %}
+    <div class="expired-banner" style="margin-bottom:20px;">
+      <p>{{ messages[0] }}</p>
+    </div>
+  {% endif %}
+{% endwith %}
+
+
 <div class="popup" id="qrPopup">
     <div class="popup-box">
         <h3>📷 Generate QR</h3>

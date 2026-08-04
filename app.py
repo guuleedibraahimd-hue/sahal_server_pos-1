@@ -2049,26 +2049,27 @@ def add_menu(rid):
         image_file = request.files.get("image")
 
         if not name or not price:
-            return jsonify({"success": False, "error": "Name/Price required ❌"})
+            flash("Food Name iyo Price waa loo baahan yahay ❌")
+            return redirect(f"/dashboard/{rid}")
 
         filename = ""
         if image_file and image_file.filename:
             filename = secure_filename(image_file.filename)
             image_file.save(os.path.join(UPLOAD_FOLDER, filename))
 
-        menu_data = {
+        db.collection("restaurants").document(rid).collection("menu").add({
             "name": name,
             "price": price,
             "image": filename,
             "created_at": datetime.now()
-        }
+        })
 
-        db.collection("restaurants").document(rid).collection("menu").add(menu_data)
-
-        return jsonify({"success": True, "message": "Menu added ✅"})
+        return redirect(f"/dashboard/{rid}")
 
     except Exception as e:
-        return jsonify({"success": False, "error": str(e)})
+        print("ADD MENU ERROR:", e)
+        flash(f"Add Menu Error ❌ {str(e)}")
+        return redirect(f"/dashboard/{rid}")
 
 
 # =====================================
