@@ -30,10 +30,10 @@ body{ font-family:Arial,sans-serif; background:#eef1f5; margin:0; padding:20px; 
 .pr{ background:#636e72; }
 .err{ color:#d63031; font-weight:bold; margin-bottom:12px; }
 
-/* ===== A4 SHEET ===== */
+/* ===== A4 SHEET (LANDSCAPE) ===== */
 .sheet{
-    width:210mm; min-height:297mm; margin:0 auto; background:#fff;
-    padding:22mm 20mm; box-shadow:0 4px 20px rgba(0,0,0,.15);
+    width:297mm; min-height:210mm; margin:0 auto; background:#fff;
+    padding:16mm 20mm; box-shadow:0 4px 20px rgba(0,0,0,.15);
     display:flex; flex-direction:column; align-items:center;
 }
 
@@ -57,35 +57,35 @@ body{ font-family:Arial,sans-serif; background:#eef1f5; margin:0; padding:20px; 
 /* ===== TITLE ===== */
 .acc-title{
     text-align:center; color:#c0392b; font-size:40px; font-weight:800;
-    margin:70px 0 20px; letter-spacing:1px;
+    margin:24px 0 14px; letter-spacing:1px;
 }
 
 /* ===== ACCOUNT NUMBER ===== */
 .acc-number{
     text-align:center; font-weight:800; font-size:46px; letter-spacing:1px;
-    margin:0 0 40px; word-break:break-word;
+    margin:0 0 24px; word-break:break-word;
 }
 .acc-number .black{ color:#111; }
 .acc-number .blue{ color:#3aa0ff; }
 
 /* ===== QR CENTER ===== */
 .qr-wrap{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; }
-.qr-wrap img{ width:300px; height:300px; }
+.qr-wrap img{ width:250px; height:250px; }
 .qr-hint{ margin-top:22px; color:#555; font-size:14px; }
 .empty{ color:#999; font-size:18px; }
 
 /* ===== INSTRUCTION TEXT (below QR) ===== */
 .instruction{
-    text-align:center; margin-top:26px; color:#222;
+    text-align:center; margin-top:18px; color:#222;
     font-family:"Times New Roman",serif; font-weight:800;
-    font-size:26px; line-height:1.5;
+    font-size:24px; line-height:1.4;
 }
 
 @media print{
     body{ background:#fff; padding:0; }
     .controls, .no-print{ display:none !important; }
-    .sheet{ box-shadow:none; margin:0; width:auto; min-height:auto; padding:18mm; }
-    @page{ size:A4; margin:0; }
+    .sheet{ box-shadow:none; margin:0; width:auto; min-height:auto; padding:12mm; }
+    @page{ size:A4 landscape; margin:0; }
 }
 </style>
 </head>
