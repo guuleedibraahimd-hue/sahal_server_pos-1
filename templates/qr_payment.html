@@ -61,16 +61,16 @@ body{ font-family:Arial,sans-serif; background:#eef1f5; margin:0; padding:20px; 
 }
 
 /* ===== QR CENTER ===== */
-.qr-wrap{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+.qr-wrap{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; }
 .qr-wrap img{ width:300px; height:300px; }
 .qr-hint{ margin-top:22px; color:#555; font-size:14px; }
 .empty{ color:#999; font-size:18px; }
 
 /* ===== INSTRUCTION TEXT (below QR) ===== */
 .instruction{
-    text-align:center; margin-top:34px; color:#222;
+    text-align:center; margin-top:26px; color:#222;
     font-family:"Times New Roman",serif; font-weight:800;
-    font-size:26px; line-height:2.1;
+    font-size:26px; line-height:1.5;
 }
 
 @media print{
@@ -126,14 +126,15 @@ body{ font-family:Arial,sans-serif; background:#eef1f5; margin:0; padding:20px; 
     </div>
 
     <!-- TITLE -->
-    <div class="acc-title">ACCOUNT NO: *799*35705776*</div>
+    <div class="acc-title">ACCOUNT NO:</div>
 
     <!-- QR -->
     <div class="qr-wrap">
         {% if img %}
             <img src="/static/qr/{{ img }}" alt="Payment QR" crossorigin="anonymous">
             <div class="instruction">
-                Faahfaahin (Geli Magacaaga oo Sadaxan)<br> <br> Kadib Geli Pin-Kaaga EVC-Plus-ka.
+                Faahfaahin (Geli Magacaaga oo Sadaxan)<br>
+                Kadib Geli Pin-Kaaga EVC-Pluska.
             </div>
             <div class="qr-hint no-print">Scan the QR to pay</div>
         {% else %}
