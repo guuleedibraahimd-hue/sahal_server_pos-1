@@ -3962,6 +3962,41 @@ def admin_create_pharmacy_user():
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
 
+# =========================
+# 💳 PAYMENT QR GENERATOR (A4)
+# =========================
+@app.route("/payment_qr", methods=["GET", "POST"])
+def payment_qr():
+    if not session.get("admin_ok"):
+        return redirect("/admin")
+
+    img_file = ""
+    ussd_code = ""
+
+    if request.method == "POST":
+        ussd_code = request.form.get("ussd_code", "").strip()
+
+        if not ussd_code:
+            return render_template("qr_payment.html", img="", ussd="", error="Fadlan geli USSD code ❌")
+
+        filename = f"payqr_{int(time.time())}.png"
+        qr_folder = os.path.join("static", "qr")
+        os.makedirs(qr_folder, exist_ok=True)
+        file_path = os.path.join(qr_folder, filename)
+
+        qr = qrcode.QRCode(
+            version=1,
+            error_correction=qrcode.constants.ERROR_CORRECT_H,
+            box_size=12,
+            border=2
+        )
+        qr.add_data(ussd_code)
+        qr.make(fit=True)
+
+        img = qr.make_image(fill_color="black", back_color="white")
+        img.save(file_path)
+
+        img_file = f"/{file_path.replace(os.sep, '/')}"
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8080))

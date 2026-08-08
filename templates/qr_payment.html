@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="so">
+<head>
+<meta charset="UTF-8">
+<title>Payment QR — A4</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+:root{ --blue:#1a5fb4; }
+*{ box-sizing:border-box; }
+body{ font-family:Arial,sans-serif; background:#eef1f5; margin:0; padding:20px; }
+
+.controls{
+    max-width:820px; margin:0 auto 20px; background:#fff; padding:22px;
+    border-radius:16px; box-shadow:0 4px 14px rgba(0,0,0,.08);
+}
+.controls h2{ margin:0 0 16px; }
+.controls input[type=text]{
+    width:100%; padding:14px; border:1px solid #ccc; border-radius:10px;
+    font-size:16px; margin-bottom:14px;
+}
+.btnrow{ display:flex; gap:10px; flex-wrap:wrap; }
+.btn{
+    border:none; padding:13px 22px; border-radius:10px; color:#fff;
+    font-weight:bold; cursor:pointer; font-size:15px; text-decoration:none;
+    display:inline-flex; align-items:center; gap:6px;
+}
+.gen{ background:#1a5fb4; }
+.dl{ background:#00b894; }
+.pr{ background:#636e72; }
+.err{ color:#d63031; font-weight:bold; margin-bottom:12px; }
+
+/* ===== A4 SHEET ===== */
+.sheet{
+    width:210mm; min-height:297mm; margin:0 auto; background:#fff;
+    padding:22mm 20mm; box-shadow:0 4px 20px rgba(0,0,0,.15);
+    display:flex; flex-direction:column; align-items:center;
+}
+
+/* ===== HEADER (Imam University) ===== */
+.header{ width:100%; border-bottom:4px solid var(--blue); padding-bottom:10px; }
+.head-top{ display:flex; justify-content:space-between; align-items:center; gap:14px; }
+.head-left .uni-name{ color:var(--blue); font-size:30px; font-weight:800; letter-spacing:1px; line-height:1; }
+.head-left .uni-sub{ font-size:12px; font-weight:700; color:#333; margin-top:4px; }
+.crest{ width:78px; height:78px; }
+.crest img{ width:100%; height:100%; object-fit:contain; }
+.head-right{ text-align:right; }
+.head-right .ar-name{ color:var(--blue); font-size:30px; font-weight:800; direction:rtl; }
+.head-right .ar-sub{ font-size:12px; color:#333; direction:rtl; margin-top:4px; }
+.head-mid{ text-align:center; color:var(--blue); font-weight:800; font-size:16px; letter-spacing:1px; margin-top:4px; }
+.slogan-bar{
+    width:100%; background:var(--blue); color:#fff; margin-top:8px;
+    display:flex; justify-content:space-between; padding:6px 12px; font-weight:700; font-size:13px;
+}
+.slogan-bar span[dir=rtl]{ direction:rtl; }
+
+/* ===== TITLE ===== */
+.acc-title{
+    text-align:center; color:#c0392b; font-size:40px; font-weight:800;
+    margin:70px 0 40px; letter-spacing:1px;
+}
+
+/* ===== QR CENTER ===== */
+.qr-wrap{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+.qr-wrap img{ width:300px; height:300px; }
+.qr-code-text{ margin-top:22px; font-size:22px; font-weight:700; letter-spacing:1px; }
+.qr-hint{ margin-top:8px; color:#555; font-size:14px; }
+.empty{ color:#999; font-size:18px; }
+
+@media print{
+    body{ background:#fff; padding:0; }
+    .controls, .no-print{ display:none !important; }
+    .sheet{ box-shadow:none; margin:0; width:auto; min-height:auto; padding:18mm; }
+    @page{ size:A4; margin:0; }
+}
+</style>
+</head>
+<body>
+
+<!-- CONTROLS -->
+<div class="controls no-print">
+    <h2>💳 Samee Payment QR (A4)</h2>
+    {% if error %}<div class="err">{{ error }}</div>{% endif %}
+    <form method="post">
+        <input type="text" name="ussd_code" placeholder="Tusale: *789*35705776*$#" value="{{ ussd }}" required>
+        <div class="btnrow">
+            <button type="submit" class="btn gen">⚙️ Generate</button>
+            {% if img %}
+            <a href="/static/qr/{{ img }}" download="payment_qr.png" class="btn dl">⬇️ Download QR</a>
+            <button type="button" class="btn pr" onclick="window.print()">🖨️ Print / Save A4</button>
+            {% endif %}
+        </div>
+    </form>
+</div>
+
+<!-- A4 SHEET -->
+<div class="sheet">
+    <!-- HEADER -->
+    <div class="header">
+        <div class="head-top">
+            <div class="head-left">
+                <div class="uni-name">IMAM UNIVERSITY</div>
+                <div class="uni-sub">Mogadishu-Somalia</div>
+            </div>
+            <div class="crest">
+                <img src="/static/uploads/imam_logo.png" alt="Imam University"
+                     onerror="this.style.display='none'">
+            </div>
+            <div class="head-right">
+                <div class="ar-name">إمـــام جـامـعـة</div>
+                <div class="ar-sub">مقديشو - الصومال</div>
+            </div>
+        </div>
+        <div class="head-mid">JAAMACADDA IMAM</div>
+        <div class="slogan-bar">
+            <span>Together for Excellence!</span>
+            <span dir="rtl">معا من أجل التميز!</span>
+        </div>
+    </div>
+
+    <!-- TITLE -->
+    <div class="acc-title">ACCOUNT NO:</div>
+
+    <!-- QR -->
+    <div class="qr-wrap">
+        {% if img %}
+            <img src="/static/qr/{{ img }}" alt="Payment QR">
+            <div class="qr-code-text">{{ ussd }}</div>
+            <div class="qr-hint no-print">Scan the QR to pay</div>
+        {% else %}
+            <div class="empty">QR-ku halkan ayuu ka soo bixi doonaa markaad Generate riixdo</div>
+        {% endif %}
+    </div>
+</div>
+
+</body>
+</html>
