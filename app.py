@@ -3979,6 +3979,10 @@ def payment_qr():
         if not ussd_code:
             return render_template("qr_payment.html", img="", ussd="", error="Fadlan geli USSD code ❌")
 
+        # tel: link — si scan-ku toos ugu wanqali karo dial-ka
+        # # waxaa loo beddelaa %23 si telefoonku u aqbalo
+        tel_link = "tel:" + ussd_code.replace("#", "%23")
+
         filename = f"payqr_{int(time.time())}.png"
         qr_folder = os.path.join("static", "qr")
         os.makedirs(qr_folder, exist_ok=True)
@@ -3990,13 +3994,15 @@ def payment_qr():
             box_size=12,
             border=2
         )
-        qr.add_data(ussd_code)
+        qr.add_data(tel_link)
         qr.make(fit=True)
 
         img = qr.make_image(fill_color="black", back_color="white")
         img.save(file_path)
 
-        img_file = f"/{file_path.replace(os.sep, '/')}"
+        img_file = filename
+
+    return render_template("qr_payment.html", img=img_file, ussd=ussd_code)
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8080))
