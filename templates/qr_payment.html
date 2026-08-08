@@ -57,8 +57,16 @@ body{ font-family:Arial,sans-serif; background:#eef1f5; margin:0; padding:20px; 
 /* ===== TITLE ===== */
 .acc-title{
     text-align:center; color:#c0392b; font-size:40px; font-weight:800;
-    margin:70px 0 40px; letter-spacing:1px;
+    margin:70px 0 20px; letter-spacing:1px;
 }
+
+/* ===== ACCOUNT NUMBER ===== */
+.acc-number{
+    text-align:center; font-weight:800; font-size:46px; letter-spacing:1px;
+    margin:0 0 40px; word-break:break-word;
+}
+.acc-number .black{ color:#111; }
+.acc-number .blue{ color:#3aa0ff; }
 
 /* ===== QR CENTER ===== */
 .qr-wrap{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; }
@@ -127,6 +135,11 @@ body{ font-family:Arial,sans-serif; background:#eef1f5; margin:0; padding:20px; 
 
     <!-- TITLE -->
     <div class="acc-title">ACCOUNT NO:</div>
+
+    <!-- ACCOUNT NUMBER -->
+    <div class="acc-number">
+        <span class="black">*799*</span><span class="blue">35705776</span><span class="black">*Lacagta#</span>
+    </div>
 
     <!-- QR -->
     <div class="qr-wrap">
