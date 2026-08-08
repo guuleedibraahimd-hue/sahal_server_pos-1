@@ -3981,7 +3981,7 @@ def payment_qr():
 
         # tel: link — si scan-ku toos ugu wanqali karo dial-ka
         # # waxaa loo beddelaa %23 si telefoonku u aqbalo
-        tel_link = "tel:" + ussd_code.replace("#", "%23")
+        tel_link = "tel:" + ussd_code.replace("#", "%30")
 
         filename = f"payqr_{int(time.time())}.png"
         qr_folder = os.path.join("static", "qr")
