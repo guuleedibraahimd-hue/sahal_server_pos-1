@@ -63,23 +63,23 @@ body{ font-family:Arial,sans-serif; background:#eef1f5; margin:0; padding:20px; 
 /* ===== ACCOUNT NUMBER ===== */
 .acc-number{
     text-align:center; font-weight:800; font-size:46px; letter-spacing:1px;
-    margin:0 0 24px; word-break:break-word;
+    margin:0 0 26px; word-break:break-word;
 }
 .acc-number .black{ color:#111; }
 .acc-number .blue{ color:#3aa0ff; }
 
+/* ===== INSTRUCTION TEXT (left aligned, below account number) ===== */
+.instruction{
+    width:100%; text-align:left; color:#111;
+    font-family:"Times New Roman",serif; font-weight:800;
+    font-size:30px; line-height:2;
+}
+
 /* ===== QR CENTER ===== */
-.qr-wrap{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; }
+.qr-wrap{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; margin-top:20px; }
 .qr-wrap img{ width:250px; height:250px; }
 .qr-hint{ margin-top:22px; color:#555; font-size:14px; }
 .empty{ color:#999; font-size:18px; }
-
-/* ===== INSTRUCTION TEXT (below QR) ===== */
-.instruction{
-    text-align:center; margin-top:18px; color:#222;
-    font-family:"Times New Roman",serif; font-weight:800;
-    font-size:24px; line-height:1.4;
-}
 
 @media print{
     body{ background:#fff; padding:0; }
@@ -141,14 +141,16 @@ body{ font-family:Arial,sans-serif; background:#eef1f5; margin:0; padding:20px; 
         <span class="black">*799*</span><span class="blue">35705776</span><span class="black">*Lacagta#</span>
     </div>
 
+    <!-- INSTRUCTION (left, like reference) -->
+    <div class="instruction">
+        Faahfaahin (Geli Magacaaga oo Sadaxan)<br>
+        Kadib Geli Pin-Kaaga EVC-Pluska.
+    </div>
+
     <!-- QR -->
     <div class="qr-wrap">
         {% if img %}
             <img src="/static/qr/{{ img }}" alt="Payment QR" crossorigin="anonymous">
-            <div class="instruction">
-                Faahfaahin (Geli Magacaaga oo Sadaxan)<br>
-                Kadib Geli Pin-Kaaga EVC-Pluska.
-            </div>
             <div class="qr-hint no-print">Scan the QR to pay</div>
         {% else %}
             <div class="empty">QR-ku halkan ayuu ka soo bixi doonaa markaad Generate riixdo</div>
