@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <title>Payment QR — A4</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
 :root{ --blue:#1a5fb4; }
 *{ box-sizing:border-box; }
@@ -84,7 +85,7 @@ body{ font-family:Arial,sans-serif; background:#eef1f5; margin:0; padding:20px; 
         <div class="btnrow">
             <button type="submit" class="btn gen">⚙️ Generate</button>
             {% if img %}
-            <a href="/static/qr/{{ img }}" download="payment_qr.png" class="btn dl">⬇️ Download QR</a>
+            <button type="button" class="btn dl" onclick="downloadSheet()">⬇️ Download A4</button>
             <button type="button" class="btn pr" onclick="window.print()">🖨️ Print / Save A4</button>
             {% endif %}
         </div>
@@ -92,7 +93,7 @@ body{ font-family:Arial,sans-serif; background:#eef1f5; margin:0; padding:20px; 
 </div>
 
 <!-- A4 SHEET -->
-<div class="sheet">
+<div class="sheet" id="a4sheet">
     <!-- HEADER -->
     <div class="header">
         <div class="head-top">
@@ -102,6 +103,7 @@ body{ font-family:Arial,sans-serif; background:#eef1f5; margin:0; padding:20px; 
             </div>
             <div class="crest">
                 <img src="/static/uploads/imam_logo.png" alt="Imam University"
+                     crossorigin="anonymous"
                      onerror="this.style.display='none'">
             </div>
             <div class="head-right">
@@ -122,13 +124,26 @@ body{ font-family:Arial,sans-serif; background:#eef1f5; margin:0; padding:20px; 
     <!-- QR -->
     <div class="qr-wrap">
         {% if img %}
-            <img src="/static/qr/{{ img }}" alt="Payment QR">
+            <img src="/static/qr/{{ img }}" alt="Payment QR" crossorigin="anonymous">
             <div class="qr-hint no-print">Scan the QR to pay</div>
         {% else %}
             <div class="empty">QR-ku halkan ayuu ka soo bixi doonaa markaad Generate riixdo</div>
         {% endif %}
     </div>
 </div>
+
+<script>
+function downloadSheet(){
+    const sheet = document.getElementById("a4sheet");
+    html2canvas(sheet, { scale: 2, backgroundColor: "#ffffff", useCORS: true })
+    .then(canvas => {
+        const link = document.createElement("a");
+        link.download = "payment_a4.png";
+        link.href = canvas.toDataURL("image/png");
+        link.click();
+    });
+}
+</script>
 
 </body>
 </html>
