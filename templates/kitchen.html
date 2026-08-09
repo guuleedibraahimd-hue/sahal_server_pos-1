@@ -202,7 +202,7 @@
 const RID = "{{ rid }}";
 
 /* ══════════════════════════════════════
-   ORDERS POLLING + BUTTONS
+    ORDERS POLLING + BUTTONS
 ══════════════════════════════════════ */
 document.addEventListener("DOMContentLoaded", function(){
     document.getElementById("notifyHeader").addEventListener("click", function(){
@@ -263,7 +263,7 @@ document.addEventListener("DOMContentLoaded", function(){
 });
 
 /* ════════════════════════════════════════
-   80s SYNTH RINGTONE — KITCHEN SIDE
+    80s SYNTH RINGTONE — KITCHEN SIDE
 ════════════════════════════════════════ */
 let _ringNodes = null;
 
@@ -346,7 +346,7 @@ function stop80sRing(){
 }
 
 /* ════════════════════════════════════════
-   WEBRTC — KITCHEN SIDE (via SocketIO)
+    WEBRTC — KITCHEN SIDE (via SocketIO)
 ════════════════════════════════════════ */
 let kitchenPeer   = null;
 let kitchenStream = null;
@@ -354,6 +354,7 @@ let incomingTable = "";
 let incomingOffer = null;
 let callTimerInt  = null;
 let callSecs      = 0;
+let noAnswerTimeout = null;
 
 // SocketIO connection
 const sio = io({transports:["polling"]});
@@ -382,6 +383,14 @@ sio.on("webrtc_offer", async (data) => {
 
     document.getElementById("incomingCallPopup").style.display = "block";
     start80sRing();
+    clearTimeout(noAnswerTimeout);
+    noAnswerTimeout = setTimeout(() => {
+        if(document.getElementById("incomingCallPopup").style.display === "block"){
+            stop80sRing();
+            document.getElementById("incomingCallPopup").style.display = "none";
+            sio.emit("webrtc_end_kitchen", { rid: RID, table: incomingTable });
+        }
+    }, 3 * 60 * 1000);
 });
 
 // ICE from customer
@@ -411,6 +420,7 @@ function stopCallTimer(){
 }
 
 async function acceptCall(){
+    clearTimeout(noAnswerTimeout);
     stop80sRing();
     document.getElementById("incomingCallPopup").style.display = "none";
 
@@ -447,12 +457,14 @@ async function acceptCall(){
 }
 
 function declineCall(){
+    clearTimeout(noAnswerTimeout);
     stop80sRing();
     document.getElementById("incomingCallPopup").style.display = "none";
     sio.emit("webrtc_end_kitchen", { rid: RID, table: incomingTable });
 }
 
 function kitchenEndCall(){
+    clearTimeout(noAnswerTimeout);
     stop80sRing();
     stopCallTimer();
     document.getElementById("incomingCallPopup").style.display = "none";
