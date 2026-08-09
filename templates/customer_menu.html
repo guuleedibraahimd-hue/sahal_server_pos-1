@@ -587,6 +587,11 @@ async function callWaiter(){
 
     const offer=await peerConn.createOffer()
     await peerConn.setLocalDescription(offer)
+    await fetch(`/call_waiter_webrtc/${RID}`, {
+    method: "POST",
+    headers: {"Content-Type": "application/x-www-form-urlencoded"},
+    body: `table=${TABLE}`
+})
     sio.emit("webrtc_offer",{rid:RID,table:TABLE,sdp:offer})
 }
 

@@ -403,6 +403,24 @@ sio.on("webrtc_ice_customer", async (data) => {
 // Call ended by customer
 sio.on("webrtc_end", () => { kitchenEndCall(); });
 
+async function pollActiveCalls(){
+    try{
+        const res = await fetch(`/get_active_calls/${RID}`)
+        const data = await res.json()
+        if(data.calls && data.calls.length > 0 && !kitchenPeer){
+            const call = data.calls[0]
+            if(call.table !== incomingTable || document.getElementById("incomingCallPopup").style.display !== "block"){
+                incomingTable = call.table
+                document.getElementById("icName").innerText = "Table " + incomingTable
+                document.getElementById("icSub").innerText = "Customer is calling..."
+                document.getElementById("incomingCallPopup").style.display = "block"
+                start80sRing()
+            }
+        }
+    }catch(e){}
+}
+setInterval(pollActiveCalls, 2000)
+
 function startCallTimer(){
     callSecs = 0;
     clearInterval(callTimerInt);
@@ -446,7 +464,9 @@ async function acceptCall(){
         }
     };
 
-    await kitchenPeer.setRemoteDescription(new RTCSessionDescription(incomingOffer));
+    if(incomingOffer){
+        await kitchenPeer.setRemoteDescription(new RTCSessionDescription(incomingOffer));
+    }
     const answer = await kitchenPeer.createAnswer();
     await kitchenPeer.setLocalDescription(answer);
     sio.emit("webrtc_answer", { rid: RID, table: incomingTable, sdp: answer });

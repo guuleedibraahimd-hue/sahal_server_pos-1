@@ -3201,8 +3201,42 @@ def kitchen_join(data):
     rid  = data.get("rid", "")
     room = f"kitchen_{rid}"
     join_room(room)
-    emit("kitchen_ready", {"room": room})
+    print(f"✅ Kitchen joined room: {room}")
+    emit("kitchen_ready", {"room": room, "rid": rid})
 
+@app.route("/call_waiter_webrtc/<rid>", methods=["POST"])
+def call_waiter_webrtc(rid):
+    """Kaydi wicitaanka Firestore si kitchen-ku polling-ka ugu arko"""
+    try:
+        table = request.form.get("table", "")
+        db.collection("restaurants").document(rid).collection("active_calls").document(table).set({
+            "table": table,
+            "status": "ringing",
+            "created_at": firestore.SERVER_TIMESTAMP
+        })
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+
+@app.route("/get_active_calls/<rid>")
+def get_active_calls(rid):
+    try:
+        docs = db.collection("restaurants").document(rid).collection("active_calls").where("status", "==", "ringing").stream()
+        calls = [{"table": d.to_dict().get("table")} for d in docs]
+        return jsonify({"calls": calls})
+    except Exception as e:
+        return jsonify({"calls": [], "error": str(e)})
+
+
+@app.route("/clear_active_call/<rid>/<table>", methods=["POST"])
+def clear_active_call(rid, table):
+    try:
+        db.collection("restaurants").document(rid).collection("active_calls").document(table).delete()
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+    
 # ── CUSTOMER joins its room ──
 @socketio.on("customer_join")
 def customer_join(data):
