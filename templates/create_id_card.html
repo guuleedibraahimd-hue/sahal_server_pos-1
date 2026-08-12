@@ -109,7 +109,14 @@ body{ font-family:Arial,sans-serif; background:#eef1f5; margin:0; padding:20px; 
     max-width:1000px; margin:0 auto 40px; background:#fff; padding:22px;
     border-radius:16px; box-shadow:0 4px 14px rgba(0,0,0,.08);
 }
-.history h2{ margin:0 0 16px; }
+.history h2{ margin:0 0 16px; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.countPill{
+    font-size:13px; font-weight:800; background:#eef1f5; color:#333;
+    padding:5px 12px; border-radius:20px;
+}
+.countPill.total{ background:#dfe6f5; color:#1a5fb4; }
+.countPill.printed{ background:#d4f7ea; color:#00895a; }
+.countPill.notprinted{ background:#ffe8cc; color:#b25400; }
 .searchBox{ display:flex; gap:10px; margin-bottom:16px; }
 .searchBox input{
     flex:1; padding:13px; border:1px solid #ccc; border-radius:10px; font-size:15px;
@@ -271,7 +278,12 @@ body{ font-family:Arial,sans-serif; background:#eef1f5; margin:0; padding:20px; 
 
 <!-- ===== HISTORY / ALL ID CARDS ===== -->
 <div class="history no-print">
-    <h2>🗂️ All ID Cards</h2>
+    <h2>
+        🗂️ All ID Cards
+        <span class="countPill total" id="countTotal">Total: 0</span>
+        <span class="countPill printed" id="countPrinted">Printed: 0</span>
+        <span class="countPill notprinted" id="countNotPrinted">Not Printed: 0</span>
+    </h2>
     <div class="searchBox">
         <input type="text" id="searchInput" placeholder="Search by ID No or Name...">
         <button type="button" onclick="searchCards()">🔍 Search</button>
@@ -464,7 +476,19 @@ function renderMiniCard(c){
         </div>`;
 }
 
+/* Xisaabi tirada guud, la daabacay, aan la daabicin iyo ku dar list-ka dushiisa (backend-ka ayay kaga imaan,
+   marna lama muujiyo halkan calculator/UI gaar ah — kaliya pill-yada tirada). */
+function updateCounts(cards){
+    const total = cards.length;
+    const printed = cards.filter(c => c.printed).length;
+    const notPrinted = total - printed;
+    document.getElementById("countTotal").textContent = `Total: ${total}`;
+    document.getElementById("countPrinted").textContent = `Printed: ${printed}`;
+    document.getElementById("countNotPrinted").textContent = `Not Printed: ${notPrinted}`;
+}
+
 function renderCards(cards){
+    updateCounts(cards);
     const list = document.getElementById("cardList");
     if(!cards || cards.length === 0){
         list.innerHTML = '<div class="empty">Wax ID Card ah lama helin.</div>';
