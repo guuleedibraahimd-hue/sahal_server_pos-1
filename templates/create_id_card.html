@@ -72,7 +72,15 @@ body{ font-family:Arial,sans-serif; background:#eef1f5; margin:0; padding:20px; 
     cursor:move;
 }
 .photoCircle:hover{ outline:1px dashed #1a5fb4; }
-.photoCircle img{ width:100%; height:100%; object-fit:cover; display:none; }
+.photoCircle img{
+    width:100%; height:100%;
+    object-fit:cover;
+    object-position:center;
+    display:none;
+    border-radius:50%;
+    position:absolute;
+    top:0; left:0;
+}
 .photoCircle .placeholder{ color:#aaa; font-size:11px; }
 
 /* ===== Overlaid text fields — booska sax ah =====
