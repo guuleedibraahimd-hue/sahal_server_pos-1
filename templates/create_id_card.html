@@ -64,22 +64,22 @@ body{ font-family:Arial,sans-serif; background:#eef1f5; margin:0; padding:20px; 
 }
 .idcard img.base{ width:100%; display:block; }
 
-/* ===== Photo circle — saxsan sida sawirka la isticmaalay (977x1609px) ===== */
+/* Photo circle */
 .photoCircle{
-    position:absolute; top:35%; left:50%; transform:translateX(-50%);
-    width:48%; height:23.5%; border-radius:50%; overflow:hidden;
-    background:transparent; display:flex; align-items:center; justify-content:center;
+    position:absolute; top:13.5%; left:50%; transform:translateX(-50%);
+    width:34%; height:20.5%; border-radius:50%; overflow:hidden;
+    background:#eee; display:flex; align-items:center; justify-content:center;
 }
 .photoCircle img{ width:100%; height:100%; object-fit:cover; display:none; }
 .photoCircle .placeholder{ color:#aaa; font-size:11px; }
 
-/* ===== Overlaid text fields — booska sax ah ===== */
-.ov{ position:absolute; font-weight:800; color:#1a1a2e; }
-.ov-idno{ top:63.2%; left:47%; font-size:15px; text-align:left; }
-.ov-name{ top:67.7%; left:15%; width:70%; font-size:15px; text-align:center; }
-.ov-title{ top:75.8%; left:28%; width:60%; font-size:13px; text-align:left; }
-.ov-issue{ top:88.3%; left:42%; width:50%; font-size:12px; text-align:left; color:#fff; }
-.ov-expiry{ top:92.2%; left:47%; width:45%; font-size:12px; text-align:left; color:#fff; }
+/* Overlaid text fields, positioned as % of the front image */
+.ov{ position:absolute; font-weight:800; color:#1a1a2e; text-align:center; width:100%; left:0; }
+.ov-idno{ top:42.5%; font-size:17px; }
+.ov-name{ top:47.3%; font-size:16px; }
+.ov-title{ top:53%; font-size:13px; text-align:left; left:15%; width:70%; }
+.ov-issue{ top:63.5%; font-size:12px; text-align:left; left:15%; width:70%; }
+.ov-expiry{ top:66.7%; font-size:12px; text-align:left; left:15%; width:70%; }
 
 @media print{
     body{ background:#fff; padding:0; }
@@ -120,7 +120,7 @@ body{ font-family:Arial,sans-serif; background:#eef1f5; margin:0; padding:20px; 
         </div>
         <div>
             <label>ID No</label>
-           
+            <input type="text" id="idNo" value="0000">
         </div>
         <div>
             <label>Enter Full Name</label>
@@ -184,7 +184,7 @@ function loadPhoto(event){
 
 function generateCard(){
     const idNo = document.getElementById("idNo").value.trim() || "0000";
-    const name = document.getElementById("idName").value.trim() || 
+    const name = document.getElementById("idName").value.trim() || "Enter Full Name";
     const issue = fmt(document.getElementById("idIssue").value);
     const expiry = fmt(document.getElementById("idExpiry").value);
 
