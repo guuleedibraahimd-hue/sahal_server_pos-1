@@ -3233,9 +3233,6 @@ def get_active_calls(rid):
 # =========================
 @app.route("/create_id_card", methods=["GET", "POST"])
 def create_id_card():
-    if not session.get("admin_ok"):
-        return redirect("/admin")
-
     if request.method == "POST" and not session.get("idcard_ok"):
         try:
             doc_ref = db.collection("idCardLogin").document("idcard")
@@ -3268,7 +3265,7 @@ def logout_id_card():
 # ── Save a newly generated ID card into history ──
 @app.route("/save_id_card", methods=["POST"])
 def save_id_card():
-    if not session.get("admin_ok") or not session.get("idcard_ok"):
+    if not session.get("idcard_ok"):
         return jsonify({"success": False, "error": "Not authorized"}), 403
     try:
         data = request.get_json(force=True) or {}
@@ -3305,7 +3302,7 @@ def save_id_card():
 # ── List / search saved ID cards ──
 @app.route("/list_id_cards", methods=["GET"])
 def list_id_cards():
-    if not session.get("admin_ok") or not session.get("idcard_ok"):
+    if not session.get("idcard_ok"):
         return jsonify({"success": False, "error": "Not authorized"}), 403
     try:
         q = (request.args.get("q") or "").strip().lower()
@@ -3335,7 +3332,7 @@ def list_id_cards():
 # ── Mark an ID card as already printed ──
 @app.route("/mark_id_card_printed/<doc_id>", methods=["POST"])
 def mark_id_card_printed(doc_id):
-    if not session.get("admin_ok") or not session.get("idcard_ok"):
+    if not session.get("idcard_ok"):
         return jsonify({"success": False, "error": "Not authorized"}), 403
     try:
         db.collection("id_cards").document(doc_id).update({"printed": True})
@@ -3343,14 +3340,6 @@ def mark_id_card_printed(doc_id):
     except Exception as e:
         print("MARK PRINTED ERROR:", e)
         return jsonify({"success": False, "error": str(e)}), 500
-
-@app.route("/clear_active_call/<rid>/<table>", methods=["POST"])
-def clear_active_call(rid, table):
-    try:
-        db.collection("restaurants").document(rid).collection("active_calls").document(table).delete()
-        return jsonify({"success": True})
-    except Exception as e:
-        return jsonify({"success": False, "error": str(e)})
     
 # ── CUSTOMER joins its room ──
 @socketio.on("customer_join")
