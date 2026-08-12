@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="so">
+<head>
+<meta charset="UTF-8">
+<title>Create ID Card</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+:root{ --blue:#1a5fb4; }
+*{ box-sizing:border-box; }
+body{ font-family:Arial,sans-serif; background:#eef1f5; margin:0; padding:20px; }
+
+/* ===== LOGIN BOX ===== */
+.loginBox{
+    max-width:420px; margin:80px auto; background:#fff; padding:30px;
+    border-radius:16px; box-shadow:0 4px 14px rgba(0,0,0,.08); text-align:center;
+}
+.loginBox h2{ margin:0 0 20px; }
+.loginBox input{
+    width:100%; padding:14px; border:1px solid #ccc; border-radius:10px;
+    font-size:16px; margin-bottom:14px; box-sizing:border-box;
+}
+.loginBox button{
+    width:100%; background:var(--blue); border:none; color:#fff; padding:14px;
+    border-radius:10px; font-weight:bold; font-size:15px; cursor:pointer;
+}
+.err{ color:#d63031; font-weight:bold; margin-bottom:12px; }
+
+/* ===== DASHBOARD ===== */
+.top{ display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; max-width:1000px; margin:0 auto 20px; }
+.logout{ background:#dc3545; color:#fff; text-decoration:none; padding:10px 18px; border-radius:10px; font-weight:bold; }
+
+.controls{
+    max-width:1000px; margin:0 auto 20px; background:#fff; padding:22px;
+    border-radius:16px; box-shadow:0 4px 14px rgba(0,0,0,.08);
+}
+.controls h2{ margin:0 0 16px; }
+.formrow{ display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:14px; margin-bottom:6px; }
+.formrow label{ font-size:13px; font-weight:bold; color:#333; display:block; margin-bottom:6px; }
+.formrow input{
+    width:100%; padding:13px; border:1px solid #ccc; border-radius:10px;
+    font-size:15px; box-sizing:border-box;
+}
+.btnrow{ display:flex; gap:10px; flex-wrap:wrap; margin-top:16px; }
+.btn{
+    border:none; padding:13px 22px; border-radius:10px; color:#fff;
+    font-weight:bold; cursor:pointer; font-size:15px; text-decoration:none;
+    display:inline-flex; align-items:center; gap:6px;
+}
+.gen{ background:#1a5fb4; }
+.dl{ background:#00b894; }
+.dlBack{ background:#0984e3; }
+.pr{ background:#636e72; }
+
+@media(max-width:800px){ .formrow{ grid-template-columns:1fr 1fr; } }
+@media(max-width:480px){ .formrow{ grid-template-columns:1fr; } }
+
+/* ===== ID CARD (FRONT) ===== */
+.cardWrap{ max-width:1000px; margin:0 auto 30px; display:flex; gap:30px; flex-wrap:wrap; justify-content:center; }
+.idcard{
+    position:relative; width:340px; border-radius:14px; overflow:hidden;
+    box-shadow:0 6px 22px rgba(0,0,0,.18);
+}
+.idcard img.base{ width:100%; display:block; }
+
+/* Photo circle */
+.photoCircle{
+    position:absolute; top:15.5%; left:50%; transform:translateX(-50%);
+    width:34%; height:20.5%; border-radius:50%; overflow:hidden;
+    background:#eee; display:flex; align-items:center; justify-content:center;
+}
+.photoCircle img{ width:100%; height:100%; object-fit:cover; }
+.photoCircle .placeholder{ color:#aaa; font-size:11px; }
+
+/* Overlaid text fields, positioned as % of the front image */
+.ov{ position:absolute; font-weight:800; color:#1a1a2e; text-align:center; width:100%; left:0; }
+.ov-idno{ top:42.5%; font-size:17px; }
+.ov-name{ top:47.3%; font-size:16px; }
+.ov-title{ top:53%; font-size:13px; text-align:left; left:15%; width:70%; }
+.ov-issue{ top:63.5%; font-size:12px; text-align:left; left:15%; width:70%; }
+.ov-expiry{ top:66.7%; font-size:12px; text-align:left; left:15%; width:70%; }
+
+@media print{
+    body{ background:#fff; padding:0; }
+    .controls, .top, .no-print{ display:none !important; }
+    .cardWrap{ margin:0; }
+}
+</style>
+</head>
+<body>
+
+{% if not logged_in %}
+
+<!-- ===== LOGIN GATE ===== -->
+<div class="loginBox">
+    <h2>🪪 ID Card Login</h2>
+    {% if error %}<div class="err">{{ error }}</div>{% endif %}
+    <form method="post">
+        <input type="password" name="password" placeholder="Password" required autofocus>
+        <button type="submit">Login</button>
+    </form>
+</div>
+
+{% else %}
+
+<!-- ===== TOP ===== -->
+<div class="top">
+    <h1>🪪 Create ID Card</h1>
+    <a href="/logout_id_card" class="logout">Logout</a>
+</div>
+
+<!-- ===== FORM ===== -->
+<div class="controls no-print">
+    <h2>⚙️ ID Card Details</h2>
+    <div class="formrow">
+        <div>
+            <label>ID No</label>
+            <input type="text" id="idNo" value="0000">
+        </div>
+        <div>
+            <label>Enter Full Name</label>
+            <input type="text" id="idName" placeholder="Magaca oo dhan">
+        </div>
+        <div>
+            <label>Issue Date</label>
+            <input type="date" id="idIssue">
+        </div>
+        <div>
+            <label>Expiry Date</label>
+            <input type="date" id="idExpiry">
+        </div>
+    </div>
+    <div class="btnrow">
+        <button type="button" class="btn gen" onclick="generateCard()">⚙️ Generate</button>
+        <button type="button" class="btn dl" onclick="downloadCard('idcardFront','id_card_front.png')">⬇️ Download Front</button>
+        <button type="button" class="btn dlBack" onclick="downloadCard('idcardBack','id_card_back.png')">⬇️ Download Back</button>
+        <button type="button" class="btn pr" onclick="window.print()">🖨️ Print</button>
+    </div>
+</div>
+
+<!-- ===== ID CARD PREVIEW (FRONT + BACK) ===== -->
+<div class="cardWrap">
+    <div class="idcard" id="idcardFront">
+        <img class="base" src="/static/IMAM_University_ID_Front.jpg" crossorigin="anonymous" alt="ID Front">
+        <div class="photoCircle"><span class="placeholder">Photo</span></div>
+        <div class="ov ov-idno" id="outIdNo">0000</div>
+        <div class="ov ov-name" id="outName">Enter Full Name</div>
+        <div class="ov ov-issue" id="outIssue">DD-MM-YYYY</div>
+        <div class="ov ov-expiry" id="outExpiry">DD-MM-YYYY</div>
+    </div>
+
+    <div class="idcard" id="idcardBack">
+        <img class="base" src="/static/IMAM_University_ID_Back.png" crossorigin="anonymous" alt="ID Back">
+    </div>
+</div>
+
+<script>
+function fmt(dateStr){
+    if(!dateStr) return "DD-MM-YYYY";
+    const [y,m,d] = dateStr.split("-");
+    return `${d}-${m}-${y}`;
+}
+
+function generateCard(){
+    const idNo = document.getElementById("idNo").value.trim() || "0000";
+    const name = document.getElementById("idName").value.trim() || "Enter Full Name";
+    const issue = fmt(document.getElementById("idIssue").value);
+    const expiry = fmt(document.getElementById("idExpiry").value);
+
+    document.getElementById("outIdNo").textContent = idNo;
+    document.getElementById("outName").textContent = name;
+    document.getElementById("outIssue").textContent = issue;
+    document.getElementById("outExpiry").textContent = expiry;
+}
+
+function downloadCard(elId, filename){
+    generateCard();
+    const card = document.getElementById(elId);
+    html2canvas(card, { scale: 3, backgroundColor: "#ffffff", useCORS: true })
+    .then(canvas => {
+        const link = document.createElement("a");
+        link.download = filename;
+        link.href = canvas.toDataURL("image/png");
+        link.click();
+    });
+}
+
+generateCard();
+</script>
+
+{% endif %}
+
+</body>
+</html>

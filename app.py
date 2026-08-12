@@ -3228,6 +3228,41 @@ def get_active_calls(rid):
     except Exception as e:
         return jsonify({"calls": [], "error": str(e)})
 
+# =========================
+# 🪪 CREATE ID CARD
+# =========================
+@app.route("/create_id_card", methods=["GET", "POST"])
+def create_id_card():
+    if not session.get("admin_ok"):
+        return redirect("/admin")
+
+    if request.method == "POST" and not session.get("idcard_ok"):
+        try:
+            doc_ref = db.collection("idCardLogin").document("idcard")
+            doc = doc_ref.get()
+            real_pass = doc.to_dict().get("password", "") if doc.exists else ""
+            entered = request.form.get("password", "").strip()
+
+            if entered != real_pass:
+                return render_template("create_id_card.html", error="Wrong password ❌")
+
+            session["idcard_ok"] = True
+            return redirect("/create_id_card")
+
+        except Exception as e:
+            print("IDCARD LOGIN ERROR:", e)
+            return render_template("create_id_card.html", error=f"System Error ❌ {str(e)}")
+
+    if not session.get("idcard_ok"):
+        return render_template("create_id_card.html")
+
+    return render_template("create_id_card.html", logged_in=True)
+
+
+@app.route("/logout_id_card")
+def logout_id_card():
+    session.pop("idcard_ok", None)
+    return redirect("/create_id_card")
 
 @app.route("/clear_active_call/<rid>/<table>", methods=["POST"])
 def clear_active_call(rid, table):
