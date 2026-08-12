@@ -43,7 +43,7 @@ body{ font-family:Arial,sans-serif; background:#eef1f5; margin:0; padding:20px; 
     font-size:15px; box-sizing:border-box;
 }
 .formrow input[type=file]{ padding:9px; }
-.btnrow{ display:flex; gap:10px; flex-wrap:wrap; margin-top:16px; }
+.btnrow{ display:flex; gap:10px; flex-wrap:wrap; margin-top:16px; align-items:center; }
 .btn{
     border:none; padding:13px 22px; border-radius:10px; color:#fff;
     font-weight:bold; cursor:pointer; font-size:15px; text-decoration:none;
@@ -58,6 +58,15 @@ body{ font-family:Arial,sans-serif; background:#eef1f5; margin:0; padding:20px; 
 .msg{ margin-top:12px; font-weight:bold; font-size:14px; }
 .msg.ok{ color:#00b894; }
 .msg.bad{ color:#d63031; }
+
+.printSizeWrap{
+    display:inline-flex; align-items:center; gap:8px; background:#f4f6f9;
+    border:1px solid #ccc; border-radius:10px; padding:8px 12px;
+}
+.printSizeWrap label{ font-size:13px; font-weight:bold; color:#333; margin:0; }
+.printSizeWrap select{
+    padding:8px 10px; border:1px solid #ccc; border-radius:8px; font-size:14px; background:#fff;
+}
 
 @media(max-width:900px){ .formrow{ grid-template-columns:1fr 1fr; } }
 @media(max-width:480px){ .formrow{ grid-template-columns:1fr; } }
@@ -129,10 +138,20 @@ body{ font-family:Arial,sans-serif; background:#eef1f5; margin:0; padding:20px; 
 }
 .empty{ color:#999; text-align:center; padding:20px; }
 
+/* ===== PRINT: size-ka bogga ayaa si dynamic ah loo dejiyaa (JS ayaa @page-ka qoraya) ===== */
 @media print{
-    body{ background:#fff; padding:0; }
+    body{ background:#fff; padding:0; margin:0; }
     .controls, .top, .history, .no-print{ display:none !important; }
-    .cardWrap{ margin:0; }
+    .cardWrap{
+        margin:0; gap:0; display:block;
+    }
+    .idcard{
+        box-shadow:none; border-radius:0;
+        width:100% !important;
+        page-break-after:always;
+        break-after:page;
+    }
+    .idcard:last-child{ page-break-after:auto; break-after:auto; }
 }
 </style>
 </head>
@@ -193,7 +212,18 @@ body{ font-family:Arial,sans-serif; background:#eef1f5; margin:0; padding:20px; 
         <button type="button" class="btn dl" onclick="downloadCard('idcardFront','id_card_front.png')">⬇️ Download Front</button>
         <button type="button" class="btn dlBack" onclick="downloadCard('idcardBack','id_card_back.png')">⬇️ Download Back</button>
         <button type="button" class="btn pdf" onclick="downloadPDF()">📄 Download PDF</button>
-        <button type="button" class="btn pr" onclick="window.print()">🖨️ Print</button>
+
+        <div class="printSizeWrap">
+            <label for="printSize">🖨️ Print Size</label>
+            <select id="printSize">
+                <option value="auto" selected>Auto (Card size)</option>
+                <option value="a4">A4</option>
+                <option value="letter">Letter</option>
+                <option value="a5">A5</option>
+                <option value="cr80">CR80 Card (85.6x54mm)</option>
+            </select>
+        </div>
+        <button type="button" class="btn pr" onclick="printCard()">🖨️ Print</button>
     </div>
     <div class="msg" id="saveMsg"></div>
 </div>
@@ -229,6 +259,9 @@ body{ font-family:Arial,sans-serif; background:#eef1f5; margin:0; padding:20px; 
         <div class="empty">Loading...</div>
     </div>
 </div>
+
+<!-- ===== Dynamic @page style-ka print-ka, size-ka la doortay ayaa halkan lagu qori doonaa ===== -->
+<style id="dynamicPageStyle"></style>
 
 <script>
 function fmt(dateStr){
@@ -308,6 +341,29 @@ function downloadPDF(){
 
         pdf.save("id_card.pdf");
     });
+}
+
+/* ===== Print-ka: size-ka la doortay ayaa @page-ka lagu qoraa si browser-ku ugu daabaco cabbirkaas oo naqshadu iskuma badalayso ===== */
+const PAGE_SIZES = {
+    auto:   null,
+    a4:     "210mm 297mm",
+    letter: "8.5in 11in",
+    a5:     "148mm 210mm",
+    cr80:   "85.6mm 54mm landscape"
+};
+
+function printCard(){
+    generateCard();
+    const choice = document.getElementById("printSize").value;
+    const styleTag = document.getElementById("dynamicPageStyle");
+
+    if(choice === "auto" || !PAGE_SIZES[choice]){
+        styleTag.textContent = "";
+    } else {
+        styleTag.textContent = `@page{ size:${PAGE_SIZES[choice]}; margin:10mm; }`;
+    }
+
+    setTimeout(()=>{ window.print(); }, 50);
 }
 
 function showMsg(text, ok){
