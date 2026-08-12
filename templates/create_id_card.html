@@ -64,14 +64,17 @@ body{ font-family:Arial,sans-serif; background:#eef1f5; margin:0; padding:20px; 
 }
 .idcard img.base{ width:100%; display:block; }
 
-/* Photo circle */
+/* ===== Photo circle — shape-ka waa la is'aggeystay, booska waa saxsan ===== */
 .photoCircle{
-    position:absolute; top:15.5%; left:50%; transform:translateX(-50%);
-    width:34%; height:20.5%; border-radius:50%; overflow:hidden;
-    background:#eee; display:flex; align-items:center; justify-content:center;
+    position:absolute; top:35%; left:50%; transform:translateX(-50%);
+    width:48%; height:23.5%; border-radius:50%; overflow:hidden;
+    background:transparent; display:flex; align-items:center; justify-content:center;
+    cursor:move;
 }
+.photoCircle:hover{ outline:1px dashed #1a5fb4; }
 .photoCircle img{ width:100%; height:100%; object-fit:cover; display:none; }
 .photoCircle .placeholder{ color:#aaa; font-size:11px; }
+
 /* ===== Overlaid text fields — booska sax ah =====
    ID No: gudaha sanduuqa "ID No:" ee card-ka
    Name: gudaha sanduuqa person-icon-ka
@@ -130,6 +133,10 @@ body{ font-family:Arial,sans-serif; background:#eef1f5; margin:0; padding:20px; 
             <input type="text" id="idName" placeholder="Magaca oo dhan">
         </div>
         <div>
+            <label>Title</label>
+            <input type="text" id="idTitle" placeholder="Tusaale: Xubin Shaqaale">
+        </div>
+        <div>
             <label>Issue Date</label>
             <input type="date" id="idIssue">
         </div>
@@ -156,6 +163,7 @@ body{ font-family:Arial,sans-serif; background:#eef1f5; margin:0; padding:20px; 
         </div>
         <div class="ov ov-idno" id="outIdNo"></div>
         <div class="ov ov-name" id="outName"></div>
+        <div class="ov ov-title" id="outTitle"></div>
         <div class="ov ov-issue" id="outIssue"></div>
         <div class="ov ov-expiry" id="outExpiry"></div>
     </div>
@@ -194,11 +202,13 @@ function fmtLive(dateStr){
 function generateCard(){
     const idNo = document.getElementById("idNo").value.trim();
     const name = document.getElementById("idName").value.trim();
+    const title = document.getElementById("idTitle").value.trim();
     const issue = fmt(document.getElementById("idIssue").value);
     const expiry = fmt(document.getElementById("idExpiry").value);
 
     document.getElementById("outIdNo").textContent = idNo;
     document.getElementById("outName").textContent = name;
+    document.getElementById("outTitle").textContent = title;
     document.getElementById("outIssue").textContent = issue;
     document.getElementById("outExpiry").textContent = expiry;
 }
@@ -206,11 +216,12 @@ function generateCard(){
 function liveUpdate(){
     document.getElementById("outIdNo").textContent = document.getElementById("idNo").value.trim();
     document.getElementById("outName").textContent = document.getElementById("idName").value.trim();
+    document.getElementById("outTitle").textContent = document.getElementById("idTitle").value.trim();
     document.getElementById("outIssue").textContent = fmtLive(document.getElementById("idIssue").value);
     document.getElementById("outExpiry").textContent = fmtLive(document.getElementById("idExpiry").value);
 }
 
-["idNo","idName","idIssue","idExpiry"].forEach(id=>{
+["idNo","idName","idTitle","idIssue","idExpiry"].forEach(id=>{
     document.getElementById(id).addEventListener("input", liveUpdate);
 });
 
@@ -228,59 +239,72 @@ function downloadCard(elId, filename){
 
 liveUpdate();
 
-/* ===== Drag to reposition overlay text fields ===== */
-document.querySelectorAll('#idcardFront .ov').forEach(el=>{
+/* ===== Drag to reposition (text fields + photo circle) ===== */
+function makeDraggable(el, card){
+    function normalizePosition(){
+        /* Convert element to plain left/top % (no transform) based on current visual position */
+        const cardRect = card.getBoundingClientRect();
+        const elRect = el.getBoundingClientRect();
+        const leftPx = elRect.left - cardRect.left;
+        const topPx = elRect.top - cardRect.top;
+        el.style.transform = 'none';
+        el.style.left = (leftPx / cardRect.width * 100) + '%';
+        el.style.top = (topPx / cardRect.height * 100) + '%';
+    }
+
+    function startDrag(startClientX, startClientY, moveEvName, endEvName, getPoint){
+        normalizePosition();
+        const cardRect = card.getBoundingClientRect();
+        const startLeftPx = el.offsetLeft;
+        const startTopPx = el.offsetTop;
+
+        function onMove(ev){
+            const p = getPoint(ev);
+            const dx = p.x - startClientX;
+            const dy = p.y - startClientY;
+            el.style.left = ((startLeftPx + dx) / cardRect.width * 100) + '%';
+            el.style.top = ((startTopPx + dy) / cardRect.height * 100) + '%';
+        }
+        function onUp(){
+            document.removeEventListener(moveEvName, onMove);
+            document.removeEventListener(endEvName, onUp);
+        }
+        document.addEventListener(moveEvName, onMove);
+        document.addEventListener(endEvName, onUp);
+    }
+
     el.addEventListener('mousedown', function(e){
         e.preventDefault();
-        const card = document.getElementById('idcardFront');
-        const cardRect = card.getBoundingClientRect();
-        const startX = e.clientX;
-        const startY = e.clientY;
-        const startLeftPx = el.offsetLeft;
-        const startTopPx = el.offsetTop;
-
-        function onMove(ev){
-            const dx = ev.clientX - startX;
-            const dy = ev.clientY - startY;
-            const newLeftPx = startLeftPx + dx;
-            const newTopPx = startTopPx + dy;
-            el.style.left = (newLeftPx / cardRect.width * 100) + '%';
-            el.style.top = (newTopPx / cardRect.height * 100) + '%';
-        }
-        function onUp(){
-            document.removeEventListener('mousemove', onMove);
-            document.removeEventListener('mouseup', onUp);
-        }
-        document.addEventListener('mousemove', onMove);
-        document.addEventListener('mouseup', onUp);
+        startDrag(e.clientX, e.clientY, 'mousemove', 'mouseup', ev=>({x:ev.clientX, y:ev.clientY}));
     });
-    /* touch support */
     el.addEventListener('touchstart', function(e){
-        const touch = e.touches[0];
-        const card = document.getElementById('idcardFront');
-        const cardRect = card.getBoundingClientRect();
-        const startX = touch.clientX;
-        const startY = touch.clientY;
-        const startLeftPx = el.offsetLeft;
-        const startTopPx = el.offsetTop;
-
-        function onMove(ev){
-            const t = ev.touches[0];
-            const dx = t.clientX - startX;
-            const dy = t.clientY - startY;
-            const newLeftPx = startLeftPx + dx;
-            const newTopPx = startTopPx + dy;
-            el.style.left = (newLeftPx / cardRect.width * 100) + '%';
-            el.style.top = (newTopPx / cardRect.height * 100) + '%';
-        }
-        function onUp(){
-            document.removeEventListener('touchmove', onMove);
-            document.removeEventListener('touchend', onUp);
-        }
-        document.addEventListener('touchmove', onMove, {passive:true});
-        document.addEventListener('touchend', onUp);
+        const t = e.touches[0];
+        startDrag(t.clientX, t.clientY, 'touchmove', 'touchend', ev=>({x:ev.touches[0].clientX, y:ev.touches[0].clientY}));
     }, {passive:true});
-});
+
+    /* Scroll wheel = resize (font-size for text, width/height for photo circle) */
+    el.addEventListener('wheel', function(e){
+        e.preventDefault();
+        const delta = e.deltaY < 0 ? 1 : -1;
+        if(el.classList.contains('photoCircle')){
+            const cardRect = card.getBoundingClientRect();
+            const curWpx = el.offsetWidth;
+            const curHpx = el.offsetHeight;
+            const newWpx = Math.max(40, curWpx + delta * 4);
+            const newHpx = Math.max(40, curHpx + delta * 4);
+            el.style.width = (newWpx / cardRect.width * 100) + '%';
+            el.style.height = (newHpx / cardRect.height * 100) + '%';
+        } else {
+            const curSize = parseFloat(window.getComputedStyle(el).fontSize);
+            const newSize = Math.max(8, curSize + delta);
+            el.style.fontSize = newSize + 'px';
+        }
+    }, {passive:false});
+}
+
+const frontCard = document.getElementById('idcardFront');
+document.querySelectorAll('#idcardFront .ov').forEach(el=> makeDraggable(el, frontCard));
+makeDraggable(document.getElementById('photoCircle'), frontCard);
 </script>
 
 {% endif %}
