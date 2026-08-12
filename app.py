@@ -3264,6 +3264,86 @@ def logout_id_card():
     session.pop("idcard_ok", None)
     return redirect("/create_id_card")
 
+
+# ── Save a newly generated ID card into history ──
+@app.route("/save_id_card", methods=["POST"])
+def save_id_card():
+    if not session.get("admin_ok") or not session.get("idcard_ok"):
+        return jsonify({"success": False, "error": "Not authorized"}), 403
+    try:
+        data = request.get_json(force=True) or {}
+        id_no   = (data.get("id_no") or "").strip()
+        name    = (data.get("name") or "").strip()
+        title   = (data.get("title") or "").strip()
+        issue   = (data.get("issue") or "").strip()
+        expiry  = (data.get("expiry") or "").strip()
+        photo   = data.get("photo") or ""
+
+        if not id_no or not name:
+            return jsonify({"success": False, "error": "ID No iyo Name waa waajib"}), 400
+
+        card_data = {
+            "id_no": id_no,
+            "id_no_lower": id_no.lower(),
+            "name": name,
+            "name_lower": name.lower(),
+            "title": title,
+            "issue": issue,
+            "expiry": expiry,
+            "photo": photo,
+            "printed": False,
+            "created_at": firestore.SERVER_TIMESTAMP,
+        }
+
+        db.collection("id_cards").document(id_no).set(card_data, merge=True)
+        return jsonify({"success": True, "id": id_no})
+    except Exception as e:
+        print("SAVE ID CARD ERROR:", e)
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+# ── List / search saved ID cards ──
+@app.route("/list_id_cards", methods=["GET"])
+def list_id_cards():
+    if not session.get("admin_ok") or not session.get("idcard_ok"):
+        return jsonify({"success": False, "error": "Not authorized"}), 403
+    try:
+        q = (request.args.get("q") or "").strip().lower()
+        docs = db.collection("id_cards").order_by(
+            "created_at", direction=firestore.Query.DESCENDING
+        ).stream()
+
+        cards = []
+        for d in docs:
+            item = d.to_dict()
+            item["doc_id"] = d.id
+            ca = item.get("created_at")
+            item["created_at"] = ca.isoformat() if hasattr(ca, "isoformat") else None
+
+            if q:
+                if q not in (item.get("id_no_lower") or "") and q not in (item.get("name_lower") or ""):
+                    continue
+
+            cards.append(item)
+
+        return jsonify({"success": True, "cards": cards})
+    except Exception as e:
+        print("LIST ID CARDS ERROR:", e)
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+# ── Mark an ID card as already printed ──
+@app.route("/mark_id_card_printed/<doc_id>", methods=["POST"])
+def mark_id_card_printed(doc_id):
+    if not session.get("admin_ok") or not session.get("idcard_ok"):
+        return jsonify({"success": False, "error": "Not authorized"}), 403
+    try:
+        db.collection("id_cards").document(doc_id).update({"printed": True})
+        return jsonify({"success": True})
+    except Exception as e:
+        print("MARK PRINTED ERROR:", e)
+        return jsonify({"success": False, "error": str(e)}), 500
+
 @app.route("/clear_active_call/<rid>/<table>", methods=["POST"])
 def clear_active_call(rid, table):
     try:

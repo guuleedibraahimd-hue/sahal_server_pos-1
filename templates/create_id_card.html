@@ -1,3 +1,4 @@
+//templates/create_id_card.html
 <!DOCTYPE html>
 <html lang="so">
 <head>
@@ -49,9 +50,13 @@ body{ font-family:Arial,sans-serif; background:#eef1f5; margin:0; padding:20px; 
     display:inline-flex; align-items:center; gap:6px;
 }
 .gen{ background:#1a5fb4; }
+.sv{ background:#6c5ce7; }
 .dl{ background:#00b894; }
 .dlBack{ background:#0984e3; }
 .pr{ background:#636e72; }
+.msg{ margin-top:12px; font-weight:bold; font-size:14px; }
+.msg.ok{ color:#00b894; }
+.msg.bad{ color:#d63031; }
 
 @media(max-width:900px){ .formrow{ grid-template-columns:1fr 1fr; } }
 @media(max-width:480px){ .formrow{ grid-template-columns:1fr; } }
@@ -64,14 +69,12 @@ body{ font-family:Arial,sans-serif; background:#eef1f5; margin:0; padding:20px; 
 }
 .idcard img.base{ width:100%; display:block; }
 
-/* ===== Photo circle — shape-ka waa la is'aggeystay, booska waa saxsan ===== */
+/* ===== Photo circle — booska iyo size-ka la xaqiijiyay, dragging waa la saaray ===== */
 .photoCircle{
-    position:absolute; top:35%; left:50%; transform:translateX(-50%);
-    width:48%; aspect-ratio:1/1; border-radius:50%; overflow:hidden;
+    position:absolute; top:33.5%; left:50%; transform:translateX(-50%);
+    width:42%; aspect-ratio:1/1; border-radius:50%; overflow:hidden;
     background:transparent; display:flex; align-items:center; justify-content:center;
-    cursor:move;
 }
-.photoCircle:hover{ outline:1px dashed #1a5fb4; }
 .photoCircle img{
     width:100%; height:100%;
     object-fit:cover;
@@ -83,21 +86,51 @@ body{ font-family:Arial,sans-serif; background:#eef1f5; margin:0; padding:20px; 
 }
 .photoCircle .placeholder{ color:#aaa; font-size:11px; }
 
-/* ===== Overlaid text fields — booska sax ah =====
-   ID No: gudaha sanduuqa "ID No:" ee card-ka
-   Name: gudaha sanduuqa person-icon-ka
-   Issue/Expiry: meelaha DD-MM-YYYY ee hoose */
-.ov{ position:absolute; font-weight:800; color:#1a1a2e; cursor:move; user-select:none; padding:2px 6px; }
-.ov:hover{ outline:1px dashed #1a5fb4; }
-.ov-idno{ top:64.3%; left:49%; width:22%; font-size:14px; text-align:left; }
-.ov-name{ top:69.3%; left:16%; width:68%; font-size:13px; text-align:center; }
-.ov-title{ top:75.8%; left:28%; width:60%; font-size:13px; text-align:left; }
+/* ===== Overlaid text fields — booska sax ah, size la yareeyay, dragging la saaray ===== */
+.ov{ position:absolute; font-weight:800; color:#1a1a2e; user-select:none; padding:2px 6px; }
+.ov-idno{ top:64.3%; left:49%; width:22%; font-size:13px; text-align:left; }
+.ov-name{ top:70.2%; left:16%; width:68%; font-size:12.5px; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.ov-title{ top:75.8%; left:28%; width:60%; font-size:11.5px; text-align:left; }
 .ov-issue{ top:88.3%; left:42%; width:50%; font-size:12px; text-align:left; color:#fff; }
 .ov-expiry{ top:92.2%; left:47%; width:45%; font-size:12px; text-align:left; color:#fff; }
 
+/* ===== History panel ===== */
+.history{
+    max-width:1000px; margin:0 auto 40px; background:#fff; padding:22px;
+    border-radius:16px; box-shadow:0 4px 14px rgba(0,0,0,.08);
+}
+.history h2{ margin:0 0 16px; }
+.searchBox{ display:flex; gap:10px; margin-bottom:16px; }
+.searchBox input{
+    flex:1; padding:13px; border:1px solid #ccc; border-radius:10px; font-size:15px;
+}
+.searchBox button{
+    background:var(--blue); color:#fff; border:none; padding:13px 20px;
+    border-radius:10px; font-weight:bold; cursor:pointer;
+}
+.cardList{ display:flex; flex-direction:column; gap:10px; max-height:520px; overflow-y:auto; }
+.cardRow{
+    display:flex; align-items:center; gap:14px; border:1px solid #e3e6ea;
+    border-radius:12px; padding:10px 14px; position:relative;
+}
+.cardRow img{ width:46px; height:46px; border-radius:50%; object-fit:cover; background:#eee; flex-shrink:0; }
+.cardRow .info{ flex:1; min-width:0; }
+.cardRow .info b{ display:block; font-size:14.5px; }
+.cardRow .info span{ font-size:12.5px; color:#666; }
+.badge{
+    font-size:11px; font-weight:bold; padding:4px 10px; border-radius:20px;
+    background:#dfe6e9; color:#2d3436; white-space:nowrap;
+}
+.badge.printed{ background:#00b894; color:#fff; }
+.markBtn{
+    background:#fdcb6e; border:none; padding:8px 14px; border-radius:8px;
+    font-weight:bold; font-size:12.5px; cursor:pointer; white-space:nowrap;
+}
+.empty{ color:#999; text-align:center; padding:20px; }
+
 @media print{
     body{ background:#fff; padding:0; }
-    .controls, .top, .no-print{ display:none !important; }
+    .controls, .top, .history, .no-print{ display:none !important; }
     .cardWrap{ margin:0; }
 }
 </style>
@@ -155,10 +188,12 @@ body{ font-family:Arial,sans-serif; background:#eef1f5; margin:0; padding:20px; 
     </div>
     <div class="btnrow">
         <button type="button" class="btn gen" onclick="generateCard()">⚙️ Generate</button>
+        <button type="button" class="btn sv" onclick="saveCard()">💾 Save</button>
         <button type="button" class="btn dl" onclick="downloadCard('idcardFront','id_card_front.png')">⬇️ Download Front</button>
         <button type="button" class="btn dlBack" onclick="downloadCard('idcardBack','id_card_back.png')">⬇️ Download Back</button>
         <button type="button" class="btn pr" onclick="window.print()">🖨️ Print</button>
     </div>
+    <div class="msg" id="saveMsg"></div>
 </div>
 
 <!-- ===== ID CARD PREVIEW (FRONT + BACK) ===== -->
@@ -181,9 +216,26 @@ body{ font-family:Arial,sans-serif; background:#eef1f5; margin:0; padding:20px; 
     </div>
 </div>
 
+<!-- ===== HISTORY / ALL ID CARDS ===== -->
+<div class="history no-print">
+    <h2>🗂️ All ID Cards</h2>
+    <div class="searchBox">
+        <input type="text" id="searchInput" placeholder="Search by ID No or Name...">
+        <button type="button" onclick="searchCards()">🔍 Search</button>
+    </div>
+    <div class="cardList" id="cardList">
+        <div class="empty">Loading...</div>
+    </div>
+</div>
+
 <script>
 function fmt(dateStr){
     if(!dateStr) return "DD-MM-YYYY";
+    const [y,m,d] = dateStr.split("-");
+    return `${d}-${m}-${y}`;
+}
+function fmtLive(dateStr){
+    if(!dateStr) return "";
     const [y,m,d] = dateStr.split("-");
     return `${d}-${m}-${y}`;
 }
@@ -201,24 +253,12 @@ function loadPhoto(event){
     reader.readAsDataURL(file);
 }
 
-function fmtLive(dateStr){
-    if(!dateStr) return "";
-    const [y,m,d] = dateStr.split("-");
-    return `${d}-${m}-${y}`;
-}
-
 function generateCard(){
-    const idNo = document.getElementById("idNo").value.trim();
-    const name = document.getElementById("idName").value.trim();
-    const title = document.getElementById("idTitle").value.trim();
-    const issue = fmt(document.getElementById("idIssue").value);
-    const expiry = fmt(document.getElementById("idExpiry").value);
-
-    document.getElementById("outIdNo").textContent = idNo;
-    document.getElementById("outName").textContent = name;
-    document.getElementById("outTitle").textContent = title;
-    document.getElementById("outIssue").textContent = issue;
-    document.getElementById("outExpiry").textContent = expiry;
+    document.getElementById("outIdNo").textContent = document.getElementById("idNo").value.trim();
+    document.getElementById("outName").textContent = document.getElementById("idName").value.trim();
+    document.getElementById("outTitle").textContent = document.getElementById("idTitle").value.trim();
+    document.getElementById("outIssue").textContent = fmt(document.getElementById("idIssue").value);
+    document.getElementById("outExpiry").textContent = fmt(document.getElementById("idExpiry").value);
 }
 
 function liveUpdate(){
@@ -245,72 +285,118 @@ function downloadCard(elId, filename){
     });
 }
 
-liveUpdate();
-
-/* ===== Drag to reposition (text fields + photo circle) ===== */
-function makeDraggable(el, card){
-    function normalizePosition(){
-        /* Convert element to plain left/top % (no transform) based on current visual position */
-        const cardRect = card.getBoundingClientRect();
-        const elRect = el.getBoundingClientRect();
-        const leftPx = elRect.left - cardRect.left;
-        const topPx = elRect.top - cardRect.top;
-        el.style.transform = 'none';
-        el.style.left = (leftPx / cardRect.width * 100) + '%';
-        el.style.top = (topPx / cardRect.height * 100) + '%';
-    }
-
-    function startDrag(startClientX, startClientY, moveEvName, endEvName, getPoint){
-        normalizePosition();
-        const cardRect = card.getBoundingClientRect();
-        const startLeftPx = el.offsetLeft;
-        const startTopPx = el.offsetTop;
-
-        function onMove(ev){
-            const p = getPoint(ev);
-            const dx = p.x - startClientX;
-            const dy = p.y - startClientY;
-            el.style.left = ((startLeftPx + dx) / cardRect.width * 100) + '%';
-            el.style.top = ((startTopPx + dy) / cardRect.height * 100) + '%';
-        }
-        function onUp(){
-            document.removeEventListener(moveEvName, onMove);
-            document.removeEventListener(endEvName, onUp);
-        }
-        document.addEventListener(moveEvName, onMove);
-        document.addEventListener(endEvName, onUp);
-    }
-
-    el.addEventListener('mousedown', function(e){
-        e.preventDefault();
-        startDrag(e.clientX, e.clientY, 'mousemove', 'mouseup', ev=>({x:ev.clientX, y:ev.clientY}));
-    });
-    el.addEventListener('touchstart', function(e){
-        const t = e.touches[0];
-        startDrag(t.clientX, t.clientY, 'touchmove', 'touchend', ev=>({x:ev.touches[0].clientX, y:ev.touches[0].clientY}));
-    }, {passive:true});
-
-    /* Scroll wheel = resize (font-size for text, width/height for photo circle) */
-    el.addEventListener('wheel', function(e){
-        e.preventDefault();
-        const delta = e.deltaY < 0 ? 1 : -1;
-        if(el.classList.contains('photoCircle')){
-            const cardRect = card.getBoundingClientRect();
-            const curWpx = el.offsetWidth;
-            const newWpx = Math.max(40, curWpx + delta * 4);
-            el.style.width = (newWpx / cardRect.width * 100) + '%';
-            el.style.height = '';
-        } else {
-            const curSize = parseFloat(window.getComputedStyle(el).fontSize);
-            const newSize = Math.max(8, curSize + delta);
-            el.style.fontSize = newSize + 'px';
-        }
-    }, {passive:false});
+function showMsg(text, ok){
+    const el = document.getElementById("saveMsg");
+    el.textContent = text;
+    el.className = "msg " + (ok ? "ok" : "bad");
+    setTimeout(()=>{ el.textContent = ""; el.className = "msg"; }, 4000);
 }
 
-const frontCard = document.getElementById('idcardFront');
-document.querySelectorAll('#idcardFront .ov').forEach(el=> makeDraggable(el, frontCard));
-makeDraggable(document.getElementById('photoCircle'), frontCard);
+async function saveCard(){
+    generateCard();
+    const idNo   = document.getElementById("idNo").value.trim();
+    const name   = document.getElementById("idName").value.trim();
+    const title  = document.getElementById("idTitle").value.trim();
+    const issue  = fmt(document.getElementById("idIssue").value);
+    const expiry = fmt(document.getElementById("idExpiry").value);
+    const photoImg = document.getElementById("photoImg");
+    const photo = (photoImg.style.display !== "none" && photoImg.src) ? photoImg.src : "";
+
+    if(!idNo || !name){
+        showMsg("Fadlan buuxi ID No iyo Name ❌", false);
+        return;
+    }
+
+    try{
+        const res = await fetch("/save_id_card", {
+            method: "POST",
+            headers: {"Content-Type":"application/json"},
+            body: JSON.stringify({ id_no:idNo, name:name, title:title, issue:issue, expiry:expiry, photo:photo })
+        });
+        const data = await res.json();
+        if(data.success){
+            showMsg("ID Card waa la keydiyay ✅", true);
+            loadCards();
+        } else {
+            showMsg("Khalad ❌ " + (data.error || ""), false);
+        }
+    } catch(e){
+        showMsg("Khalad xagga network-ka ❌", false);
+    }
+}
+
+function escapeHtml(s){
+    return (s || "").replace(/[&<>"']/g, c => ({
+        "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+    }[c]));
+}
+
+function renderCards(cards){
+    const list = document.getElementById("cardList");
+    if(!cards || cards.length === 0){
+        list.innerHTML = '<div class="empty">Wax ID Card ah lama helin.</div>';
+        return;
+    }
+    list.innerHTML = cards.map(c => {
+        const printedBadge = c.printed
+            ? '<span class="badge printed">✅ Already Printed</span>'
+            : '<span class="badge">Not Printed</span>';
+        const markBtn = c.printed
+            ? ''
+            : `<button class="markBtn" onclick="markPrinted('${encodeURIComponent(c.doc_id)}')">Mark Printed</button>`;
+        const photoSrc = c.photo || '';
+        return `
+        <div class="cardRow">
+            <img src="${photoSrc}" onerror="this.style.visibility='hidden'">
+            <div class="info">
+                <b>${escapeHtml(c.name)} <span style="font-weight:normal;color:#888;">#${escapeHtml(c.id_no)}</span></b>
+                <span>${escapeHtml(c.title || "")} · Issue: ${escapeHtml(c.issue || "-")} · Expiry: ${escapeHtml(c.expiry || "-")}</span>
+            </div>
+            ${printedBadge}
+            ${markBtn}
+        </div>`;
+    }).join("");
+}
+
+async function loadCards(q){
+    const list = document.getElementById("cardList");
+    list.innerHTML = '<div class="empty">Loading...</div>';
+    try{
+        const url = "/list_id_cards" + (q ? ("?q=" + encodeURIComponent(q)) : "");
+        const res = await fetch(url);
+        const data = await res.json();
+        if(data.success){
+            renderCards(data.cards);
+        } else {
+            list.innerHTML = '<div class="empty">Khalad ayaa dhacay.</div>';
+        }
+    } catch(e){
+        list.innerHTML = '<div class="empty">Khalad xagga network-ka.</div>';
+    }
+}
+
+function searchCards(){
+    const q = document.getElementById("searchInput").value.trim();
+    loadCards(q);
+}
+
+document.getElementById("searchInput").addEventListener("keyup", function(e){
+    if(e.key === "Enter"){ searchCards(); }
+    else if(this.value.trim() === ""){ loadCards(); }
+});
+
+async function markPrinted(docId){
+    try{
+        const res = await fetch("/mark_id_card_printed/" + docId, { method: "POST" });
+        const data = await res.json();
+        if(data.success){
+            loadCards(document.getElementById("searchInput").value.trim());
+        }
+    } catch(e){}
+}
+
+liveUpdate();
+loadCards();
 </script>
 
 {% endif %}
