@@ -77,12 +77,13 @@ body{ font-family:Arial,sans-serif; background:#eef1f5; margin:0; padding:20px; 
    ID No: gudaha sanduuqa "ID No:" ee card-ka
    Name: gudaha sanduuqa person-icon-ka
    Issue/Expiry: meelaha DD-MM-YYYY ee hoose */
-.ov{ position:absolute; font-weight:800; color:#1a1a2e; }
+.ov{ position:absolute; font-weight:800; color:#1a1a2e; cursor:move; user-select:none; padding:2px 6px; }
+.ov:hover{ outline:1px dashed #1a5fb4; }
 .ov-idno{ top:64.3%; left:49%; width:22%; font-size:14px; text-align:left; }
-.ov-name{ top:85.3%; left:13.5%; width:68%; font-size:15px; text-align:center; }
+.ov-name{ top:69.3%; left:16%; width:68%; font-size:15px; text-align:center; }
 .ov-title{ top:75.8%; left:28%; width:60%; font-size:13px; text-align:left; }
 .ov-issue{ top:88.3%; left:42%; width:50%; font-size:12px; text-align:left; color:#fff; }
-.ov-expiry{ top:92.7%; left:47%; width:45%; font-size:12px; text-align:left; color:#fff; }
+.ov-expiry{ top:92.2%; left:47%; width:45%; font-size:12px; text-align:left; color:#fff; }
 
 @media print{
     body{ background:#fff; padding:0; }
@@ -227,6 +228,60 @@ function downloadCard(elId, filename){
 }
 
 liveUpdate();
+
+/* ===== Drag to reposition overlay text fields ===== */
+document.querySelectorAll('#idcardFront .ov').forEach(el=>{
+    el.addEventListener('mousedown', function(e){
+        e.preventDefault();
+        const card = document.getElementById('idcardFront');
+        const cardRect = card.getBoundingClientRect();
+        const startX = e.clientX;
+        const startY = e.clientY;
+        const startLeftPx = el.offsetLeft;
+        const startTopPx = el.offsetTop;
+
+        function onMove(ev){
+            const dx = ev.clientX - startX;
+            const dy = ev.clientY - startY;
+            const newLeftPx = startLeftPx + dx;
+            const newTopPx = startTopPx + dy;
+            el.style.left = (newLeftPx / cardRect.width * 100) + '%';
+            el.style.top = (newTopPx / cardRect.height * 100) + '%';
+        }
+        function onUp(){
+            document.removeEventListener('mousemove', onMove);
+            document.removeEventListener('mouseup', onUp);
+        }
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseup', onUp);
+    });
+    /* touch support */
+    el.addEventListener('touchstart', function(e){
+        const touch = e.touches[0];
+        const card = document.getElementById('idcardFront');
+        const cardRect = card.getBoundingClientRect();
+        const startX = touch.clientX;
+        const startY = touch.clientY;
+        const startLeftPx = el.offsetLeft;
+        const startTopPx = el.offsetTop;
+
+        function onMove(ev){
+            const t = ev.touches[0];
+            const dx = t.clientX - startX;
+            const dy = t.clientY - startY;
+            const newLeftPx = startLeftPx + dx;
+            const newTopPx = startTopPx + dy;
+            el.style.left = (newLeftPx / cardRect.width * 100) + '%';
+            el.style.top = (newTopPx / cardRect.height * 100) + '%';
+        }
+        function onUp(){
+            document.removeEventListener('touchmove', onMove);
+            document.removeEventListener('touchend', onUp);
+        }
+        document.addEventListener('touchmove', onMove, {passive:true});
+        document.addEventListener('touchend', onUp);
+    }, {passive:true});
+});
 </script>
 
 {% endif %}
