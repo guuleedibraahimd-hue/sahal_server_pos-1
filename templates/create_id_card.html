@@ -120,7 +120,7 @@ body{ font-family:Arial,sans-serif; background:#eef1f5; margin:0; padding:20px; 
         </div>
         <div>
             <label>ID No</label>
-            <input type="text" id="idNo" value="0000">
+           
         </div>
         <div>
             <label>Enter Full Name</label>
@@ -184,7 +184,7 @@ function loadPhoto(event){
 
 function generateCard(){
     const idNo = document.getElementById("idNo").value.trim() || "0000";
-    const name = document.getElementById("idName").value.trim() || "Enter Full Name";
+    const name = document.getElementById("idName").value.trim() || 
     const issue = fmt(document.getElementById("idIssue").value);
     const expiry = fmt(document.getElementById("idExpiry").value);
 
