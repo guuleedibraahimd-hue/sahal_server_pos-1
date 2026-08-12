@@ -67,7 +67,7 @@ body{ font-family:Arial,sans-serif; background:#eef1f5; margin:0; padding:20px; 
 /* ===== Photo circle — shape-ka waa la is'aggeystay, booska waa saxsan ===== */
 .photoCircle{
     position:absolute; top:35%; left:50%; transform:translateX(-50%);
-    width:48%; height:23.5%; border-radius:50%; overflow:hidden;
+    width:48%; aspect-ratio:1/1; border-radius:50%; overflow:hidden;
     background:transparent; display:flex; align-items:center; justify-content:center;
     cursor:move;
 }
@@ -297,11 +297,9 @@ function makeDraggable(el, card){
         if(el.classList.contains('photoCircle')){
             const cardRect = card.getBoundingClientRect();
             const curWpx = el.offsetWidth;
-            const curHpx = el.offsetHeight;
             const newWpx = Math.max(40, curWpx + delta * 4);
-            const newHpx = Math.max(40, curHpx + delta * 4);
             el.style.width = (newWpx / cardRect.width * 100) + '%';
-            el.style.height = (newHpx / cardRect.height * 100) + '%';
+            el.style.height = '';
         } else {
             const curSize = parseFloat(window.getComputedStyle(el).fontSize);
             const newSize = Math.max(8, curSize + delta);
