@@ -64,22 +64,25 @@ body{ font-family:Arial,sans-serif; background:#eef1f5; margin:0; padding:20px; 
 }
 .idcard img.base{ width:100%; display:block; }
 
-/* Photo circle */
+/* ===== Photo circle — shape-ka waa la is'aggeystay, booska waa saxsan ===== */
 .photoCircle{
-    position:absolute; top:13.5%; left:50%; transform:translateX(-50%);
-    width:34%; height:20.5%; border-radius:50%; overflow:hidden;
-    background:#eee; display:flex; align-items:center; justify-content:center;
+    position:absolute; top:35%; left:50%; transform:translateX(-50%);
+    width:48%; height:23.5%; border-radius:50%; overflow:hidden;
+    background:transparent; display:flex; align-items:center; justify-content:center;
 }
 .photoCircle img{ width:100%; height:100%; object-fit:cover; display:none; }
 .photoCircle .placeholder{ color:#aaa; font-size:11px; }
 
-/* Overlaid text fields, positioned as % of the front image */
-.ov{ position:absolute; font-weight:800; color:#1a1a2e; text-align:center; width:100%; left:0; }
-.ov-idno{ top:42.5%; font-size:17px; }
-.ov-name{ top:47.3%; font-size:16px; }
-.ov-title{ top:53%; font-size:13px; text-align:left; left:15%; width:70%; }
-.ov-issue{ top:63.5%; font-size:12px; text-align:left; left:15%; width:70%; }
-.ov-expiry{ top:66.7%; font-size:12px; text-align:left; left:15%; width:70%; }
+/* ===== Overlaid text fields — booska sax ah =====
+   ID No: gudaha sanduuqa "ID No:" ee card-ka
+   Name: gudaha sanduuqa person-icon-ka
+   Issue/Expiry: meelaha DD-MM-YYYY ee hoose */
+.ov{ position:absolute; font-weight:800; color:#1a1a2e; }
+.ov-idno{ top:64.3%; left:49%; width:22%; font-size:14px; text-align:left; }
+.ov-name{ top:69.3%; left:16%; width:68%; font-size:15px; text-align:center; }
+.ov-title{ top:75.8%; left:28%; width:60%; font-size:13px; text-align:left; }
+.ov-issue{ top:88.3%; left:42%; width:50%; font-size:12px; text-align:left; color:#fff; }
+.ov-expiry{ top:92.2%; left:47%; width:45%; font-size:12px; text-align:left; color:#fff; }
 
 @media print{
     body{ background:#fff; padding:0; }
@@ -151,10 +154,10 @@ body{ font-family:Arial,sans-serif; background:#eef1f5; margin:0; padding:20px; 
             <span class="placeholder" id="photoPlaceholder">Photo</span>
             <img id="photoImg" crossorigin="anonymous" alt="Photo">
         </div>
-        <div class="ov ov-idno" id="outIdNo">0000</div>
-        <div class="ov ov-name" id="outName">Enter Full Name</div>
-        <div class="ov ov-issue" id="outIssue">DD-MM-YYYY</div>
-        <div class="ov ov-expiry" id="outExpiry">DD-MM-YYYY</div>
+        <div class="ov ov-idno" id="outIdNo"></div>
+        <div class="ov ov-name" id="outName"></div>
+        <div class="ov ov-issue" id="outIssue"></div>
+        <div class="ov ov-expiry" id="outExpiry"></div>
     </div>
 
     <div class="idcard" id="idcardBack">
@@ -182,9 +185,15 @@ function loadPhoto(event){
     reader.readAsDataURL(file);
 }
 
+function fmtLive(dateStr){
+    if(!dateStr) return "";
+    const [y,m,d] = dateStr.split("-");
+    return `${d}-${m}-${y}`;
+}
+
 function generateCard(){
-    const idNo = document.getElementById("idNo").value.trim() || "0000";
-    const name = document.getElementById("idName").value.trim() || "Enter Full Name";
+    const idNo = document.getElementById("idNo").value.trim();
+    const name = document.getElementById("idName").value.trim();
     const issue = fmt(document.getElementById("idIssue").value);
     const expiry = fmt(document.getElementById("idExpiry").value);
 
@@ -193,6 +202,17 @@ function generateCard(){
     document.getElementById("outIssue").textContent = issue;
     document.getElementById("outExpiry").textContent = expiry;
 }
+
+function liveUpdate(){
+    document.getElementById("outIdNo").textContent = document.getElementById("idNo").value.trim();
+    document.getElementById("outName").textContent = document.getElementById("idName").value.trim();
+    document.getElementById("outIssue").textContent = fmtLive(document.getElementById("idIssue").value);
+    document.getElementById("outExpiry").textContent = fmtLive(document.getElementById("idExpiry").value);
+}
+
+["idNo","idName","idIssue","idExpiry"].forEach(id=>{
+    document.getElementById(id).addEventListener("input", liveUpdate);
+});
 
 function downloadCard(elId, filename){
     generateCard();
@@ -206,7 +226,7 @@ function downloadCard(elId, filename){
     });
 }
 
-generateCard();
+liveUpdate();
 </script>
 
 {% endif %}
