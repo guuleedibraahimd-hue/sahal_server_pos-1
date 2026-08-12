@@ -124,17 +124,19 @@ body{ font-family:Arial,sans-serif; background:#eef1f5; margin:0; padding:20px; 
     border-radius:12px; padding:10px 14px; position:relative;
 }
 
-/* Mini ID card preview inside history row (uses the real design, scaled down) */
+/* Mini ID card preview inside history row — clip-path circle si sawirka aan uga baxsan wareegga */
 .miniCard{
     position:relative; width:60px; height:99px; border-radius:6px; overflow:hidden;
     flex-shrink:0; background:#eee; box-shadow:0 2px 6px rgba(0,0,0,.15);
+    cursor:pointer;
 }
 .miniCard img.miniBase{ width:100%; height:100%; object-fit:cover; display:block; }
 .miniPhoto{
     position:absolute; top:33.10%; left:26.55%; width:42.76%; height:25.94%;
     border-radius:50%; overflow:hidden; background:#ddd;
+    clip-path: circle(50% at 50% 50%);
 }
-.miniPhoto img{ width:100%; height:100%; object-fit:cover; display:block; }
+.miniPhoto img{ width:100%; height:100%; object-fit:cover; display:block; border-radius:50%; }
 .miniOv{ position:absolute; font-weight:800; color:#1a1a2e; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .miniOv-idno{ top:61.9%; left:50%; width:22%; font-size:3.6px; text-align:left; }
 .miniOv-name{ top:68.2%; left:27%; width:69%; font-size:2.9px; text-align:center; }
@@ -151,6 +153,10 @@ body{ font-family:Arial,sans-serif; background:#eef1f5; margin:0; padding:20px; 
 .markBtn{
     background:#fdcb6e; border:none; padding:8px 14px; border-radius:8px;
     font-weight:bold; font-size:12.5px; cursor:pointer; white-space:nowrap;
+}
+.viewBtn{
+    background:#0984e3; border:none; padding:8px 14px; border-radius:8px;
+    font-weight:bold; font-size:12.5px; cursor:pointer; white-space:nowrap; color:#fff;
 }
 .empty{ color:#999; text-align:center; padding:20px; }
 
@@ -358,6 +364,15 @@ function downloadPDF(){
     });
 }
 
+/* Sawirka qofka (photo) waxaa lagu daboolayaa clip-path circle si uu shape-ka wareegga ugu fadhiisto
+   si sax ah oo aan meelna ka baxsanayn, mar la Generate-eeyo iyo mar la keydiyo/Save labadaba. */
+function clipPhotoToCircle(){
+    const img = document.getElementById("photoImg");
+    img.style.clipPath = "circle(50% at 50% 50%)";
+    img.style.borderRadius = "50%";
+}
+clipPhotoToCircle();
+
 /* ===== Print-ka: mar walba kaliya card-yada (Front+Back) ayaa la daabacaa, cabbirkooda dhabta ah (54mm),
    iyada oo aan bog madhan lagu darin — size-ka la doortay wuxuu go'aaminayaa kaliya cabbirka bogga daabacaadda,
    ma beddelayo naqshadda ama waxa la daabacayo. ===== */
@@ -419,7 +434,6 @@ async function saveCard(){
         const data = await res.json();
         if(data.success){
             showMsg("ID Card waa la keydiyay ✅", true);
-            // Ku dar list-ka hoose isla markiiba, iyada oo aan la sugin server round-trip
             prependCardLocally({ id_no:idNo, name:name, title:title, issue:issue, expiry:expiry, photo:photo, printed:false, doc_id:idNo });
         } else {
             showMsg("Khalad ❌ " + (data.error || ""), false);
@@ -435,8 +449,7 @@ function escapeHtml(s){
     }[c]));
 }
 
-/* Dhis mini-card sax ah oo isticmaala naqshadda front dhabta ah (background + photo circle + overlays),
-   halkii uu ka ahaan lahaa sawirka qofka oo keliya. */
+/* Dhis mini-card sax ah oo isticmaala naqshadda front dhabta ah (background + photo circle clip-gareeyay + overlays) */
 function renderMiniCard(c){
     const photoHtml = c.photo
         ? `<img src="${c.photo}" onerror="this.style.visibility='hidden'">`
@@ -472,12 +485,61 @@ function renderCards(cards){
                 <span>${escapeHtml(c.title || "")} · Issue: ${escapeHtml(c.issue || "-")} · Expiry: ${escapeHtml(c.expiry || "-")}</span>
             </div>
             ${printedBadge}
+            <button class="viewBtn" onclick='viewCardPDF(${JSON.stringify(c).replace(/'/g,"&#39;")})'>📄 View PDF</button>
             ${markBtn}
         </div>`;
     }).join("");
 }
 
-/* Ku dar card cusub list-ka isla markiiba (server round-trip lama sugayo) */
+/* Fur ID card-ka oo dhan (Front + Back) PDF ahaan hal fayl ah, isticmaalaya naqshadda originalka ah,
+   halkii uu si toos ah u furi lahaa sawirka qofka oo keliya (base64 data URL) sida hore ka dhacday. */
+async function viewCardPDF(c){
+    document.getElementById("idNo").value    = c.id_no || "";
+    document.getElementById("idName").value  = c.name || "";
+    document.getElementById("idTitle").value = c.title || "";
+
+    const toInput = (ddmmyyyy) => {
+        if(!ddmmyyyy || ddmmyyyy === "DD-MM-YYYY") return "";
+        const [d,m,y] = ddmmyyyy.split("-");
+        return `${y}-${m}-${d}`;
+    };
+    document.getElementById("idIssue").value  = toInput(c.issue);
+    document.getElementById("idExpiry").value = toInput(c.expiry);
+
+    const photoImg = document.getElementById("photoImg");
+    if(c.photo){
+        photoImg.src = c.photo;
+        photoImg.style.display = "block";
+        document.getElementById("photoPlaceholder").style.display = "none";
+        clipPhotoToCircle();
+    } else {
+        photoImg.style.display = "none";
+        document.getElementById("photoPlaceholder").style.display = "flex";
+    }
+
+    generateCard();
+    await new Promise(r => setTimeout(r, 150));
+
+    const front = document.getElementById("idcardFront");
+    const back = document.getElementById("idcardBack");
+
+    const [canvasFront, canvasBack] = await Promise.all([
+        html2canvas(front, { scale: 3, backgroundColor: "#ffffff", useCORS: true }),
+        html2canvas(back,  { scale: 3, backgroundColor: "#ffffff", useCORS: true })
+    ]);
+
+    const { jsPDF } = window.jspdf;
+    const w = 60;
+    const h = w * (canvasFront.height / canvasFront.width);
+
+    const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: [w, h] });
+    pdf.addImage(canvasFront.toDataURL("image/png"), "PNG", 0, 0, w, h);
+    pdf.addPage([w, h], "portrait");
+    pdf.addImage(canvasBack.toDataURL("image/png"), "PNG", 0, 0, w, h);
+
+    window.open(pdf.output("bloburl"), "_blank");
+}
+
 let localCardsCache = [];
 function prependCardLocally(card){
     localCardsCache = localCardsCache.filter(c => c.doc_id !== card.doc_id);
