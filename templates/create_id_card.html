@@ -1,4 +1,3 @@
-//templates/create_id_card.html
 <!DOCTYPE html>
 <html lang="so">
 <head>
@@ -6,6 +5,7 @@
 <title>Create ID Card</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
 :root{ --blue:#1a5fb4; }
 *{ box-sizing:border-box; }
@@ -53,6 +53,7 @@ body{ font-family:Arial,sans-serif; background:#eef1f5; margin:0; padding:20px; 
 .sv{ background:#6c5ce7; }
 .dl{ background:#00b894; }
 .dlBack{ background:#0984e3; }
+.pdf{ background:#e17055; }
 .pr{ background:#636e72; }
 .msg{ margin-top:12px; font-weight:bold; font-size:14px; }
 .msg.ok{ color:#00b894; }
@@ -69,10 +70,10 @@ body{ font-family:Arial,sans-serif; background:#eef1f5; margin:0; padding:20px; 
 }
 .idcard img.base{ width:100%; display:block; }
 
-/* ===== Photo circle — booska iyo size-ka la xaqiijiyay, dragging waa la saaray ===== */
+/* ===== Photo circle — booska iyo size-ka la xaqiijiyay si sax ah oo la beegsaday sawirka asalka ah (725x1195px) ===== */
 .photoCircle{
-    position:absolute; top:33.9%; left:50%; transform:translateX(-50%);
-    width:42%; aspect-ratio:1/1; border-radius:50%; overflow:hidden;
+    position:absolute; top:33.47%; left:28.28%; width:43.45%; height:26.36%;
+    border-radius:50%; overflow:hidden;
     background:transparent; display:flex; align-items:center; justify-content:center;
 }
 .photoCircle img{
@@ -191,6 +192,7 @@ body{ font-family:Arial,sans-serif; background:#eef1f5; margin:0; padding:20px; 
         <button type="button" class="btn sv" onclick="saveCard()">💾 Save</button>
         <button type="button" class="btn dl" onclick="downloadCard('idcardFront','id_card_front.png')">⬇️ Download Front</button>
         <button type="button" class="btn dlBack" onclick="downloadCard('idcardBack','id_card_back.png')">⬇️ Download Back</button>
+        <button type="button" class="btn pdf" onclick="downloadPDF()">📄 Download PDF</button>
         <button type="button" class="btn pr" onclick="window.print()">🖨️ Print</button>
     </div>
     <div class="msg" id="saveMsg"></div>
@@ -282,6 +284,29 @@ function downloadCard(elId, filename){
         link.download = filename;
         link.href = canvas.toDataURL("image/png");
         link.click();
+    });
+}
+
+function downloadPDF(){
+    generateCard();
+    const front = document.getElementById("idcardFront");
+    const back = document.getElementById("idcardBack");
+
+    Promise.all([
+        html2canvas(front, { scale: 3, backgroundColor: "#ffffff", useCORS: true }),
+        html2canvas(back,  { scale: 3, backgroundColor: "#ffffff", useCORS: true })
+    ]).then(([canvasFront, canvasBack]) => {
+        const { jsPDF } = window.jspdf;
+        const w = 60;
+        const h = w * (canvasFront.height / canvasFront.width);
+
+        const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: [w, h] });
+        pdf.addImage(canvasFront.toDataURL("image/png"), "PNG", 0, 0, w, h);
+
+        pdf.addPage([w, h], "portrait");
+        pdf.addImage(canvasBack.toDataURL("image/png"), "PNG", 0, 0, w, h);
+
+        pdf.save("id_card.pdf");
     });
 }
 
