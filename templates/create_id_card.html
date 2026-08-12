@@ -138,20 +138,19 @@ body{ font-family:Arial,sans-serif; background:#eef1f5; margin:0; padding:20px; 
 }
 .empty{ color:#999; text-align:center; padding:20px; }
 
-/* ===== PRINT: size-ka bogga ayaa si dynamic ah loo dejiyaa (JS ayaa @page-ka qoraya) ===== */
+/* ===== PRINT: kaliya card-yada (Front + Back) ayaa la daabacaa, cabbirkooda dhabta ah, bog madhan lama darsan ===== */
 @media print{
     body{ background:#fff; padding:0; margin:0; }
     .controls, .top, .history, .no-print{ display:none !important; }
     .cardWrap{
-        margin:0; gap:0; display:block;
+        margin:0; gap:6mm; display:flex; flex-wrap:wrap;
+        justify-content:flex-start; align-items:flex-start;
     }
     .idcard{
         box-shadow:none; border-radius:0;
-        width:100% !important;
-        page-break-after:always;
-        break-after:page;
+        width:54mm !important;
+        break-inside:avoid;
     }
-    .idcard:last-child{ page-break-after:auto; break-after:auto; }
 }
 </style>
 </head>
@@ -343,9 +342,11 @@ function downloadPDF(){
     });
 }
 
-/* ===== Print-ka: size-ka la doortay ayaa @page-ka lagu qoraa si browser-ku ugu daabaco cabbirkaas oo naqshadu iskuma badalayso ===== */
+/* ===== Print-ka: mar walba kaliya card-yada (Front+Back) ayaa la daabacaa, cabbirkooda dhabta ah (54mm),
+   iyada oo aan bog madhan lagu darin — size-ka la doortay wuxuu go'aaminayaa kaliya cabbirka bogga daabacaadda,
+   ma beddelayo naqshadda ama waxa la daabacayo. ===== */
 const PAGE_SIZES = {
-    auto:   null,
+    auto:   "auto",
     a4:     "210mm 297mm",
     letter: "8.5in 11in",
     a5:     "148mm 210mm",
@@ -357,10 +358,15 @@ function printCard(){
     const choice = document.getElementById("printSize").value;
     const styleTag = document.getElementById("dynamicPageStyle");
 
-    if(choice === "auto" || !PAGE_SIZES[choice]){
-        styleTag.textContent = "";
+    if(choice === "cr80"){
+        styleTag.textContent = `
+            @page{ size:${PAGE_SIZES.cr80}; margin:0; }
+            .idcard{ width:85.6mm !important; }
+            .cardWrap{ gap:0 !important; }
+        `;
     } else {
-        styleTag.textContent = `@page{ size:${PAGE_SIZES[choice]}; margin:10mm; }`;
+        const size = choice === "auto" ? "auto" : PAGE_SIZES[choice];
+        styleTag.textContent = `@page{ size:${size}; margin:8mm; }`;
     }
 
     setTimeout(()=>{ window.print(); }, 50);
