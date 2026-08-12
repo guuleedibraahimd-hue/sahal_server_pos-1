@@ -35,12 +35,13 @@ body{ font-family:Arial,sans-serif; background:#eef1f5; margin:0; padding:20px; 
     border-radius:16px; box-shadow:0 4px 14px rgba(0,0,0,.08);
 }
 .controls h2{ margin:0 0 16px; }
-.formrow{ display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:14px; margin-bottom:6px; }
+.formrow{ display:grid; grid-template-columns:1fr 1fr 1fr 1fr 1fr; gap:14px; margin-bottom:6px; }
 .formrow label{ font-size:13px; font-weight:bold; color:#333; display:block; margin-bottom:6px; }
 .formrow input{
     width:100%; padding:13px; border:1px solid #ccc; border-radius:10px;
     font-size:15px; box-sizing:border-box;
 }
+.formrow input[type=file]{ padding:9px; }
 .btnrow{ display:flex; gap:10px; flex-wrap:wrap; margin-top:16px; }
 .btn{
     border:none; padding:13px 22px; border-radius:10px; color:#fff;
@@ -52,7 +53,7 @@ body{ font-family:Arial,sans-serif; background:#eef1f5; margin:0; padding:20px; 
 .dlBack{ background:#0984e3; }
 .pr{ background:#636e72; }
 
-@media(max-width:800px){ .formrow{ grid-template-columns:1fr 1fr; } }
+@media(max-width:900px){ .formrow{ grid-template-columns:1fr 1fr; } }
 @media(max-width:480px){ .formrow{ grid-template-columns:1fr; } }
 
 /* ===== ID CARD (FRONT) ===== */
@@ -69,7 +70,7 @@ body{ font-family:Arial,sans-serif; background:#eef1f5; margin:0; padding:20px; 
     width:34%; height:20.5%; border-radius:50%; overflow:hidden;
     background:#eee; display:flex; align-items:center; justify-content:center;
 }
-.photoCircle img{ width:100%; height:100%; object-fit:cover; }
+.photoCircle img{ width:100%; height:100%; object-fit:cover; display:none; }
 .photoCircle .placeholder{ color:#aaa; font-size:11px; }
 
 /* Overlaid text fields, positioned as % of the front image */
@@ -114,6 +115,10 @@ body{ font-family:Arial,sans-serif; background:#eef1f5; margin:0; padding:20px; 
     <h2>⚙️ ID Card Details</h2>
     <div class="formrow">
         <div>
+            <label>Photo</label>
+            <input type="file" id="idPhoto" accept="image/*" onchange="loadPhoto(event)">
+        </div>
+        <div>
             <label>ID No</label>
             <input type="text" id="idNo" value="0000">
         </div>
@@ -142,7 +147,10 @@ body{ font-family:Arial,sans-serif; background:#eef1f5; margin:0; padding:20px; 
 <div class="cardWrap">
     <div class="idcard" id="idcardFront">
         <img class="base" src="/static/IMAM_University_ID_Front.jpg" crossorigin="anonymous" alt="ID Front">
-        <div class="photoCircle"><span class="placeholder">Photo</span></div>
+        <div class="photoCircle" id="photoCircle">
+            <span class="placeholder" id="photoPlaceholder">Photo</span>
+            <img id="photoImg" crossorigin="anonymous" alt="Photo">
+        </div>
         <div class="ov ov-idno" id="outIdNo">0000</div>
         <div class="ov ov-name" id="outName">Enter Full Name</div>
         <div class="ov ov-issue" id="outIssue">DD-MM-YYYY</div>
@@ -159,6 +167,19 @@ function fmt(dateStr){
     if(!dateStr) return "DD-MM-YYYY";
     const [y,m,d] = dateStr.split("-");
     return `${d}-${m}-${y}`;
+}
+
+function loadPhoto(event){
+    const file = event.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e){
+        const img = document.getElementById("photoImg");
+        img.src = e.target.result;
+        img.style.display = "block";
+        document.getElementById("photoPlaceholder").style.display = "none";
+    };
+    reader.readAsDataURL(file);
 }
 
 function generateCard(){
