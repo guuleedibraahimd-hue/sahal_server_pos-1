@@ -79,41 +79,46 @@ body{ font-family:Arial,sans-serif; background:#eef1f5; margin:0; padding:20px; 
 }
 .idcard img.base{ width:100%; display:block; }
 
-/* ===== Photo circle — si sax ah ugu fadhiya shape-ka gadaashiisa ===== */
+/* ===== PHOTO — si sax ah ugu fadhiya shape-ka gadaashiisa ===== */
 .photoCircle{
     position: absolute;
 
-    /* booska saxda ah */
-    top: 37.0%;
-    left: 30.0%;
+    /* Position-ka shape-ka asalka ah */
+    top: 35.2%;
+    left: 31.0%;
 
-    /* size-ka saxda ah */
-    width: 42.76%;
-    height: 25.96%;
+    /* Size-ka shape-ka asalka ah */
+    width: 43.5%;
+    height: 28.8%;
 
-    border-radius: 50%;
     overflow: hidden;
     background: transparent;
 
     display: flex;
     align-items: center;
     justify-content: center;
+
+    /* MUHIIM: circle ma aha */
+    border-radius: 0;
 }
 
 .photoCircle img{
+    position: absolute;
+
+    top: 0;
+    left: 0;
+
     width: 100%;
     height: 100%;
 
+    /* Sawirka ha buuxiyo dhammaan shape-ka */
     object-fit: cover;
-    object-position: center;
+    object-position: center top;
 
     display: none;
 
-    border-radius: 50%;
-
-    position: absolute;
-    top: 0;
-    left: 0;
+    /* Ha ka dhigin circle */
+    border-radius: 0;
 }
 
 .photoCircle .placeholder{
