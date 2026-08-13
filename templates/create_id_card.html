@@ -7,9 +7,15 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
-:root{ --blue:#1a5fb4; }
+:root{
+    --blue:#1a5fb4;
+    --navy:#0b2e6b;
+    --bg:#eef1f8;
+    --sidebar-w:250px;
+    --topbar-h:72px;
+}
 *{ box-sizing:border-box; }
-body{ font-family:Arial,sans-serif; background:#eef1f5; margin:0; padding:20px; }
+body{ font-family:Arial,sans-serif; background:var(--bg); margin:0; padding:0; }
 
 /* ===== LOGIN BOX ===== */
 .loginBox{
@@ -27,30 +33,77 @@ body{ font-family:Arial,sans-serif; background:#eef1f5; margin:0; padding:20px; 
 }
 .err{ color:#d63031; font-weight:bold; margin-bottom:12px; }
 
-/* ===== DASHBOARD ===== */
-.top{ display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; max-width:1000px; margin:0 auto 20px; }
-.logout{ background:#dc3545; color:#fff; text-decoration:none; padding:10px 18px; border-radius:10px; font-weight:bold; }
+/* ===== LAYOUT SHELL ===== */
+.shell{ display:flex; min-height:100vh; }
 
-.controls{
-    max-width:1000px; margin:0 auto 20px; background:#fff; padding:22px;
-    border-radius:16px; box-shadow:0 4px 14px rgba(0,0,0,.08);
+/* ===== SIDEBAR ===== */
+.sidebar{
+    width:var(--sidebar-w); background:#fff; border-right:1px solid #e3e6ea;
+    padding:22px 16px; flex-shrink:0;
 }
-.controls h2{ margin:0 0 16px; }
-.formrow{ display:grid; grid-template-columns:1fr 1fr 1fr 1fr 1fr; gap:14px; margin-bottom:6px; }
+.sidebar .brand{ display:flex; align-items:center; gap:12px; padding:0 6px 22px; }
+.sidebar .brand .name{ font-weight:800; color:var(--navy); font-size:16px; line-height:1.2; }
+.sidebar .brand .tag{ font-size:11px; color:#8a93a3; }
+.navlink{
+    display:flex; align-items:center; gap:12px; padding:12px 14px; border-radius:10px;
+    color:#3b4252; text-decoration:none; font-weight:700; font-size:14.5px; margin-bottom:4px;
+}
+.navlink .ic{ font-size:17px; width:20px; text-align:center; }
+.navlink.active{ background:#e7effd; color:var(--blue); }
+.navlink:hover:not(.active){ background:#f4f6fa; }
+
+/* ===== TOPBAR ===== */
+.main{ flex:1; min-width:0; }
+.topbar{
+    height:var(--topbar-h); background:#fff; border-bottom:1px solid #e3e6ea;
+    display:flex; align-items:center; justify-content:flex-end; gap:22px; padding:0 28px;
+}
+.bell{ position:relative; font-size:20px; color:#3b4252; }
+.bell .dot{
+    position:absolute; top:-4px; right:-8px; background:#e74c3c; color:#fff;
+    font-size:10px; font-weight:800; border-radius:50%; width:16px; height:16px;
+    display:flex; align-items:center; justify-content:center;
+}
+.who{ display:flex; align-items:center; gap:10px; }
+.who .wname{ font-weight:800; color:var(--navy); font-size:14px; line-height:1.2; }
+.who .wrole{ font-size:12px; color:#8a93a3; }
+.logout{ background:#dc3545; color:#fff; text-decoration:none; padding:8px 16px; border-radius:8px; font-weight:bold; font-size:13px; }
+
+.content{ padding:26px 28px 40px; }
+.pageHead{ display:flex; align-items:center; gap:14px; margin-bottom:22px; }
+.pageHead .picon{
+    width:44px; height:44px; border-radius:12px; background:var(--blue); color:#fff;
+    display:flex; align-items:center; justify-content:center; font-size:20px; flex-shrink:0;
+}
+.pageHead h1{ margin:0; font-size:24px; color:#1c2733; }
+.crumb{ font-size:13px; color:#8a93a3; margin-top:2px; }
+.crumb a{ color:#8a93a3; text-decoration:none; }
+.crumb .cur{ color:var(--blue); font-weight:700; }
+
+/* ===== FORM CARD ===== */
+.controls{
+    background:#fff; padding:24px; border-radius:16px;
+    box-shadow:0 4px 14px rgba(0,0,0,.06); margin-bottom:22px;
+}
+.controls h2{ margin:0 0 18px; display:flex; align-items:center; gap:10px; font-size:17px; color:#1c2733; }
+.controls h2 .picon2{
+    width:30px; height:30px; border-radius:8px; background:var(--blue); color:#fff;
+    display:flex; align-items:center; justify-content:center; font-size:14px;
+}
+.formrow{ display:grid; grid-template-columns:1fr 1fr 1fr 1fr 1fr; gap:14px; margin-bottom:14px; }
 .formrow label{ font-size:13px; font-weight:bold; color:#333; display:block; margin-bottom:6px; }
 .formrow input{
     width:100%; padding:13px; border:1px solid #ccc; border-radius:10px;
     font-size:15px; box-sizing:border-box;
 }
 .formrow input[type=file]{ padding:9px; }
-.btnrow{ display:flex; gap:10px; flex-wrap:wrap; margin-top:16px; align-items:center; }
+.btnrow{ display:flex; gap:10px; flex-wrap:wrap; margin-top:6px; align-items:center; }
 .btn{
     border:none; padding:13px 22px; border-radius:10px; color:#fff;
     font-weight:bold; cursor:pointer; font-size:15px; text-decoration:none;
     display:inline-flex; align-items:center; gap:6px;
 }
 .gen{ background:#1a5fb4; }
-.sv{ background:#6c5ce7; }
 .dl{ background:#00b894; }
 .dlBack{ background:#0984e3; }
 .pdf{ background:#e17055; }
@@ -69,65 +122,28 @@ body{ font-family:Arial,sans-serif; background:#eef1f5; margin:0; padding:20px; 
     padding:8px 10px; border:1px solid #ccc; border-radius:8px; font-size:14px; background:#fff;
 }
 
-@media(max-width:900px){ .formrow{ grid-template-columns:1fr 1fr; } }
-@media(max-width:480px){ .formrow{ grid-template-columns:1fr; } }
+@media(max-width:1000px){ .formrow{ grid-template-columns:1fr 1fr; } }
+@media(max-width:600px){ .formrow{ grid-template-columns:1fr; } .sidebar{ display:none; } }
 
-/* ===== ID CARD (FRONT) ===== */
-.cardWrap{ max-width:1000px; margin:0 auto 30px; display:flex; gap:30px; flex-wrap:wrap; justify-content:center; }
+/* ===== ID CARD (FRONT/BACK PREVIEW — hidden render targets used for image/pdf capture) ===== */
+.cardWrap{ display:flex; gap:30px; flex-wrap:wrap; justify-content:center; margin-bottom:22px; }
 .idcard{
     position:relative; width:340px; border-radius:14px; overflow:hidden;
     box-shadow:0 6px 22px rgba(0,0,0,.18);
 }
 .idcard img.base{ width:100%; display:block; }
 
-/* ===== PHOTO — si sax ah ugu fadhiya shape-ka gadaashiisa ===== */
 .photoCircle{
-    position: absolute;
-
-    /* Position-ka shape-ka asalka ah */
-    top: 32.8%;
-    left: 26.0%;
-
-    /* Size-ka shape-ka asalka ah */
-    width: 43.5%;
-    height: 28.8%;
-
-    overflow: hidden;
-    background: transparent;
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    /* MUHIIM: circle ma aha */
-    border-radius: 0;
+    position:absolute; top:32.8%; left:26.0%; width:43.5%; height:28.8%;
+    overflow:hidden; background:transparent;
+    display:flex; align-items:center; justify-content:center; border-radius:0;
 }
-
 .photoCircle img{
-    position: absolute;
-
-    top: 0;
-    left: 0;
-
-    width: 100%;
-    height: 100%;
-
-    /* Sawirka ha buuxiyo dhammaan shape-ka */
-    object-fit: cover;
-    object-position: center top;
-
-    display: none;
-
-    /* Ha ka dhigin circle */
-    border-radius: 0;
+    position:absolute; top:0; left:0; width:100%; height:100%;
+    object-fit:cover; object-position:center top; display:none; border-radius:0;
 }
+.photoCircle .placeholder{ color:#aaa; font-size:11.5px; }
 
-.photoCircle .placeholder{
-    color: #aaa;
-    font-size: 11.5px;
-}
-
-/* ===== Overlaid text fields — booska sax ah, size la yareeyay, dragging la saaray ===== */
 .ov{ position:absolute; font-weight:800; color:#1a1a2e; user-select:none; padding:2px 6px; }
 .ov-idno{ top:61.9%; left:48%; width:22%; font-size:13px; text-align:left; }
 .ov-name{ top:68.2%; left:27%; width:68%; font-size:10.5px; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
@@ -135,12 +151,15 @@ body{ font-family:Arial,sans-serif; background:#eef1f5; margin:0; padding:20px; 
 .ov-issue{ top:86.3%; left:44%; width:50%; font-size:12px; text-align:left; color:#fff; }
 .ov-expiry{ top:91.1%; left:44%; width:45%; font-size:12px; text-align:left; color:#fff; }
 
-/* ===== History panel — card-ka waa mini-preview (front image + overlays) sax ah, maaha sawirka qofka oo keliya ===== */
-.history{
-    max-width:1000px; margin:0 auto 40px; background:#fff; padding:22px;
-    border-radius:16px; box-shadow:0 4px 14px rgba(0,0,0,.08);
+/* ===== TABLE — "All ID Cards" dashboard style ===== */
+.tableCard{
+    background:#fff; padding:24px; border-radius:16px; box-shadow:0 4px 14px rgba(0,0,0,.06);
 }
-.history h2{ margin:0 0 16px; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.tableCard h2{ margin:0 0 16px; display:flex; align-items:center; gap:10px; flex-wrap:wrap; font-size:17px; color:#1c2733; }
+.tableCard h2 .picon2{
+    width:30px; height:30px; border-radius:8px; background:var(--blue); color:#fff;
+    display:flex; align-items:center; justify-content:center; font-size:14px;
+}
 .countPill{
     font-size:13px; font-weight:800; background:#eef1f5; color:#333;
     padding:5px 12px; border-radius:20px;
@@ -148,7 +167,7 @@ body{ font-family:Arial,sans-serif; background:#eef1f5; margin:0; padding:20px; 
 .countPill.total{ background:#dfe6f5; color:#1a5fb4; }
 .countPill.printed{ background:#d4f7ea; color:#00895a; }
 .countPill.notprinted{ background:#ffe8cc; color:#b25400; }
-.searchBox{ display:flex; gap:10px; margin-bottom:16px; }
+.searchBox{ display:flex; gap:10px; margin-bottom:18px; }
 .searchBox input{
     flex:1; padding:13px; border:1px solid #ccc; border-radius:10px; font-size:15px;
 }
@@ -156,17 +175,21 @@ body{ font-family:Arial,sans-serif; background:#eef1f5; margin:0; padding:20px; 
     background:var(--blue); color:#fff; border:none; padding:13px 20px;
     border-radius:10px; font-weight:bold; cursor:pointer;
 }
-.cardList{ display:flex; flex-direction:column; gap:10px; max-height:600px; overflow-y:auto; }
-.cardRow{
-    display:flex; align-items:center; gap:14px; border:1px solid #e3e6ea;
-    border-radius:12px; padding:10px 14px; position:relative;
-}
 
-/* Mini ID card preview inside history row — clip-path circle si sawirka aan uga baxsan wareegga */
+table.idTable{ width:100%; border-collapse:collapse; }
+table.idTable thead th{
+    text-align:left; font-size:12.5px; text-transform:uppercase; letter-spacing:.02em;
+    color:#8a93a3; padding:10px 12px; border-bottom:2px solid #eef1f5;
+}
+table.idTable tbody td{
+    padding:12px; border-bottom:1px solid #eef1f5; font-size:14px; color:#2d3436; vertical-align:middle;
+}
+table.idTable tbody tr:hover{ background:#fafbfd; }
+
+/* Mini ID card preview inside table row — background + overlay, clip-path circle photo */
 .miniCard{
-    position:relative; width:60px; height:99px; border-radius:6px; overflow:hidden;
+    position:relative; width:52px; height:86px; border-radius:6px; overflow:hidden;
     flex-shrink:0; background:#eee; box-shadow:0 2px 6px rgba(0,0,0,.15);
-    cursor:pointer;
 }
 .miniCard img.miniBase{ width:100%; height:100%; object-fit:cover; display:block; }
 .miniPhoto{
@@ -176,36 +199,31 @@ body{ font-family:Arial,sans-serif; background:#eef1f5; margin:0; padding:20px; 
 }
 .miniPhoto img{ width:100%; height:100%; object-fit:cover; display:block; border-radius:50%; }
 .miniOv{ position:absolute; font-weight:800; color:#1a1a2e; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.miniOv-idno{ top:61.9%; left:50%; width:22%; font-size:3.6px; text-align:left; }
-.miniOv-name{ top:68.2%; left:27%; width:69%; font-size:2.9px; text-align:center; }
-.miniOv-title{ top:73.9%; left:38%; width:60%; font-size:3.2px; text-align:left; }
+.miniOv-idno{ top:61.9%; left:50%; width:22%; font-size:3.2px; text-align:left; }
+.miniOv-name{ top:68.2%; left:27%; width:69%; font-size:2.6px; text-align:center; }
+.miniOv-title{ top:73.9%; left:38%; width:60%; font-size:2.9px; text-align:left; }
 
-.cardRow .info{ flex:1; min-width:0; }
-.cardRow .info b{ display:block; font-size:14.5px; }
-.cardRow .info span{ font-size:12.5px; color:#666; }
 .badge{
-    font-size:11px; font-weight:bold; padding:4px 10px; border-radius:20px;
-    background:#dfe6e9; color:#2d3436; white-space:nowrap;
+    font-size:11px; font-weight:bold; padding:4px 12px; border-radius:20px;
+    background:#dfe6e9; color:#2d3436; white-space:nowrap; display:inline-block;
 }
-.badge.printed{ background:#00b894; color:#fff; }
-.markBtn{
-    background:#fdcb6e; border:none; padding:8px 14px; border-radius:8px;
-    font-weight:bold; font-size:12.5px; cursor:pointer; white-space:nowrap;
+.badge.printed{ background:#d4f7ea; color:#00895a; }
+.actionsCell{ display:flex; gap:8px; flex-wrap:wrap; }
+.miniBtn{
+    border:none; padding:8px 12px; border-radius:8px; font-weight:bold; font-size:12.5px;
+    cursor:pointer; white-space:nowrap; color:#fff; display:inline-flex; align-items:center; gap:5px;
 }
-.viewBtn{
-    background:#0984e3; border:none; padding:8px 14px; border-radius:8px;
-    font-weight:bold; font-size:12.5px; cursor:pointer; white-space:nowrap; color:#fff;
-}
-.delBtn{
-    background:#ff7675; border:none; padding:8px 14px; border-radius:8px;
-    font-weight:bold; font-size:12.5px; cursor:pointer; white-space:nowrap; color:#fff;
-}
-.empty{ color:#999; text-align:center; padding:20px; }
+.viewBtn{ background:#0984e3; }
+.printBtn{ background:#00b894; }
+.markBtn{ background:#fdcb6e; color:#3b3b3b; }
+.delBtn{ background:#ff7675; }
+.empty{ color:#999; text-align:center; padding:24px; }
 
 /* ===== PRINT: kaliya card-yada (Front + Back) ayaa la daabacaa, cabbirkooda dhabta ah, bog madhan lama darsan ===== */
 @media print{
     body{ background:#fff; padding:0; margin:0; }
-    .controls, .top, .history, .no-print{ display:none !important; }
+    .sidebar, .topbar, .controls, .tableCard, .pageHead, .no-print{ display:none !important; }
+    .content{ padding:0 !important; }
     .cardWrap{
         margin:0; gap:6mm; display:flex; flex-wrap:wrap;
         justify-content:flex-start; align-items:flex-start;
@@ -234,98 +252,148 @@ body{ font-family:Arial,sans-serif; background:#eef1f5; margin:0; padding:20px; 
 
 {% else %}
 
-<!-- ===== TOP ===== -->
-<div class="top">
-    <h1>🪪 Create ID Card</h1>
-    <a href="/logout_id_card" class="logout">Logout</a>
-</div>
+<div class="shell">
 
-<!-- ===== FORM ===== -->
-<div class="controls no-print">
-    <h2>⚙️ ID Card Details</h2>
-    <div class="formrow">
-        <div>
-            <label>Photo</label>
-            <input type="file" id="idPhoto" accept="image/*" onchange="loadPhoto(event)">
+    <!-- ===== SIDEBAR ===== -->
+    <div class="sidebar no-print">
+        <div class="brand">
+            <div class="name">IMAM UNIVERSITY<br><span class="tag">Together for Excellence</span></div>
         </div>
-        <div>
-            <label>ID No</label>
-            <input type="text" id="idNo" value="0000">
-        </div>
-        <div>
-            <label>Enter Full Name</label>
-            <input type="text" id="idName" placeholder="Magaca oo dhan">
-        </div>
-        <div>
-            <label>Title</label>
-            <input type="text" id="idTitle" placeholder="Tusaale: Xubin Shaqaale">
-        </div>
-        <div>
-            <label>Issue Date</label>
-            <input type="date" id="idIssue">
-        </div>
-        <div>
-            <label>Expiry Date</label>
-            <input type="date" id="idExpiry">
-        </div>
-    </div>
-    <div class="btnrow">
-        <button type="button" class="btn gen" onclick="generateCard()">⚙️ Generate</button>
-        <button type="button" class="btn sv" onclick="saveCard()">💾 Save</button>
-        <button type="button" class="btn dl" onclick="downloadCard('idcardFront','id_card_front.png')">⬇️ Download Front</button>
-        <button type="button" class="btn dlBack" onclick="downloadCard('idcardBack','id_card_back.png')">⬇️ Download Back</button>
-        <button type="button" class="btn pdf" onclick="downloadPDF()">📄 Download PDF</button>
-        <button type="button" class="btn del-all" onclick="deleteAllCards()">🗑️ Delete All</button>
-
-        <div class="printSizeWrap">
-            <label for="printSize">🖨️ Print Size</label>
-            <select id="printSize">
-                <option value="auto" selected>Auto (Card size)</option>
-                <option value="a4">A4</option>
-                <option value="letter">Letter</option>
-                <option value="a5">A5</option>
-                <option value="cr80">CR80 Card (85.6x54mm)</option>
-            </select>
-        </div>
-        <button type="button" class="btn pr" onclick="printCard()">🖨️ Print</button>
-    </div>
-    <div class="msg" id="saveMsg"></div>
-</div>
-
-<!-- ===== ID CARD PREVIEW (FRONT + BACK) ===== -->
-<div class="cardWrap">
-    <div class="idcard" id="idcardFront">
-        <img class="base" src="/static/IMAM_University_ID_Front.jpg" crossorigin="anonymous" alt="ID Front">
-        <div class="photoCircle" id="photoCircle">
-            <span class="placeholder" id="photoPlaceholder">Photo</span>
-            <img id="photoImg" crossorigin="anonymous" alt="Photo">
-        </div>
-        <div class="ov ov-idno" id="outIdNo"></div>
-        <div class="ov ov-name" id="outName"></div>
-        <div class="ov ov-title" id="outTitle"></div>
-        <div class="ov ov-issue" id="outIssue"></div>
-        <div class="ov ov-expiry" id="outExpiry"></div>
+        <a href="/dashboard" class="navlink"><span class="ic">🏠</span> Dashboard</a>
+        <a href="/create_id_card" class="navlink active"><span class="ic">🪪</span> All ID Cards</a>
+        <a href="/settings" class="navlink"><span class="ic">⚙️</span> Settings</a>
     </div>
 
-    <div class="idcard" id="idcardBack">
-        <img class="base" src="/static/IMAM_University_ID_Back.png" crossorigin="anonymous" alt="ID Back">
-    </div>
-</div>
+    <div class="main">
+        <!-- ===== TOPBAR ===== -->
+        <div class="topbar no-print">
+            <div class="bell">🔔<span class="dot">3</span></div>
+            <div class="who">
+                <div>
+                    <div class="wname">Admin User</div>
+                    <div class="wrole">Super Admin</div>
+                </div>
+            </div>
+            <a href="/logout_id_card" class="logout">Logout</a>
+        </div>
 
-<!-- ===== HISTORY / ALL ID CARDS ===== -->
-<div class="history no-print">
-    <h2>
-        🗂️ All ID Cards
-        <span class="countPill total" id="countTotal">Total: 0</span>
-        <span class="countPill printed" id="countPrinted">Printed: 0</span>
-        <span class="countPill notprinted" id="countNotPrinted">Not Printed: 0</span>
-    </h2>
-    <div class="searchBox">
-        <input type="text" id="searchInput" placeholder="Search by ID No or Name...">
-        <button type="button" onclick="searchCards()">🔍 Search</button>
-    </div>
-    <div class="cardList" id="cardList">
-        <div class="empty">Loading...</div>
+        <div class="content">
+            <div class="pageHead no-print">
+                <div class="picon">🪪</div>
+                <div>
+                    <h1>Create ID Card</h1>
+                    <div class="crumb"><a href="/dashboard">Dashboard</a> &nbsp;›&nbsp; <span class="cur">Create ID Card</span></div>
+                </div>
+            </div>
+
+            <!-- ===== FORM ===== -->
+            <div class="controls no-print">
+                <h2><span class="picon2">⚙️</span> ID Card Details</h2>
+                <div class="formrow">
+                    <div>
+                        <label>Photo</label>
+                        <input type="file" id="idPhoto" accept="image/*" onchange="loadPhoto(event)">
+                    </div>
+                    <div>
+                        <label>ID No</label>
+                        <input type="text" id="idNo" value="0000">
+                    </div>
+                    <div>
+                        <label>Enter Full Name</label>
+                        <input type="text" id="idName" placeholder="Magaca oo dhan">
+                    </div>
+                    <div>
+                        <label>Title</label>
+                        <input type="text" id="idTitle" placeholder="Tusaale: Xubin Shaqaale">
+                    </div>
+                    <div>
+                        <label>Issue Date</label>
+                        <input type="date" id="idIssue">
+                    </div>
+                </div>
+                <div class="formrow" style="grid-template-columns:1fr;">
+                    <div style="max-width:260px;">
+                        <label>Expiry Date</label>
+                        <input type="date" id="idExpiry">
+                    </div>
+                </div>
+                <div class="btnrow">
+                    <button type="button" class="btn gen" onclick="generateCard()">⚙️ Generate</button>
+                    <button type="button" class="btn dl" onclick="downloadCard('idcardFront','id_card_front.png')">⬇️ Download Front</button>
+                    <button type="button" class="btn dlBack" onclick="downloadCard('idcardBack','id_card_back.png')">⬇️ Download Back</button>
+                    <button type="button" class="btn pdf" onclick="downloadPDF()">📄 Download PDF</button>
+                    <button type="button" class="btn del-all" onclick="deleteAllCards()">🗑️ Delete All</button>
+
+                    <div class="printSizeWrap">
+                        <label for="printSize">🖨️ Print Size</label>
+                        <select id="printSize">
+                            <option value="auto" selected>Auto (Card size)</option>
+                            <option value="a4">A4</option>
+                            <option value="letter">Letter</option>
+                            <option value="a5">A5</option>
+                            <option value="cr80">CR80 Card (85.6x54mm)</option>
+                        </select>
+                    </div>
+                    <button type="button" class="btn pr" onclick="printCard()">🖨️ Print</button>
+                </div>
+                <div class="msg" id="saveMsg"></div>
+            </div>
+
+            <!-- ===== ID CARD PREVIEW (FRONT + BACK) — render targets for capture/print ===== -->
+            <div class="cardWrap">
+                <div class="idcard" id="idcardFront">
+                    <img class="base" src="/static/IMAM_University_ID_Front.jpg" crossorigin="anonymous" alt="ID Front">
+                    <div class="photoCircle" id="photoCircle">
+                        <span class="placeholder" id="photoPlaceholder">Photo</span>
+                        <img id="photoImg" crossorigin="anonymous" alt="Photo">
+                    </div>
+                    <div class="ov ov-idno" id="outIdNo"></div>
+                    <div class="ov ov-name" id="outName"></div>
+                    <div class="ov ov-title" id="outTitle"></div>
+                    <div class="ov ov-issue" id="outIssue"></div>
+                    <div class="ov ov-expiry" id="outExpiry"></div>
+                </div>
+
+                <div class="idcard" id="idcardBack">
+                    <img class="base" src="/static/IMAM_University_ID_Back.png" crossorigin="anonymous" alt="ID Back">
+                </div>
+            </div>
+
+            <!-- ===== TABLE: All ID Cards ===== -->
+            <div class="tableCard no-print">
+                <h2>
+                    <span class="picon2">🗂️</span> All ID Cards
+                    <span class="countPill total" id="countTotal">Total: 0</span>
+                    <span class="countPill printed" id="countPrinted">Printed: 0</span>
+                    <span class="countPill notprinted" id="countNotPrinted">Not Printed: 0</span>
+                </h2>
+                <div class="searchBox">
+                    <input type="text" id="searchInput" placeholder="Search by ID No or Name...">
+                    <button type="button" onclick="searchCards()">🔍 Search</button>
+                </div>
+
+                <div style="overflow-x:auto;">
+                <table class="idTable">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Photo</th>
+                            <th>Name</th>
+                            <th>ID No</th>
+                            <th>Title</th>
+                            <th>Issue Date</th>
+                            <th>Expiry Date</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cardTableBody">
+                        <tr><td colspan="9" class="empty">Loading...</td></tr>
+                    </tbody>
+                </table>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -357,14 +425,6 @@ function loadPhoto(event){
     reader.readAsDataURL(file);
 }
 
-function generateCard(){
-    document.getElementById("outIdNo").textContent = document.getElementById("idNo").value.trim();
-    document.getElementById("outName").textContent = document.getElementById("idName").value.trim();
-    document.getElementById("outTitle").textContent = document.getElementById("idTitle").value.trim();
-    document.getElementById("outIssue").textContent = fmt(document.getElementById("idIssue").value);
-    document.getElementById("outExpiry").textContent = fmt(document.getElementById("idExpiry").value);
-}
-
 function liveUpdate(){
     document.getElementById("outIdNo").textContent = document.getElementById("idNo").value.trim();
     document.getElementById("outName").textContent = document.getElementById("idName").value.trim();
@@ -378,7 +438,6 @@ function liveUpdate(){
 });
 
 function downloadCard(elId, filename){
-    generateCard();
     const card = document.getElementById(elId);
     html2canvas(card, { scale: 3, backgroundColor: "#ffffff", useCORS: true })
     .then(canvas => {
@@ -390,7 +449,6 @@ function downloadCard(elId, filename){
 }
 
 function downloadPDF(){
-    generateCard();
     const front = document.getElementById("idcardFront");
     const back = document.getElementById("idcardBack");
 
@@ -432,8 +490,7 @@ const PAGE_SIZES = {
     cr80:   "85.6mm 54mm landscape"
 };
 
-function printCard(){
-    generateCard();
+function applyPrintPageStyle(){
     const choice = document.getElementById("printSize").value;
     const styleTag = document.getElementById("dynamicPageStyle");
 
@@ -447,7 +504,10 @@ function printCard(){
         const size = choice === "auto" ? "auto" : PAGE_SIZES[choice];
         styleTag.textContent = `@page{ size:${size}; margin:8mm; }`;
     }
+}
 
+function printCard(){
+    applyPrintPageStyle();
     setTimeout(()=>{ window.print(); }, 50);
 }
 
@@ -458,8 +518,11 @@ function showMsg(text, ok){
     setTimeout(()=>{ el.textContent = ""; el.className = "msg"; }, 4000);
 }
 
-async function saveCard(){
-    generateCard();
+/* Generate = live-fill card PREVIEW + AUTO-SAVE to Firestore toos ah, iyada oo aan la sugin Save gooni ah.
+   Kadib list/table-ka waxa lagu cusboonaysiiyaa toos ah (prependCardLocally). */
+async function generateCard(){
+    liveUpdate();
+
     const idNo   = document.getElementById("idNo").value.trim();
     const name   = document.getElementById("idName").value.trim();
     const title  = document.getElementById("idTitle").value.trim();
@@ -525,36 +588,42 @@ function updateCounts(cards){
 
 function renderCards(cards){
     updateCounts(cards);
-    const list = document.getElementById("cardList");
+    const tbody = document.getElementById("cardTableBody");
     if(!cards || cards.length === 0){
-        list.innerHTML = '<div class="empty">Wax ID Card ah lama helin.</div>';
+        tbody.innerHTML = '<tr><td colspan="9" class="empty">Wax ID Card ah lama helin.</td></tr>';
         return;
     }
-    list.innerHTML = cards.map(c => {
-        const printedBadge = c.printed
-            ? '<span class="badge printed">✅ Already Printed</span>'
-            : '<span class="badge">Not Printed</span>';
+    tbody.innerHTML = cards.map((c, i) => {
+        const statusBadge = c.printed
+            ? '<span class="badge printed">Printed</span>'
+            : '<span class="badge">Active</span>';
         const markBtn = c.printed
             ? ''
-            : `<button class="markBtn" onclick="markPrinted('${encodeURIComponent(c.doc_id)}')">Mark Printed</button>`;
+            : `<button class="miniBtn markBtn" onclick="markPrinted('${encodeURIComponent(c.doc_id)}')">✅ Mark Printed</button>`;
         return `
-        <div class="cardRow">
-            ${renderMiniCard(c)}
-            <div class="info">
-                <b>${escapeHtml(c.name)} <span style="font-weight:normal;color:#888;">#${escapeHtml(c.id_no)}</span></b>
-                <span>${escapeHtml(c.title || "")} · Issue: ${escapeHtml(c.issue || "-")} · Expiry: ${escapeHtml(c.expiry || "-")}</span>
-            </div>
-            ${printedBadge}
-            <button class="viewBtn" onclick='viewCardPDF(${JSON.stringify(c).replace(/'/g,"&#39;")})'>📄 View PDF</button>
-            ${markBtn}
-            <button class="delBtn" onclick="deleteCard('${encodeURIComponent(c.doc_id)}')">🗑️ Delete</button>
-        </div>`;
+        <tr>
+            <td>${i + 1}</td>
+            <td>${renderMiniCard(c)}</td>
+            <td>${escapeHtml(c.name)}</td>
+            <td>${escapeHtml(c.id_no)}</td>
+            <td>${escapeHtml(c.title || "")}</td>
+            <td>${escapeHtml(c.issue || "-")}</td>
+            <td>${escapeHtml(c.expiry || "-")}</td>
+            <td>${statusBadge}</td>
+            <td>
+                <div class="actionsCell">
+                    <button class="miniBtn viewBtn" onclick='viewCardPDF(${JSON.stringify(c).replace(/'/g,"&#39;")})'>📄 View PDF</button>
+                    <button class="miniBtn printBtn" onclick='printRow(${JSON.stringify(c).replace(/'/g,"&#39;")})'>🖨️ Print</button>
+                    ${markBtn}
+                    <button class="miniBtn delBtn" onclick="deleteCard('${encodeURIComponent(c.doc_id)}')">🗑️ Delete</button>
+                </div>
+            </td>
+        </tr>`;
     }).join("");
 }
 
-/* Fur ID card-ka oo dhan (Front + Back) PDF ahaan hal fayl ah, isticmaalaya naqshadda originalka ah,
-   halkii uu si toos ah u furi lahaa sawirka qofka oo keliya (base64 data URL) sida hore ka dhacday. */
-async function viewCardPDF(c){
+/* Buuxi preview-ga card-ka (front+back) hal card oo la soo dhaafay */
+async function fillPreviewFromCard(c){
     document.getElementById("idNo").value    = c.id_no || "";
     document.getElementById("idName").value  = c.name || "";
     document.getElementById("idTitle").value = c.title || "";
@@ -578,8 +647,14 @@ async function viewCardPDF(c){
         document.getElementById("photoPlaceholder").style.display = "flex";
     }
 
-    generateCard();
+    liveUpdate();
     await new Promise(r => setTimeout(r, 150));
+}
+
+/* Fur ID card-ka oo dhan (Front + Back) PDF ahaan hal fayl ah, isticmaalaya naqshadda originalka ah,
+   halkii uu si toos ah u furi lahaa sawirka qofka oo keliya (base64 data URL) sida hore ka dhacday. */
+async function viewCardPDF(c){
+    await fillPreviewFromCard(c);
 
     const front = document.getElementById("idcardFront");
     const back = document.getElementById("idcardBack");
@@ -601,6 +676,26 @@ async function viewCardPDF(c){
     window.open(pdf.output("bloburl"), "_blank");
 }
 
+/* Print hal card oo saf ah (table row): buuxi preview-ga, daabac (window.print), kadib toos u calaamadi Printed. */
+async function printRow(c){
+    await fillPreviewFromCard(c);
+    applyPrintPageStyle();
+
+    const afterPrint = async () => {
+        window.removeEventListener("afterprint", afterPrint);
+        try{
+            const res = await fetch("/mark_id_card_printed/" + encodeURIComponent(c.doc_id), { method: "POST" });
+            const data = await res.json();
+            if(data.success){
+                loadCards(document.getElementById("searchInput").value.trim());
+            }
+        } catch(e){}
+    };
+    window.addEventListener("afterprint", afterPrint);
+
+    setTimeout(()=>{ window.print(); }, 80);
+}
+
 let localCardsCache = [];
 function prependCardLocally(card){
     localCardsCache = localCardsCache.filter(c => c.doc_id !== card.doc_id);
@@ -609,8 +704,8 @@ function prependCardLocally(card){
 }
 
 async function loadCards(q){
-    const list = document.getElementById("cardList");
-    list.innerHTML = '<div class="empty">Loading...</div>';
+    const tbody = document.getElementById("cardTableBody");
+    tbody.innerHTML = '<tr><td colspan="9" class="empty">Loading...</td></tr>';
     try{
         const url = "/list_id_cards" + (q ? ("?q=" + encodeURIComponent(q)) : "");
         const res = await fetch(url);
@@ -619,10 +714,10 @@ async function loadCards(q){
             localCardsCache = data.cards;
             renderCards(data.cards);
         } else {
-            list.innerHTML = '<div class="empty">Khalad ayaa dhacay.</div>';
+            tbody.innerHTML = '<tr><td colspan="9" class="empty">Khalad ayaa dhacay.</td></tr>';
         }
     } catch(e){
-        list.innerHTML = '<div class="empty">Khalad xagga network-ka.</div>';
+        tbody.innerHTML = '<tr><td colspan="9" class="empty">Khalad xagga network-ka.</td></tr>';
     }
 }
 
