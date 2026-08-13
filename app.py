@@ -3368,6 +3368,42 @@ def delete_all_id_cards():
     except Exception as e:
         print("DELETE ALL ID CARDS ERROR:", e)
         return jsonify({"success": False, "error": str(e)}), 500
+
+
+# =========================
+# ⚙️ ID CARD SETTINGS (change login password)
+# =========================
+@app.route("/id_card_settings", methods=["GET"])
+def id_card_settings():
+    if not session.get("idcard_ok"):
+        return render_template("id_card_settings.html")
+    return render_template("id_card_settings.html", logged_in=True)
+
+
+@app.route("/change_id_card_password", methods=["POST"])
+def change_id_card_password():
+    if not session.get("idcard_ok"):
+        return jsonify({"success": False, "error": "Not authorized"}), 403
+    try:
+        data = request.get_json(force=True) or {}
+        current_password = (data.get("current_password") or "").strip()
+        new_password     = (data.get("new_password") or "").strip()
+
+        if not current_password or not new_password:
+            return jsonify({"success": False, "error": "Fadlan buuxi dhammaan fields-ka"}), 400
+
+        doc_ref = db.collection("idCardLogin").document("idcard")
+        doc = doc_ref.get()
+        real_pass = doc.to_dict().get("password", "") if doc.exists else ""
+
+        if current_password != real_pass:
+            return jsonify({"success": False, "error": "Password-ka hadda jira waa khalad"}), 400
+
+        doc_ref.set({"password": new_password}, merge=True)
+        return jsonify({"success": True})
+    except Exception as e:
+        print("CHANGE ID CARD PASSWORD ERROR:", e)
+        return jsonify({"success": False, "error": str(e)}), 500
     
     
 # ── CUSTOMER joins its room ──
