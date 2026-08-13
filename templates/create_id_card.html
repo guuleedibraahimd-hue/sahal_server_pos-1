@@ -97,7 +97,9 @@ body{ font-family:Arial,sans-serif; background:#eef1f5; margin:0; padding:20px; 
 .photoCircle .placeholder{ color:#aaa; font-size:11px; }
 
 /* ===== Overlaid text fields — booska sax ah oo la beegsaday xariiqaha "ID No / Name / Title / Issue / Expiry" ===== */
-.ov{ position:absolute; font-weight:800; color:#1a1a2e; user-select:none; padding:2px 6px; }
+.ov{ position:absolute; font-weight:800; color:#1a1a2e; user-select:none; padding:2px 6px; cursor:move; }
+.ov:hover{ outline:1px dashed #1a5fb4; background:rgba(26,95,180,.06); }
+.ov.dragging{ outline:2px dashed #e17055; background:rgba(225,112,85,.12); z-index:50; }
 .ov-idno{ top:60.2%; left:26%; width:22%; font-size:13px; text-align:left; }
 .ov-name{ top:65.9%; left:26%; width:64%; font-size:12.5px; text-align:left; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .ov-title{ top:71.6%; left:26%; width:64%; font-size:12.5px; text-align:left; }
@@ -252,6 +254,7 @@ body{ font-family:Arial,sans-serif; background:#eef1f5; margin:0; padding:20px; 
             </select>
         </div>
         <button type="button" class="btn pr" onclick="printCard()">🖨️ Print</button>
+        <button type="button" class="btn pr" onclick="resetPositions()">↺ Reset Positions</button>
     </div>
     <div class="msg" id="saveMsg"></div>
 </div>
@@ -608,6 +611,100 @@ async function markPrinted(docId){
         }
     } catch(e){}
 }
+
+/* ===== DRAG TO REPOSITION — kaliya .ov elements-ka (ID No, Name, Title, Issue, Expiry).
+   Guji oo jiid qoraalka si aad meesha ugu beddesho gacanta, booskana wuu is-keydiyaa (localStorage)
+   si mar kasta oo bogga la furo ay ku sii jiraan meesha aad dooratay. Wax kale lagama taaban. ===== */
+const OV_IDS = ["outIdNo","outName","outTitle","outIssue","outExpiry"];
+const OV_POS_KEY = "idcard_ov_positions_v1";
+
+function loadSavedPositions(){
+    try{
+        const saved = JSON.parse(localStorage.getItem(OV_POS_KEY) || "{}");
+        OV_IDS.forEach(id=>{
+            const el = document.getElementById(id);
+            if(el && saved[id]){
+                el.style.top = saved[id].top;
+                el.style.left = saved[id].left;
+            }
+        });
+    }catch(e){}
+}
+
+function savePosition(id, top, left){
+    try{
+        const saved = JSON.parse(localStorage.getItem(OV_POS_KEY) || "{}");
+        saved[id] = { top, left };
+        localStorage.setItem(OV_POS_KEY, JSON.stringify(saved));
+    }catch(e){}
+}
+
+function resetPositions(){
+    try{ localStorage.removeItem(OV_POS_KEY); }catch(e){}
+    OV_IDS.forEach(id=>{
+        const el = document.getElementById(id);
+        if(el){ el.style.top = ""; el.style.left = ""; }
+    });
+    showMsg("Boosaska waa la reset gareeyay ✅", true);
+}
+
+function makeDraggable(el){
+    const card = document.getElementById("idcardFront");
+    let dragging = false, startX = 0, startY = 0, startTopPx = 0, startLeftPx = 0;
+
+    function onDown(clientX, clientY){
+        const cardRect = card.getBoundingClientRect();
+        const elRect = el.getBoundingClientRect();
+        dragging = true;
+        el.classList.add("dragging");
+        startX = clientX;
+        startY = clientY;
+        startTopPx = elRect.top - cardRect.top;
+        startLeftPx = elRect.left - cardRect.left;
+    }
+
+    function onMove(clientX, clientY){
+        if(!dragging) return;
+        const card = document.getElementById("idcardFront");
+        const cardRect = card.getBoundingClientRect();
+        const dx = clientX - startX;
+        const dy = clientY - startY;
+        let newTopPx = startTopPx + dy;
+        let newLeftPx = startLeftPx + dx;
+        const newTopPct = (newTopPx / cardRect.height) * 100;
+        const newLeftPct = (newLeftPx / cardRect.width) * 100;
+        el.style.top = newTopPct.toFixed(2) + "%";
+        el.style.left = newLeftPct.toFixed(2) + "%";
+    }
+
+    function onUp(){
+        if(!dragging) return;
+        dragging = false;
+        el.classList.remove("dragging");
+        savePosition(el.id, el.style.top, el.style.left);
+    }
+
+    el.addEventListener("mousedown", e=>{ e.preventDefault(); onDown(e.clientX, e.clientY); });
+    document.addEventListener("mousemove", e=>{ onMove(e.clientX, e.clientY); });
+    document.addEventListener("mouseup", onUp);
+
+    el.addEventListener("touchstart", e=>{
+        const t = e.touches[0];
+        onDown(t.clientX, t.clientY);
+    }, { passive:true });
+    document.addEventListener("touchmove", e=>{
+        if(!dragging) return;
+        const t = e.touches[0];
+        onMove(t.clientX, t.clientY);
+    }, { passive:true });
+    document.addEventListener("touchend", onUp);
+}
+
+OV_IDS.forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) makeDraggable(el);
+});
+loadSavedPositions();
 
 liveUpdate();
 loadCards();
