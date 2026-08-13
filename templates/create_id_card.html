@@ -79,22 +79,47 @@ body{ font-family:Arial,sans-serif; background:#eef1f5; margin:0; padding:20px; 
 }
 .idcard img.base{ width:100%; display:block; }
 
-/* ===== Photo circle — booska iyo size-ka la xaqiijiyay si sax ah oo la beegsaday sawirka asalka ah (725x1195px) ===== */
+/* ===== Photo circle — si sax ah ugu fadhiya shape-ka gadaashiisa ===== */
 .photoCircle{
-    position:absolute; top:33.5%; left:26.55%; width:42.76%; height:25.96%;
-    border-radius:50%; overflow:hidden;
-    background:transparent; display:flex; align-items:center; justify-content:center;
+    position: absolute;
+
+    /* booska saxda ah */
+    top: 37.0%;
+    left: 30.0%;
+
+    /* size-ka saxda ah */
+    width: 42.76%;
+    height: 25.96%;
+
+    border-radius: 50%;
+    overflow: hidden;
+    background: transparent;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
+
 .photoCircle img{
-    width:100%; height:100%;
-    object-fit:cover;
-    object-position:center;
-    display:none;
-    border-radius:50%;
-    position:absolute;
-    top:0; left:0;
+    width: 100%;
+    height: 100%;
+
+    object-fit: cover;
+    object-position: center;
+
+    display: none;
+
+    border-radius: 50%;
+
+    position: absolute;
+    top: 0;
+    left: 0;
 }
-.photoCircle .placeholder{ color:#aaa; font-size:11.5px; }
+
+.photoCircle .placeholder{
+    color: #aaa;
+    font-size: 11.5px;
+}
 
 /* ===== Overlaid text fields — booska sax ah, size la yareeyay, dragging la saaray ===== */
 .ov{ position:absolute; font-weight:800; color:#1a1a2e; user-select:none; padding:2px 6px; }
