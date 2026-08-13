@@ -55,6 +55,7 @@ body{ font-family:Arial,sans-serif; background:#eef1f5; margin:0; padding:20px; 
 .dlBack{ background:#0984e3; }
 .pdf{ background:#e17055; }
 .pr{ background:#636e72; }
+.del-all{ background:#d63031; }
 .msg{ margin-top:12px; font-weight:bold; font-size:14px; }
 .msg.ok{ color:#00b894; }
 .msg.bad{ color:#d63031; }
@@ -195,6 +196,10 @@ body{ font-family:Arial,sans-serif; background:#eef1f5; margin:0; padding:20px; 
     background:#0984e3; border:none; padding:8px 14px; border-radius:8px;
     font-weight:bold; font-size:12.5px; cursor:pointer; white-space:nowrap; color:#fff;
 }
+.delBtn{
+    background:#ff7675; border:none; padding:8px 14px; border-radius:8px;
+    font-weight:bold; font-size:12.5px; cursor:pointer; white-space:nowrap; color:#fff;
+}
 .empty{ color:#999; text-align:center; padding:20px; }
 
 /* ===== PRINT: kaliya card-yada (Front + Back) ayaa la daabacaa, cabbirkooda dhabta ah, bog madhan lama darsan ===== */
@@ -270,6 +275,7 @@ body{ font-family:Arial,sans-serif; background:#eef1f5; margin:0; padding:20px; 
         <button type="button" class="btn dl" onclick="downloadCard('idcardFront','id_card_front.png')">⬇️ Download Front</button>
         <button type="button" class="btn dlBack" onclick="downloadCard('idcardBack','id_card_back.png')">⬇️ Download Back</button>
         <button type="button" class="btn pdf" onclick="downloadPDF()">📄 Download PDF</button>
+        <button type="button" class="btn del-all" onclick="deleteAllCards()">🗑️ Delete All</button>
 
         <div class="printSizeWrap">
             <label for="printSize">🖨️ Print Size</label>
@@ -541,6 +547,7 @@ function renderCards(cards){
             ${printedBadge}
             <button class="viewBtn" onclick='viewCardPDF(${JSON.stringify(c).replace(/'/g,"&#39;")})'>📄 View PDF</button>
             ${markBtn}
+            <button class="delBtn" onclick="deleteCard('${encodeURIComponent(c.doc_id)}')">🗑️ Delete</button>
         </div>`;
     }).join("");
 }
@@ -637,6 +644,40 @@ async function markPrinted(docId){
             loadCards(document.getElementById("searchInput").value.trim());
         }
     } catch(e){}
+}
+
+/* Delete hal ID card oo ku salaysan doc_id */
+async function deleteCard(docId){
+    if(!confirm("Ma hubtaa inaad tirtirto ID Card-kan? Tallaabadan lama celin karo.")) return;
+    try{
+        const res = await fetch("/delete_id_card/" + docId, { method: "POST" });
+        const data = await res.json();
+        if(data.success){
+            showMsg("ID Card waa la tirtiray ✅", true);
+            loadCards(document.getElementById("searchInput").value.trim());
+        } else {
+            showMsg("Khalad ❌ " + (data.error || ""), false);
+        }
+    } catch(e){
+        showMsg("Khalad xagga network-ka ❌", false);
+    }
+}
+
+/* Delete dhammaan ID cards-ka */
+async function deleteAllCards(){
+    if(!confirm("Ma hubtaa inaad tirtirto DHAMMAAN ID Cards-ka? Tallaabadan lama celin karo.")) return;
+    try{
+        const res = await fetch("/delete_all_id_cards", { method: "POST" });
+        const data = await res.json();
+        if(data.success){
+            showMsg("Dhammaan ID Cards waa la tirtiray ✅", true);
+            loadCards();
+        } else {
+            showMsg("Khalad ❌ " + (data.error || ""), false);
+        }
+    } catch(e){
+        showMsg("Khalad xagga network-ka ❌", false);
+    }
 }
 
 liveUpdate();
