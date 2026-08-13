@@ -3404,6 +3404,16 @@ def change_id_card_password():
     except Exception as e:
         print("CHANGE ID CARD PASSWORD ERROR:", e)
         return jsonify({"success": False, "error": str(e)}), 500
+
+
+# =========================
+# 🗂️ ALL ID CARDS (list/search/print/delete table page)
+# =========================
+@app.route("/all_id_cards", methods=["GET"])
+def all_id_cards_page():
+    if not session.get("idcard_ok"):
+        return render_template("all_id_cards.html")
+    return render_template("all_id_cards.html", logged_in=True)
     
     
 # ── CUSTOMER joins its room ──

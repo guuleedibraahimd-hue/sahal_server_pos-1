@@ -2,7 +2,7 @@
 <html lang="so">
 <head>
 <meta charset="UTF-8">
-<title>Create ID Card</title>
+<title>All ID Cards</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -80,53 +80,20 @@ body{ font-family:Arial,sans-serif; background:var(--bg); margin:0; padding:0; }
 .crumb a{ color:#8a93a3; text-decoration:none; }
 .crumb .cur{ color:var(--blue); font-weight:700; }
 
-/* ===== FORM CARD ===== */
-.controls{
-    background:#fff; padding:24px; border-radius:16px;
-    box-shadow:0 4px 14px rgba(0,0,0,.06); margin-bottom:22px;
-}
-.controls h2{ margin:0 0 18px; display:flex; align-items:center; gap:10px; font-size:17px; color:#1c2733; }
-.controls h2 .picon2{
-    width:30px; height:30px; border-radius:8px; background:var(--blue); color:#fff;
-    display:flex; align-items:center; justify-content:center; font-size:14px;
-}
-.formrow{ display:grid; grid-template-columns:1fr 1fr 1fr 1fr 1fr; gap:14px; margin-bottom:14px; }
-.formrow label{ font-size:13px; font-weight:bold; color:#333; display:block; margin-bottom:6px; }
-.formrow input{
-    width:100%; padding:13px; border:1px solid #ccc; border-radius:10px;
-    font-size:15px; box-sizing:border-box;
-}
-.formrow input[type=file]{ padding:9px; }
-.btnrow{ display:flex; gap:10px; flex-wrap:wrap; margin-top:6px; align-items:center; }
 .btn{
     border:none; padding:13px 22px; border-radius:10px; color:#fff;
     font-weight:bold; cursor:pointer; font-size:15px; text-decoration:none;
     display:inline-flex; align-items:center; gap:6px;
 }
-.gen{ background:#1a5fb4; }
-.dl{ background:#00b894; }
-.dlBack{ background:#0984e3; }
-.pdf{ background:#e17055; }
-.pr{ background:#636e72; }
 .del-all{ background:#d63031; }
 .msg{ margin-top:12px; font-weight:bold; font-size:14px; }
 .msg.ok{ color:#00b894; }
 .msg.bad{ color:#d63031; }
 
-.printSizeWrap{
-    display:inline-flex; align-items:center; gap:8px; background:#f4f6f9;
-    border:1px solid #ccc; border-radius:10px; padding:8px 12px;
-}
-.printSizeWrap label{ font-size:13px; font-weight:bold; color:#333; margin:0; }
-.printSizeWrap select{
-    padding:8px 10px; border:1px solid #ccc; border-radius:8px; font-size:14px; background:#fff;
-}
+@media(max-width:600px){ .sidebar{ display:none; } }
 
-@media(max-width:1000px){ .formrow{ grid-template-columns:1fr 1fr; } }
-@media(max-width:600px){ .formrow{ grid-template-columns:1fr; } .sidebar{ display:none; } }
-
-/* ===== ID CARD (FRONT/BACK PREVIEW — hidden render targets used for image/pdf capture) ===== */
-.cardWrap{ display:flex; gap:30px; flex-wrap:wrap; justify-content:center; margin-bottom:22px; }
+/* ===== ID CARD (FRONT/BACK PREVIEW — hidden render targets used for image/pdf capture, off-screen) ===== */
+.cardWrap{ position:absolute; left:-9999px; top:-9999px; display:flex; gap:30px; }
 .idcard{
     position:relative; width:340px; border-radius:14px; overflow:hidden;
     box-shadow:0 6px 22px rgba(0,0,0,.18);
@@ -222,9 +189,10 @@ table.idTable tbody tr:hover{ background:#fafbfd; }
 /* ===== PRINT: kaliya card-yada (Front + Back) ayaa la daabacaa, cabbirkooda dhabta ah, bog madhan lama darsan ===== */
 @media print{
     body{ background:#fff; padding:0; margin:0; }
-    .sidebar, .topbar, .controls, .tableCard, .pageHead, .no-print{ display:none !important; }
+    .sidebar, .topbar, .tableCard, .pageHead, .no-print{ display:none !important; }
     .content{ padding:0 !important; }
     .cardWrap{
+        position:static; left:auto; top:auto;
         margin:0; gap:6mm; display:flex; flex-wrap:wrap;
         justify-content:flex-start; align-items:flex-start;
     }
@@ -240,11 +208,11 @@ table.idTable tbody tr:hover{ background:#fafbfd; }
 
 {% if not logged_in %}
 
-<!-- ===== LOGIN GATE ===== -->
+<!-- ===== LOGIN GATE (isla gate-ka create_id_card.html) ===== -->
 <div class="loginBox">
     <h2>🪪 ID Card Login</h2>
     {% if error %}<div class="err">{{ error }}</div>{% endif %}
-    <form method="post">
+    <form method="post" action="/create_id_card">
         <input type="password" name="password" placeholder="Password" required autofocus>
         <button type="submit">Login</button>
     </form>
@@ -259,8 +227,8 @@ table.idTable tbody tr:hover{ background:#fafbfd; }
         <div class="brand">
             <div class="name">IMAM UNIVERSITY<br><span class="tag">Together for Excellence</span></div>
         </div>
-        <a href="/create_id_card" class="navlink active"><span class="ic">🏠</span> Dashboard</a>
-        <a href="/all_id_cards" class="navlink"><span class="ic">🪪</span> All ID Cards</a>
+        <a href="/create_id_card" class="navlink"><span class="ic">🏠</span> Dashboard</a>
+        <a href="/all_id_cards" class="navlink active"><span class="ic">🪪</span> All ID Cards</a>
         <a href="/id_card_settings" class="navlink"><span class="ic">⚙️</span> Settings</a>
     </div>
 
@@ -279,66 +247,14 @@ table.idTable tbody tr:hover{ background:#fafbfd; }
 
         <div class="content">
             <div class="pageHead no-print">
-                <div class="picon">🪪</div>
+                <div class="picon">🗂️</div>
                 <div>
-                    <h1>Create ID Card</h1>
-                    <div class="crumb"><a href="/dashboard">Dashboard</a> &nbsp;›&nbsp; <span class="cur">Create ID Card</span></div>
+                    <h1>All ID Cards</h1>
+                    <div class="crumb"><a href="/create_id_card">Dashboard</a> &nbsp;›&nbsp; <span class="cur">All ID Cards</span></div>
                 </div>
             </div>
 
-            <!-- ===== FORM ===== -->
-            <div class="controls no-print">
-                <h2><span class="picon2">⚙️</span> ID Card Details</h2>
-                <div class="formrow">
-                    <div>
-                        <label>Photo</label>
-                        <input type="file" id="idPhoto" accept="image/*" onchange="loadPhoto(event)">
-                    </div>
-                    <div>
-                        <label>ID No</label>
-                        <input type="text" id="idNo" value="0000">
-                    </div>
-                    <div>
-                        <label>Enter Full Name</label>
-                        <input type="text" id="idName" placeholder="Magaca oo dhan">
-                    </div>
-                    <div>
-                        <label>Title</label>
-                        <input type="text" id="idTitle" placeholder="Tusaale: Xubin Shaqaale">
-                    </div>
-                    <div>
-                        <label>Issue Date</label>
-                        <input type="date" id="idIssue">
-                    </div>
-                </div>
-                <div class="formrow" style="grid-template-columns:1fr;">
-                    <div style="max-width:260px;">
-                        <label>Expiry Date</label>
-                        <input type="date" id="idExpiry">
-                    </div>
-                </div>
-                <div class="btnrow">
-                    <button type="button" class="btn gen" onclick="generateCard()">⚙️ Generate</button>
-                    <button type="button" class="btn dl" onclick="downloadCard('idcardFront','id_card_front.png')">⬇️ Download Front</button>
-                    <button type="button" class="btn dlBack" onclick="downloadCard('idcardBack','id_card_back.png')">⬇️ Download Back</button>
-                    <button type="button" class="btn pdf" onclick="downloadPDF()">📄 Download PDF</button>
-
-                    <div class="printSizeWrap">
-                        <label for="printSize">🖨️ Print Size</label>
-                        <select id="printSize">
-                            <option value="auto" selected>Auto (Card size)</option>
-                            <option value="a4">A4</option>
-                            <option value="letter">Letter</option>
-                            <option value="a5">A5</option>
-                            <option value="cr80">CR80 Card (85.6x54mm)</option>
-                        </select>
-                    </div>
-                    <button type="button" class="btn pr" onclick="printCard()">🖨️ Print</button>
-                </div>
-                <div class="msg" id="saveMsg"></div>
-            </div>
-
-            <!-- ===== ID CARD PREVIEW (FRONT + BACK) — render targets for capture/print ===== -->
+            <!-- ===== ID CARD PREVIEW (FRONT + BACK) — hidden off-screen render targets used only for PDF/Print capture ===== -->
             <div class="cardWrap">
                 <div class="idcard" id="idcardFront">
                     <img class="base" src="/static/IMAM_University_ID_Front.jpg" crossorigin="anonymous" alt="ID Front">
@@ -356,6 +272,45 @@ table.idTable tbody tr:hover{ background:#fafbfd; }
                 <div class="idcard" id="idcardBack">
                     <img class="base" src="/static/IMAM_University_ID_Back.png" crossorigin="anonymous" alt="ID Back">
                 </div>
+            </div>
+
+            <!-- ===== TABLE: All ID Cards ===== -->
+            <div class="tableCard no-print">
+                <h2>
+                    <span class="picon2">🗂️</span> All ID Cards
+                    <span class="countPill total" id="countTotal">Total: 0</span>
+                    <span class="countPill printed" id="countPrinted">Printed: 0</span>
+                    <span class="countPill notprinted" id="countNotPrinted">Not Printed: 0</span>
+                </h2>
+                <div class="searchBox">
+                    <input type="text" id="searchInput" placeholder="Search by ID No or Name...">
+                    <button type="button" onclick="searchCards()">🔍 Search</button>
+                </div>
+                <div style="margin-bottom:16px;">
+                    <button type="button" class="btn del-all" onclick="deleteAllCards()">🗑️ Delete All</button>
+                </div>
+
+                <div style="overflow-x:auto;">
+                <table class="idTable">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Photo</th>
+                            <th>Name</th>
+                            <th>ID No</th>
+                            <th>Title</th>
+                            <th>Issue Date</th>
+                            <th>Expiry Date</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cardTableBody">
+                        <tr><td colspan="9" class="empty">Loading...</td></tr>
+                    </tbody>
+                </table>
+                </div>
+                <div class="msg" id="saveMsg"></div>
             </div>
         </div>
     </div>
@@ -376,66 +331,12 @@ function fmtLive(dateStr){
     return `${d}-${m}-${y}`;
 }
 
-function loadPhoto(event){
-    const file = event.target.files[0];
-    if(!file) return;
-    const reader = new FileReader();
-    reader.onload = function(e){
-        const img = document.getElementById("photoImg");
-        img.src = e.target.result;
-        img.style.display = "block";
-        document.getElementById("photoPlaceholder").style.display = "none";
-    };
-    reader.readAsDataURL(file);
-}
-
 function liveUpdate(){
-    document.getElementById("outIdNo").textContent = document.getElementById("idNo").value.trim();
-    document.getElementById("outName").textContent = document.getElementById("idName").value.trim();
-    document.getElementById("outTitle").textContent = document.getElementById("idTitle").value.trim();
-    document.getElementById("outIssue").textContent = fmtLive(document.getElementById("idIssue").value);
-    document.getElementById("outExpiry").textContent = fmtLive(document.getElementById("idExpiry").value);
-}
-
-["idNo","idName","idTitle","idIssue","idExpiry"].forEach(id=>{
-    document.getElementById(id).addEventListener("input", liveUpdate);
-});
-
-function downloadCard(elId, filename){
-    const card = document.getElementById(elId);
-    html2canvas(card, { scale: 3, backgroundColor: "#ffffff", useCORS: true })
-    .then(canvas => {
-        const link = document.createElement("a");
-        link.download = filename;
-        link.href = canvas.toDataURL("image/png");
-        link.click();
-    });
-}
-
-function downloadPDF(){
-    const front = document.getElementById("idcardFront");
-    const back = document.getElementById("idcardBack");
-
-    Promise.all([
-        html2canvas(front, { scale: 3, backgroundColor: "#ffffff", useCORS: true }),
-        html2canvas(back,  { scale: 3, backgroundColor: "#ffffff", useCORS: true })
-    ]).then(([canvasFront, canvasBack]) => {
-        const { jsPDF } = window.jspdf;
-        const w = 60;
-        const h = w * (canvasFront.height / canvasFront.width);
-
-        const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: [w, h] });
-        pdf.addImage(canvasFront.toDataURL("image/png"), "PNG", 0, 0, w, h);
-
-        pdf.addPage([w, h], "portrait");
-        pdf.addImage(canvasBack.toDataURL("image/png"), "PNG", 0, 0, w, h);
-
-        pdf.save("id_card.pdf");
-    });
+    document.getElementById("outIdNo").textContent = document.getElementById("idNo") ? document.getElementById("idNo").value.trim() : "";
 }
 
 /* Sawirka qofka (photo) waxaa lagu daboolayaa clip-path circle si uu shape-ka wareegga ugu fadhiisto
-   si sax ah oo aan meelna ka baxsanayn, mar la Generate-eeyo iyo mar la keydiyo/Save labadaba. */
+   si sax ah oo aan meelna ka baxsanayn. */
 function clipPhotoToCircle(){
     const img = document.getElementById("photoImg");
     img.style.clipPath = "circle(50% at 50% 50%)";
@@ -444,8 +345,7 @@ function clipPhotoToCircle(){
 clipPhotoToCircle();
 
 /* ===== Print-ka: mar walba kaliya card-yada (Front+Back) ayaa la daabacaa, cabbirkooda dhabta ah (54mm),
-   iyada oo aan bog madhan lagu darin — size-ka la doortay wuxuu go'aaminayaa kaliya cabbirka bogga daabacaadda,
-   ma beddelayo naqshadda ama waxa la daabacayo. ===== */
+   iyada oo aan bog madhan lagu darin. ===== */
 const PAGE_SIZES = {
     auto:   "auto",
     a4:     "210mm 297mm",
@@ -455,24 +355,10 @@ const PAGE_SIZES = {
 };
 
 function applyPrintPageStyle(){
-    const choice = document.getElementById("printSize").value;
     const styleTag = document.getElementById("dynamicPageStyle");
-
-    if(choice === "cr80"){
-        styleTag.textContent = `
-            @page{ size:${PAGE_SIZES.cr80}; margin:0; }
-            .idcard{ width:85.6mm !important; }
-            .cardWrap{ gap:0 !important; }
-        `;
-    } else {
-        const size = choice === "auto" ? "auto" : PAGE_SIZES[choice];
-        styleTag.textContent = `@page{ size:${size}; margin:8mm; }`;
-    }
-}
-
-function printCard(){
-    applyPrintPageStyle();
-    setTimeout(()=>{ window.print(); }, 50);
+    styleTag.textContent = `@page{ size:${PAGE_SIZES.cr80}; margin:0; }
+        .idcard{ width:85.6mm !important; }
+        .cardWrap{ gap:0 !important; }`;
 }
 
 function showMsg(text, ok){
@@ -482,33 +368,188 @@ function showMsg(text, ok){
     setTimeout(()=>{ el.textContent = ""; el.className = "msg"; }, 4000);
 }
 
-/* Generate = live-fill card PREVIEW + AUTO-SAVE to Firestore toos ah, iyada oo aan la sugin Save gooni ah.
-   Kadib list/table-ka waxa lagu cusboonaysiiyaa toos ah (prependCardLocally). */
-async function generateCard(){
-    liveUpdate();
+function escapeHtml(s){
+    return (s || "").replace(/[&<>"']/g, c => ({
+        "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+    }[c]));
+}
 
-    const idNo   = document.getElementById("idNo").value.trim();
-    const name   = document.getElementById("idName").value.trim();
-    const title  = document.getElementById("idTitle").value.trim();
-    const issue  = fmt(document.getElementById("idIssue").value);
-    const expiry = fmt(document.getElementById("idExpiry").value);
-    const photoImg = document.getElementById("photoImg");
-    const photo = (photoImg.style.display !== "none" && photoImg.src) ? photoImg.src : "";
+/* Dhis mini-card sax ah oo isticmaala naqshadda front dhabta ah (background + photo circle clip-gareeyay + overlays) */
+function renderMiniCard(c){
+    const photoHtml = c.photo
+        ? `<img src="${c.photo}" onerror="this.style.visibility='hidden'">`
+        : "";
+    return `
+        <div class="miniCard">
+            <img class="miniBase" src="/static/IMAM_University_ID_Front.jpg">
+            <div class="miniPhoto">${photoHtml}</div>
+            <div class="miniOv miniOv-idno">${escapeHtml(c.id_no)}</div>
+            <div class="miniOv miniOv-name">${escapeHtml(c.name)}</div>
+            <div class="miniOv miniOv-title">${escapeHtml(c.title || "")}</div>
+        </div>`;
+}
 
-    if(!idNo || !name){
-        showMsg("Fadlan buuxi ID No iyo Name ❌", false);
+/* Xisaabi tirada guud, la daabacay, aan la daabicin iyo ku dar list-ka dushiisa (backend-ka ayay kaga imaan). */
+function updateCounts(cards){
+    const total = cards.length;
+    const printed = cards.filter(c => c.printed).length;
+    const notPrinted = total - printed;
+    document.getElementById("countTotal").textContent = `Total: ${total}`;
+    document.getElementById("countPrinted").textContent = `Printed: ${printed}`;
+    document.getElementById("countNotPrinted").textContent = `Not Printed: ${notPrinted}`;
+}
+
+function renderCards(cards){
+    updateCounts(cards);
+    const tbody = document.getElementById("cardTableBody");
+    if(!cards || cards.length === 0){
+        tbody.innerHTML = '<tr><td colspan="9" class="empty">Wax ID Card ah lama helin.</td></tr>';
         return;
     }
+    tbody.innerHTML = cards.map((c, i) => {
+        const statusBadge = c.printed
+            ? '<span class="badge printed">Printed</span>'
+            : '<span class="badge">Active</span>';
+        const markBtn = c.printed
+            ? ''
+            : `<button class="miniBtn markBtn" onclick="markPrinted('${encodeURIComponent(c.doc_id)}')">✅ Mark Printed</button>`;
+        return `
+        <tr>
+            <td>${i + 1}</td>
+            <td>${renderMiniCard(c)}</td>
+            <td>${escapeHtml(c.name)}</td>
+            <td>${escapeHtml(c.id_no)}</td>
+            <td>${escapeHtml(c.title || "")}</td>
+            <td>${escapeHtml(c.issue || "-")}</td>
+            <td>${escapeHtml(c.expiry || "-")}</td>
+            <td>${statusBadge}</td>
+            <td>
+                <div class="actionsCell">
+                    <button class="miniBtn viewBtn" onclick='viewCardPDF(${JSON.stringify(c).replace(/'/g,"&#39;")})'>📄 View PDF</button>
+                    <button class="miniBtn printBtn" onclick='printRow(${JSON.stringify(c).replace(/'/g,"&#39;")})'>🖨️ Print</button>
+                    ${markBtn}
+                    <button class="miniBtn delBtn" onclick="deleteCard('${encodeURIComponent(c.doc_id)}')">🗑️ Delete</button>
+                </div>
+            </td>
+        </tr>`;
+    }).join("");
+}
 
+/* Buuxi preview-ga card-ka (front+back, off-screen) hal card oo la soo dhaafay */
+async function fillPreviewFromCard(c){
+    document.getElementById("outIdNo").textContent = c.id_no || "";
+    document.getElementById("outName").textContent = c.name || "";
+    document.getElementById("outTitle").textContent = c.title || "";
+    document.getElementById("outIssue").textContent = c.issue || "";
+    document.getElementById("outExpiry").textContent = c.expiry || "";
+
+    const photoImg = document.getElementById("photoImg");
+    if(c.photo){
+        photoImg.src = c.photo;
+        photoImg.style.display = "block";
+        document.getElementById("photoPlaceholder").style.display = "none";
+        clipPhotoToCircle();
+    } else {
+        photoImg.style.display = "none";
+        document.getElementById("photoPlaceholder").style.display = "flex";
+    }
+
+    await new Promise(r => setTimeout(r, 150));
+}
+
+/* Fur ID card-ka oo dhan (Front + Back) PDF ahaan hal fayl ah, isticmaalaya naqshadda originalka ah. */
+async function viewCardPDF(c){
+    await fillPreviewFromCard(c);
+
+    const front = document.getElementById("idcardFront");
+    const back = document.getElementById("idcardBack");
+
+    const [canvasFront, canvasBack] = await Promise.all([
+        html2canvas(front, { scale: 3, backgroundColor: "#ffffff", useCORS: true }),
+        html2canvas(back,  { scale: 3, backgroundColor: "#ffffff", useCORS: true })
+    ]);
+
+    const { jsPDF } = window.jspdf;
+    const w = 60;
+    const h = w * (canvasFront.height / canvasFront.width);
+
+    const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: [w, h] });
+    pdf.addImage(canvasFront.toDataURL("image/png"), "PNG", 0, 0, w, h);
+    pdf.addPage([w, h], "portrait");
+    pdf.addImage(canvasBack.toDataURL("image/png"), "PNG", 0, 0, w, h);
+
+    window.open(pdf.output("bloburl"), "_blank");
+}
+
+/* Print hal card oo saf ah (table row): buuxi preview-ga, daabac (window.print), kadib toos u calaamadi Printed. */
+async function printRow(c){
+    await fillPreviewFromCard(c);
+    applyPrintPageStyle();
+
+    const afterPrint = async () => {
+        window.removeEventListener("afterprint", afterPrint);
+        try{
+            const res = await fetch("/mark_id_card_printed/" + encodeURIComponent(c.doc_id), { method: "POST" });
+            const data = await res.json();
+            if(data.success){
+                loadCards(document.getElementById("searchInput").value.trim());
+            }
+        } catch(e){}
+    };
+    window.addEventListener("afterprint", afterPrint);
+
+    setTimeout(()=>{ window.print(); }, 80);
+}
+
+let localCardsCache = [];
+
+async function loadCards(q){
+    const tbody = document.getElementById("cardTableBody");
+    tbody.innerHTML = '<tr><td colspan="9" class="empty">Loading...</td></tr>';
     try{
-        const res = await fetch("/save_id_card", {
-            method: "POST",
-            headers: {"Content-Type":"application/json"},
-            body: JSON.stringify({ id_no:idNo, name:name, title:title, issue:issue, expiry:expiry, photo:photo })
-        });
+        const url = "/list_id_cards" + (q ? ("?q=" + encodeURIComponent(q)) : "");
+        const res = await fetch(url);
         const data = await res.json();
         if(data.success){
-            showMsg("ID Card waa la keydiyay ✅", true);
+            localCardsCache = data.cards;
+            renderCards(data.cards);
+        } else {
+            tbody.innerHTML = '<tr><td colspan="9" class="empty">Khalad ayaa dhacay.</td></tr>';
+        }
+    } catch(e){
+        tbody.innerHTML = '<tr><td colspan="9" class="empty">Khalad xagga network-ka.</td></tr>';
+    }
+}
+
+function searchCards(){
+    const q = document.getElementById("searchInput").value.trim();
+    loadCards(q);
+}
+
+document.getElementById("searchInput").addEventListener("keyup", function(e){
+    if(e.key === "Enter"){ searchCards(); }
+    else if(this.value.trim() === ""){ loadCards(); }
+});
+
+async function markPrinted(docId){
+    try{
+        const res = await fetch("/mark_id_card_printed/" + docId, { method: "POST" });
+        const data = await res.json();
+        if(data.success){
+            loadCards(document.getElementById("searchInput").value.trim());
+        }
+    } catch(e){}
+}
+
+/* Delete hal ID card oo ku salaysan doc_id */
+async function deleteCard(docId){
+    if(!confirm("Ma hubtaa inaad tirtirto ID Card-kan? Tallaabadan lama celin karo.")) return;
+    try{
+        const res = await fetch("/delete_id_card/" + docId, { method: "POST" });
+        const data = await res.json();
+        if(data.success){
+            showMsg("ID Card waa la tirtiray ✅", true);
+            loadCards(document.getElementById("searchInput").value.trim());
         } else {
             showMsg("Khalad ❌ " + (data.error || ""), false);
         }
@@ -517,13 +558,24 @@ async function generateCard(){
     }
 }
 
-function escapeHtml(s){
-    return (s || "").replace(/[&<>"']/g, c => ({
-        "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
-    }[c]));
+/* Delete dhammaan ID cards-ka */
+async function deleteAllCards(){
+    if(!confirm("Ma hubtaa inaad tirtirto DHAMMAAN ID Cards-ka? Tallaabadan lama celin karo.")) return;
+    try{
+        const res = await fetch("/delete_all_id_cards", { method: "POST" });
+        const data = await res.json();
+        if(data.success){
+            showMsg("Dhammaan ID Cards waa la tirtiray ✅", true);
+            loadCards();
+        } else {
+            showMsg("Khalad ❌ " + (data.error || ""), false);
+        }
+    } catch(e){
+        showMsg("Khalad xagga network-ka ❌", false);
+    }
 }
 
-liveUpdate();
+loadCards();
 </script>
 
 {% endif %}
