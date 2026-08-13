@@ -3340,6 +3340,43 @@ def mark_id_card_printed(doc_id):
     except Exception as e:
         print("MARK PRINTED ERROR:", e)
         return jsonify({"success": False, "error": str(e)}), 500
+# =========================================================================
+# ISKU DAR KAN — KUMA BADALIN WAXBA OO HORE U JIRAY
+# Ku dar labadan route-yood file-ka Flask ee ID Card routes-ka ku jiraan
+# (isla meesha uu ku yaal /save_id_card, /list_id_cards,
+#  /mark_id_card_printed/<doc_id>). Isticmaal isla `db` (Firestore client)
+# iyo isla collection-ka ay adigu horey u isticmaashay ID cards-ka.
+#
+# HUBI: beddel "id_cards" collection-ka magaciisa haddii collection-kaagu
+# magac kale leeyahay (isla magaca ay isticmaalayaan save_id_card /
+# list_id_cards / mark_id_card_printed).
+# =========================================================================
+
+from flask import jsonify
+
+@app.route("/delete_id_card/<doc_id>", methods=["POST"])
+def delete_id_card(doc_id):
+    if not session.get("id_card_logged_in"):
+        return jsonify({"success": False, "error": "Unauthorized"}), 401
+    try:
+        db.collection("id_cards").document(doc_id).delete()
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/delete_all_id_cards", methods=["POST"])
+def delete_all_id_cards():
+    if not session.get("id_card_logged_in"):
+        return jsonify({"success": False, "error": "Unauthorized"}), 401
+    try:
+        docs = db.collection("id_cards").stream()
+        for doc in docs:
+            doc.reference.delete()
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500    
+
     
 # ── CUSTOMER joins its room ──
 @socketio.on("customer_join")
