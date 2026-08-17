@@ -134,6 +134,7 @@
 <div class="top-actions">
     <button class="clear-btn" id="clearOrdersBtn">🧹 Clear Kitchen Orders</button>
     <button class="clear-btn" id="clearCallsBtn">🔔 Clear Calls</button>
+    <button class="clear-btn" id="autoPrintBtn" style="background:#0a7cff;">🖨 Auto-Print: OFF</button>
 </div>
 
 <div class="queue-banner" id="queueBanner"></div>
@@ -226,6 +227,51 @@ document.addEventListener("DOMContentLoaded", function(){
         fetch("/clear_calls/" + RID).then(() => location.reload());
     });
 
+    /* ── Auto-Print: silently print a new order's receipt the moment it
+       arrives, no need to open it or press Print. Shares the same
+       localStorage key the receipt page itself uses, so once this is
+       turned ON here, a receipt loaded in the background never has to
+       ask the confirm() question — it just prints. ── */
+    const AUTOPRINT_KEY = "sahal_autoprint";
+
+    function isAutoPrintOn(){
+        try{ return localStorage.getItem(AUTOPRINT_KEY) === "yes"; }catch(e){ return false; }
+    }
+    function updateAutoPrintBtn(){
+        const btn = document.getElementById("autoPrintBtn");
+        if(!btn) return;
+        const on = isAutoPrintOn();
+        btn.innerText = on ? "🖨 Auto-Print: ON" : "🖨 Auto-Print: OFF";
+        btn.style.background = on ? "#2e7d32" : "#0a7cff";
+    }
+    document.getElementById("autoPrintBtn").addEventListener("click", function(){
+        const on = isAutoPrintOn();
+        try{ localStorage.setItem(AUTOPRINT_KEY, on ? "no" : "yes"); }catch(e){}
+        updateAutoPrintBtn();
+    });
+    updateAutoPrintBtn();
+
+    function getVisibleOrderIds(){
+        return Array.from(document.querySelectorAll("#ordersContainer .order"))
+            .map(el => el.id.replace("order", ""));
+    }
+
+    // Orders already on screen when the page loaded are NOT new — only
+    // orders that show up *after* this get silently printed.
+    let knownOrderIds = new Set(getVisibleOrderIds());
+
+    function silentPrintReceipt(orderId){
+        const iframe = document.createElement("iframe");
+        iframe.style.position = "fixed";
+        iframe.style.width = "0";
+        iframe.style.height = "0";
+        iframe.style.border = "0";
+        iframe.style.visibility = "hidden";
+        iframe.src = "/receipt/" + RID + "/" + orderId;
+        document.body.appendChild(iframe);
+        setTimeout(() => { iframe.remove(); }, 8000);
+    }
+
     function attachWaiterBtns(){
         document.querySelectorAll(".waiter-btn").forEach(function(btn){
             btn.addEventListener("click", function(){
@@ -265,6 +311,15 @@ document.addEventListener("DOMContentLoaded", function(){
                 document.getElementById("notifyList").innerHTML = newList.innerHTML;
                 document.getElementById("notifyList").style.display = open;
                 attachWaiterBtns();
+            }
+
+            if(newOrders){
+                getVisibleOrderIds().forEach(id => {
+                    if(!knownOrderIds.has(id)){
+                        knownOrderIds.add(id);
+                        if(isAutoPrintOn()) silentPrintReceipt(id);
+                    }
+                });
             }
         }).catch(()=>{});
     }, 3000);
