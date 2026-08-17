@@ -496,10 +496,21 @@ async function sendOrder(){
 ═══════════════════════════════════════════ */
 let callActive=false,peerConn=null,localStream=null,remoteAudio=null
 let isMuted=false,isSpeaker=true,callTimerInt=null,callSeconds=0
+let iceConnectTimeout=null
 
 const TABLE="{{ table }}"
 const RID="{{ rid }}"
-const iceServers={iceServers:[{urls:"stun:stun.l.google.com:19302"}]}
+// STUN alone frequently fails to connect two peers when one side is on a mobile
+// network (carrier-grade NAT) — that's why audio sometimes never came through.
+// A TURN server relays the audio when a direct P2P path isn't possible.
+// The openrelay.metered.ca server below is a free/shared TURN meant for testing —
+// swap in your own TURN (coturn, or a paid provider) for reliable production use.
+const iceServers={iceServers:[
+    {urls:"stun:stun.l.google.com:19302"},
+    {urls:"turn:openrelay.metered.ca:80", username:"openrelayproject", credential:"openrelayproject"},
+    {urls:"turn:openrelay.metered.ca:443", username:"openrelayproject", credential:"openrelayproject"},
+    {urls:"turn:openrelay.metered.ca:443?transport=tcp", username:"openrelayproject", credential:"openrelayproject"}
+]}
 
 // SocketIO
 const sio=io({transports:["polling"]})
@@ -579,14 +590,27 @@ async function callWaiter(){
         if(!remoteAudio){
             remoteAudio=new Audio(); remoteAudio.autoplay=true; remoteAudio.srcObject=e.streams[0]
         }
-        // This is the real moment audio starts flowing both ways — flip the UI here
-        // instead of relying only on the signaling "answer" event, so the customer
-        // never gets stuck showing "Calling..." while the call is actually live.
-        stop80sOutgoingRing()
-        if(!callTimerInt){
-            document.getElementById("callStatusLabel").innerText="Connected ✓"
-            document.getElementById("callStatusLabel").style.color="#4CAF50"
-            startCallTimer()
+    }
+
+    peerConn.oniceconnectionstatechange=()=>{
+        const st = peerConn.iceConnectionState
+        if(st==="connected" || st==="completed"){
+            clearTimeout(iceConnectTimeout)
+            stop80sOutgoingRing()
+            if(!callTimerInt){
+                document.getElementById("callStatusLabel").innerText="Connected ✓"
+                document.getElementById("callStatusLabel").style.color="#4CAF50"
+                startCallTimer()
+            }
+        } else if(st==="failed"){
+            clearTimeout(iceConnectTimeout)
+            stop80sOutgoingRing()
+            stopCallTimer()
+            document.getElementById("callStatusLabel").innerText="Call failed ❌"
+            document.getElementById("callStatusLabel").style.color="#F44336"
+            document.getElementById("callStatusLabel").style.display="block"
+            document.getElementById("callTimer").style.display="none"
+            setTimeout(()=>{ if(callActive) endCall() }, 1800)
         }
     }
 
@@ -607,10 +631,24 @@ async function callWaiter(){
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify({ table: TABLE, sdp: offer })
     })
+
+    // If ICE never manages to connect (no TURN reachable, bad network, etc.)
+    // don't leave the customer staring at "Calling..." forever.
+    clearTimeout(iceConnectTimeout)
+    iceConnectTimeout=setTimeout(()=>{
+        if(peerConn && peerConn.iceConnectionState!=="connected" && peerConn.iceConnectionState!=="completed"){
+            document.getElementById("callStatusLabel").innerText="Call failed ❌"
+            document.getElementById("callStatusLabel").style.color="#F44336"
+            document.getElementById("callStatusLabel").style.display="block"
+            document.getElementById("callTimer").style.display="none"
+            setTimeout(()=>{ if(callActive) endCall() }, 1800)
+        }
+    }, 20000)
 }
 
 function endCall(){
     callActive=false
+    clearTimeout(iceConnectTimeout)
     stop80sOutgoingRing()
     closeCallingOverlay()
     if(peerConn){peerConn.close();peerConn=null}

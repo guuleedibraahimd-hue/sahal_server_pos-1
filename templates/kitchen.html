@@ -537,7 +537,14 @@ async function acceptCall(){
         kitchenStream = await navigator.mediaDevices.getUserMedia({ audio:true, video:false });
     } catch(e){ console.warn("Mic denied:", e); }
 
-    kitchenPeer = new RTCPeerConnection({ iceServers:[{ urls:"stun:stun.l.google.com:19302" }] });
+    // Same TURN fallback as the customer side — without it, calls from mobile
+    // networks (carrier NAT) can silently never connect even though signaling succeeds.
+    kitchenPeer = new RTCPeerConnection({ iceServers:[
+        { urls:"stun:stun.l.google.com:19302" },
+        { urls:"turn:openrelay.metered.ca:80", username:"openrelayproject", credential:"openrelayproject" },
+        { urls:"turn:openrelay.metered.ca:443", username:"openrelayproject", credential:"openrelayproject" },
+        { urls:"turn:openrelay.metered.ca:443?transport=tcp", username:"openrelayproject", credential:"openrelayproject" }
+    ] });
 
     if(kitchenStream){
         kitchenStream.getTracks().forEach(t => kitchenPeer.addTrack(t, kitchenStream));
@@ -552,6 +559,14 @@ async function acceptCall(){
     kitchenPeer.onicecandidate = (e) => {
         if(e.candidate){
             sio.emit("webrtc_ice_kitchen", { rid: RID, table: incomingTable, candidate: e.candidate });
+        }
+    };
+
+    kitchenPeer.oniceconnectionstatechange = () => {
+        const st = kitchenPeer.iceConnectionState;
+        if(st === "failed"){
+            document.getElementById("activeCallLabel").innerText = "📞 Call failed ❌ Table " + activeCallTable;
+            setTimeout(() => { if(kitchenPeer) kitchenEndCall(); }, 1800);
         }
     };
 
