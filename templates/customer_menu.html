@@ -171,18 +171,19 @@
             {% for ad in ads %}
             <div class="slide {% if loop.first %}active-slide{% endif %}">
                 {% if ad.image %}
+                    {% set ad_image_src = ad.image if ad.image.startswith('http') else '/static/uploads/' + ad.image %}
                     {% if ad.image.endswith('.mp4') %}
                     <video class="ad-img" autoplay muted loop playsinline controls>
-                        <source src="/static/uploads/{{ ad.image }}" type="video/mp4">
+                        <source src="{{ ad_image_src }}" type="video/mp4">
                     </video>
                     {% else %}
-                    <img src="/static/uploads/{{ ad.image }}" class="ad-img" alt="">
+                    <img src="{{ ad_image_src }}" class="ad-img" alt="">
                     {% endif %}
                 {% endif %}
                 {% if ad.title %}<div class="ad-title">{{ ad.title }}</div>{% endif %}
                 {% if ad.audio %}
                 <audio class="ad-audio" controls autoplay>
-                    <source src="/static/uploads/{{ ad.audio }}">
+                    <source src="{{ ad.audio if ad.audio.startswith('http') else '/static/uploads/' + ad.audio }}">
                 </audio>
                 {% endif %}
             </div>
@@ -230,7 +231,7 @@
         {% for m in menu %}
         <div class="card">
             <div class="card-img-wrap">
-                <img src="/static/uploads/{{ m.image }}" alt="{{ m.name }}" onerror="this.onerror=null;this.src='/static/default_food.jpg';this.style.opacity=1" onload="this.style.opacity=1">
+                <img src="{{ m.image if m.image.startswith('http') else '/static/uploads/' + m.image }}" alt="{{ m.name }}" onerror="this.onerror=null;this.src='/static/default_food.jpg';this.style.opacity=1" onload="this.style.opacity=1">
                 <button class="heart-btn">
                     <svg viewBox="0 0 24 24" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
                 </button>

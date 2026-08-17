@@ -36,7 +36,7 @@ from zoneinfo import ZoneInfo
 from datetime import datetime, timedelta, timezone
 
 import firebase_admin
-from firebase_admin import credentials, firestore
+from firebase_admin import credentials, firestore, storage
 
 app = Flask(__name__)
 
@@ -86,8 +86,21 @@ firebase_key_str = os.environ.get("FIREBASE_KEY")
 firebase_key = json.loads(firebase_key_str)
 cred1 = credentials.Certificate(firebase_key)
 
+# Storage bucket for uploaded files (menu photos, ad images/audio, etc).
+# Local disk on most hosts (Railway included) is EPHEMERAL — uploaded files
+# vanish on every restart/redeploy even though Firestore still remembers
+# their filename. Firebase Storage keeps them permanently instead.
+# Override with the FIREBASE_STORAGE_BUCKET env var if your bucket name
+# doesn't follow the default "<project-id>.appspot.com" pattern (newer
+# Firebase projects sometimes use "<project-id>.firebasestorage.app").
+SAHAL_STORAGE_BUCKET = os.environ.get(
+    "FIREBASE_STORAGE_BUCKET",
+    f"{firebase_key.get('project_id', '')}.appspot.com"
+)
+
 sahal_app = firebase_admin.initialize_app(
     cred1,
+    {"storageBucket": SAHAL_STORAGE_BUCKET},
     name="sahal_app"
 )
 
@@ -125,6 +138,42 @@ os.makedirs(
 )
 
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
+
+# =========================
+# ☁️ FIREBASE STORAGE UPLOAD HELPER
+# Waxay bedeshaa kaydinta faylasha (disk-ka ephemeral-ka ah) una wareejisaa
+# Firebase Storage — sidaas faylashu marnaba kuma lumi doonaan deploy/restart.
+# =========================
+def upload_to_firebase_storage(file_obj, folder="uploads"):
+    """Upload a Flask FileStorage object to Firebase Storage and return its
+    public URL. Returns "" if file_obj is empty/missing."""
+    if not file_obj or not file_obj.filename:
+        return ""
+    safe_name = secure_filename(file_obj.filename)
+    blob_path = f"{folder}/{int(time.time() * 1000)}_{safe_name}"
+    bucket = storage.bucket(app=sahal_app)
+    blob = bucket.blob(blob_path)
+    blob.upload_from_file(file_obj.stream, content_type=file_obj.content_type)
+    blob.make_public()
+    return blob.public_url
+
+
+def delete_from_firebase_storage(public_url):
+    """Best-effort delete of a blob given its public URL. Safe to call with
+    a plain local filename too — it just won't match anything and no-ops."""
+    try:
+        if not public_url or not public_url.startswith("http"):
+            return
+        bucket = storage.bucket(app=sahal_app)
+        # public_url looks like https://storage.googleapis.com/<bucket>/<blob_path>
+        marker = f"{bucket.name}/"
+        idx = public_url.find(marker)
+        if idx == -1:
+            return
+        blob_path = public_url[idx + len(marker):]
+        bucket.blob(blob_path).delete()
+    except Exception:
+        pass
 # =========================
 # DATABASE PATH
 # =========================
@@ -720,9 +769,12 @@ def delete_menu(mid, rid):
         image_name = menu_data.get("image")
 
         if image_name:
-            image_path = os.path.join("static", "uploads", image_name)
-            if os.path.exists(image_path):
-                os.remove(image_path)
+            if image_name.startswith("http"):
+                delete_from_firebase_storage(image_name)
+            else:
+                image_path = os.path.join("static", "uploads", image_name)
+                if os.path.exists(image_path):
+                    os.remove(image_path)
 
         menu_ref.delete()
         return redirect(f"/restaurant_admin/{rid}")
@@ -2048,14 +2100,12 @@ def add_menu(rid):
         price = request.form["price"]
         image_file = request.files["image"]
 
-        filename = secure_filename(image_file.filename)
-        image_path = os.path.join(UPLOAD_FOLDER, filename)
-        image_file.save(image_path)
+        image_url = upload_to_firebase_storage(image_file, folder=f"menu/{rid}")
 
         menu_data = {
             "name": name,
             "price": price,
-            "image": filename,
+            "image": image_url,
             "created_at": datetime.now()
         }
 
@@ -2078,21 +2128,13 @@ def add_ad(rid):
         image_file = request.files.get("image")
         audio_file = request.files.get("audio")
 
-        image_name = ""
-        audio_name = ""
-
-        if image_file and image_file.filename:
-            image_name = image_file.filename
-            image_file.save(os.path.join("static/uploads", image_name))
-
-        if audio_file and audio_file.filename:
-            audio_name = audio_file.filename
-            audio_file.save(os.path.join("static/uploads", audio_name))
+        image_url = upload_to_firebase_storage(image_file, folder=f"ads/{rid}") if image_file else ""
+        audio_url = upload_to_firebase_storage(audio_file, folder=f"ads/{rid}") if audio_file else ""
 
         restaurant_ref.collection("ads").add({
             "title": title,
-            "image": image_name,
-            "audio": audio_name,
+            "image": image_url,
+            "audio": audio_url,
             "created_at": datetime.utcnow()
         })
 
