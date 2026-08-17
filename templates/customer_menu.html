@@ -508,14 +508,14 @@ sio.on("connect",()=>{
     sio.emit("customer_join",{rid:RID,table:TABLE})
 })
 
-// Kitchen answered
+// Kitchen answered (signaling done — audio may take a moment longer via ICE)
 sio.on("webrtc_answer",async(data)=>{
     if(!peerConn) return
-    stop80sOutgoingRing()
-    await peerConn.setRemoteDescription(new RTCSessionDescription(data.sdp))
-    document.getElementById("callStatusLabel").innerText="Connected ✓"
-    document.getElementById("callStatusLabel").style.color="#4CAF50"
-    startCallTimer()
+    try{
+        await peerConn.setRemoteDescription(new RTCSessionDescription(data.sdp))
+    }catch(e){
+        console.warn("setRemoteDescription failed:", e)
+    }
 })
 
 // ICE from kitchen
@@ -578,6 +578,15 @@ async function callWaiter(){
     peerConn.ontrack=(e)=>{
         if(!remoteAudio){
             remoteAudio=new Audio(); remoteAudio.autoplay=true; remoteAudio.srcObject=e.streams[0]
+        }
+        // This is the real moment audio starts flowing both ways — flip the UI here
+        // instead of relying only on the signaling "answer" event, so the customer
+        // never gets stuck showing "Calling..." while the call is actually live.
+        stop80sOutgoingRing()
+        if(!callTimerInt){
+            document.getElementById("callStatusLabel").innerText="Connected ✓"
+            document.getElementById("callStatusLabel").style.color="#4CAF50"
+            startCallTimer()
         }
     }
 

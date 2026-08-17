@@ -495,7 +495,8 @@ async function pollActiveCalls(){
         }
     }catch(e){}
 }
-setInterval(pollActiveCalls, 2000);
+setInterval(pollActiveCalls, 1000);
+pollActiveCalls(); // check immediately on load, don't wait for the first interval tick
 
 // ICE from customer
 sio.on("webrtc_ice_customer", async (data) => {
