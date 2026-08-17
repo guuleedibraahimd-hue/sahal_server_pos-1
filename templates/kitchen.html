@@ -42,6 +42,12 @@
         .notify-item{background:yellow;padding:10px;border-radius:8px;margin-bottom:10px;}
         .item-line{margin:4px 0;font-weight:bold;}
 
+        .queue-banner{
+            display:none;max-width:600px;margin:0 auto 20px;
+            background:#fff3cd;color:#7a5b00;border:1px solid #ffe08a;
+            border-radius:10px;padding:10px 16px;text-align:center;font-weight:bold;
+        }
+
         #incomingCallPopup{
             display:none;
             position:fixed;
@@ -129,6 +135,8 @@
     <button class="clear-btn" id="clearOrdersBtn">🧹 Clear Kitchen Orders</button>
     <button class="clear-btn" id="clearCallsBtn">🔔 Clear Calls</button>
 </div>
+
+<div class="queue-banner" id="queueBanner"></div>
 
 <div class="notify-box">
     <div class="notify-header" id="notifyHeader">
@@ -348,12 +356,14 @@ function stop80sRing(){
 /* ════════════════════════════════════════
     WEBRTC — KITCHEN SIDE (via SocketIO)
 ════════════════════════════════════════ */
-let kitchenPeer   = null;
-let kitchenStream = null;
-let incomingTable = "";
-let incomingOffer = null;
-let callTimerInt  = null;
-let callSecs      = 0;
+let kitchenPeer     = null;
+let kitchenStream   = null;
+let incomingTable   = "";     // table of the call currently shown in the popup / connected
+let incomingOffer   = null;   // SDP offer of the call currently shown in the popup
+let activeCallTable = "";     // table we are actually connected to (after Answer)
+let callQueue       = [];     // real calls that came in while busy: [{table, sdp, message}]
+let callTimerInt    = null;
+let callSecs        = 0;
 let noAnswerTimeout = null;
 
 // SocketIO connection
@@ -364,17 +374,31 @@ sio.on("connect", () => {
     console.log("Kitchen connected to SocketIO ✅");
 });
 
-// Incoming offer from customer
-sio.on("webrtc_offer", async (data) => {
-    incomingTable = data.table || "?";
-    incomingOffer = data.sdp;
+/* ── Waiting-call banner (shown when a 2nd real call comes in while busy) ── */
+function updateQueueBanner(){
+    const box = document.getElementById("queueBanner");
+    if(!box) return;
+    if(callQueue.length === 0){
+        box.style.display = "none";
+        box.innerText = "";
+        return;
+    }
+    const names = callQueue.map(c => "Table " + c.table).join(", ");
+    box.innerText = "📋 Call kale ayaa sugaya: " + names;
+    box.style.display = "block";
+}
+
+/* ── Show the incoming-call popup for one specific real call ── */
+function showIncomingCall(table, sdp, message){
+    incomingTable = table;
+    incomingOffer = sdp;
 
     document.getElementById("icName").innerText = "Table " + incomingTable;
     document.getElementById("icSub").innerText  = "Customer is calling...";
 
     let msgEl = document.getElementById("icMessage");
-    if(data.message && data.message.trim()){
-        msgEl.innerText = "💬 " + data.message;
+    if(message && message.trim()){
+        msgEl.innerText = "💬 " + message;
         msgEl.classList.add("visible");
     } else {
         msgEl.textContent = "";
@@ -389,8 +413,62 @@ sio.on("webrtc_offer", async (data) => {
             stop80sRing();
             document.getElementById("incomingCallPopup").style.display = "none";
             sio.emit("webrtc_end_kitchen", { rid: RID, table: incomingTable });
+            incomingTable = ""; incomingOffer = null;
+            showNextQueuedCall();
         }
     }, 3 * 60 * 1000);
+}
+
+/* ── After a call ends/declines/times out, bring up the next real waiting call ── */
+function showNextQueuedCall(){
+    if(kitchenPeer) return;
+    if(document.getElementById("incomingCallPopup").style.display === "block") return;
+    if(callQueue.length === 0) return;
+    const next = callQueue.shift();
+    updateQueueBanner();
+    showIncomingCall(next.table, next.sdp, next.message);
+}
+
+/* ── A real call ended (customer hung up / cancelled) or was cleared remotely ── */
+function handleRemoteEnd(table){
+    if(table){
+        callQueue = callQueue.filter(c => c.table !== table);
+        updateQueueBanner();
+    }
+
+    // If it was the call currently shown as an unanswered popup, just dismiss it
+    if(table && table === incomingTable && document.getElementById("incomingCallPopup").style.display === "block" && !kitchenPeer){
+        clearTimeout(noAnswerTimeout);
+        stop80sRing();
+        document.getElementById("incomingCallPopup").style.display = "none";
+        incomingTable = ""; incomingOffer = null;
+        showNextQueuedCall();
+        return;
+    }
+
+    // If it was the call we're actively connected to, end it
+    if(kitchenPeer && (!table || table === activeCallTable)){
+        kitchenEndCall();
+    }
+}
+
+// Incoming offer from customer (a REAL call, sent only when the customer actually calls)
+sio.on("webrtc_offer", async (data) => {
+    const table = data.table || "?";
+    const popupShowing = document.getElementById("incomingCallPopup").style.display === "block";
+    const busy = !!kitchenPeer || popupShowing;
+
+    if(busy){
+        // Already on a call or already showing a popup — this is a genuine second call.
+        // Queue it and show a small banner instead of interrupting the current call/popup.
+        if(table !== incomingTable && table !== activeCallTable && !callQueue.some(c => c.table === table)){
+            callQueue.push({ table: table, sdp: data.sdp, message: data.message || "" });
+            updateQueueBanner();
+        }
+        return;
+    }
+
+    showIncomingCall(table, data.sdp, data.message || "");
 });
 
 // ICE from customer
@@ -400,26 +478,11 @@ sio.on("webrtc_ice_customer", async (data) => {
     }
 });
 
-// Call ended by customer
-sio.on("webrtc_end", () => { kitchenEndCall(); });
-
-async function pollActiveCalls(){
-    try{
-        const res = await fetch(`/get_active_calls/${RID}`)
-        const data = await res.json()
-        if(data.calls && data.calls.length > 0 && !kitchenPeer){
-            const call = data.calls[0]
-            if(call.table !== incomingTable || document.getElementById("incomingCallPopup").style.display !== "block"){
-                incomingTable = call.table
-                document.getElementById("icName").innerText = "Table " + incomingTable
-                document.getElementById("icSub").innerText = "Customer is calling..."
-                document.getElementById("incomingCallPopup").style.display = "block"
-                start80sRing()
-            }
-        }
-    }catch(e){}
-}
-setInterval(pollActiveCalls, 2000)
+// Call ended by customer (or cancelled before being answered)
+sio.on("webrtc_end", (data) => {
+    const table = (data && data.table) ? data.table : (incomingTable || activeCallTable);
+    handleRemoteEnd(table);
+});
 
 function startCallTimer(){
     callSecs = 0;
@@ -441,6 +504,7 @@ async function acceptCall(){
     clearTimeout(noAnswerTimeout);
     stop80sRing();
     document.getElementById("incomingCallPopup").style.display = "none";
+    activeCallTable = incomingTable;
 
     try {
         kitchenStream = await navigator.mediaDevices.getUserMedia({ audio:true, video:false });
@@ -481,6 +545,8 @@ function declineCall(){
     stop80sRing();
     document.getElementById("incomingCallPopup").style.display = "none";
     sio.emit("webrtc_end_kitchen", { rid: RID, table: incomingTable });
+    incomingTable = ""; incomingOffer = null;
+    showNextQueuedCall();
 }
 
 function kitchenEndCall(){
@@ -492,6 +558,8 @@ function kitchenEndCall(){
     if(kitchenPeer){ kitchenPeer.close(); kitchenPeer = null; }
     if(kitchenStream){ kitchenStream.getTracks().forEach(t=>t.stop()); kitchenStream = null; }
     sio.emit("webrtc_end_kitchen", { rid: RID, table: incomingTable });
+    incomingTable = ""; incomingOffer = null; activeCallTable = "";
+    showNextQueuedCall();
 }
 </script>
 </body>
