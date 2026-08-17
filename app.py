@@ -2197,6 +2197,18 @@ def clean_table_menu(restaurant_slug, table_no):
 # =====================================
 # 📦 CREATE ORDER - FINAL FIX
 # =====================================
+# =====================================
+# 🔢 SEQUENTIAL RECEIPT REF (per restaurant)
+# Marnaba kuma laabto 0 — 1, 2, 3, ... weligiis kor u socda.
+# =====================================
+def get_next_receipt_ref(rid):
+    counter_ref = db.collection("restaurants").document(rid) \
+                    .collection("meta").document("receipt_counter")
+    counter_ref.set({"count": firestore.Increment(1)}, merge=True)
+    snap = counter_ref.get()
+    return snap.to_dict().get("count", 1)
+
+
 @app.route("/order/<rid>", methods=["POST"])
 def create_order(rid):
     try:
@@ -2225,7 +2237,8 @@ def create_order(rid):
             "price":      total_price,
             "status":     "pending",
             "created_at": datetime.utcnow(),
-            "kitchen_cleared": False
+            "kitchen_cleared": False,
+            "receipt_ref": get_next_receipt_ref(rid)
         })
 
         return jsonify({
@@ -2679,6 +2692,13 @@ def receipt(rid, order_id):
         except:
             created_at = created_raw
 
+        # Sequential integer ref — orders made before this field existed
+        # get one assigned now, once, and it's saved so it never changes again.
+        receipt_ref = order.get("receipt_ref")
+        if not receipt_ref:
+            receipt_ref = get_next_receipt_ref(rid)
+            order_ref.update({"receipt_ref": receipt_ref})
+
         return render_template(
             "receipt.html",
             rid             = rid,
@@ -2687,7 +2707,7 @@ def receipt(rid, order_id):
             phone           = rest.get("phone", ""),
             payment         = rest.get("payment", ""),
             table           = order.get("table", ""),
-            ref             = order_id[:8].upper(),
+            ref             = receipt_ref,
             items           = items,
             subtotal        = subtotal,
             vat             = vat,
@@ -2781,6 +2801,11 @@ def receipt_view(rid, table):
                 rest_doc = db.collection("restaurants").document(rid).get()
                 rest = rest_doc.to_dict() if rest_doc.exists else {}
 
+                receipt_ref = o.get("receipt_ref")
+                if not receipt_ref:
+                    receipt_ref = get_next_receipt_ref(rid)
+                    doc.reference.update({"receipt_ref": receipt_ref})
+
                 return render_template(
                     "receipt.html",
                     rid=rid,
@@ -2789,7 +2814,7 @@ def receipt_view(rid, table):
                     phone=rest.get("phone", ""),
                     payment=rest.get("payment", ""),
                     table=o.get("table", table),
-                    ref=order_id[:8].upper(),
+                    ref=receipt_ref,
                     items=items,
                     subtotal=subtotal,
                     vat=vat,

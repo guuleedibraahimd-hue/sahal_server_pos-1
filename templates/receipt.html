@@ -45,6 +45,11 @@ body {
     display: flex; justify-content: space-between;
     font-size: 11px; color: #000; margin: 3px 0;
 }
+.table-row {
+    font-size: 10px;
+    margin: 6px 0 3px;
+    line-height: 1.2;
+}
 .invoice-title {
     text-align: center; font-size: 12px; font-weight: bold;
     letter-spacing: 2px; margin: 6px 0; color: #000;
@@ -282,7 +287,7 @@ body.paper-58 .receipt-bottom {
             <span>📅 {% if created_at %}{{ created_at.strftime('%Y-%m-%d') }}{% endif %}</span>
             <span>🕐 {% if created_at %}{{ created_at.strftime('%H:%M') }}{% endif %}</span>
         </div>
-        <div class="meta-row">
+        <div class="meta-row table-row">
             <span>Table: <strong>{{ table }}</strong></span>
             <span>Ref: {{ ref }}</span>
         </div>
