@@ -452,9 +452,11 @@ function handleRemoteEnd(table){
     }
 }
 
-// Incoming offer from customer (a REAL call, sent only when the customer actually calls)
-sio.on("webrtc_offer", async (data) => {
-    const table = data.table || "?";
+/* ── Shared entry point for a real call, whether it arrived via the
+   instant socket event or the backup poll — same de-dupe/queue rules
+   either way, so the two paths can never show a duplicate/false call. ── */
+function handleIncomingCallData(table, sdp, message){
+    if(!table || !sdp) return;
     const popupShowing = document.getElementById("incomingCallPopup").style.display === "block";
     const busy = !!kitchenPeer || popupShowing;
 
@@ -462,14 +464,38 @@ sio.on("webrtc_offer", async (data) => {
         // Already on a call or already showing a popup — this is a genuine second call.
         // Queue it and show a small banner instead of interrupting the current call/popup.
         if(table !== incomingTable && table !== activeCallTable && !callQueue.some(c => c.table === table)){
-            callQueue.push({ table: table, sdp: data.sdp, message: data.message || "" });
+            callQueue.push({ table: table, sdp: sdp, message: message || "" });
             updateQueueBanner();
         }
         return;
     }
 
-    showIncomingCall(table, data.sdp, data.message || "");
+    showIncomingCall(table, sdp, message || "");
+}
+
+// Incoming offer from customer (a REAL call, sent only when the customer actually calls)
+sio.on("webrtc_offer", async (data) => {
+    handleIncomingCallData(data.table || "?", data.sdp, data.message || "");
 });
+
+/* ── Backup: poll the server every 2s in case the socket message
+   never arrived (dropped connection, proxy hiccup, tab was loading, etc).
+   The server deletes the record the moment a call is answered/declined/ended,
+   so a resolved call can never come back through here — and handleIncomingCallData()
+   above already ignores anything that's already showing/queued, so this
+   never causes a duplicate popup when the socket path worked fine. ── */
+async function pollActiveCalls(){
+    try{
+        const res = await fetch(`/get_active_calls/${RID}`);
+        const data = await res.json();
+        if(data.calls){
+            data.calls.forEach(c => {
+                if(c.table && c.sdp) handleIncomingCallData(c.table, c.sdp, c.message || "");
+            });
+        }
+    }catch(e){}
+}
+setInterval(pollActiveCalls, 2000);
 
 // ICE from customer
 sio.on("webrtc_ice_customer", async (data) => {

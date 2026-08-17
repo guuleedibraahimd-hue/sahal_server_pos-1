@@ -3206,14 +3206,28 @@ def kitchen_join(data):
 
 @app.route("/call_waiter_webrtc/<rid>", methods=["POST"])
 def call_waiter_webrtc(rid):
-    """Kaydi wicitaanka Firestore si kitchen-ku polling-ka ugu arko"""
+    """Kaydi wicitaanka (SDP-ga la socda) Firestore si kitchen-ku polling-ka ugu arko
+    haddii socket-ku ku fashilmo — kani waa backup, socket-ku waa mid degdeg ah."""
     try:
-        table = request.form.get("table", "")
-        db.collection("restaurants").document(rid).collection("active_calls").document(table).set({
+        data = request.get_json(silent=True) or {}
+        table = (data.get("table") or request.form.get("table", "") or "").strip()
+        sdp = data.get("sdp")
+        message = data.get("message", "")
+
+        if not table:
+            return jsonify({"success": False, "error": "Missing table"})
+
+        doc = {
             "table": table,
             "status": "ringing",
             "created_at": firestore.SERVER_TIMESTAMP
-        })
+        }
+        if sdp:
+            doc["sdp"] = sdp
+        if message:
+            doc["message"] = message
+
+        db.collection("restaurants").document(rid).collection("active_calls").document(table).set(doc)
         return jsonify({"success": True})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
@@ -3223,7 +3237,14 @@ def call_waiter_webrtc(rid):
 def get_active_calls(rid):
     try:
         docs = db.collection("restaurants").document(rid).collection("active_calls").where("status", "==", "ringing").stream()
-        calls = [{"table": d.to_dict().get("table")} for d in docs]
+        calls = []
+        for d in docs:
+            v = d.to_dict()
+            calls.append({
+                "table": v.get("table"),
+                "sdp": v.get("sdp"),
+                "message": v.get("message", "")
+            })
         return jsonify({"calls": calls})
     except Exception as e:
         return jsonify({"calls": [], "error": str(e)})
@@ -3442,7 +3463,13 @@ def webrtc_ice_customer(data):
 # ── Customer → Kitchen: end ──
 @socketio.on("webrtc_end_customer")
 def webrtc_end_customer(data):
-    rid = data.get("rid", "")
+    rid   = data.get("rid", "")
+    table = data.get("table", "")
+    if rid and table:
+        try:
+            db.collection("restaurants").document(rid).collection("active_calls").document(table).delete()
+        except Exception:
+            pass
     emit("webrtc_end", data, to=f"kitchen_{rid}")
 
 # ── Kitchen → Customer: answer ──
@@ -3450,6 +3477,11 @@ def webrtc_end_customer(data):
 def webrtc_answer(data):
     rid   = data.get("rid", "")
     table = data.get("table", "")
+    if rid and table:
+        try:
+            db.collection("restaurants").document(rid).collection("active_calls").document(table).delete()
+        except Exception:
+            pass
     emit("webrtc_answer", data, to=f"customer_{rid}_{table}")
 
 # ── Kitchen → Customer: ICE ──
@@ -3464,6 +3496,11 @@ def webrtc_ice_kitchen(data):
 def webrtc_end_kitchen(data):
     rid   = data.get("rid", "")
     table = data.get("table", "")
+    if rid and table:
+        try:
+            db.collection("restaurants").document(rid).collection("active_calls").document(table).delete()
+        except Exception:
+            pass
     emit("webrtc_end", data, to=f"customer_{rid}_{table}")
 
 # ==========================================
