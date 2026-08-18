@@ -2390,9 +2390,6 @@ def order_status(rid):
         return str(e)
 
 
-# =====================================
-# 🍳 KITCHEN
-# =====================================
 @app.route("/kitchen/<rid>", methods=["GET", "POST"])
 def kitchen(rid):
     try:
@@ -2413,6 +2410,50 @@ def kitchen(rid):
 
         if not session.get("kitchen_" + str(rid)):
             return render_template("kitchen_login.html", rid=rid)
+
+        # ✅ Menu image lookup: { food_name (lowercase): image_url }
+        # Sawirrada menu-ga ayaa laga soo helayaa magaca cuntada ee order-ka.
+        menu_images = {}
+        for mdoc in restaurant_ref.collection("menu").stream():
+            md = mdoc.to_dict() or {}
+            nm = (md.get("name") or "").strip().lower()
+            if nm:
+                menu_images[nm] = md.get("image", "")
+
+        def build_display_items(order):
+            """Ka dhig order-ka liis nadiif ah: [{name, qty, image}].
+            Cart ayaa la door bidayaa (waa nadiif), haddii uusan jirin items
+            text-ka ('2x Burger') ayaa la kala qaadayaa."""
+            display = []
+            cart = order.get("cart")
+            if cart and isinstance(cart, list):
+                for c in cart:
+                    nm = (c.get("name") or "").strip()
+                    if not nm:
+                        continue
+                    display.append({
+                        "name": nm,
+                        "qty": c.get("qty", 1),
+                        "image": menu_images.get(nm.lower(), "")
+                    })
+            else:
+                raw = order.get("items", "") or ""
+                for part in raw.split(","):
+                    part = part.strip()
+                    if not part:
+                        continue
+                    qty, name = 1, part
+                    if "x " in part:
+                        head, tail = part.split("x ", 1)
+                        if head.strip().isdigit():
+                            qty = int(head.strip())
+                            name = tail.strip()
+                    display.append({
+                        "name": name,
+                        "qty": qty,
+                        "image": menu_images.get(name.lower(), "")
+                    })
+            return display
 
         order_docs = restaurant_ref.collection("orders") \
             .order_by("created_at", direction=firestore.Query.DESCENDING) \
@@ -2437,6 +2478,12 @@ def kitchen(rid):
             else:
                 order["created_at"] = "N/A"
 
+            # ✅ Sawirrada iyo liiska cuntada
+            order["display_items"] = build_display_items(order)
+            order["main_image"] = next(
+                (d["image"] for d in order["display_items"] if d["image"]), ""
+            )
+
             orders.append(order)
 
         calls = []
@@ -2446,7 +2493,22 @@ def kitchen(rid):
             call_item["id"] = doc.id
             calls.append(call_item)
 
-        return render_template("kitchen.html", orders=orders, calls=calls, rid=rid)
+        # ✅ Tirooyinka stat-cards
+        stats = {
+            "total": len(orders),
+            "preparing": sum(1 for o in orders if o.get("status") == "preparing"),
+            "ready": sum(1 for o in orders if o.get("status") == "ready"),
+            "calls": len(calls),
+        }
+
+        return render_template(
+            "kitchen.html",
+            orders=orders,
+            calls=calls,
+            rid=rid,
+            stats=stats,
+            restaurant_name=restaurant.get("name", "Restaurant")
+        )
 
     except Exception as e:
         print("Kitchen Error:", e)
