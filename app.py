@@ -2519,37 +2519,82 @@ def cashier_dashboard(rid):
     today = datetime.now().strftime("%Y-%m-%d")
 
     pending_orders = []
+    todays_paid_orders = []
     for doc in restaurant_ref.collection("orders") \
-            .order_by("created_at", direction=firestore.Query.DESCENDING).limit(100).stream():
+            .order_by("created_at", direction=firestore.Query.DESCENDING).limit(200).stream():
         o = doc.to_dict()
         o["id"] = doc.id
         status = str(o.get("status", "")).lower()
+        created = o.get("created_at")
+        created_date = created.strftime("%Y-%m-%d") if hasattr(created, "strftime") else str(created)[:10]
         if status != "paid":
             pending_orders.append(o)
+        elif created_date == today:
+            todays_paid_orders.append(o)
 
-    # Payments recorded during THIS shift
+    # ---- Restaurant-wide TODAY stats (all cashiers/shifts) ----
+    today_payments = list(restaurant_ref.collection("payments").where("date", "==", today).stream())
+    payment_summary = {"cash": 0.0, "evc": 0.0, "edahab": 0.0, "card": 0.0, "other": 0.0}
+    today_sales = 0.0
+    for doc in today_payments:
+        p = doc.to_dict()
+        amount = float(p.get("amount", 0))
+        method = str(p.get("method", "other")).lower()
+        if method not in payment_summary:
+            method = "other"
+        payment_summary[method] += amount
+        today_sales += amount
+
+    today_cash = payment_summary["cash"]
+    today_mobile = payment_summary["evc"] + payment_summary["edahab"] + payment_summary["card"] + payment_summary["other"]
+
+    # ---- Top Selling Items (from today's paid orders' cart) ----
+    item_agg = {}
+    for o in todays_paid_orders:
+        for it in (o.get("cart") or []):
+            name = it.get("name", "Item")
+            qty  = int(it.get("qty", 1))
+            price = float(it.get("price", 0))
+            if name not in item_agg:
+                item_agg[name] = {"name": name, "qty": 0, "sales": 0.0}
+            item_agg[name]["qty"] += qty
+            item_agg[name]["sales"] += price * qty
+    top_items = sorted(item_agg.values(), key=lambda x: x["sales"], reverse=True)[:5]
+
+    # ---- Waiters Performance Today (from today's paid orders) ----
+    waiter_agg = {}
+    for o in todays_paid_orders:
+        wid = o.get("employee_id")
+        if not wid:
+            continue
+        if wid not in waiter_agg:
+            waiter_agg[wid] = {"employee_id": wid, "name": o.get("employee_name", wid), "orders": 0, "sales": 0.0}
+        waiter_agg[wid]["orders"] += 1
+        waiter_agg[wid]["sales"] += float(o.get("price", 0))
+    waiters_performance = sorted(waiter_agg.values(), key=lambda x: x["sales"], reverse=True)
+
+    # ---- THIS cashier's shift-scoped totals ----
     shift_payments = list(restaurant_ref.collection("payments")
                            .where("shift_id", "==", shift_id).stream())
 
-    method_totals = {"cash": 0.0, "evc": 0.0, "edahab": 0.0, "card": 0.0, "other": 0.0}
-    transactions = []
-    collected_today = 0.0
+    shift_method_totals = {"cash": 0.0, "evc": 0.0, "edahab": 0.0, "card": 0.0, "other": 0.0}
+    shift_transactions = []
+    shift_collected = 0.0
     for doc in shift_payments:
         p = doc.to_dict()
         p["id"] = doc.id
         amount = float(p.get("amount", 0))
         method = str(p.get("method", "other")).lower()
-        if method not in method_totals:
+        if method not in shift_method_totals:
             method = "other"
-        method_totals[method] += amount
-        collected_today += amount
-        transactions.append(p)
+        shift_method_totals[method] += amount
+        shift_collected += amount
+        shift_transactions.append(p)
 
-    transactions.sort(key=lambda x: x.get("created_at", ""), reverse=True)
+    shift_transactions.sort(key=lambda x: x.get("created_at", ""), reverse=True)
 
     opening_cash = float(shift.get("opening_cash", 0))
-    expected_cash = opening_cash + method_totals["cash"]
-    mobile_total = method_totals["evc"] + method_totals["edahab"] + method_totals["card"] + method_totals["other"]
+    expected_cash = opening_cash + shift_method_totals["cash"]
 
     return render_template(
         "cashier_dashboard.html",
@@ -2563,11 +2608,20 @@ def cashier_dashboard(rid):
         opening_cash=round(opening_cash, 2),
         expected_cash=round(expected_cash, 2),
         pending_orders=pending_orders[:30],
-        collected_today=round(collected_today, 2),
-        orders_count=len(transactions),
-        method_totals={k: round(v, 2) for k, v in method_totals.items()},
-        mobile_total=round(mobile_total, 2),
-        transactions=transactions[:30]
+        pending_count=len(pending_orders),
+        # restaurant-wide today
+        today_sales=round(today_sales, 2),
+        today_orders_count=len(todays_paid_orders) + len(pending_orders),
+        today_cash=round(today_cash, 2),
+        today_mobile=round(today_mobile, 2),
+        payment_summary={k: round(v, 2) for k, v in payment_summary.items()},
+        top_items=top_items,
+        waiters_performance=waiters_performance,
+        # this cashier's shift
+        shift_collected=round(shift_collected, 2),
+        shift_orders_count=len(shift_transactions),
+        shift_method_totals={k: round(v, 2) for k, v in shift_method_totals.items()},
+        shift_transactions=shift_transactions[:30]
     )
 
 

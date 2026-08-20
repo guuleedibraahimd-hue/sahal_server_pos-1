@@ -5,69 +5,140 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Cashier Dashboard - {{ restaurant_name }}</title>
 <style>
-*{ box-sizing:border-box; }
-body{ margin:0; font-family:Arial,sans-serif; background:#f4f6f9; color:#1b2330; }
-.topbar{
-    background:linear-gradient(120deg,#1f9e57,#34c979); color:#fff; padding:18px 20px;
-    display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;
+:root{
+    --navy:#0f1b2d; --navy-2:#16233d; --blue:#2f6fed; --green:#1f9e57;
+    --purple:#7b3fb5; --orange:#e0651f; --teal:#0e9488; --gold:#f5a623;
+    --bg:#f4f6fb; --card:#fff; --text:#1a1a2e; --muted:#8a93a8; --border:#e8ecf4;
 }
-.topbar h1{ font-size:17px; margin:0; }
-.topbar .sub{ font-size:12px; opacity:0.9; }
-.shift-badge{ font-size:11px; font-weight:800; padding:4px 10px; border-radius:20px; margin-left:8px; }
-.shift-on{ background:rgba(255,255,255,0.25); }
-.shift-off{ background:rgba(0,0,0,0.2); }
-.logout{ background:rgba(255,255,255,0.2); color:#fff; text-decoration:none; padding:8px 14px; border-radius:10px; font-weight:700; font-size:13px; }
-.wrap{ max-width:900px; margin:0 auto; padding:18px; }
+*{ box-sizing:border-box; }
+body{ margin:0; font-family:Arial,sans-serif; background:var(--bg); color:var(--text); }
+a{ color:inherit; }
+
+.shell{ display:flex; min-height:100vh; }
+
+/* ---- SIDEBAR ---- */
+.sidebar{ width:270px; flex-shrink:0; background:var(--navy); color:#cdd6e6; display:flex; flex-direction:column; }
+.sb-brand{ display:flex; align-items:center; gap:12px; padding:22px 20px; border-bottom:1px solid rgba(255,255,255,0.08); }
+.sb-brand .logo{ width:42px; height:42px; border-radius:12px; background:linear-gradient(135deg,var(--gold),#d99a00); display:flex; align-items:center; justify-content:center; font-size:20px; font-weight:900; color:#1a1000; }
+.sb-brand .name{ font-size:15px; font-weight:800; color:#fff; }
+.sb-brand .sub{ font-size:10.5px; color:var(--gold); font-weight:700; }
+
+.sb-profile{ margin:16px; padding:14px; background:rgba(255,255,255,0.05); border-radius:14px; }
+.sb-profile-top{ display:flex; align-items:center; gap:10px; }
+.sb-avatar{ width:42px; height:42px; border-radius:50%; background:linear-gradient(135deg,var(--green),#0e6b3c); display:flex; align-items:center; justify-content:center; font-weight:800; color:#fff; font-size:15px; }
+.sb-profile .pn{ font-size:13px; font-weight:800; color:#fff; }
+.sb-profile .pid{ font-size:11px; color:var(--gold); font-weight:700; }
+.sb-profile .role{ font-size:11px; color:#8a93a8; }
+.shift-tag{ margin-top:10px; font-size:11px; font-weight:800; padding:4px 10px; border-radius:20px; display:inline-block; }
+.shift-tag.on{ background:rgba(31,158,87,0.2); color:#4ade80; }
+
+.sb-label{ font-size:10.5px; font-weight:800; letter-spacing:1px; color:#5f6b83; text-transform:uppercase; padding:16px 20px 6px; }
+.sb-nav{ list-style:none; margin:0; padding:0 10px; }
+.sb-nav li{ margin-bottom:2px; }
+.sb-link{ display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:10px; color:#c3cbdc; text-decoration:none; font-size:13.5px; font-weight:600; cursor:pointer; border:none; background:none; width:100%; text-align:left; }
+.sb-link:hover{ background:rgba(255,255,255,0.06); color:#fff; }
+.sb-link.active{ background:var(--blue); color:#fff; font-weight:800; }
+.sb-link .badge{ margin-left:auto; background:#dc3545; color:#fff; font-size:10px; font-weight:800; padding:2px 7px; border-radius:10px; }
+.sb-bottom{ margin-top:auto; padding:10px; }
+.sb-logout{ display:flex; align-items:center; gap:10px; padding:12px; color:#f87171; text-decoration:none; font-size:13.5px; font-weight:700; }
+
+/* ---- MAIN ---- */
+.main{ flex:1; min-width:0; }
+.topbar{ background:#fff; border-bottom:1px solid var(--border); padding:14px 26px; display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap; }
+.tb-left{ display:flex; align-items:center; gap:12px; }
+.tb-restaurant{ display:flex; align-items:center; gap:8px; font-weight:800; font-size:15px; }
+.tb-right{ display:flex; align-items:center; gap:16px; font-size:13px; color:var(--muted); flex-wrap:wrap; }
+.tb-avatar{ width:36px; height:36px; border-radius:50%; background:linear-gradient(135deg,var(--green),#0e6b3c); display:flex; align-items:center; justify-content:center; color:#fff; font-weight:800; font-size:13px; }
+.tb-admin .an1{ font-size:12.5px; font-weight:800; color:var(--text); }
+.tb-admin .an2{ font-size:11px; color:var(--muted); }
+
+.content{ padding:22px 26px 60px; }
+
+/* ---- STAT CARDS ---- */
+.stats-row{ display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:14px; margin-bottom:20px; }
+.stat-card{ background:var(--card); border-radius:16px; padding:16px; box-shadow:0 4px 12px rgba(0,0,0,0.05); display:flex; align-items:center; gap:12px; }
+.stat-ic{ width:42px; height:42px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:19px; color:#fff; flex-shrink:0; }
+.si-blue{ background:var(--blue); } .si-green{ background:var(--green); } .si-orange{ background:var(--orange); }
+.si-purple{ background:var(--purple); } .si-teal{ background:var(--teal); }
+.stat-info .label{ font-size:11.5px; color:var(--muted); font-weight:700; }
+.stat-info .value{ font-size:18px; font-weight:900; margin-top:2px; }
+
+/* ---- LAYOUT GRID ---- */
+.grid-2{ display:grid; grid-template-columns:2.1fr 1fr; gap:16px; margin-bottom:16px; align-items:start; }
+@media(max-width:1000px){ .grid-2{ grid-template-columns:1fr; } }
+.grid-3{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; margin-bottom:16px; }
+@media(max-width:900px){ .grid-3{ grid-template-columns:1fr; } }
+
+.section{ background:var(--card); border-radius:16px; padding:18px; box-shadow:0 4px 12px rgba(0,0,0,0.05); }
+.section-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
+.section-head h2{ font-size:15px; margin:0; display:flex; align-items:center; gap:8px; }
+.count-badge{ background:#fdecea; color:#dc3545; font-size:11px; font-weight:800; padding:2px 8px; border-radius:10px; }
+
+/* ---- ORDERS TABLE ---- */
+table.orders-tbl{ width:100%; border-collapse:collapse; font-size:13px; }
+table.orders-tbl th{ text-align:left; color:var(--muted); font-weight:700; font-size:11.5px; padding:8px 6px; border-bottom:1px solid var(--border); }
+table.orders-tbl td{ padding:10px 6px; border-bottom:1px solid #f4f4f4; vertical-align:middle; }
+.waiter-cell{ display:flex; align-items:center; gap:8px; }
+.w-avatar{ width:26px; height:26px; border-radius:50%; background:var(--blue); color:#fff; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:800; }
+.status-pill{ padding:3px 10px; border-radius:20px; font-size:11px; font-weight:800; }
+.status-pending{ background:#fff3cd; color:#856404; }
+.status-preparing{ background:#cce5ff; color:#004085; }
+.status-ready{ background:#d4edda; color:#155724; }
+.tbl-actions{ display:flex; gap:6px; }
+.tbl-actions button, .tbl-actions a{ padding:6px 12px; border-radius:8px; border:none; font-weight:800; font-size:11.5px; cursor:pointer; text-decoration:none; }
+.pay-btn{ background:var(--green); color:#fff; }
+.receipt-btn{ background:var(--blue); color:#fff; }
+
+/* ---- SHIFT SUMMARY ---- */
+.shift-summary .status-active{ background:#d4edda; color:#155724; font-size:11px; font-weight:800; padding:3px 10px; border-radius:20px; }
+.ss-row{ display:flex; justify-content:space-between; font-size:13px; padding:8px 0; border-bottom:1px solid #f4f4f4; }
+.ss-row .k{ color:var(--muted); }
+.ss-row .v{ font-weight:800; }
+.close-shift-btn{ width:100%; margin-top:14px; padding:13px; background:#dc3545; color:#fff; border:none; border-radius:10px; font-weight:800; cursor:pointer; font-size:14px; }
+
+/* ---- DONUT ---- */
+.donut-wrap{ display:flex; align-items:center; gap:20px; flex-wrap:wrap; }
+.donut{ 
+    width:150px; 
+    height:150px; 
+    border-radius:50%; 
+    flex-shrink:0; 
+    mask: radial-gradient(circle, transparent 48%, #000 49%);
+    -webkit-mask: radial-gradient(circle, transparent 48%, #000 49%);
+}
+.legend{ flex:1; min-width:150px; }
+.legend-row{ display:flex; align-items:center; gap:8px; font-size:12.5px; padding:4px 0; }
+.legend-dot{ width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+.legend-row .lname{ flex:1; }
+.legend-row .lval{ font-weight:800; }
+.pm-total{ margin-top:14px; padding-top:12px; border-top:1px solid var(--border); display:flex; justify-content:space-between; font-weight:800; font-size:14px; }
+
+/* ---- TOP ITEMS ---- */
+.item-row{ display:flex; align-items:center; gap:10px; padding:9px 0; border-bottom:1px solid #f4f4f4; font-size:13px; }
+.item-rank{ width:22px; height:22px; border-radius:50%; background:var(--blue); color:#fff; font-size:11px; font-weight:800; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.item-name{ flex:1; font-weight:700; }
+.item-qty{ color:var(--muted); font-size:12px; width:50px; text-align:right; }
+.item-sales{ font-weight:800; width:70px; text-align:right; }
+
+/* ---- WAITERS PERF ---- */
+.wp-row{ display:flex; align-items:center; gap:10px; padding:9px 0; border-bottom:1px solid #f4f4f4; font-size:13px; }
+.wp-row .w-avatar{ width:30px; height:30px; font-size:12px; }
+.wp-name{ flex:1; font-weight:700; }
+.wp-orders{ color:var(--muted); font-size:12px; width:50px; text-align:right; }
+.wp-sales{ font-weight:800; width:70px; text-align:right; }
+
+/* ---- QUICK ACTIONS ---- */
+.qa-row{ display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; }
+.qa-btn{ padding:14px; border-radius:12px; border:none; color:#fff; font-weight:800; font-size:13px; cursor:pointer; text-decoration:none; text-align:center; display:flex; align-items:center; justify-content:center; gap:8px; }
 
 /* ---- OPEN SHIFT GATE ---- */
 .gate{ max-width:380px; margin:60px auto; background:#fff; border-radius:18px; padding:30px 26px; text-align:center; box-shadow:0 6px 20px rgba(0,0,0,0.08); }
 .gate .ic{ font-size:40px; margin-bottom:10px; }
 .gate h2{ font-size:17px; margin:0 0 4px; }
-.gate p{ font-size:13px; color:#888; margin-bottom:20px; }
+.gate p{ font-size:13px; color:var(--muted); margin-bottom:20px; }
 .gate label{ display:block; text-align:left; font-size:12px; font-weight:800; color:#555; margin-bottom:6px; }
 .gate input{ width:100%; padding:12px; border-radius:10px; border:1px solid #ddd; font-size:15px; margin-bottom:16px; }
-.gate button{ width:100%; padding:13px; background:#1f9e57; color:#fff; border:none; border-radius:10px; font-weight:800; font-size:14px; cursor:pointer; }
-
-/* ---- STATS ---- */
-.stats-row{ display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:18px; }
-.stat{ background:#fff; border-radius:14px; padding:14px; box-shadow:0 4px 12px rgba(0,0,0,0.06); text-align:center; }
-.stat .label{ font-size:11px; color:#888; font-weight:700; }
-.stat .value{ font-size:19px; font-weight:900; color:#1f9e57; margin-top:4px; }
-
-.section{ background:#fff; border-radius:16px; padding:18px; margin-bottom:18px; box-shadow:0 4px 12px rgba(0,0,0,0.06); }
-.section h2{ font-size:15px; margin:0 0 14px; }
-
-.order-card{ border:1px solid #eee; border-radius:12px; padding:14px; margin-bottom:10px; }
-.order-head{ display:flex; justify-content:space-between; font-weight:800; font-size:14px; }
-.order-items{ font-size:13px; color:#666; margin-top:6px; }
-.order-actions{ display:flex; gap:8px; margin-top:10px; }
-.order-actions a, .order-actions button{
-    flex:1; text-align:center; padding:9px; border-radius:9px; border:none; cursor:pointer;
-    font-weight:800; font-size:12px; text-decoration:none;
-}
-.pay-btn{ background:#1f9e57; color:#fff; }
-.receipt-btn{ background:#0a7cff; color:#fff; }
-.status-pill{ padding:3px 10px; border-radius:20px; font-size:11px; font-weight:800; }
-.status-pending{ background:#fff3cd; color:#856404; }
-.status-preparing{ background:#cce5ff; color:#004085; }
-.status-ready{ background:#d4edda; color:#155724; }
-
-/* ---- PAYMENT SUMMARY ---- */
-.summary-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:10px; }
-.summary-item{ background:#f8f9fa; border-radius:10px; padding:12px; text-align:center; }
-.summary-item .m-label{ font-size:11px; color:#888; font-weight:700; }
-.summary-item .m-value{ font-size:16px; font-weight:800; margin-top:4px; }
-.summary-total{ margin-top:12px; padding-top:12px; border-top:1px solid #eee; display:flex; justify-content:space-between; font-weight:800; font-size:15px; }
-
-/* ---- TRANSACTIONS ---- */
-.tx-row{ display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid #f0f0f0; font-size:13px; }
-.tx-method{ font-size:11px; font-weight:800; padding:2px 8px; border-radius:10px; background:#eef4ff; color:#1565c0; }
-
-/* ---- MY SHIFT ---- */
-.shift-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; font-size:13px; }
-.shift-grid .k{ color:#888; }
-.shift-grid .v{ font-weight:800; text-align:right; }
-.close-shift-btn{ width:100%; margin-top:16px; padding:13px; background:#dc3545; color:#fff; border:none; border-radius:10px; font-weight:800; cursor:pointer; font-size:14px; }
+.gate button{ width:100%; padding:13px; background:var(--green); color:#fff; border:none; border-radius:10px; font-weight:800; font-size:14px; cursor:pointer; }
 
 /* ---- MODAL ---- */
 .modal-bg{ display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); align-items:center; justify-content:center; z-index:100; padding:16px; }
@@ -76,106 +147,237 @@ body{ margin:0; font-family:Arial,sans-serif; background:#f4f6f9; color:#1b2330;
 .modal h3{ margin:0 0 16px; font-size:16px; }
 .method-grid{ display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:14px; }
 .method-opt{ padding:12px; border:1.5px solid #ddd; border-radius:10px; text-align:center; font-size:13px; font-weight:700; cursor:pointer; }
-.method-opt.selected{ border-color:#1f9e57; background:#eafaf1; color:#1f9e57; }
+.method-opt.selected{ border-color:var(--green); background:#eafaf1; color:var(--green); }
 .modal input{ width:100%; padding:12px; border-radius:10px; border:1px solid #ddd; font-size:14px; margin-bottom:10px; }
 .change-row{ display:flex; justify-content:space-between; font-weight:800; font-size:14px; margin-bottom:14px; }
 .modal-actions{ display:flex; gap:8px; }
 .modal-actions button{ flex:1; padding:12px; border:none; border-radius:10px; font-weight:800; cursor:pointer; font-size:13px; }
-.confirm-btn{ background:#1f9e57; color:#fff; }
+.confirm-btn{ background:var(--green); color:#fff; }
 .cancel-btn{ background:#eee; color:#333; }
+
+@media(max-width:800px){
+    .sidebar{ display:none; }
+    .content{ padding:16px; }
+}
 </style>
 </head>
 <body>
 
-<div class="topbar">
-    <div>
-        <h1>💰 {{ staff_name }} — {{ employee_id }}
-            {% if has_shift %}<span class="shift-badge shift-on">🟢 Shift Active</span>{% else %}<span class="shift-badge shift-off">⚪ No Shift</span>{% endif %}
-        </h1>
-        <div class="sub">{{ restaurant_name }} · Cashier Dashboard</div>
-    </div>
-    <a href="/cashier_logout" class="logout">Logout</a>
-</div>
-
-{% if not has_shift %}
-<div class="gate">
-    <div class="ic">🕐</div>
-    <h2>Open Your Shift</h2>
-    <p>You need to open a shift before taking payments.</p>
-    <label>Opening Cash ($)</label>
-    <input type="number" id="opening_cash" placeholder="e.g. 100" min="0" step="0.01">
-    <button onclick="openShift()">▶ Open Shift</button>
-</div>
-
-{% else %}
-<div class="wrap">
-
-    <div class="stats-row">
-        <div class="stat"><div class="label">💵 Today's Sales</div><div class="value">${{ collected_today }}</div></div>
-        <div class="stat"><div class="label">🧾 Orders</div><div class="value">{{ orders_count }}</div></div>
-        <div class="stat"><div class="label">💰 Cash</div><div class="value">${{ method_totals.cash }}</div></div>
-        <div class="stat"><div class="label">📱 Mobile</div><div class="value">${{ mobile_total }}</div></div>
-    </div>
-
-    <div class="section">
-        <h2>🔔 Orders Awaiting Payment ({{ pending_orders|length }})</h2>
-        {% for o in pending_orders %}
-        <div class="order-card">
-            <div class="order-head">
-                <span>Table {{ o.table }}</span>
-                <span class="status-pill status-{{ (o.status or 'pending')|lower }}">{{ o.status }}</span>
-            </div>
-            <div class="order-items">{{ o['items'] }}</div>
-            <div class="order-items"><b>${{ "%.2f"|format(o.price or 0) }}</b></div>
-            <div class="order-actions">
-                <button class="pay-btn" data-order-id="{{ o.id }}" data-order-total="{{ o.price or 0 }}" onclick="openPayModal(this)">✅ Pay</button>
-                <a class="receipt-btn" href="/receipt/{{ rid }}/{{ o.id }}" target="_blank">🧾 Receipt</a>
+<div class="shell">
+    <!-- ================= SIDEBAR ================= -->
+    <aside class="sidebar">
+        <div class="sb-brand">
+            <div class="logo">S</div>
+            <div>
+                <div class="name">Sahal Server</div>
+                <div class="sub">RESTAURANT POS</div>
             </div>
         </div>
+
+        <div class="sb-profile">
+            <div class="sb-profile-top">
+                <div class="sb-avatar">{{ staff_name[:1]|upper }}</div>
+                <div>
+                    <div class="pn">{{ staff_name }}</div>
+                    <div class="pid">{{ employee_id }}</div>
+                    <div class="role">Cashier</div>
+                </div>
+            </div>
+            {% if has_shift %}<div class="shift-tag on">🟢 Shift Active</div>{% endif %}
+        </div>
+
+        <div class="sb-label">POS Management</div>
+        <ul class="sb-nav">
+            <li><a class="sb-link active" href="#top">📊 Dashboard</a></li>
+            {% if has_shift %}
+            <li><a class="sb-link" href="#ordersSection">🧾 Orders {% if pending_count %}<span class="badge">{{ pending_count }}</span>{% endif %}</a></li>
+            <li><a class="sb-link" href="#paymentsSection">💳 Payments</a></li>
+            <li><a class="sb-link" href="#receiptSection">📄 Receipt History</a></li>
+            {% endif %}
+        </ul>
+
+        {% if has_shift %}
+        <div class="sb-label">Staff &amp; Kitchen</div>
+        <ul class="sb-nav">
+            <li><a class="sb-link" href="#waitersSection">👥 Waiters Today</a></li>
+            <li><a class="sb-link" href="/kitchen/{{ rid }}" target="_blank">🍳 Kitchen Orders</a></li>
+        </ul>
+
+        <div class="sb-label">Reports</div>
+        <ul class="sb-nav">
+            <li><a class="sb-link" href="#topItemsSection">📈 Sales Report</a></li>
+            <li><a class="sb-link" href="#paymentsSection">💰 Payment Summary</a></li>
+            <li><a class="sb-link" href="#shiftSection">🕐 Shift Report</a></li>
+        </ul>
+        {% endif %}
+
+        <div class="sb-bottom">
+            <a class="sb-logout" href="/cashier_logout">🚪 Logout</a>
+        </div>
+    </aside>
+
+    <!-- ================= MAIN ================= -->
+    <div class="main" id="top">
+        <div class="topbar">
+            <div class="tb-left">
+                <div class="tb-restaurant">🏪 {{ restaurant_name }}</div>
+            </div>
+            <div class="tb-right">
+                <div class="tb-avatar">{{ staff_name[:1]|upper }}</div>
+                <div class="tb-admin">
+                    <div class="an1">{{ staff_name }}</div>
+                    <div class="an2">Cashier</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="content">
+
+        {% if not has_shift %}
+        <div class="gate">
+            <div class="ic">🕐</div>
+            <h2>Open Your Shift</h2>
+            <p>You need to open a shift before taking payments.</p>
+            <label>Opening Cash ($)</label>
+            <input type="number" id="opening_cash" placeholder="e.g. 100" min="0" step="0.01">
+            <button onclick="openShift()">▶ Open Shift</button>
+        </div>
+
         {% else %}
-        <div style="color:#888;font-size:13px;text-align:center;padding:14px;">No orders awaiting payment</div>
-        {% endfor %}
-    </div>
 
-    <div class="section">
-        <h2>📊 Payment Summary (This Shift)</h2>
-        <div class="summary-grid">
-            <div class="summary-item"><div class="m-label">💵 Cash</div><div class="m-value">${{ method_totals.cash }}</div></div>
-            <div class="summary-item"><div class="m-label">📱 EVC Plus</div><div class="m-value">${{ method_totals.evc }}</div></div>
-            <div class="summary-item"><div class="m-label">📱 eDahab</div><div class="m-value">${{ method_totals.edahab }}</div></div>
-            <div class="summary-item"><div class="m-label">💳 Card</div><div class="m-value">${{ method_totals.card }}</div></div>
-            <div class="summary-item"><div class="m-label">➕ Other</div><div class="m-value">${{ method_totals.other }}</div></div>
+        <div class="stats-row">
+            <div class="stat-card"><div class="stat-ic si-blue">💵</div><div class="stat-info"><div class="label">Today's Sales</div><div class="value">${{ today_sales }}</div></div></div>
+            <div class="stat-card"><div class="stat-ic si-green">🧾</div><div class="stat-info"><div class="label">Total Orders</div><div class="value">{{ today_orders_count }}</div></div></div>
+            <div class="stat-card"><div class="stat-ic si-orange">💰</div><div class="stat-info"><div class="label">Cash Collected</div><div class="value">${{ today_cash }}</div></div></div>
+            <div class="stat-card"><div class="stat-ic si-purple">📱</div><div class="stat-info"><div class="label">Mobile Payments</div><div class="value">${{ today_mobile }}</div></div></div>
+            <div class="stat-card"><div class="stat-ic si-teal">👥</div><div class="stat-info"><div class="label">Pending Orders</div><div class="value">{{ pending_count }}</div></div></div>
         </div>
-        <div class="summary-total"><span>Total</span><span>${{ collected_today }}</span></div>
-    </div>
 
-    <div class="section">
-        <h2>🧾 My Transactions (This Shift)</h2>
-        {% for t in transactions %}
-        <div class="tx-row">
-            <span>{{ t.payment_id }} · {{ t.time }}</span>
-            <span class="tx-method">{{ t.method|upper }}</span>
-            <span><b>${{ "%.2f"|format(t.amount or 0) }}</b></span>
+        <div class="grid-2">
+            <div class="section" id="ordersSection">
+                <div class="section-head">
+                    <h2>🧾 Orders Awaiting Payment <span class="count-badge">{{ pending_count }}</span></h2>
+                </div>
+                <div style="overflow-x:auto;">
+                <table class="orders-tbl">
+                    <tr><th>Order</th><th>Table</th><th>Waiter</th><th>Items</th><th>Amount</th><th>Status</th><th>Action</th></tr>
+                    {% for o in pending_orders %}
+                    <tr>
+                        <td>#{{ o.receipt_ref or o.id[:6] }}</td>
+                        <td>{{ o.table }}</td>
+                        <td>
+                            <div class="waiter-cell">
+                                <div class="w-avatar">{{ (o.employee_name or '—')[:1]|upper }}</div>
+                                {{ o.employee_name or '—' }}
+                            </div>
+                        </td>
+                        <td>{{ o['items'] }}</td>
+                        <td><b>${{ "%.2f"|format(o.price or 0) }}</b></td>
+                        <td><span class="status-pill status-{{ (o.status or 'pending')|lower }}">{{ o.status }}</span></td>
+                        <td>
+                            <div class="tbl-actions">
+                                <button class="pay-btn" data-order-id="{{ o.id }}" data-order-total="{{ o.price or 0 }}" onclick="openPayModal(this)">Pay</button>
+                                <a class="receipt-btn" href="/receipt/{{ rid }}/{{ o.id }}" target="_blank">Receipt</a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="7" style="text-align:center;color:var(--muted);padding:16px;">No orders awaiting payment</td></tr>
+                    {% endfor %}
+                </table>
+                </div>
+            </div>
+
+            <div class="section shift-summary" id="shiftSection">
+                <div class="section-head">
+                    <h2>📋 Shift Summary</h2>
+                    <span class="status-active">Active</span>
+                </div>
+                <div class="ss-row"><span class="k">Shift ID</span><span class="v">{{ shift.shift_code }}</span></div>
+                <div class="ss-row"><span class="k">Shift Opened</span><span class="v">{{ shift.opened_at[11:16] if shift.opened_at else '—' }}</span></div>
+                <div class="ss-row"><span class="k">Opening Cash</span><span class="v">${{ opening_cash }}</span></div>
+                <div class="ss-row"><span class="k">Total Sales (my shift)</span><span class="v">${{ shift_collected }}</span></div>
+                <div class="ss-row"><span class="k">Cash Sales</span><span class="v">${{ shift_method_totals.cash }}</span></div>
+                <div class="ss-row"><span class="k">Mobile Payments</span><span class="v">${{ (shift_method_totals.evc + shift_method_totals.edahab + shift_method_totals.card + shift_method_totals.other)|round(2) }}</span></div>
+                <div class="ss-row"><span class="k">Transactions</span><span class="v">{{ shift_orders_count }}</span></div>
+                <div class="ss-row" style="border-bottom:none;"><span class="k">Expected Cash</span><span class="v">${{ expected_cash }}</span></div>
+                <button class="close-shift-btn" onclick="openCloseModal()">🔒 Close Shift</button>
+            </div>
         </div>
-        {% else %}
-        <div style="color:#888;font-size:13px;text-align:center;padding:14px;">No transactions yet this shift</div>
-        {% endfor %}
-    </div>
 
-    <div class="section">
-        <h2>📋 My Shift</h2>
-        <div class="shift-grid">
-            <div class="k">Opened</div><div class="v">{{ shift.opened_at[11:16] if shift.opened_at else '—' }}</div>
-            <div class="k">Opening Cash</div><div class="v">${{ opening_cash }}</div>
-            <div class="k">Transactions</div><div class="v">{{ orders_count }}</div>
-            <div class="k">Collected</div><div class="v">${{ collected_today }}</div>
-            <div class="k">Expected Cash</div><div class="v">${{ expected_cash }}</div>
+        <div class="grid-3">
+            <div class="section" id="paymentsSection">
+                <div class="section-head"><h2>📊 Payment Methods Summary</h2></div>
+                <div class="donut-wrap">
+                    <div class="donut" style="background:{{ donut_gradient }};">
+                    </div>
+                    <div class="legend">
+                        <div class="legend-row"><span class="legend-dot" style="background:#1f9e57;"></span><span class="lname">Cash</span><span class="lval">${{ payment_summary.cash }}</span></div>
+                        <div class="legend-row"><span class="legend-dot" style="background:#2f6fed;"></span><span class="lname">EVC Plus</span><span class="lval">${{ payment_summary.evc }}</span></div>
+                        <div class="legend-row"><span class="legend-dot" style="background:#7b3fb5;"></span><span class="lname">eDahab</span><span class="lval">${{ payment_summary.edahab }}</span></div>
+                        <div class="legend-row"><span class="legend-dot" style="background:#e0651f;"></span><span class="lname">Card</span><span class="lval">${{ payment_summary.card }}</span></div>
+                        <div class="legend-row"><span class="legend-dot" style="background:#ccc;"></span><span class="lname">Other</span><span class="lval">${{ payment_summary.other }}</span></div>
+                    </div>
+                </div>
+                <div class="pm-total"><span>Total Collected</span><span>${{ today_sales }}</span></div>
+            </div>
+
+            <div class="section" id="topItemsSection">
+                <div class="section-head"><h2>🍔 Top Selling Items</h2></div>
+                {% for it in top_items %}
+                <div class="item-row">
+                    <div class="item-rank">{{ loop.index }}</div>
+                    <div class="item-name">{{ it.name }}</div>
+                    <div class="item-qty">{{ it.qty }}</div>
+                    <div class="item-sales">${{ "%.2f"|format(it.sales) }}</div>
+                </div>
+                {% else %}
+                <div style="color:var(--muted);font-size:13px;text-align:center;padding:14px;">No sales yet today</div>
+                {% endfor %}
+            </div>
+
+            <div class="section" id="waitersSection">
+                <div class="section-head"><h2>👥 Waiters Today</h2></div>
+                {% for w in waiters_performance %}
+                <div class="wp-row">
+                    <div class="w-avatar">{{ w.name[:1]|upper }}</div>
+                    <div class="wp-name">{{ w.name }}</div>
+                    <div class="wp-orders">{{ w.orders }} ord</div>
+                    <div class="wp-sales">${{ "%.2f"|format(w.sales) }}</div>
+                </div>
+                {% else %}
+                <div style="color:var(--muted);font-size:13px;text-align:center;padding:14px;">No waiter orders yet today</div>
+                {% endfor %}
+            </div>
         </div>
-        <button class="close-shift-btn" onclick="openCloseModal()">🔒 Close Shift</button>
-    </div>
 
+        <div class="section" id="receiptSection">
+            <div class="section-head"><h2>🧾 My Transactions (This Shift)</h2></div>
+            {% for t in shift_transactions %}
+            <div class="wp-row">
+                <div class="wp-name">{{ t.payment_id }} · {{ t.time }}</div>
+                <div class="wp-orders">{{ t.method|upper }}</div>
+                <div class="wp-sales">${{ "%.2f"|format(t.amount or 0) }}</div>
+            </div>
+            {% else %}
+            <div style="color:var(--muted);font-size:13px;text-align:center;padding:14px;">No transactions yet this shift</div>
+            {% endfor %}
+        </div>
+
+        <div class="section">
+            <div class="section-head"><h2>⚡ Quick Actions</h2></div>
+            <div class="qa-row">
+                <a class="qa-btn" style="background:var(--blue);" href="#ordersSection">🧾 Orders Awaiting Payment</a>
+                <a class="qa-btn" style="background:var(--purple);" href="#waitersSection">👥 View Waiters</a>
+                <a class="qa-btn" style="background:var(--orange);" href="/kitchen/{{ rid }}" target="_blank">🍳 Kitchen Orders</a>
+                <a class="qa-btn" style="background:var(--teal);" href="#paymentsSection">💰 Payment Summary</a>
+            </div>
+        </div>
+
+        {% endif %}
+        </div>
+    </div>
 </div>
-{% endif %}
 
 <!-- PAY MODAL -->
 <div class="modal-bg" id="payModal">
@@ -268,7 +470,7 @@ async function confirmPayment(){
 }
 
 function openCloseModal(){ document.getElementById("closeModal").classList.add("show"); }
-function closeCloseModal(){ document.getElementById("closeModal").classList.remove("show"); }
+function closeCloseModal(){ document.getElementById("closeCloseModal").classList.remove("show"); }
 
 async function confirmCloseShift(){
     const actual_cash = parseFloat(document.getElementById("actualCash").value) || 0;
