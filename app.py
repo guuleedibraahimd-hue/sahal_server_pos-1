@@ -2933,6 +2933,76 @@ def receipt_view(rid, table):
 
 
 # ==========================================
+# PHARMACY SALE RECEIPT (printable, same style as restaurant receipt.html)
+# ==========================================
+@app.route("/pharmacy_receipt/<pid>/<int:sale_ref>")
+def pharmacy_receipt(pid, sale_ref):
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        c    = conn.cursor()
+        init_pharmacy_sql(conn, c)
+        c.execute("""SELECT medicine_name, quantity_sold, selling_price, sale_date
+                     FROM pharmacy_sales
+                     WHERE pharmacy_id=? AND sale_ref=?
+                     ORDER BY id ASC""", (pid, sale_ref))
+        rows = c.fetchall()
+        conn.close()
+
+        if not rows:
+            return "<h2 style='text-align:center;margin-top:100px;font-family:Arial'>❌ Receipt not found</h2>", 404
+
+        items = []
+        subtotal = 0.0
+        for name, qty, price, _ in rows:
+            qty   = int(qty)
+            price = float(price)
+            line_total = round(qty * price, 2)
+            subtotal  += line_total
+            items.append({"food": name, "qty": qty, "price": price, "total": line_total})
+
+        vat   = round(subtotal * 0.05, 2)
+        total = round(subtotal + vat, 2)
+
+        sale_date_raw = rows[0][3]
+        try:
+            created_at = datetime.strptime(sale_date_raw, "%Y-%m-%d %H:%M:%S")
+        except Exception:
+            created_at = None
+
+        pharmacy_name = pid
+        phone = ""
+        ph_doc = db.collection("pharmacies").where("username", "==", pid).limit(1).stream()
+        for d in ph_doc:
+            ph = d.to_dict()
+            pharmacy_name = ph.get("pharmacy_name", pid)
+            phone = ph.get("phone", "")
+            break
+        else:
+            pu_doc = db.collection("pharmacy_users").document(pid).get()
+            if pu_doc.exists:
+                pu = pu_doc.to_dict()
+                pharmacy_name = pu.get("pharmacy_name", pid)
+                phone = pu.get("phone", "")
+
+        return render_template(
+            "receipt.html",
+            restaurant_name = pharmacy_name,
+            phone           = phone,
+            payment         = "",
+            table           = "POS",
+            ref             = sale_ref,
+            items           = items,
+            subtotal        = subtotal,
+            vat             = vat,
+            total           = total,
+            created_at      = created_at
+        )
+    except Exception as e:
+        print("Pharmacy Receipt Error:", e)
+        return f"Receipt Error ❌ {str(e)}"
+
+
+# ==========================================
 # 📢 SYSTEM INFO — ADD
 # ==========================================
 @app.route("/add_info", methods=["POST"])
@@ -3668,6 +3738,15 @@ def get_username():
     return session.get("pharmacy_user", session.get("pharmacy_id", "unknown"))
 
 
+def get_next_pharmacy_sale_ref(username):
+    """Sequential per-pharmacy integer ref number for sale receipts (never resets)."""
+    counter_ref = db.collection("pharmacy_product").document(username) \
+                    .collection("meta").document("sale_counter")
+    counter_ref.set({"count": firestore.Increment(1)}, merge=True)
+    snap = counter_ref.get()
+    return snap.to_dict().get("count", 1)
+
+
 # ==========================================
 # INIT PHARMACY SALES/DEBTS (SQLite only)
 # ==========================================
@@ -3684,6 +3763,7 @@ def init_pharmacy_sql(conn, c):
         CREATE TABLE IF NOT EXISTS pharmacy_sales (
             id             INTEGER PRIMARY KEY AUTOINCREMENT,
             pharmacy_id    TEXT,
+            sale_ref       INTEGER,
             medicine_id    TEXT,
             medicine_name  TEXT,
             barcode        TEXT,
@@ -3694,6 +3774,11 @@ def init_pharmacy_sql(conn, c):
             sale_date      TEXT DEFAULT CURRENT_TIMESTAMP
         )
     """)
+    # sale_ref added after original table creation — backfill for older DBs
+    try:
+        c.execute("ALTER TABLE pharmacy_sales ADD COLUMN sale_ref INTEGER")
+    except Exception:
+        pass
     c.execute("""
         CREATE TABLE IF NOT EXISTS pharmacy_debts (
             id          INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -3932,6 +4017,8 @@ def sell_medicine():
         ref          = get_pharmacy_ref()
         pid          = get_username()
         total_profit = 0
+        sale_ref     = get_next_pharmacy_sale_ref(pid)
+        sale_time    = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         conn         = sqlite3.connect(DB_PATH)
         c            = conn.cursor()
         init_pharmacy_sql(conn, c)
@@ -3955,16 +4042,18 @@ def sell_medicine():
             total_profit += profit
             ref.document(str(med_id)).update({"stock_quantity": stock - qty})
             c.execute("""INSERT INTO pharmacy_sales
-                (pharmacy_id, medicine_id, medicine_name, barcode,
+                (pharmacy_id, sale_ref, medicine_id, medicine_name, barcode,
                  quantity_sold, cost_price, selling_price, profit, sale_date)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-                (pid, med_id, name, bc, qty, cost, paid_price,
-                 profit, datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                (pid, sale_ref, med_id, name, bc, qty, cost, paid_price,
+                 profit, sale_time))
         conn.commit()
         conn.close()
         return jsonify({"success": True, "message": "Sale recorded",
                         "total_profit": round(total_profit, 2),
-                        "items_sold": len(cart)})
+                        "items_sold": len(cart),
+                        "sale_ref": sale_ref,
+                        "receipt_url": f"/pharmacy_receipt/{pid}/{sale_ref}"})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
 
