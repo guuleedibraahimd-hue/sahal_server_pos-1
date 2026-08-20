@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Waiter Dashboard - {{ restaurant_name }}</title>
+<style>
+*{ box-sizing:border-box; }
+body{ margin:0; font-family:Arial,sans-serif; background:#f4f6f9; color:#1b2330; }
+.topbar{
+    background:linear-gradient(120deg,#ff9800,#ff5722); color:#fff; padding:18px 20px;
+    display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;
+}
+.topbar h1{ font-size:17px; margin:0; }
+.topbar .sub{ font-size:12px; opacity:0.9; }
+.logout{ background:rgba(255,255,255,0.2); color:#fff; text-decoration:none; padding:8px 14px; border-radius:10px; font-weight:700; font-size:13px; }
+.wrap{ max-width:960px; margin:0 auto; padding:18px; }
+.stat{ background:#fff; border-radius:16px; padding:18px; margin-bottom:18px; box-shadow:0 4px 12px rgba(0,0,0,0.06); text-align:center; }
+.stat .label{ font-size:12px; color:#888; font-weight:700; }
+.stat .value{ font-size:26px; font-weight:900; color:#ff5722; margin-top:4px; }
+
+.section{ background:#fff; border-radius:16px; padding:18px; margin-bottom:18px; box-shadow:0 4px 12px rgba(0,0,0,0.06); }
+.section h2{ font-size:15px; margin:0 0 14px; }
+
+.table-input{ display:flex; gap:10px; margin-bottom:14px; }
+.table-input input{ flex:1; padding:12px; border-radius:10px; border:1px solid #ddd; font-size:14px; }
+
+.menu-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:10px; }
+.menu-item{ border:1px solid #eee; border-radius:12px; padding:10px; text-align:center; cursor:pointer; transition:0.15s; }
+.menu-item:hover{ border-color:#ff5722; background:#fff7f2; }
+.menu-item .name{ font-size:13px; font-weight:700; margin-top:4px; }
+.menu-item .price{ font-size:12px; color:#ff5722; font-weight:800; }
+.menu-item img{ width:100%; height:70px; object-fit:cover; border-radius:8px; }
+
+.cart-row{ display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid #f0f0f0; font-size:13px; }
+.cart-row button{ background:#dc3545; color:#fff; border:none; border-radius:6px; padding:4px 8px; cursor:pointer; font-size:11px; }
+.cart-total{ display:flex; justify-content:space-between; font-weight:800; margin-top:10px; font-size:15px; }
+.send-btn{ width:100%; margin-top:14px; padding:14px; background:#ff5722; color:#fff; border:none; border-radius:12px; font-weight:800; cursor:pointer; font-size:14px; }
+
+.order-row{ display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid #f0f0f0; font-size:13px; }
+.status-pill{ padding:3px 10px; border-radius:20px; font-size:11px; font-weight:800; }
+.status-pending{ background:#fff3cd; color:#856404; }
+.status-preparing{ background:#cce5ff; color:#004085; }
+.status-ready{ background:#d4edda; color:#155724; }
+.status-paid{ background:#d1f2eb; color:#0e6655; }
+
+.msg{ display:none; margin-top:10px; padding:10px; border-radius:8px; font-size:13px; font-weight:700; }
+.msg.show{ display:block; }
+.msg.ok{ background:#d4edda; color:#155724; }
+.msg.err{ background:#f8d7da; color:#721c24; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+    <div>
+        <h1>🧑‍🍳 {{ staff_name }} — {{ employee_id }}</h1>
+        <div class="sub">{{ restaurant_name }} · Waiter Dashboard</div>
+    </div>
+    <a href="/waiter_logout" class="logout">Logout</a>
+</div>
+
+<div class="wrap">
+
+    <div class="stat">
+        <div class="label">💰 My Sales Today (Paid Orders)</div>
+        <div class="value">${{ total_sales }}</div>
+    </div>
+
+    <div class="section">
+        <h2>🍔 New Order</h2>
+        <div class="table-input">
+            <input type="text" id="tableNo" placeholder="Table number">
+        </div>
+        <div class="menu-grid" id="menuGrid">
+            {% for item in menu %}
+            <div class="menu-item" data-id="{{ item.id }}" data-name="{{ item.name }}" data-price="{{ item.price|default(0) }}" onclick="addToCart(this)">
+                {% if item.image %}<img src="{{ item.image if item.image.startswith('http') else '/static/uploads/' + item.image }}">{% endif %}
+                <div class="name">{{ item.name }}</div>
+                <div class="price">${{ item.price }}</div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div id="cartBox" style="margin-top:16px;"></div>
+        <div class="cart-total" id="cartTotal" style="display:none;">
+            <span>Total</span><span id="cartTotalValue">$0.00</span>
+        </div>
+        <button class="send-btn" onclick="sendOrder()">📨 Send Order to Kitchen</button>
+        <div class="msg" id="orderMsg"></div>
+    </div>
+
+    <div class="section">
+        <h2>📋 My Recent Orders</h2>
+        {% for o in my_orders %}
+        <div class="order-row">
+            <div>Table {{ o.table }} — {{ o.items }}</div>
+            <span class="status-pill status-{{ o.status|lower }}">{{ o.status }}</span>
+        </div>
+        {% else %}
+        <div style="color:#888;font-size:13px;text-align:center;padding:14px;">No orders yet</div>
+        {% endfor %}
+    </div>
+
+</div>
+
+<script>
+let cart = [];
+
+function addToCart(el){
+    const id    = el.dataset.id;
+    const name  = el.dataset.name;
+    const price = parseFloat(el.dataset.price) || 0;
+    const existing = cart.find(c => c.id === id);
+    if(existing){ existing.qty += 1; } else { cart.push({id, name, price, qty:1}); }
+    renderCart();
+}
+
+function removeFromCart(idx){
+    cart.splice(idx, 1);
+    renderCart();
+}
+
+function renderCart(){
+    const box = document.getElementById("cartBox");
+    const totalBox = document.getElementById("cartTotal");
+    if(!cart.length){ box.innerHTML = ""; totalBox.style.display = "none"; return; }
+
+    let total = 0;
+    box.innerHTML = cart.map((c, i) => {
+        total += c.price * c.qty;
+        return `<div class="cart-row">
+            <span>${c.qty} × ${c.name}</span>
+            <span>$${(c.price*c.qty).toFixed(2)} <button onclick="removeFromCart(${i})">✕</button></span>
+        </div>`;
+    }).join("");
+
+    totalBox.style.display = "flex";
+    document.getElementById("cartTotalValue").textContent = "$" + total.toFixed(2);
+}
+
+async function sendOrder(){
+    const table = document.getElementById("tableNo").value.trim();
+    const msg = document.getElementById("orderMsg");
+    msg.className = "msg";
+
+    if(!table){ msg.classList.add("show","err"); msg.textContent = "❌ Enter a table number"; return; }
+    if(!cart.length){ msg.classList.add("show","err"); msg.textContent = "❌ Cart is empty"; return; }
+
+    try{
+        const res = await fetch("/order/{{ rid }}", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({
+                table,
+                cart: cart.map(c => ({ name: c.name, price: c.price, qty: c.qty }))
+            })
+        });
+        const data = await res.json();
+        if(data.success){
+            msg.classList.add("show","ok");
+            msg.textContent = "✅ Order sent to kitchen!";
+            cart = [];
+            renderCart();
+            document.getElementById("tableNo").value = "";
+            setTimeout(() => location.reload(), 1200);
+        } else {
+            msg.classList.add("show","err");
+            msg.textContent = "❌ " + (data.error || "Failed to send order");
+        }
+    } catch(e){
+        msg.classList.add("show","err");
+        msg.textContent = "❌ Server error";
+    }
+}
+</script>
+
+</body>
+</html>

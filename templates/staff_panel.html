@@ -1,143 +1,166 @@
 <!DOCTYPE html>
 <html>
-
 <head>
-
-<title>Staff Panel</title>
-
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Staff Management - {{ restaurant_name }}</title>
 <style>
-
-body{
-font-family:Arial;
-background:#f4f4f4;
-padding:20px;
+*{ box-sizing:border-box; }
+body{ margin:0; font-family:Arial,sans-serif; background:#f4f6f9; color:#1b2330; }
+.topbar{
+    background:linear-gradient(120deg,#0b1220,#1c2b4a); color:#fff; padding:20px 24px;
+    display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;
 }
+.topbar h1{ font-size:18px; margin:0; }
+.topbar .sub{ font-size:12px; color:#f4b400; font-weight:700; }
+.back{ background:rgba(255,255,255,0.15); color:#fff; text-decoration:none; padding:9px 16px; border-radius:10px; font-weight:700; font-size:13px; }
+.wrap{ max-width:900px; margin:0 auto; padding:20px; }
 
-.box{
-background:white;
-padding:15px;
-margin-bottom:20px;
-border-radius:10px;
-box-shadow:0 0 5px rgba(0,0,0,0.2);
-}
+.section{ background:#fff; border-radius:16px; padding:20px; margin-bottom:20px; box-shadow:0 4px 12px rgba(0,0,0,0.06); }
+.section h2{ font-size:15px; margin:0 0 14px; }
 
-.chat{
-height:300px;
-overflow:auto;
-border:1px solid #ddd;
-padding:10px;
-margin-bottom:10px;
-}
+.form-row{ display:grid; grid-template-columns:1fr 1fr 1fr auto; gap:10px; align-items:end; }
+.form-row div{ display:flex; flex-direction:column; }
+label{ font-size:11px; font-weight:800; color:#666; margin-bottom:4px; }
+input, select{ padding:11px; border-radius:10px; border:1px solid #ddd; font-size:13px; }
+.create-btn{ background:#6f42c1; color:#fff; border:none; border-radius:10px; padding:12px 18px; font-weight:800; cursor:pointer; font-size:13px; }
+.msg{ display:none; margin-top:12px; padding:10px; border-radius:8px; font-size:13px; font-weight:700; }
+.msg.show{ display:block; }
+.msg.ok{ background:#d4edda; color:#155724; }
+.msg.err{ background:#f8d7da; color:#721c24; }
 
-.message{
-margin-bottom:8px;
-}
+.staff-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:14px; margin-top:16px; }
+.staff-card{ border:1px solid #eee; border-radius:14px; padding:14px; }
+.staff-head{ display:flex; justify-content:space-between; align-items:center; }
+.staff-name{ font-weight:800; font-size:14px; }
+.role-pill{ font-size:11px; font-weight:800; padding:3px 10px; border-radius:20px; }
+.role-waiter{ background:#fff3e0; color:#e65100; }
+.role-cashier{ background:#e8f5e9; color:#1b5e20; }
+.staff-detail{ font-size:12px; color:#666; margin-top:8px; }
+.staff-actions{ display:flex; gap:8px; margin-top:12px; }
+.staff-actions button{ flex:1; padding:8px; border:none; border-radius:8px; font-weight:800; font-size:11px; cursor:pointer; }
+.btn-toggle{ background:#ff9800; color:#fff; }
+.btn-del{ background:#111; color:#fff; }
+.status-active{ color:#28a745; font-weight:800; font-size:12px; }
+.status-disabled{ color:#dc3545; font-weight:800; font-size:12px; }
 
-input{
-padding:10px;
-width:80%;
-}
-
-button{
-padding:10px;
-}
-
+.portal-links{ display:flex; gap:10px; flex-wrap:wrap; margin-top:6px; }
+.portal-links a{ font-size:12px; color:#6f42c1; font-weight:700; text-decoration:none; }
 </style>
-
 </head>
-
 <body>
 
-<h2>Welcome {{name}}</h2>
-
-<div class="box">
-
-<h3>Restaurant News</h3>
-
-{% for n in news %}
-
-<div style="border-bottom:1px solid #eee;margin-bottom:10px">
-
-<b>{{n[2]}}</b>
-
-<p>{{n[3]}}</p>
-
-<small>{{n[4]}}</small>
-
+<div class="topbar">
+    <div>
+        <h1>👥 Staff Management</h1>
+        <div class="sub">{{ restaurant_name }}</div>
+    </div>
+    <a href="/dashboard/{{ rid }}" class="back">← Back to Dashboard</a>
 </div>
 
-{% endfor %}
+<div class="wrap">
+
+    <div class="section">
+        <h2>➕ Create Waiter / Cashier Account</h2>
+        <div class="form-row">
+            <div>
+                <label>Name</label>
+                <input type="text" id="s_name" placeholder="e.g. Ahmed">
+            </div>
+            <div>
+                <label>Role</label>
+                <select id="s_role">
+                    <option value="waiter">Waiter</option>
+                    <option value="cashier">Cashier</option>
+                </select>
+            </div>
+            <div>
+                <label>PIN (4-6 digits)</label>
+                <input type="text" id="s_pin" placeholder="e.g. 1234" inputmode="numeric" maxlength="6">
+            </div>
+            <button class="create-btn" onclick="createStaff()">✅ Create</button>
+        </div>
+        <div class="msg" id="createMsg"></div>
+        <div class="portal-links">
+            <a href="/waiter_login/{{ rid }}" target="_blank">🧑‍🍳 Open Waiter Portal</a>
+            <a href="/cashier_login/{{ rid }}" target="_blank">💰 Open Cashier Portal</a>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>📋 Staff Accounts ({{ staff|length }})</h2>
+        <div class="staff-grid">
+            {% for s in staff %}
+            <div class="staff-card">
+                <div class="staff-head">
+                    <span class="staff-name">{{ s.name }}</span>
+                    <span class="role-pill role-{{ s.role }}">{{ s.role|capitalize }}</span>
+                </div>
+                <div class="staff-detail">🆔 {{ s.employee_id }}</div>
+                <div class="staff-detail">🔐 PIN: {{ s.pin }}</div>
+                <div class="staff-detail">
+                    {% if s.active %}<span class="status-active">✅ Active</span>{% else %}<span class="status-disabled">❌ Disabled</span>{% endif %}
+                </div>
+                <div class="staff-actions">
+                    <button class="btn-toggle" onclick="toggleStaff('{{ s.id }}', this)">{{ 'Disable' if s.active else 'Activate' }}</button>
+                    <button class="btn-del" onclick="deleteStaff('{{ s.id }}', '{{ s.name|e }}')">Delete</button>
+                </div>
+            </div>
+            {% else %}
+            <div style="color:#888;font-size:13px;">No staff accounts yet</div>
+            {% endfor %}
+        </div>
+    </div>
 
 </div>
-
-
-<div class="box">
-
-<h3>Staff Chat</h3>
-
-<div class="chat" id="chatBox"></div>
-
-<input id="msg">
-
-<button onclick="send()">Send</button>
-
-</div>
-
 
 <script>
+async function createStaff(){
+    const name = document.getElementById("s_name").value.trim();
+    const role = document.getElementById("s_role").value;
+    const pin  = document.getElementById("s_pin").value.trim();
+    const msg  = document.getElementById("createMsg");
+    msg.className = "msg";
 
-function loadChat(){
+    if(!name || !pin){ msg.classList.add("show","err"); msg.textContent = "❌ Fill all fields"; return; }
 
-fetch("/get_messages/{{rid}}")
-
-.then(r=>r.json())
-
-.then(data=>{
-
-let html=""
-
-data.forEach(m=>{
-
-html+=`<div class="message"><b>${m.sender}</b>: ${m.message}</div>`
-
-})
-
-document.getElementById("chatBox").innerHTML=html
-
-})
-
+    try{
+        const res = await fetch("/staff_manage/{{ rid }}/create", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({ name, role, pin })
+        });
+        const data = await res.json();
+        if(data.success){
+            msg.classList.add("show","ok");
+            msg.textContent = `✅ Created ${data.employee_id}`;
+            setTimeout(() => location.reload(), 900);
+        } else {
+            msg.classList.add("show","err");
+            msg.textContent = "❌ " + (data.error || "Failed");
+        }
+    } catch(e){
+        msg.classList.add("show","err");
+        msg.textContent = "❌ Server error";
+    }
 }
 
-function send(){
-
-let msg=document.getElementById("msg").value
-
-fetch("/send_message/{{rid}}",{
-
-method:"POST",
-
-headers:{
-"Content-Type":"application/x-www-form-urlencoded"
-},
-
-body:`sender={{name}}&message=${msg}`
-
-}).then(()=>{
-
-document.getElementById("msg").value=""
-
-loadChat()
-
-})
-
+async function toggleStaff(id, btn){
+    btn.disabled = true;
+    const res = await fetch(`/staff_manage/{{ rid }}/toggle/${id}`, { method: "POST" });
+    const data = await res.json();
+    if(data.success){ location.reload(); }
+    else { alert("❌ " + (data.error||"Failed")); btn.disabled = false; }
 }
 
-setInterval(loadChat,2000)
-
-loadChat()
-
+async function deleteStaff(id, name){
+    if(!confirm(`Delete staff account "${name}"? This cannot be undone.`)) return;
+    const res = await fetch(`/staff_manage/{{ rid }}/delete/${id}`, { method: "DELETE" });
+    const data = await res.json();
+    if(data.success){ location.reload(); }
+    else { alert("❌ " + (data.error||"Failed")); }
+}
 </script>
 
 </body>
-
 </html>

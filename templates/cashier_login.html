@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cashier Login - {{ restaurant_name }}</title>
+<style>
+*{ box-sizing:border-box; }
+body{
+    margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center;
+    font-family:Arial,sans-serif; background:linear-gradient(135deg,#0b1220,#153c2f 60%,#0b1220);
+    padding:20px;
+}
+.card{
+    background:#fff; width:100%; max-width:380px; border-radius:22px; padding:34px 30px;
+    box-shadow:0 20px 50px rgba(0,0,0,0.4); text-align:center;
+}
+.badge{
+    width:60px; height:60px; border-radius:16px; margin:0 auto 14px;
+    background:linear-gradient(135deg,#34c979,#1f9e57); display:flex; align-items:center;
+    justify-content:center; font-size:28px;
+}
+h1{ font-size:18px; margin:0 0 2px; color:#111; }
+.sub{ font-size:13px; color:#888; margin-bottom:22px; }
+label{ display:block; text-align:left; font-size:12px; font-weight:800; color:#555; margin:14px 0 6px; }
+input{
+    width:100%; padding:13px 14px; border-radius:12px; border:1px solid #ddd;
+    font-size:15px; letter-spacing:1px;
+}
+input:focus{ outline:none; border-color:#1f9e57; }
+button{
+    width:100%; margin-top:22px; padding:14px; border:none; border-radius:12px;
+    background:linear-gradient(135deg,#34c979,#1f9e57); color:#fff; font-weight:800;
+    font-size:15px; cursor:pointer;
+}
+button:hover{ filter:brightness(1.05); }
+.error{
+    margin-top:14px; padding:10px; border-radius:10px; background:#f8d7da; color:#721c24;
+    font-size:13px; font-weight:700;
+}
+</style>
+</head>
+<body>
+<div class="card">
+    <div class="badge">💰</div>
+    <h1>{{ restaurant_name }}</h1>
+    <div class="sub">Cashier Portal</div>
+
+    <form method="POST">
+        <label>Employee ID</label>
+        <input type="text" name="employee_id" placeholder="e.g. CSH-001" autocomplete="off" required autofocus>
+
+        <label>PIN</label>
+        <input type="password" name="pin" placeholder="••••" inputmode="numeric" maxlength="6" required>
+
+        <button type="submit">Login</button>
+    </form>
+
+    {% if error %}
+    <div class="error">{{ error }}</div>
+    {% endif %}
+</div>
+</body>
+</html>

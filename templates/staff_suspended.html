@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>System Unavailable</title>
+<style>
+*{ box-sizing:border-box; }
+body{
+    margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center;
+    font-family:Arial,sans-serif; background:linear-gradient(120deg,#0b1220,#16233d);
+    padding:20px;
+}
+.box{
+    background:#fff; max-width:400px; width:100%; border-radius:20px; padding:32px 28px;
+    text-align:center; box-shadow:0 20px 50px rgba(0,0,0,0.4);
+}
+.icon{ font-size:44px; margin-bottom:10px; }
+h1{ font-size:19px; margin:0 0 6px; color:#111; }
+.biz{ font-weight:800; color:#dc3545; }
+p{ color:#666; font-size:14px; line-height:1.6; margin:14px 0 0; }
+.portal-tag{
+    display:inline-block; margin-top:16px; padding:6px 14px; border-radius:20px;
+    background:#f4b400; color:#0b1220; font-weight:800; font-size:12px; letter-spacing:0.5px;
+}
+</style>
+</head>
+<body>
+<div class="box">
+    <div class="icon">⛔</div>
+    <h1>System Temporarily Unavailable</h1>
+    <p>The <span class="biz">{{ restaurant_name }}</span> account has been suspended by admin.
+    Please contact the restaurant owner or system admin to reactivate the subscription before staff can log in.</p>
+    <div class="portal-tag">{{ portal }} Portal</div>
+</div>
+</body>
+</html>

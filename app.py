@@ -2125,7 +2125,7 @@ def restaurant_admin_login(rid):
 
 
 # =====================================
-# 👥 ADD STAFF
+# 👥 ADD STAFF (legacy form — kept working as-is)
 # =====================================
 @app.route("/add_staff/<rid>", methods=["POST"])
 def add_staff(rid):
@@ -2143,6 +2143,289 @@ def add_staff(rid):
 
     except Exception as e:
         return f"Add staff error ❌ {str(e)}"
+
+
+# =====================================
+# 🆔 SEQUENTIAL EMPLOYEE ID (per restaurant, per role)
+# =====================================
+def get_next_employee_id(rid, role):
+    prefix = "WTR" if role == "waiter" else "CSH"
+    counter_ref = db.collection("restaurants").document(rid) \
+                    .collection("meta").document("staff_counter")
+    field = f"{role}_count"
+    counter_ref.set({field: firestore.Increment(1)}, merge=True)
+    snap = counter_ref.get()
+    count = snap.to_dict().get(field, 1)
+    return f"{prefix}-{count:03d}"
+
+
+def restaurant_is_active(rid):
+    doc = db.collection("restaurants").document(rid).get()
+    if not doc.exists:
+        return False, None
+    data = doc.to_dict()
+    return data.get("active", True), data
+
+
+# =====================================
+# 🧑‍💼 STAFF MANAGEMENT (Admin — create/list/toggle/delete Waiter & Cashier accounts)
+# =====================================
+@app.route("/staff_manage/<rid>")
+def staff_manage(rid):
+    if not session.get("restaurant_login") or session.get("restaurant_id") != rid:
+        return redirect("/login")
+    try:
+        restaurant_doc = db.collection("restaurants").document(rid).get()
+        restaurant_name = restaurant_doc.to_dict().get("name", "Restaurant") if restaurant_doc.exists else "Restaurant"
+
+        staff = []
+        docs = db.collection("restaurants").document(rid).collection("staff_accounts").stream()
+        for doc in docs:
+            item = doc.to_dict()
+            item["id"] = doc.id
+            staff.append(item)
+        staff.sort(key=lambda x: x.get("employee_id", ""))
+
+        return render_template("staff_panel.html", rid=rid, restaurant_name=restaurant_name, staff=staff)
+    except Exception as e:
+        return f"Staff manage error ❌ {str(e)}"
+
+
+@app.route("/staff_manage/<rid>/create", methods=["POST"])
+def staff_create(rid):
+    if not session.get("restaurant_login") or session.get("restaurant_id") != rid:
+        return jsonify({"success": False, "error": "Unauthorized"}), 401
+    try:
+        data = request.get_json() or {}
+        name = data.get("name", "").strip()
+        role = data.get("role", "").strip().lower()
+        pin  = data.get("pin", "").strip()
+
+        if not name or role not in ("waiter", "cashier") or not pin:
+            return jsonify({"success": False, "error": "Fill all fields (role must be waiter or cashier)"})
+        if not pin.isdigit() or not (4 <= len(pin) <= 6):
+            return jsonify({"success": False, "error": "PIN must be 4-6 digits"})
+
+        employee_id = get_next_employee_id(rid, role)
+        db.collection("restaurants").document(rid).collection("staff_accounts").add({
+            "name": name,
+            "role": role,
+            "employee_id": employee_id,
+            "pin": pin,
+            "active": True,
+            "created_at": datetime.now().isoformat()
+        })
+        return jsonify({"success": True, "employee_id": employee_id})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+
+@app.route("/staff_manage/<rid>/toggle/<staff_id>", methods=["POST"])
+def staff_toggle(rid, staff_id):
+    if not session.get("restaurant_login") or session.get("restaurant_id") != rid:
+        return jsonify({"success": False, "error": "Unauthorized"}), 401
+    try:
+        ref = db.collection("restaurants").document(rid).collection("staff_accounts").document(staff_id)
+        doc = ref.get()
+        if not doc.exists:
+            return jsonify({"success": False, "error": "Not found"})
+        current = doc.to_dict().get("active", True)
+        ref.update({"active": not current})
+        return jsonify({"success": True, "active": not current})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+
+@app.route("/staff_manage/<rid>/delete/<staff_id>", methods=["DELETE"])
+def staff_delete(rid, staff_id):
+    if not session.get("restaurant_login") or session.get("restaurant_id") != rid:
+        return jsonify({"success": False, "error": "Unauthorized"}), 401
+    try:
+        db.collection("restaurants").document(rid).collection("staff_accounts").document(staff_id).delete()
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+
+# =====================================
+# 🧑‍🍳 WAITER — LOGIN / DASHBOARD / LOGOUT
+# =====================================
+@app.route("/waiter_login/<rid>", methods=["GET", "POST"])
+def waiter_login(rid):
+    active, restaurant = restaurant_is_active(rid)
+    if not restaurant:
+        return "Restaurant not found ❌"
+    restaurant_name = restaurant.get("name", "Restaurant")
+
+    if not active:
+        return render_template("staff_suspended.html", restaurant_name=restaurant_name, portal="Waiter")
+
+    error = None
+    if request.method == "POST":
+        employee_id = request.form.get("employee_id", "").strip().upper()
+        pin         = request.form.get("pin", "").strip()
+        found = None
+        for doc in db.collection("restaurants").document(rid).collection("staff_accounts") \
+                     .where("employee_id", "==", employee_id).stream():
+            found = doc.to_dict()
+            found["id"] = doc.id
+            break
+
+        if not found or found.get("role") != "waiter" or found.get("pin") != pin:
+            error = "Wrong employee ID or PIN ❌"
+        elif not found.get("active", True):
+            error = "This account has been disabled — contact your admin ❌"
+        else:
+            session["staff_ok"]   = True
+            session["staff_role"] = "waiter"
+            session["staff_rid"]  = rid
+            session["staff_id"]   = found["id"]
+            session["staff_name"] = found.get("name", "")
+            session["staff_employee_id"] = employee_id
+            return redirect(f"/waiter_dashboard/{rid}")
+
+    return render_template("waiter_login.html", rid=rid, restaurant_name=restaurant_name, error=error)
+
+
+@app.route("/waiter_dashboard/<rid>")
+def waiter_dashboard(rid):
+    if not session.get("staff_ok") or session.get("staff_role") != "waiter" or session.get("staff_rid") != rid:
+        return redirect(f"/waiter_login/{rid}")
+
+    active, restaurant = restaurant_is_active(rid)
+    if not restaurant:
+        return "Restaurant not found ❌"
+    if not active:
+        session.pop("staff_ok", None)
+        return render_template("staff_suspended.html", restaurant_name=restaurant.get("name", "Restaurant"), portal="Waiter")
+
+    restaurant_ref = db.collection("restaurants").document(rid)
+
+    menu = []
+    for doc in restaurant_ref.collection("menu").stream():
+        m = doc.to_dict()
+        m["id"] = doc.id
+        menu.append(m)
+
+    today = datetime.now().strftime("%Y-%m-%d")
+    my_orders = []
+    total_sales = 0.0
+    for doc in restaurant_ref.collection("orders") \
+            .order_by("created_at", direction=firestore.Query.DESCENDING).limit(100).stream():
+        o = doc.to_dict()
+        if o.get("employee_id") != session.get("staff_employee_id"):
+            continue
+        created = o.get("created_at")
+        created_date = created.strftime("%Y-%m-%d") if hasattr(created, "strftime") else str(created)[:10]
+        o["id"] = doc.id
+        my_orders.append(o)
+        if created_date == today and o.get("status") in ("paid", "PAID"):
+            total_sales += float(o.get("price", 0))
+
+    return render_template(
+        "waiter_dashboard.html",
+        rid=rid,
+        restaurant_name=restaurant.get("name", "Restaurant"),
+        staff_name=session.get("staff_name", ""),
+        employee_id=session.get("staff_employee_id", ""),
+        menu=menu,
+        my_orders=my_orders[:20],
+        total_sales=round(total_sales, 2)
+    )
+
+
+@app.route("/waiter_logout")
+def waiter_logout():
+    for k in ("staff_ok", "staff_role", "staff_rid", "staff_id", "staff_name", "staff_employee_id"):
+        session.pop(k, None)
+    return redirect("/")
+
+
+# =====================================
+# 💰 CASHIER — LOGIN / DASHBOARD / LOGOUT
+# =====================================
+@app.route("/cashier_login/<rid>", methods=["GET", "POST"])
+def cashier_login(rid):
+    active, restaurant = restaurant_is_active(rid)
+    if not restaurant:
+        return "Restaurant not found ❌"
+    restaurant_name = restaurant.get("name", "Restaurant")
+
+    if not active:
+        return render_template("staff_suspended.html", restaurant_name=restaurant_name, portal="Cashier")
+
+    error = None
+    if request.method == "POST":
+        employee_id = request.form.get("employee_id", "").strip().upper()
+        pin         = request.form.get("pin", "").strip()
+        found = None
+        for doc in db.collection("restaurants").document(rid).collection("staff_accounts") \
+                     .where("employee_id", "==", employee_id).stream():
+            found = doc.to_dict()
+            found["id"] = doc.id
+            break
+
+        if not found or found.get("role") != "cashier" or found.get("pin") != pin:
+            error = "Wrong employee ID or PIN ❌"
+        elif not found.get("active", True):
+            error = "This account has been disabled — contact your admin ❌"
+        else:
+            session["staff_ok"]   = True
+            session["staff_role"] = "cashier"
+            session["staff_rid"]  = rid
+            session["staff_id"]   = found["id"]
+            session["staff_name"] = found.get("name", "")
+            session["staff_employee_id"] = employee_id
+            return redirect(f"/cashier_dashboard/{rid}")
+
+    return render_template("cashier_login.html", rid=rid, restaurant_name=restaurant_name, error=error)
+
+
+@app.route("/cashier_dashboard/<rid>")
+def cashier_dashboard(rid):
+    if not session.get("staff_ok") or session.get("staff_role") != "cashier" or session.get("staff_rid") != rid:
+        return redirect(f"/cashier_login/{rid}")
+
+    active, restaurant = restaurant_is_active(rid)
+    if not restaurant:
+        return "Restaurant not found ❌"
+    if not active:
+        session.pop("staff_ok", None)
+        return render_template("staff_suspended.html", restaurant_name=restaurant.get("name", "Restaurant"), portal="Cashier")
+
+    restaurant_ref = db.collection("restaurants").document(rid)
+
+    today = datetime.now().strftime("%Y-%m-%d")
+    pending_orders = []
+    collected_today = 0.0
+    for doc in restaurant_ref.collection("orders") \
+            .order_by("created_at", direction=firestore.Query.DESCENDING).limit(100).stream():
+        o = doc.to_dict()
+        o["id"] = doc.id
+        created = o.get("created_at")
+        created_date = created.strftime("%Y-%m-%d") if hasattr(created, "strftime") else str(created)[:10]
+        status = str(o.get("status", "")).lower()
+        if status != "paid":
+            pending_orders.append(o)
+        elif created_date == today:
+            collected_today += float(o.get("price", 0))
+
+    return render_template(
+        "cashier_dashboard.html",
+        rid=rid,
+        restaurant_name=restaurant.get("name", "Restaurant"),
+        staff_name=session.get("staff_name", ""),
+        employee_id=session.get("staff_employee_id", ""),
+        pending_orders=pending_orders[:30],
+        collected_today=round(collected_today, 2)
+    )
+
+
+@app.route("/cashier_logout")
+def cashier_logout():
+    for k in ("staff_ok", "staff_role", "staff_rid", "staff_id", "staff_name", "staff_employee_id"):
+        session.pop(k, None)
+    return redirect("/")
 
 
 # =====================================
@@ -2424,12 +2707,7 @@ def create_order(rid):
         items_text  = ", ".join([f"{i.get('qty')}x {i.get('name')}" for i in cart])
         total_price = sum(float(i.get("price", 0)) * int(i.get("qty", 1)) for i in cart)
 
-        # ✅ HAL MEEl KALIYA - restaurants subcollection
-        order_ref = db.collection("restaurants").document(rid)\
-                      .collection("orders").document()
-        order_id  = order_ref.id
-
-        order_ref.set({
+        order_data = {
             "items":      items_text,
             "cart":       cart,
             "table":      table,
@@ -2438,7 +2716,20 @@ def create_order(rid):
             "created_at": datetime.utcnow(),
             "kitchen_cleared": False,
             "receipt_ref": get_next_receipt_ref(rid)
-        })
+        }
+
+        # Tag the order with the waiter who placed it, if this request
+        # came from a logged-in waiter session for this restaurant.
+        if session.get("staff_ok") and session.get("staff_role") == "waiter" and session.get("staff_rid") == rid:
+            order_data["employee_id"]   = session.get("staff_employee_id", "")
+            order_data["employee_name"] = session.get("staff_name", "")
+
+        # ✅ HAL MEEl KALIYA - restaurants subcollection
+        order_ref = db.collection("restaurants").document(rid)\
+                      .collection("orders").document()
+        order_id  = order_ref.id
+
+        order_ref.set(order_data)
 
         return jsonify({
             "success":     True,
@@ -2558,6 +2849,10 @@ def kitchen(rid):
 
         restaurant = restaurant_doc.to_dict()
         real_pass = restaurant.get("kitchen_password", "7890")
+
+        if not restaurant.get("active", True):
+            session.pop("kitchen_" + str(rid), None)
+            return render_template("staff_suspended.html", restaurant_name=restaurant.get("name", "Restaurant"), portal="Kitchen")
 
         if request.method == "POST":
             user_pass = request.form.get("password", "").strip()
