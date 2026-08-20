@@ -53,6 +53,8 @@ a{ color:inherit; }
 .tb-admin .an2{ font-size:11px; color:var(--muted); }
 
 .content{ padding:22px 26px 60px; }
+.page{ display:none; }
+.page.active{ display:block; }
 
 /* ---- STAT CARDS ---- */
 .stats-row{ display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:14px; margin-bottom:20px; }
@@ -63,13 +65,10 @@ a{ color:inherit; }
 .stat-info .label{ font-size:11.5px; color:var(--muted); font-weight:700; }
 .stat-info .value{ font-size:18px; font-weight:900; margin-top:2px; }
 
-/* ---- LAYOUT GRID ---- */
-.grid-2{ display:grid; grid-template-columns:2.1fr 1fr; gap:16px; margin-bottom:16px; align-items:start; }
-@media(max-width:1000px){ .grid-2{ grid-template-columns:1fr; } }
 .grid-3{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; margin-bottom:16px; }
 @media(max-width:900px){ .grid-3{ grid-template-columns:1fr; } }
 
-.section{ background:var(--card); border-radius:16px; padding:18px; box-shadow:0 4px 12px rgba(0,0,0,0.05); }
+.section{ background:var(--card); border-radius:16px; padding:18px; box-shadow:0 4px 12px rgba(0,0,0,0.05); margin-bottom:16px; }
 .section-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
 .section-head h2{ font-size:15px; margin:0; display:flex; align-items:center; gap:8px; }
 .count-badge{ background:#fdecea; color:#dc3545; font-size:11px; font-weight:800; padding:2px 8px; border-radius:10px; }
@@ -98,14 +97,7 @@ table.orders-tbl td{ padding:10px 6px; border-bottom:1px solid #f4f4f4; vertical
 
 /* ---- DONUT ---- */
 .donut-wrap{ display:flex; align-items:center; gap:20px; flex-wrap:wrap; }
-.donut{ 
-    width:150px; 
-    height:150px; 
-    border-radius:50%; 
-    flex-shrink:0; 
-    mask: radial-gradient(circle, transparent 48%, #000 49%);
-    -webkit-mask: radial-gradient(circle, transparent 48%, #000 49%);
-}
+.donut{ width:150px; height:150px; border-radius:50%; flex-shrink:0; }
 .legend{ flex:1; min-width:150px; }
 .legend-row{ display:flex; align-items:center; gap:8px; font-size:12.5px; padding:4px 0; }
 .legend-dot{ width:10px; height:10px; border-radius:50%; flex-shrink:0; }
@@ -143,17 +135,19 @@ table.orders-tbl td{ padding:10px 6px; border-bottom:1px solid #f4f4f4; vertical
 /* ---- MODAL ---- */
 .modal-bg{ display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); align-items:center; justify-content:center; z-index:100; padding:16px; }
 .modal-bg.show{ display:flex; }
-.modal{ background:#fff; border-radius:18px; padding:24px; width:100%; max-width:360px; }
-.modal h3{ margin:0 0 16px; font-size:16px; }
+.modal{ background:#fff; border-radius:18px; padding:24px; width:100%; max-width:360px; text-align:center; }
+.modal h3{ margin:0 0 16px; font-size:16px; text-align:left; }
 .method-grid{ display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:14px; }
 .method-opt{ padding:12px; border:1.5px solid #ddd; border-radius:10px; text-align:center; font-size:13px; font-weight:700; cursor:pointer; }
 .method-opt.selected{ border-color:var(--green); background:#eafaf1; color:var(--green); }
 .modal input{ width:100%; padding:12px; border-radius:10px; border:1px solid #ddd; font-size:14px; margin-bottom:10px; }
-.change-row{ display:flex; justify-content:space-between; font-weight:800; font-size:14px; margin-bottom:14px; }
+.change-row{ display:flex; justify-content:space-between; font-weight:800; font-size:14px; margin-bottom:14px; text-align:left; }
 .modal-actions{ display:flex; gap:8px; }
 .modal-actions button{ flex:1; padding:12px; border:none; border-radius:10px; font-weight:800; cursor:pointer; font-size:13px; }
 .confirm-btn{ background:var(--green); color:#fff; }
 .cancel-btn{ background:#eee; color:#333; }
+.qr-btn{ width:100%; padding:13px; background:var(--blue); color:#fff; border:none; border-radius:10px; font-weight:800; cursor:pointer; font-size:14px; margin-bottom:10px; }
+.close-plain-btn{ width:100%; padding:12px; background:#f1f3f6; color:#333; border:none; border-radius:10px; font-weight:700; cursor:pointer; font-size:13px; }
 
 @media(max-width:800px){
     .sidebar{ display:none; }
@@ -188,26 +182,27 @@ table.orders-tbl td{ padding:10px 6px; border-bottom:1px solid #f4f4f4; vertical
 
         <div class="sb-label">POS Management</div>
         <ul class="sb-nav">
-            <li><a class="sb-link active" href="#top">📊 Dashboard</a></li>
+            <li><button class="sb-link active" data-page="dashboard" onclick="showPage('dashboard',this)">📊 Dashboard</button></li>
             {% if has_shift %}
-            <li><a class="sb-link" href="#ordersSection">🧾 Orders {% if pending_count %}<span class="badge">{{ pending_count }}</span>{% endif %}</a></li>
-            <li><a class="sb-link" href="#paymentsSection">💳 Payments</a></li>
-            <li><a class="sb-link" href="#receiptSection">📄 Receipt History</a></li>
+            <li><button class="sb-link" data-page="orders" onclick="showPage('orders',this)">🧾 Orders {% if pending_count %}<span class="badge">{{ pending_count }}</span>{% endif %}</button></li>
+            <li><button class="sb-link" data-page="payments" onclick="showPage('payments',this)">💳 Payments</button></li>
+            <li><button class="sb-link" data-page="receipts" onclick="showPage('receipts',this)">📄 Receipt History</button></li>
+            <li><button class="sb-link" onclick="openQRModal()">📷 Generate QR</button></li>
             {% endif %}
         </ul>
 
         {% if has_shift %}
         <div class="sb-label">Staff &amp; Kitchen</div>
         <ul class="sb-nav">
-            <li><a class="sb-link" href="#waitersSection">👥 Waiters Today</a></li>
+            <li><button class="sb-link" data-page="waiters" onclick="showPage('waiters',this)">👥 Waiters Today</button></li>
             <li><a class="sb-link" href="/kitchen/{{ rid }}" target="_blank">🍳 Kitchen Orders</a></li>
         </ul>
 
         <div class="sb-label">Reports</div>
         <ul class="sb-nav">
-            <li><a class="sb-link" href="#topItemsSection">📈 Sales Report</a></li>
-            <li><a class="sb-link" href="#paymentsSection">💰 Payment Summary</a></li>
-            <li><a class="sb-link" href="#shiftSection">🕐 Shift Report</a></li>
+            <li><button class="sb-link" data-page="salesreport" onclick="showPage('salesreport',this)">📈 Sales Report</button></li>
+            <li><button class="sb-link" data-page="payments" onclick="showPage('payments',this)">💰 Payment Summary</button></li>
+            <li><button class="sb-link" data-page="shiftreport" onclick="showPage('shiftreport',this)">🕐 Shift Report</button></li>
         </ul>
         {% endif %}
 
@@ -217,7 +212,7 @@ table.orders-tbl td{ padding:10px 6px; border-bottom:1px solid #f4f4f4; vertical
     </aside>
 
     <!-- ================= MAIN ================= -->
-    <div class="main" id="top">
+    <div class="main">
         <div class="topbar">
             <div class="tb-left">
                 <div class="tb-restaurant">🏪 {{ restaurant_name }}</div>
@@ -245,16 +240,31 @@ table.orders-tbl td{ padding:10px 6px; border-bottom:1px solid #f4f4f4; vertical
 
         {% else %}
 
-        <div class="stats-row">
-            <div class="stat-card"><div class="stat-ic si-blue">💵</div><div class="stat-info"><div class="label">Today's Sales</div><div class="value">${{ today_sales }}</div></div></div>
-            <div class="stat-card"><div class="stat-ic si-green">🧾</div><div class="stat-info"><div class="label">Total Orders</div><div class="value">{{ today_orders_count }}</div></div></div>
-            <div class="stat-card"><div class="stat-ic si-orange">💰</div><div class="stat-info"><div class="label">Cash Collected</div><div class="value">${{ today_cash }}</div></div></div>
-            <div class="stat-card"><div class="stat-ic si-purple">📱</div><div class="stat-info"><div class="label">Mobile Payments</div><div class="value">${{ today_mobile }}</div></div></div>
-            <div class="stat-card"><div class="stat-ic si-teal">👥</div><div class="stat-info"><div class="label">Pending Orders</div><div class="value">{{ pending_count }}</div></div></div>
+        <!-- ============ DASHBOARD PAGE ============ -->
+        <div class="page active" id="page-dashboard">
+            <div class="stats-row">
+                <div class="stat-card"><div class="stat-ic si-blue">💵</div><div class="stat-info"><div class="label">Today's Sales</div><div class="value">${{ today_sales }}</div></div></div>
+                <div class="stat-card"><div class="stat-ic si-green">🧾</div><div class="stat-info"><div class="label">Total Orders</div><div class="value">{{ today_orders_count }}</div></div></div>
+                <div class="stat-card"><div class="stat-ic si-orange">💰</div><div class="stat-info"><div class="label">Cash Collected</div><div class="value">${{ today_cash }}</div></div></div>
+                <div class="stat-card"><div class="stat-ic si-purple">📱</div><div class="stat-info"><div class="label">Mobile Payments</div><div class="value">${{ today_mobile }}</div></div></div>
+                <div class="stat-card"><div class="stat-ic si-teal">👥</div><div class="stat-info"><div class="label">Pending Orders</div><div class="value">{{ pending_count }}</div></div></div>
+            </div>
+
+            <div class="section">
+                <div class="section-head"><h2>⚡ Quick Actions</h2></div>
+                <div class="qa-row">
+                    <button class="qa-btn" style="background:var(--blue);" onclick="showPage('orders')">🧾 Orders Awaiting Payment</button>
+                    <button class="qa-btn" style="background:var(--purple);" onclick="showPage('waiters')">👥 View Waiters</button>
+                    <a class="qa-btn" style="background:var(--orange);" href="/kitchen/{{ rid }}" target="_blank">🍳 Kitchen Orders</a>
+                    <button class="qa-btn" style="background:var(--teal);" onclick="showPage('payments')">💰 Payment Summary</button>
+                    <button class="qa-btn" style="background:#6f42c1;" onclick="openQRModal()">📷 Generate Table QR</button>
+                </div>
+            </div>
         </div>
 
-        <div class="grid-2">
-            <div class="section" id="ordersSection">
+        <!-- ============ ORDERS PAGE ============ -->
+        <div class="page" id="page-orders">
+            <div class="section">
                 <div class="section-head">
                     <h2>🧾 Orders Awaiting Payment <span class="count-badge">{{ pending_count }}</span></h2>
                 </div>
@@ -287,29 +297,16 @@ table.orders-tbl td{ padding:10px 6px; border-bottom:1px solid #f4f4f4; vertical
                 </table>
                 </div>
             </div>
-
-            <div class="section shift-summary" id="shiftSection">
-                <div class="section-head">
-                    <h2>📋 Shift Summary</h2>
-                    <span class="status-active">Active</span>
-                </div>
-                <div class="ss-row"><span class="k">Shift ID</span><span class="v">{{ shift.shift_code }}</span></div>
-                <div class="ss-row"><span class="k">Shift Opened</span><span class="v">{{ shift.opened_at[11:16] if shift.opened_at else '—' }}</span></div>
-                <div class="ss-row"><span class="k">Opening Cash</span><span class="v">${{ opening_cash }}</span></div>
-                <div class="ss-row"><span class="k">Total Sales (my shift)</span><span class="v">${{ shift_collected }}</span></div>
-                <div class="ss-row"><span class="k">Cash Sales</span><span class="v">${{ shift_method_totals.cash }}</span></div>
-                <div class="ss-row"><span class="k">Mobile Payments</span><span class="v">${{ (shift_method_totals.evc + shift_method_totals.edahab + shift_method_totals.card + shift_method_totals.other)|round(2) }}</span></div>
-                <div class="ss-row"><span class="k">Transactions</span><span class="v">{{ shift_orders_count }}</span></div>
-                <div class="ss-row" style="border-bottom:none;"><span class="k">Expected Cash</span><span class="v">${{ expected_cash }}</span></div>
-                <button class="close-shift-btn" onclick="openCloseModal()">🔒 Close Shift</button>
-            </div>
         </div>
 
-        <div class="grid-3">
-            <div class="section" id="paymentsSection">
+        <!-- ============ PAYMENTS PAGE ============ -->
+        <div class="page" id="page-payments">
+            <div class="section">
                 <div class="section-head"><h2>📊 Payment Methods Summary</h2></div>
                 <div class="donut-wrap">
-                    <div class="donut" style="background:{{ donut_gradient }};">
+                    <div class="donut" style="background:{{ donut_gradient }};
+                        mask:radial-gradient(farthest-side,transparent calc(100% - 26px),#000 calc(100% - 25px));
+                        -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 26px),#000 calc(100% - 25px));">
                     </div>
                     <div class="legend">
                         <div class="legend-row"><span class="legend-dot" style="background:#1f9e57;"></span><span class="lname">Cash</span><span class="lval">${{ payment_summary.cash }}</span></div>
@@ -321,22 +318,27 @@ table.orders-tbl td{ padding:10px 6px; border-bottom:1px solid #f4f4f4; vertical
                 </div>
                 <div class="pm-total"><span>Total Collected</span><span>${{ today_sales }}</span></div>
             </div>
+        </div>
 
-            <div class="section" id="topItemsSection">
-                <div class="section-head"><h2>🍔 Top Selling Items</h2></div>
-                {% for it in top_items %}
-                <div class="item-row">
-                    <div class="item-rank">{{ loop.index }}</div>
-                    <div class="item-name">{{ it.name }}</div>
-                    <div class="item-qty">{{ it.qty }}</div>
-                    <div class="item-sales">${{ "%.2f"|format(it.sales) }}</div>
+        <!-- ============ RECEIPT HISTORY PAGE ============ -->
+        <div class="page" id="page-receipts">
+            <div class="section">
+                <div class="section-head"><h2>🧾 My Transactions (This Shift)</h2></div>
+                {% for t in shift_transactions %}
+                <div class="wp-row">
+                    <div class="wp-name">{{ t.payment_id }} · {{ t.time }}</div>
+                    <div class="wp-orders">{{ t.method|upper }}</div>
+                    <div class="wp-sales">${{ "%.2f"|format(t.amount or 0) }}</div>
                 </div>
                 {% else %}
-                <div style="color:var(--muted);font-size:13px;text-align:center;padding:14px;">No sales yet today</div>
+                <div style="color:var(--muted);font-size:13px;text-align:center;padding:14px;">No transactions yet this shift</div>
                 {% endfor %}
             </div>
+        </div>
 
-            <div class="section" id="waitersSection">
+        <!-- ============ WAITERS PAGE ============ -->
+        <div class="page" id="page-waiters">
+            <div class="section">
                 <div class="section-head"><h2>👥 Waiters Today</h2></div>
                 {% for w in waiters_performance %}
                 <div class="wp-row">
@@ -351,26 +353,39 @@ table.orders-tbl td{ padding:10px 6px; border-bottom:1px solid #f4f4f4; vertical
             </div>
         </div>
 
-        <div class="section" id="receiptSection">
-            <div class="section-head"><h2>🧾 My Transactions (This Shift)</h2></div>
-            {% for t in shift_transactions %}
-            <div class="wp-row">
-                <div class="wp-name">{{ t.payment_id }} · {{ t.time }}</div>
-                <div class="wp-orders">{{ t.method|upper }}</div>
-                <div class="wp-sales">${{ "%.2f"|format(t.amount or 0) }}</div>
+        <!-- ============ SALES REPORT PAGE ============ -->
+        <div class="page" id="page-salesreport">
+            <div class="section">
+                <div class="section-head"><h2>🍔 Top Selling Items</h2></div>
+                {% for it in top_items %}
+                <div class="item-row">
+                    <div class="item-rank">{{ loop.index }}</div>
+                    <div class="item-name">{{ it.name }}</div>
+                    <div class="item-qty">{{ it.qty }}</div>
+                    <div class="item-sales">${{ "%.2f"|format(it.sales) }}</div>
+                </div>
+                {% else %}
+                <div style="color:var(--muted);font-size:13px;text-align:center;padding:14px;">No sales yet today</div>
+                {% endfor %}
             </div>
-            {% else %}
-            <div style="color:var(--muted);font-size:13px;text-align:center;padding:14px;">No transactions yet this shift</div>
-            {% endfor %}
         </div>
 
-        <div class="section">
-            <div class="section-head"><h2>⚡ Quick Actions</h2></div>
-            <div class="qa-row">
-                <a class="qa-btn" style="background:var(--blue);" href="#ordersSection">🧾 Orders Awaiting Payment</a>
-                <a class="qa-btn" style="background:var(--purple);" href="#waitersSection">👥 View Waiters</a>
-                <a class="qa-btn" style="background:var(--orange);" href="/kitchen/{{ rid }}" target="_blank">🍳 Kitchen Orders</a>
-                <a class="qa-btn" style="background:var(--teal);" href="#paymentsSection">💰 Payment Summary</a>
+        <!-- ============ SHIFT REPORT PAGE ============ -->
+        <div class="page" id="page-shiftreport">
+            <div class="section shift-summary">
+                <div class="section-head">
+                    <h2>📋 Shift Summary</h2>
+                    <span class="status-active">Active</span>
+                </div>
+                <div class="ss-row"><span class="k">Shift ID</span><span class="v">{{ shift.shift_code }}</span></div>
+                <div class="ss-row"><span class="k">Shift Opened</span><span class="v">{{ shift.opened_at[11:16] if shift.opened_at else '—' }}</span></div>
+                <div class="ss-row"><span class="k">Opening Cash</span><span class="v">${{ opening_cash }}</span></div>
+                <div class="ss-row"><span class="k">Total Sales (my shift)</span><span class="v">${{ shift_collected }}</span></div>
+                <div class="ss-row"><span class="k">Cash Sales</span><span class="v">${{ shift_method_totals.cash }}</span></div>
+                <div class="ss-row"><span class="k">Mobile Payments</span><span class="v">${{ (shift_method_totals.evc + shift_method_totals.edahab + shift_method_totals.card + shift_method_totals.other)|round(2) }}</span></div>
+                <div class="ss-row"><span class="k">Transactions</span><span class="v">{{ shift_orders_count }}</span></div>
+                <div class="ss-row" style="border-bottom:none;"><span class="k">Expected Cash</span><span class="v">${{ expected_cash }}</span></div>
+                <button class="close-shift-btn" onclick="openCloseModal()">🔒 Close Shift</button>
             </div>
         </div>
 
@@ -415,11 +430,34 @@ table.orders-tbl td{ padding:10px 6px; border-bottom:1px solid #f4f4f4; vertical
     </div>
 </div>
 
+<!-- GENERATE QR MODAL -->
+<div class="modal-bg" id="qrModal">
+    <div class="modal">
+        <h3>📷 Generate Table QR</h3>
+        <input type="text" id="tableInput" placeholder="Table No">
+        <button class="qr-btn" onclick="generateQR()">Generate</button>
+        <div id="qrResult" style="margin:12px 0;"></div>
+        <button class="close-plain-btn" onclick="closeQRModal()">Close</button>
+    </div>
+</div>
+
 <script>
 const RID = "{{ rid }}";
 let currentOrderId = null;
 let currentOrderTotal = 0;
 let selectedMethod = "cash";
+
+function showPage(id, el){
+    document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+    const target = document.getElementById("page-" + id);
+    if(target) target.classList.add("active");
+
+    document.querySelectorAll(".sb-link").forEach(l => l.classList.remove("active"));
+    const link = el || document.querySelector('.sb-link[data-page="' + id + '"]');
+    if(link) link.classList.add("active");
+
+    window.scrollTo({top:0, behavior:"smooth"});
+}
 
 async function openShift(){
     const opening_cash = parseFloat(document.getElementById("opening_cash").value) || 0;
@@ -470,7 +508,7 @@ async function confirmPayment(){
 }
 
 function openCloseModal(){ document.getElementById("closeModal").classList.add("show"); }
-function closeCloseModal(){ document.getElementById("closeCloseModal").classList.remove("show"); }
+function closeCloseModal(){ document.getElementById("closeModal").classList.remove("show"); }
 
 async function confirmCloseShift(){
     const actual_cash = parseFloat(document.getElementById("actualCash").value) || 0;
@@ -485,6 +523,20 @@ async function confirmCloseShift(){
     } else {
         alert("❌ " + (data.error || "Failed"));
     }
+}
+
+function openQRModal(){ document.getElementById("qrModal").classList.add("show"); }
+function closeQRModal(){ document.getElementById("qrModal").classList.remove("show"); document.getElementById("qrResult").innerHTML = ""; }
+
+function generateQR(){
+    const table = document.getElementById("tableInput").value;
+    fetch("/generate_qr/" + RID, {
+        method: "POST",
+        headers: {"Content-Type": "application/x-www-form-urlencoded"},
+        body: "table=" + encodeURIComponent(table)
+    }).then(res => res.text()).then(data => {
+        document.getElementById("qrResult").innerHTML = data;
+    });
 }
 </script>
 
