@@ -2971,31 +2971,34 @@ def pharmacy_receipt(pid, sale_ref):
 
         pharmacy_name = pid
         phone = ""
+        payment_account = ""
         ph_doc = db.collection("pharmacies").where("username", "==", pid).limit(1).stream()
         for d in ph_doc:
             ph = d.to_dict()
-            pharmacy_name = ph.get("pharmacy_name", pid)
-            phone = ph.get("phone", "")
+            pharmacy_name   = ph.get("pharmacy_name", pid)
+            phone           = ph.get("phone", "")
+            payment_account = ph.get("payment_account", "")
             break
         else:
             pu_doc = db.collection("pharmacy_users").document(pid).get()
             if pu_doc.exists:
                 pu = pu_doc.to_dict()
-                pharmacy_name = pu.get("pharmacy_name", pid)
-                phone = pu.get("phone", "")
+                pharmacy_name   = pu.get("pharmacy_name", pid)
+                phone           = pu.get("phone", "")
+                payment_account = pu.get("payment_account", "")
 
         return render_template(
-            "receipt.html",
-            restaurant_name = pharmacy_name,
-            phone           = phone,
-            payment         = "",
-            table           = "POS",
-            ref             = sale_ref,
-            items           = items,
-            subtotal        = subtotal,
-            vat             = vat,
-            total           = total,
-            created_at      = created_at
+            "pharmacy_receipt.html",
+            pharmacy_name = pharmacy_name,
+            phone         = phone,
+            payment       = payment_account,
+            table         = session.get("pharmacy_name", pid),
+            ref           = sale_ref,
+            items         = items,
+            subtotal      = subtotal,
+            vat           = vat,
+            total         = total,
+            created_at    = created_at
         )
     except Exception as e:
         print("Pharmacy Receipt Error:", e)
@@ -4285,26 +4288,33 @@ def admin_register_pharmacy():
     try:
         if not session.get("admin_ok"):
             return jsonify({"success": False, "error": "Unauthorized"}), 401
-        data          = request.get_json()
-        pharmacy_name = data.get("pharmacy_name", "").strip()
-        phone         = data.get("phone", "").strip()
-        monthly_fee   = float(data.get("monthly_fee", 0))
-        months        = int(data.get("months", 3))
-        username      = data.get("username", "").strip()
-        password      = data.get("password", "").strip()
+        data            = request.get_json()
+        pharmacy_name   = data.get("pharmacy_name", "").strip()
+        phone           = data.get("phone", "").strip()
+        monthly_fee     = float(data.get("monthly_fee", 0))
+        months          = int(data.get("months", 3))
+        username        = data.get("username", "").strip()
+        password        = data.get("password", "").strip()
+        payment_account = data.get("payment_account", "").strip()
         if not pharmacy_name or not phone or not username or not password:
             return jsonify({"success": False, "error": "Fill all required fields"})
+        if payment_account and not payment_account.isdigit():
+            return jsonify({"success": False, "error": "Payment account must contain digits only"})
+        if payment_account and len(payment_account) > 4:
+            return jsonify({"success": False, "error": "Payment account must be 1-4 digits"})
         expiry_date = (datetime.now() + timedelta(days=months * 30)).strftime("%Y-%m-%d")
         total_fee   = round(monthly_fee * months, 2)
         doc_ref = db.collection("pharmacies").add({
             "pharmacy_name": pharmacy_name, "phone": phone,
             "username": username, "password": password,
             "monthly_fee": monthly_fee, "months": months, "total_fee": total_fee,
+            "payment_account": payment_account,
             "created_at": datetime.now().isoformat(), "expiry_date": expiry_date, "active": True
         })
         db.collection("pharmacy_users").document(username).set({
             "username": username, "password": password,
             "pharmacy_name": pharmacy_name, "phone": phone,
+            "payment_account": payment_account,
             "pharmacy_id": doc_ref[1].id, "created_at": datetime.now().isoformat()
         })
         # Create the pharmacy_product document for this user

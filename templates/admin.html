@@ -277,6 +277,10 @@ textarea,input{ width:100%; padding:12px; border-radius:10px; border:1px solid #
                 <label style="font-size:12px;font-weight:bold;color:#666;">Password *</label>
                 <input type="text" id="ph_password" placeholder="Login password" autocomplete="off">
             </div>
+            <div>
+                <label style="font-size:12px;font-weight:bold;color:#666;">Payment Account (1-4 digits)</label>
+                <input type="text" id="ph_payment_account" placeholder="e.g. 2231" maxlength="4" inputmode="numeric" autocomplete="off">
+            </div>
             <button class="pharmacy-create-btn" onclick="registerPharmacy()" style="grid-column:span 1;margin-top:10px;">
                 ✅ Register Pharmacy
             </button>
@@ -289,7 +293,7 @@ textarea,input{ width:100%; padding:12px; border-radius:10px; border:1px solid #
             <table class="ph-table">
                 <tr>
                     <th>Pharmacy Name</th><th>Phone</th><th>Username</th>
-                    <th>Fee/Month</th><th>Months</th><th>Total</th>
+                    <th>Fee/Month</th><th>Months</th><th>Total</th><th>Payment Acct</th>
                     <th>Registered</th><th>Expiry</th><th>Days Left</th>
                     <th>Status</th><th>Actions</th>
                 </tr>
@@ -301,6 +305,7 @@ textarea,input{ width:100%; padding:12px; border-radius:10px; border:1px solid #
                     <td style="color:#6f42c1;font-weight:bold;">${{ ph.monthly_fee }}</td>
                     <td>{{ ph.months }} mo</td>
                     <td style="font-weight:bold;">${{ (ph.monthly_fee * ph.months)|round(2) }}</td>
+                    <td><code>{{ ph.payment_account or '—' }}</code></td>
                     <td style="color:#888;font-size:12px;">{{ ph.created_at[:10] if ph.created_at else '—' }}</td>
                     <td>
                         <b class="{% if ph.expiry_date and ph.expiry_date < now_date %}status-disabled{% else %}renew{% endif %}" style="font-weight:bold;">
@@ -333,7 +338,7 @@ textarea,input{ width:100%; padding:12px; border-radius:10px; border:1px solid #
                     </td>
                 </tr>
                 {% else %}
-                <tr><td colspan="11" style="text-align:center;color:#888;padding:20px;">No pharmacies registered yet</td></tr>
+                <tr><td colspan="12" style="text-align:center;color:#888;padding:20px;">No pharmacies registered yet</td></tr>
                 {% endfor %}
             </table>
         </div>
@@ -426,13 +431,14 @@ async function saveInfo(){
    💊 REGISTER PHARMACY
    ================================ */
 async function registerPharmacy(){
-    const ph_name  = document.getElementById("ph_pharmacy_name").value.trim();
-    const phone    = document.getElementById("ph_phone").value.trim();
-    const fee      = document.getElementById("ph_fee").value.trim();
-    const months   = document.getElementById("ph_months").value;
-    const username = document.getElementById("ph_username").value.trim();
-    const password = document.getElementById("ph_password").value.trim();
-    const msg      = document.getElementById("pharmacyMsg");
+    const ph_name         = document.getElementById("ph_pharmacy_name").value.trim();
+    const phone           = document.getElementById("ph_phone").value.trim();
+    const fee             = document.getElementById("ph_fee").value.trim();
+    const months          = document.getElementById("ph_months").value;
+    const username        = document.getElementById("ph_username").value.trim();
+    const password        = document.getElementById("ph_password").value.trim();
+    const payment_account = document.getElementById("ph_payment_account").value.trim();
+    const msg             = document.getElementById("pharmacyMsg");
 
     msg.style.display = "none";
     msg.className     = "pharmacy-msg";
@@ -444,11 +450,18 @@ async function registerPharmacy(){
         return;
     }
 
+    if(payment_account && !/^\d{1,4}$/.test(payment_account)){
+        msg.classList.add("error");
+        msg.textContent   = "❌ Payment Account must be 1-4 digits";
+        msg.style.display = "block";
+        return;
+    }
+
     try{
         let res  = await fetch("/admin/register_pharmacy", {
             method:"POST",
             headers:{"Content-Type":"application/json"},
-            body: JSON.stringify({ pharmacy_name:ph_name, phone, monthly_fee:parseFloat(fee), months:parseInt(months), username, password })
+            body: JSON.stringify({ pharmacy_name:ph_name, phone, monthly_fee:parseFloat(fee), months:parseInt(months), username, password, payment_account })
         });
         let data = await res.json();
 
@@ -456,7 +469,7 @@ async function registerPharmacy(){
             msg.classList.add("success");
             msg.textContent   = `✅ Pharmacy "${ph_name}" registered! Expires: ${data.expiry_date}`;
             msg.style.display = "block";
-            ["ph_pharmacy_name","ph_phone","ph_fee","ph_username","ph_password"].forEach(id=>document.getElementById(id).value="");
+            ["ph_pharmacy_name","ph_phone","ph_fee","ph_username","ph_password","ph_payment_account"].forEach(id=>document.getElementById(id).value="");
             setTimeout(()=>location.reload(), 1500);
         } else {
             msg.classList.add("error");
