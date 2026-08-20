@@ -456,11 +456,7 @@ body{
 .fab:active{transform:scale(0.92);}
 .fab svg{stroke:#fff;fill:none;width:22px;height:22px;}
 
-.fab-stats  {background:var(--blue);}
 .fab-qr     {background:var(--purple);}
-.fab-staff  {background:var(--orange);}
-.fab-kitchen{background:var(--green);}
-.fab-sales  {background:#E91E63;}
 
 /* ── POPUP ── */
 .popup{
@@ -514,16 +510,6 @@ body{
 .popup-btn:active{transform:scale(0.97);}
 .popup-btn-blue{background:var(--blue);color:#fff;}
 .popup-btn-close{background:var(--bg);color:var(--text);}
-
-/* ── EXPIRED ── */
-.expired-banner{
-    background:#FFEBEE;border:1.5px solid #FFCDD2;
-    border-radius:12px;padding:14px 18px;
-    display:flex;align-items:center;gap:12px;
-    margin-bottom:20px;
-}
-
-.expired-banner p{color:#C62828;font-weight:700;font-size:14px;}
 
 /* ── FOOTER ── */
 .footer{
@@ -615,14 +601,6 @@ hr{border:none;border-top:1px solid var(--border);margin:0;}
         </div>
     </div>
 
-    {% if expired %}
-    <div class="expired-banner">
-        <svg viewBox="0 0 24 24" stroke-width="2" style="stroke:#C62828;fill:none;width:22px;height:22px;flex-shrink:0;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-        <p>System expired ❌</p>
-        <button onclick="renew()" style="margin-left:auto;padding:8px 16px;background:var(--red);color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;">Renew Now</button>
-    </div>
-    {% endif %}
-
     <!-- ACTION BUTTONS -->
     <div class="action-row">
         <button class="action-btn btn-blue" onclick="document.getElementById('addMenuSection').scrollIntoView({behavior:'smooth'})">
@@ -640,6 +618,10 @@ hr{border:none;border-top:1px solid var(--border);margin:0;}
         <a href="/dashboard_receipts/{{ rid }}" target="_blank" class="action-btn btn-red">
             <svg viewBox="0 0 24 24" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
             View Receipt
+        </a>
+        <a href="/staff_manage/{{ rid }}" class="action-btn" style="background:var(--purple);">
+            <svg viewBox="0 0 24 24" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            Manage Staff
         </a>
     </div>
 
@@ -790,44 +772,12 @@ hr{border:none;border-top:1px solid var(--border);margin:0;}
 
 <!-- ── FABs ── -->
 <div class="fab-group">
-    <button class="fab fab-sales" onclick="openSales()" title="Sales">
-        <svg viewBox="0 0 24 24" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-    </button>
-    <button class="fab fab-kitchen" onclick="openKitchen()" title="Kitchen">
-        <svg viewBox="0 0 24 24" stroke-width="2"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
-    </button>
-    <button class="fab fab-staff" onclick="openStaff()" title="Staff">
-        <svg viewBox="0 0 24 24" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-    </button>
     <button class="fab fab-qr" onclick="openQR()" title="QR Code">
         <svg viewBox="0 0 24 24" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="3" height="3"/><rect x="18" y="14" width="3" height="3"/><rect x="14" y="18" width="3" height="3"/><rect x="18" y="18" width="3" height="3"/></svg>
-    </button>
-    <button class="fab fab-stats" onclick="openStats()" title="Stats">
-        <svg viewBox="0 0 24 24" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
     </button>
 </div>
 
 <!-- ── POPUPS ── -->
-<div class="popup" id="statsPopup">
-    <div class="popup-box">
-        <h3>📊 Stats</h3>
-        <p id="statsData" style="color:var(--muted);font-size:14px;margin-bottom:18px;">Loading...</p>
-        <button class="popup-btn popup-btn-close" onclick="closeStats()">Close</button>
-    </div>
-</div>
-
-<div class="popup" id="salesPopup">
-    <div class="popup-box">
-        <h3>💰 Sales Dashboard</h3>
-        <input type="date" id="fromDate" class="popup-input">
-        <input type="date" id="toDate" class="popup-input">
-        <button class="popup-btn popup-btn-blue" onclick="loadSales()">Load</button>
-        <h3 style="margin:12px 0 6px;">Total: $<span id="totalSales">0</span></h3>
-        <div id="salesData" style="font-size:13px;color:var(--muted);margin-bottom:12px;"></div>
-        <button class="popup-btn popup-btn-close" onclick="closeSales()">Close</button>
-    </div>
-</div>
-
 <div class="popup" id="qrPopup">
     <div class="popup-box">
         <h3>📷 Generate QR</h3>
@@ -838,41 +788,11 @@ hr{border:none;border-top:1px solid var(--border);margin:0;}
     </div>
 </div>
 
-<div class="popup" id="staffPopup">
-    <div class="popup-box">
-        <h3>👨‍💼 Add Staff</h3>
-        <input id="sname" placeholder="Name" class="popup-input">
-        <input id="semail" placeholder="Email" class="popup-input">
-        <input id="spass" placeholder="Password" type="password" class="popup-input">
-        <button class="popup-btn popup-btn-blue" onclick="addStaff()">Add Staff</button>
-        <button class="popup-btn popup-btn-close" onclick="closeStaff()">Close</button>
-    </div>
-</div>
-
-<div class="popup" id="kitchenPopup">
-    <div class="popup-box">
-        <h3>👨‍🍳 Kitchen Screen</h3>
-        <a href="/kitchen/{{ rid }}" target="_blank"
-           style="display:block;width:100%;padding:13px;background:var(--green);color:#fff;border-radius:10px;font-weight:700;font-size:14px;text-decoration:none;margin-bottom:10px;">
-            Open Kitchen Screen
-        </a>
-        <button class="popup-btn popup-btn-close" onclick="closeKitchen()">Close</button>
-    </div>
-</div>
-
 <script>
 const RID = "{{rid}}"
 
-function openStats()  { document.getElementById("statsPopup").style.display="flex" }
-function closeStats() { document.getElementById("statsPopup").style.display="none" }
-function openSales()  { document.getElementById("salesPopup").style.display="flex" }
-function closeSales() { document.getElementById("salesPopup").style.display="none" }
 function openQR()     { document.getElementById("qrPopup").style.display="flex" }
 function closeQR()    { document.getElementById("qrPopup").style.display="none" }
-function openStaff()  { document.getElementById("staffPopup").style.display="flex" }
-function closeStaff() { document.getElementById("staffPopup").style.display="none" }
-function openKitchen(){ document.getElementById("kitchenPopup").style.display="flex" }
-function closeKitchen(){ document.getElementById("kitchenPopup").style.display="none" }
 
 // Close popup on backdrop click
 document.querySelectorAll('.popup').forEach(p=>{
@@ -888,33 +808,6 @@ function generateQR(){
     }).then(res=>res.text()).then(data=>{
         document.getElementById("qrResult").innerHTML=data
     })
-}
-
-function addStaff(){
-    fetch("/add_staff/"+RID,{
-        method:"POST",
-        headers:{"Content-Type":"application/x-www-form-urlencoded"},
-        body:"name="+document.getElementById("sname").value+
-             "&email="+document.getElementById("semail").value+
-             "&password="+document.getElementById("spass").value
-    }).then(()=>alert("Staff Added ✅"))
-}
-
-function renew(){
-    fetch("/renew_school",{method:"POST"})
-    .then(res=>res.json())
-    .then(data=>{ alert(data.message); location.reload(); })
-}
-
-function loadSales(){
-    let from = document.getElementById("fromDate").value
-    let to = document.getElementById("toDate").value
-    fetch(`/sales/${RID}?from=${from}&to=${to}`)
-    .then(r=>r.json())
-    .then(data=>{
-        document.getElementById("totalSales").innerText = data.total || "0"
-        document.getElementById("salesData").innerHTML = data.html || ""
-    }).catch(()=>{})
 }
 
 // New order notification
