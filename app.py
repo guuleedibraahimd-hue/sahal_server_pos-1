@@ -2250,20 +2250,26 @@ def staff_delete(rid, staff_id):
 # =====================================
 # 🧑‍🍳 WAITER / 💰 CASHIER — GENERIC LOGIN (no rid in URL)
 # Used by the homepage portal cards. Looks up the employee_id across
-# every restaurant's staff_accounts via a collection_group query, then
-# hands off to the same restaurant-scoped session + dashboard as the
-# per-restaurant login routes below.
+# every restaurant's staff_accounts, then hands off to the same
+# restaurant-scoped session + dashboard as the per-restaurant login
+# routes below.
+#
+# NOTE: this deliberately does NOT use db.collection_group("staff_accounts")
+# — a collection_group query needs a special "collection group" scoped
+# index created in the Firebase console first, otherwise Firestore raises
+# FAILED_PRECONDITION and every login silently looks like a wrong
+# employee ID / PIN. Looping per-restaurant needs no extra index setup.
 # =====================================
 def _find_staff_across_restaurants(employee_id, role, pin):
     """Returns (rid, staff_dict) or (None, None)."""
     try:
-        query = db.collection_group("staff_accounts").where("employee_id", "==", employee_id)
-        for doc in query.stream():
-            s = doc.to_dict()
-            if s.get("role") == role and s.get("pin") == pin:
-                s["id"] = doc.id
-                rid = doc.reference.parent.parent.id
-                return rid, s
+        for rdoc in db.collection("restaurants").stream():
+            for doc in rdoc.reference.collection("staff_accounts") \
+                    .where("employee_id", "==", employee_id).stream():
+                s = doc.to_dict()
+                if s.get("role") == role and s.get("pin") == pin:
+                    s["id"] = doc.id
+                    return rdoc.id, s
     except Exception as e:
         print("Staff lookup error:", e)
     return None, None
