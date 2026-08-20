@@ -2168,6 +2168,31 @@ def restaurant_is_active(rid):
 
 
 # =====================================
+# 💰 CASHIER SHIFTS + PAYMENTS
+# =====================================
+def get_next_payment_id(rid):
+    date_str = datetime.now().strftime("%Y%m%d")
+    counter_ref = db.collection("restaurants").document(rid) \
+                    .collection("meta").document("payment_counter")
+    counter_ref.set({"count": firestore.Increment(1)}, merge=True)
+    snap = counter_ref.get()
+    count = snap.to_dict().get("count", 1)
+    return f"PAY-{date_str}-{count:05d}"
+
+
+def get_active_cashier_shift(rid, employee_id):
+    """Returns (shift_id, shift_dict) for the open shift, or (None, None)."""
+    docs = db.collection("restaurants").document(rid).collection("cashier_shifts") \
+        .where("cashier_employee_id", "==", employee_id) \
+        .where("status", "==", "open").limit(1).stream()
+    for doc in docs:
+        s = doc.to_dict()
+        s["id"] = doc.id
+        return doc.id, s
+    return None, None
+
+
+# =====================================
 # 🧑‍💼 STAFF MANAGEMENT (Admin — create/list/toggle/delete Waiter & Cashier accounts)
 # =====================================
 @app.route("/staff_manage/<rid>")
@@ -2476,31 +2501,194 @@ def cashier_dashboard(rid):
         return render_template("staff_suspended.html", restaurant_name=restaurant.get("name", "Restaurant"), portal="Cashier")
 
     restaurant_ref = db.collection("restaurants").document(rid)
+    employee_id = session.get("staff_employee_id", "")
+
+    shift_id, shift = get_active_cashier_shift(rid, employee_id)
+
+    if not shift:
+        # No open shift — must open one before doing anything else.
+        return render_template(
+            "cashier_dashboard.html",
+            rid=rid,
+            restaurant_name=restaurant.get("name", "Restaurant"),
+            staff_name=session.get("staff_name", ""),
+            employee_id=employee_id,
+            has_shift=False
+        )
 
     today = datetime.now().strftime("%Y-%m-%d")
+
     pending_orders = []
-    collected_today = 0.0
     for doc in restaurant_ref.collection("orders") \
             .order_by("created_at", direction=firestore.Query.DESCENDING).limit(100).stream():
         o = doc.to_dict()
         o["id"] = doc.id
-        created = o.get("created_at")
-        created_date = created.strftime("%Y-%m-%d") if hasattr(created, "strftime") else str(created)[:10]
         status = str(o.get("status", "")).lower()
         if status != "paid":
             pending_orders.append(o)
-        elif created_date == today:
-            collected_today += float(o.get("price", 0))
+
+    # Payments recorded during THIS shift
+    shift_payments = list(restaurant_ref.collection("payments")
+                           .where("shift_id", "==", shift_id).stream())
+
+    method_totals = {"cash": 0.0, "evc": 0.0, "edahab": 0.0, "card": 0.0, "other": 0.0}
+    transactions = []
+    collected_today = 0.0
+    for doc in shift_payments:
+        p = doc.to_dict()
+        p["id"] = doc.id
+        amount = float(p.get("amount", 0))
+        method = str(p.get("method", "other")).lower()
+        if method not in method_totals:
+            method = "other"
+        method_totals[method] += amount
+        collected_today += amount
+        transactions.append(p)
+
+    transactions.sort(key=lambda x: x.get("created_at", ""), reverse=True)
+
+    opening_cash = float(shift.get("opening_cash", 0))
+    expected_cash = opening_cash + method_totals["cash"]
+    mobile_total = method_totals["evc"] + method_totals["edahab"] + method_totals["card"] + method_totals["other"]
 
     return render_template(
         "cashier_dashboard.html",
         rid=rid,
         restaurant_name=restaurant.get("name", "Restaurant"),
         staff_name=session.get("staff_name", ""),
-        employee_id=session.get("staff_employee_id", ""),
+        employee_id=employee_id,
+        has_shift=True,
+        shift=shift,
+        shift_id=shift_id,
+        opening_cash=round(opening_cash, 2),
+        expected_cash=round(expected_cash, 2),
         pending_orders=pending_orders[:30],
-        collected_today=round(collected_today, 2)
+        collected_today=round(collected_today, 2),
+        orders_count=len(transactions),
+        method_totals={k: round(v, 2) for k, v in method_totals.items()},
+        mobile_total=round(mobile_total, 2),
+        transactions=transactions[:30]
     )
+
+
+@app.route("/cashier_shift/<rid>/open", methods=["POST"])
+def cashier_shift_open(rid):
+    if not session.get("staff_ok") or session.get("staff_role") != "cashier" or session.get("staff_rid") != rid:
+        return jsonify({"success": False, "error": "Unauthorized"}), 401
+    try:
+        employee_id = session.get("staff_employee_id", "")
+        existing_id, existing = get_active_cashier_shift(rid, employee_id)
+        if existing:
+            return jsonify({"success": False, "error": "You already have an open shift"})
+
+        data = request.get_json() or {}
+        opening_cash = float(data.get("opening_cash", 0))
+
+        date_str = datetime.now().strftime("%Y%m%d")
+        shift_code = f"SHIFT-{date_str}-{employee_id.replace('-', '')}"
+
+        shift_ref = db.collection("restaurants").document(rid).collection("cashier_shifts").document()
+        shift_ref.set({
+            "shift_code": shift_code,
+            "cashier_employee_id": employee_id,
+            "cashier_name": session.get("staff_name", ""),
+            "opening_cash": opening_cash,
+            "opened_at": datetime.now().isoformat(),
+            "status": "open"
+        })
+        return jsonify({"success": True, "shift_id": shift_ref.id})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+
+@app.route("/cashier_shift/<rid>/close", methods=["POST"])
+def cashier_shift_close(rid):
+    if not session.get("staff_ok") or session.get("staff_role") != "cashier" or session.get("staff_rid") != rid:
+        return jsonify({"success": False, "error": "Unauthorized"}), 401
+    try:
+        employee_id = session.get("staff_employee_id", "")
+        shift_id, shift = get_active_cashier_shift(rid, employee_id)
+        if not shift:
+            return jsonify({"success": False, "error": "No open shift"})
+
+        data = request.get_json() or {}
+        actual_cash = float(data.get("actual_cash", 0))
+
+        restaurant_ref = db.collection("restaurants").document(rid)
+        payments = list(restaurant_ref.collection("payments").where("shift_id", "==", shift_id).stream())
+        cash_sales = sum(float(p.to_dict().get("amount", 0)) for p in payments
+                          if str(p.to_dict().get("method", "")).lower() == "cash")
+        opening_cash = float(shift.get("opening_cash", 0))
+        expected_cash = opening_cash + cash_sales
+        difference = round(actual_cash - expected_cash, 2)
+
+        restaurant_ref.collection("cashier_shifts").document(shift_id).update({
+            "status": "closed",
+            "closed_at": datetime.now().isoformat(),
+            "cash_sales": round(cash_sales, 2),
+            "expected_cash": round(expected_cash, 2),
+            "actual_cash": round(actual_cash, 2),
+            "difference": difference,
+            "transactions_count": len(payments)
+        })
+        return jsonify({"success": True, "expected_cash": round(expected_cash, 2),
+                         "actual_cash": round(actual_cash, 2), "difference": difference})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+
+@app.route("/cashier_pay/<rid>/<order_id>", methods=["POST"])
+def cashier_pay(rid, order_id):
+    if not session.get("staff_ok") or session.get("staff_role") != "cashier" or session.get("staff_rid") != rid:
+        return jsonify({"success": False, "error": "Unauthorized"}), 401
+    try:
+        employee_id = session.get("staff_employee_id", "")
+        shift_id, shift = get_active_cashier_shift(rid, employee_id)
+        if not shift:
+            return jsonify({"success": False, "error": "Open a shift before taking payments"})
+
+        data = request.get_json() or {}
+        method = str(data.get("method", "cash")).lower()
+        if method not in ("cash", "evc", "edahab", "card", "other"):
+            method = "other"
+
+        restaurant_ref = db.collection("restaurants").document(rid)
+        order_ref = restaurant_ref.collection("orders").document(order_id)
+        order_doc = order_ref.get()
+        if not order_doc.exists:
+            return jsonify({"success": False, "error": "Order not found"})
+
+        amount = float(order_doc.to_dict().get("price", 0))
+        payment_id = get_next_payment_id(rid)
+        now = datetime.now()
+
+        restaurant_ref.collection("payments").document().set({
+            "payment_id":     payment_id,
+            "order_id":       order_id,
+            "restaurant_id":  rid,
+            "cashier_id":     employee_id,
+            "cashier_name":   session.get("staff_name", ""),
+            "shift_id":       shift_id,
+            "amount":         amount,
+            "method":         method,
+            "status":         "paid",
+            "date":           now.strftime("%Y-%m-%d"),
+            "time":           now.strftime("%H:%M:%S"),
+            "created_at":     now.isoformat()
+        })
+
+        order_ref.update({
+            "status":          "paid",
+            "payment_method":  method,
+            "payment_id":      payment_id,
+            "paid_by":         employee_id,
+            "cashier_id":      employee_id,
+            "updated_at":      datetime.utcnow()
+        })
+
+        return jsonify({"success": True, "payment_id": payment_id})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
 
 
 @app.route("/cashier_logout")

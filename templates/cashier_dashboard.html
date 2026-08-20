@@ -13,11 +13,26 @@ body{ margin:0; font-family:Arial,sans-serif; background:#f4f6f9; color:#1b2330;
 }
 .topbar h1{ font-size:17px; margin:0; }
 .topbar .sub{ font-size:12px; opacity:0.9; }
+.shift-badge{ font-size:11px; font-weight:800; padding:4px 10px; border-radius:20px; margin-left:8px; }
+.shift-on{ background:rgba(255,255,255,0.25); }
+.shift-off{ background:rgba(0,0,0,0.2); }
 .logout{ background:rgba(255,255,255,0.2); color:#fff; text-decoration:none; padding:8px 14px; border-radius:10px; font-weight:700; font-size:13px; }
-.wrap{ max-width:820px; margin:0 auto; padding:18px; }
-.stat{ background:#fff; border-radius:16px; padding:18px; margin-bottom:18px; box-shadow:0 4px 12px rgba(0,0,0,0.06); text-align:center; }
-.stat .label{ font-size:12px; color:#888; font-weight:700; }
-.stat .value{ font-size:26px; font-weight:900; color:#1f9e57; margin-top:4px; }
+.wrap{ max-width:900px; margin:0 auto; padding:18px; }
+
+/* ---- OPEN SHIFT GATE ---- */
+.gate{ max-width:380px; margin:60px auto; background:#fff; border-radius:18px; padding:30px 26px; text-align:center; box-shadow:0 6px 20px rgba(0,0,0,0.08); }
+.gate .ic{ font-size:40px; margin-bottom:10px; }
+.gate h2{ font-size:17px; margin:0 0 4px; }
+.gate p{ font-size:13px; color:#888; margin-bottom:20px; }
+.gate label{ display:block; text-align:left; font-size:12px; font-weight:800; color:#555; margin-bottom:6px; }
+.gate input{ width:100%; padding:12px; border-radius:10px; border:1px solid #ddd; font-size:15px; margin-bottom:16px; }
+.gate button{ width:100%; padding:13px; background:#1f9e57; color:#fff; border:none; border-radius:10px; font-weight:800; font-size:14px; cursor:pointer; }
+
+/* ---- STATS ---- */
+.stats-row{ display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:18px; }
+.stat{ background:#fff; border-radius:14px; padding:14px; box-shadow:0 4px 12px rgba(0,0,0,0.06); text-align:center; }
+.stat .label{ font-size:11px; color:#888; font-weight:700; }
+.stat .value{ font-size:19px; font-weight:900; color:#1f9e57; margin-top:4px; }
 
 .section{ background:#fff; border-radius:16px; padding:18px; margin-bottom:18px; box-shadow:0 4px 12px rgba(0,0,0,0.06); }
 .section h2{ font-size:15px; margin:0 0 14px; }
@@ -36,37 +51,84 @@ body{ margin:0; font-family:Arial,sans-serif; background:#f4f6f9; color:#1b2330;
 .status-pending{ background:#fff3cd; color:#856404; }
 .status-preparing{ background:#cce5ff; color:#004085; }
 .status-ready{ background:#d4edda; color:#155724; }
+
+/* ---- PAYMENT SUMMARY ---- */
+.summary-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:10px; }
+.summary-item{ background:#f8f9fa; border-radius:10px; padding:12px; text-align:center; }
+.summary-item .m-label{ font-size:11px; color:#888; font-weight:700; }
+.summary-item .m-value{ font-size:16px; font-weight:800; margin-top:4px; }
+.summary-total{ margin-top:12px; padding-top:12px; border-top:1px solid #eee; display:flex; justify-content:space-between; font-weight:800; font-size:15px; }
+
+/* ---- TRANSACTIONS ---- */
+.tx-row{ display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid #f0f0f0; font-size:13px; }
+.tx-method{ font-size:11px; font-weight:800; padding:2px 8px; border-radius:10px; background:#eef4ff; color:#1565c0; }
+
+/* ---- MY SHIFT ---- */
+.shift-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; font-size:13px; }
+.shift-grid .k{ color:#888; }
+.shift-grid .v{ font-weight:800; text-align:right; }
+.close-shift-btn{ width:100%; margin-top:16px; padding:13px; background:#dc3545; color:#fff; border:none; border-radius:10px; font-weight:800; cursor:pointer; font-size:14px; }
+
+/* ---- MODAL ---- */
+.modal-bg{ display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); align-items:center; justify-content:center; z-index:100; padding:16px; }
+.modal-bg.show{ display:flex; }
+.modal{ background:#fff; border-radius:18px; padding:24px; width:100%; max-width:360px; }
+.modal h3{ margin:0 0 16px; font-size:16px; }
+.method-grid{ display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:14px; }
+.method-opt{ padding:12px; border:1.5px solid #ddd; border-radius:10px; text-align:center; font-size:13px; font-weight:700; cursor:pointer; }
+.method-opt.selected{ border-color:#1f9e57; background:#eafaf1; color:#1f9e57; }
+.modal input{ width:100%; padding:12px; border-radius:10px; border:1px solid #ddd; font-size:14px; margin-bottom:10px; }
+.change-row{ display:flex; justify-content:space-between; font-weight:800; font-size:14px; margin-bottom:14px; }
+.modal-actions{ display:flex; gap:8px; }
+.modal-actions button{ flex:1; padding:12px; border:none; border-radius:10px; font-weight:800; cursor:pointer; font-size:13px; }
+.confirm-btn{ background:#1f9e57; color:#fff; }
+.cancel-btn{ background:#eee; color:#333; }
 </style>
 </head>
 <body>
 
 <div class="topbar">
     <div>
-        <h1>💰 {{ staff_name }} — {{ employee_id }}</h1>
+        <h1>💰 {{ staff_name }} — {{ employee_id }}
+            {% if has_shift %}<span class="shift-badge shift-on">🟢 Shift Active</span>{% else %}<span class="shift-badge shift-off">⚪ No Shift</span>{% endif %}
+        </h1>
         <div class="sub">{{ restaurant_name }} · Cashier Dashboard</div>
     </div>
     <a href="/cashier_logout" class="logout">Logout</a>
 </div>
 
+{% if not has_shift %}
+<div class="gate">
+    <div class="ic">🕐</div>
+    <h2>Open Your Shift</h2>
+    <p>You need to open a shift before taking payments.</p>
+    <label>Opening Cash ($)</label>
+    <input type="number" id="opening_cash" placeholder="e.g. 100" min="0" step="0.01">
+    <button onclick="openShift()">▶ Open Shift</button>
+</div>
+
+{% else %}
 <div class="wrap">
 
-    <div class="stat">
-        <div class="label">💵 Collected Today</div>
-        <div class="value">${{ collected_today }}</div>
+    <div class="stats-row">
+        <div class="stat"><div class="label">💵 Today's Sales</div><div class="value">${{ collected_today }}</div></div>
+        <div class="stat"><div class="label">🧾 Orders</div><div class="value">{{ orders_count }}</div></div>
+        <div class="stat"><div class="label">💰 Cash</div><div class="value">${{ method_totals.cash }}</div></div>
+        <div class="stat"><div class="label">📱 Mobile</div><div class="value">${{ mobile_total }}</div></div>
     </div>
 
     <div class="section">
-        <h2>🧾 Orders Awaiting Payment ({{ pending_orders|length }})</h2>
+        <h2>🔔 Orders Awaiting Payment ({{ pending_orders|length }})</h2>
         {% for o in pending_orders %}
         <div class="order-card">
             <div class="order-head">
                 <span>Table {{ o.table }}</span>
                 <span class="status-pill status-{{ (o.status or 'pending')|lower }}">{{ o.status }}</span>
             </div>
-            <div class="order-items">{{ o.items }}</div>
+            <div class="order-items">{{ o['items'] }}</div>
             <div class="order-items"><b>${{ "%.2f"|format(o.price or 0) }}</b></div>
             <div class="order-actions">
-                <button class="pay-btn" onclick="markPaid('{{ o.id }}', this)">✅ Mark Paid</button>
+                <button class="pay-btn" data-order-id="{{ o.id }}" data-order-total="{{ o.price or 0 }}" onclick="openPayModal(this)">✅ Pay</button>
                 <a class="receipt-btn" href="/receipt/{{ rid }}/{{ o.id }}" target="_blank">🧾 Receipt</a>
             </div>
         </div>
@@ -75,26 +137,151 @@ body{ margin:0; font-family:Arial,sans-serif; background:#f4f6f9; color:#1b2330;
         {% endfor %}
     </div>
 
+    <div class="section">
+        <h2>📊 Payment Summary (This Shift)</h2>
+        <div class="summary-grid">
+            <div class="summary-item"><div class="m-label">💵 Cash</div><div class="m-value">${{ method_totals.cash }}</div></div>
+            <div class="summary-item"><div class="m-label">📱 EVC Plus</div><div class="m-value">${{ method_totals.evc }}</div></div>
+            <div class="summary-item"><div class="m-label">📱 eDahab</div><div class="m-value">${{ method_totals.edahab }}</div></div>
+            <div class="summary-item"><div class="m-label">💳 Card</div><div class="m-value">${{ method_totals.card }}</div></div>
+            <div class="summary-item"><div class="m-label">➕ Other</div><div class="m-value">${{ method_totals.other }}</div></div>
+        </div>
+        <div class="summary-total"><span>Total</span><span>${{ collected_today }}</span></div>
+    </div>
+
+    <div class="section">
+        <h2>🧾 My Transactions (This Shift)</h2>
+        {% for t in transactions %}
+        <div class="tx-row">
+            <span>{{ t.payment_id }} · {{ t.time }}</span>
+            <span class="tx-method">{{ t.method|upper }}</span>
+            <span><b>${{ "%.2f"|format(t.amount or 0) }}</b></span>
+        </div>
+        {% else %}
+        <div style="color:#888;font-size:13px;text-align:center;padding:14px;">No transactions yet this shift</div>
+        {% endfor %}
+    </div>
+
+    <div class="section">
+        <h2>📋 My Shift</h2>
+        <div class="shift-grid">
+            <div class="k">Opened</div><div class="v">{{ shift.opened_at[11:16] if shift.opened_at else '—' }}</div>
+            <div class="k">Opening Cash</div><div class="v">${{ opening_cash }}</div>
+            <div class="k">Transactions</div><div class="v">{{ orders_count }}</div>
+            <div class="k">Collected</div><div class="v">${{ collected_today }}</div>
+            <div class="k">Expected Cash</div><div class="v">${{ expected_cash }}</div>
+        </div>
+        <button class="close-shift-btn" onclick="openCloseModal()">🔒 Close Shift</button>
+    </div>
+
+</div>
+{% endif %}
+
+<!-- PAY MODAL -->
+<div class="modal-bg" id="payModal">
+    <div class="modal">
+        <h3>💳 Payment Method</h3>
+        <div class="method-grid">
+            <div class="method-opt selected" data-method="cash" onclick="selectMethod(this)">💵 Cash</div>
+            <div class="method-opt" data-method="evc" onclick="selectMethod(this)">📱 EVC Plus</div>
+            <div class="method-opt" data-method="edahab" onclick="selectMethod(this)">📱 eDahab</div>
+            <div class="method-opt" data-method="card" onclick="selectMethod(this)">💳 Card</div>
+            <div class="method-opt" data-method="other" onclick="selectMethod(this)">➕ Other</div>
+        </div>
+        <div id="cashFields">
+            <div class="change-row"><span>Total</span><span id="payTotal">$0.00</span></div>
+            <input type="number" id="receivedAmount" placeholder="Received amount" step="0.01" oninput="calcChange()">
+            <div class="change-row"><span>Change</span><span id="changeAmount">$0.00</span></div>
+        </div>
+        <div class="modal-actions">
+            <button class="cancel-btn" onclick="closePayModal()">Cancel</button>
+            <button class="confirm-btn" onclick="confirmPayment()">Confirm Payment</button>
+        </div>
+    </div>
+</div>
+
+<!-- CLOSE SHIFT MODAL -->
+<div class="modal-bg" id="closeModal">
+    <div class="modal">
+        <h3>🔒 Close Shift</h3>
+        <div class="change-row"><span>Expected Cash</span><span>${{ expected_cash if has_shift else '0.00' }}</span></div>
+        <input type="number" id="actualCash" placeholder="Actual cash counted" step="0.01">
+        <div class="modal-actions">
+            <button class="cancel-btn" onclick="closeCloseModal()">Cancel</button>
+            <button class="confirm-btn" onclick="confirmCloseShift()">Confirm Close</button>
+        </div>
+    </div>
 </div>
 
 <script>
-async function markPaid(orderId, btn){
-    btn.disabled = true;
-    btn.textContent = "Processing...";
-    try{
-        const res = await fetch(`/update_status/{{ rid }}/${orderId}/paid`);
-        const data = await res.json();
-        if(data.success){
-            location.reload();
-        } else {
-            alert("❌ " + (data.message || "Failed"));
-            btn.disabled = false;
-            btn.textContent = "✅ Mark Paid";
-        }
-    } catch(e){
-        alert("❌ Server error");
-        btn.disabled = false;
-        btn.textContent = "✅ Mark Paid";
+const RID = "{{ rid }}";
+let currentOrderId = null;
+let currentOrderTotal = 0;
+let selectedMethod = "cash";
+
+async function openShift(){
+    const opening_cash = parseFloat(document.getElementById("opening_cash").value) || 0;
+    const res = await fetch(`/cashier_shift/${RID}/open`, {
+        method: "POST", headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ opening_cash })
+    });
+    const data = await res.json();
+    if(data.success){ location.reload(); }
+    else { alert("❌ " + (data.error || "Failed")); }
+}
+
+function openPayModal(btn){
+    currentOrderId = btn.dataset.orderId;
+    currentOrderTotal = parseFloat(btn.dataset.orderTotal) || 0;
+    selectedMethod = "cash";
+    document.querySelectorAll(".method-opt").forEach(m => m.classList.remove("selected"));
+    document.querySelector('.method-opt[data-method="cash"]').classList.add("selected");
+    document.getElementById("payTotal").textContent = "$" + currentOrderTotal.toFixed(2);
+    document.getElementById("receivedAmount").value = "";
+    document.getElementById("changeAmount").textContent = "$0.00";
+    document.getElementById("cashFields").style.display = "block";
+    document.getElementById("payModal").classList.add("show");
+}
+function closePayModal(){ document.getElementById("payModal").classList.remove("show"); }
+
+function selectMethod(el){
+    document.querySelectorAll(".method-opt").forEach(m => m.classList.remove("selected"));
+    el.classList.add("selected");
+    selectedMethod = el.dataset.method;
+    document.getElementById("cashFields").style.display = (selectedMethod === "cash") ? "block" : "none";
+}
+
+function calcChange(){
+    const received = parseFloat(document.getElementById("receivedAmount").value) || 0;
+    const change = received - currentOrderTotal;
+    document.getElementById("changeAmount").textContent = "$" + (change > 0 ? change.toFixed(2) : "0.00");
+}
+
+async function confirmPayment(){
+    const res = await fetch(`/cashier_pay/${RID}/${currentOrderId}`, {
+        method: "POST", headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ method: selectedMethod })
+    });
+    const data = await res.json();
+    if(data.success){ location.reload(); }
+    else { alert("❌ " + (data.error || "Failed")); }
+}
+
+function openCloseModal(){ document.getElementById("closeModal").classList.add("show"); }
+function closeCloseModal(){ document.getElementById("closeModal").classList.remove("show"); }
+
+async function confirmCloseShift(){
+    const actual_cash = parseFloat(document.getElementById("actualCash").value) || 0;
+    const res = await fetch(`/cashier_shift/${RID}/close`, {
+        method: "POST", headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ actual_cash })
+    });
+    const data = await res.json();
+    if(data.success){
+        alert(`Shift closed.\nExpected: $${data.expected_cash}\nActual: $${data.actual_cash}\nDifference: $${data.difference}`);
+        location.reload();
+    } else {
+        alert("❌ " + (data.error || "Failed"));
     }
 }
 </script>

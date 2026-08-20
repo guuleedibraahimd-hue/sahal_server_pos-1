@@ -94,7 +94,7 @@ body{ margin:0; font-family:Arial,sans-serif; background:#f4f6f9; color:#1b2330;
         <h2>📋 My Recent Orders</h2>
         {% for o in my_orders %}
         <div class="order-row">
-            <div>Table {{ o.table }} — {{ o.items }}</div>
+            <div>Table {{ o.table }} — {{ o['items'] }}</div>
             <span class="status-pill status-{{ o.status|lower }}">{{ o.status }}</span>
         </div>
         {% else %}
