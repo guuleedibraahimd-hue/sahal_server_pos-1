@@ -5,34 +5,129 @@
 <title>System Admin Panel</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
-body{ font-family:Arial,sans-serif; background:#f4f6f9; margin:0; padding:20px; }
-.top{ display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:20px; }
-.logout{ background:#dc3545; color:#fff; text-decoration:none; padding:10px 18px; border-radius:10px; font-weight:bold; }
-.section{ background:#fff; padding:20px; border-radius:18px; margin-bottom:25px; box-shadow:0 4px 12px rgba(0,0,0,0.08); }
+:root{
+    --navy-900:#0b1220;
+    --navy-800:#101a2e;
+    --navy-700:#16233d;
+    --gold:#f4b400;
+    --gold-dark:#d99a00;
+    --bg:#f2f4f9;
+    --card:#ffffff;
+    --text:#1b2330;
+    --muted:#6b7688;
+    --border:#e8ebf1;
+}
+*{ box-sizing:border-box; }
+body{ font-family:'Segoe UI',Arial,sans-serif; background:var(--bg); margin:0; color:var(--text); }
+
+/* ================= LAYOUT ================= */
+.shell{ display:flex; min-height:100vh; }
+
+/* ---- SIDEBAR ---- */
+.sidebar{
+    width:280px; flex-shrink:0; background:linear-gradient(180deg,var(--navy-900),var(--navy-800));
+    color:#dbe1ee; display:flex; flex-direction:column; position:sticky; top:0; height:100vh; overflow-y:auto;
+}
+.sb-brand{ display:flex; align-items:center; gap:12px; padding:22px 20px; border-bottom:1px solid rgba(255,255,255,0.08); }
+.sb-brand .logo{ width:44px; height:44px; border-radius:12px; background:linear-gradient(135deg,var(--gold),var(--gold-dark)); display:flex; align-items:center; justify-content:center; font-size:22px; font-weight:900; color:var(--navy-900); }
+.sb-brand .name{ font-size:16px; font-weight:800; color:#fff; line-height:1.2; }
+.sb-brand .sub{ font-size:11px; color:var(--gold); font-weight:700; letter-spacing:0.5px; }
+.sb-section-label{ font-size:11px; font-weight:800; letter-spacing:1.5px; color:#5f6b83; padding:18px 20px 8px; text-transform:uppercase; }
+.sb-nav{ list-style:none; margin:0; padding:0 10px; flex:1; }
+.sb-nav li{ margin-bottom:2px; }
+.sb-link{ display:flex; align-items:center; gap:12px; padding:11px 12px; border-radius:10px; color:#c3cbdc; text-decoration:none; font-size:14px; font-weight:600; cursor:pointer; border:none; background:none; width:100%; text-align:left; }
+.sb-link .ic{ width:22px; text-align:center; font-size:16px; }
+.sb-link:hover{ background:rgba(255,255,255,0.06); color:#fff; }
+.sb-link.active{ background:var(--gold); color:var(--navy-900); font-weight:800; }
+.sb-link .arrow{ margin-left:auto; opacity:0.6; font-size:12px; }
+.sb-footer{ margin:16px; padding:16px; border-radius:14px; background:rgba(244,180,0,0.08); border:1px solid rgba(244,180,0,0.25); text-align:center; }
+.sb-footer .badge{ width:38px; height:38px; border-radius:50%; background:var(--gold); display:flex; align-items:center; justify-content:center; margin:0 auto 8px; font-size:18px; }
+.sb-footer .t1{ font-weight:800; font-size:13px; color:#fff; }
+.sb-footer .t2{ font-size:11px; color:var(--gold); font-weight:700; margin-top:2px; }
+.sb-footer .t3{ font-size:10px; color:#8a93a8; margin-top:6px; }
+
+/* ---- MAIN ---- */
+.main{ flex:1; min-width:0; }
+.topbar{ background:#fff; border-bottom:1px solid var(--border); padding:14px 28px; display:flex; align-items:center; justify-content:space-between; gap:16px; position:sticky; top:0; z-index:5; }
+.tb-left{ display:flex; align-items:center; gap:14px; }
+.tb-hamburger{ display:none; background:none; border:none; font-size:20px; cursor:pointer; color:var(--text); }
+.tb-icon{ width:38px; height:38px; border-radius:10px; background:var(--navy-900); color:var(--gold); display:flex; align-items:center; justify-content:center; font-size:18px; }
+.tb-title{ font-size:18px; font-weight:800; margin:0; }
+.tb-sub{ font-size:12px; color:var(--muted); font-weight:600; }
+.tb-right{ display:flex; align-items:center; gap:16px; }
+.tb-round{ width:38px; height:38px; border-radius:50%; background:#f2f4f9; display:flex; align-items:center; justify-content:center; font-size:16px; color:var(--text); position:relative; }
+.tb-admin{ display:flex; align-items:center; gap:10px; }
+.tb-avatar{ width:38px; height:38px; border-radius:50%; background:linear-gradient(135deg,var(--gold),var(--gold-dark)); display:flex; align-items:center; justify-content:center; font-weight:800; color:var(--navy-900); }
+.tb-admin .an1{ font-size:13px; font-weight:800; }
+.tb-admin .an2{ font-size:11px; color:var(--muted); }
+.logout{ background:#dc3545; color:#fff; text-decoration:none; padding:9px 16px; border-radius:10px; font-weight:800; font-size:13px; }
+
+.content{ padding:26px 28px 60px; }
+.page{ display:none; }
+.page.active{ display:block; }
+
+/* ---- HERO ---- */
+.hero{ background:linear-gradient(120deg,var(--navy-900) 0%,var(--navy-700) 60%,#1c2b4a 100%); border-radius:22px; padding:34px 36px; color:#fff; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:24px; margin-bottom:26px; }
+.hero-left{ display:flex; align-items:center; gap:18px; }
+.hero-cart{ width:64px; height:64px; border-radius:16px; background:linear-gradient(135deg,var(--gold),var(--gold-dark)); display:flex; align-items:center; justify-content:center; font-size:30px; }
+.hero-title{ font-size:30px; font-weight:900; margin:0; }
+.hero-title .accent{ color:var(--gold); }
+.hero-tag{ font-size:13px; color:#aab4c8; font-weight:600; margin-top:4px; }
+.hero-icons{ display:flex; gap:18px; flex-wrap:wrap; }
+.hero-icon{ display:flex; flex-direction:column; align-items:center; gap:6px; font-size:11px; color:#c3cbdc; font-weight:700; }
+.hero-icon .circ{ width:46px; height:46px; border-radius:50%; background:rgba(244,180,0,0.15); border:1px solid rgba(244,180,0,0.4); display:flex; align-items:center; justify-content:center; font-size:20px; }
+
+/* ---- QUICK ACCESS ---- */
+.blockTitle{ display:flex; align-items:center; gap:10px; font-size:17px; font-weight:800; margin:0 0 14px; }
+.blockTitle .ic{ color:var(--gold); }
+.qa-grid{ display:grid; grid-template-columns:repeat(5,1fr); gap:16px; margin-bottom:26px; }
+.qa-card{ text-decoration:none; border-radius:16px; padding:22px 16px; color:#fff; font-weight:800; font-size:14px; display:flex; flex-direction:column; align-items:center; gap:10px; text-align:center; box-shadow:0 6px 16px rgba(0,0,0,0.12); }
+.qa-card .qic{ width:44px; height:44px; border-radius:50%; background:rgba(255,255,255,0.22); display:flex; align-items:center; justify-content:center; font-size:20px; }
+.qa-1{ background:linear-gradient(135deg,#ff7a45,#ff5722); }
+.qa-2{ background:linear-gradient(135deg,#34c979,#28a745); }
+.qa-3{ background:linear-gradient(135deg,#2f97ff,#007bff); }
+.qa-4{ background:linear-gradient(135deg,#1fd1c7,#00b894); }
+.qa-5{ background:linear-gradient(135deg,#8a5ce0,#6f42c1); }
+
+/* ---- STATS ---- */
+.stat-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:26px; }
+.stat-card{ border-radius:16px; padding:20px 22px; color:#fff; box-shadow:0 6px 16px rgba(0,0,0,0.1); }
+.stat-1{ background:linear-gradient(135deg,#6a5cf0,#4b3fd1); }
+.stat-2{ background:linear-gradient(135deg,#34c979,#1f9e57); }
+.stat-3{ background:linear-gradient(135deg,#2f97ff,#0b63d6); }
+.stat-4{ background:linear-gradient(135deg,var(--gold),#e08e00); }
+.stat-label{ font-size:12px; opacity:0.9; font-weight:700; }
+.stat-value{ font-size:30px; font-weight:900; margin-top:6px; }
+
+/* ---- PANEL CARDS ---- */
+.panel-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:26px; }
+.panel-card{ background:var(--card); border:1px solid var(--border); border-radius:18px; padding:20px; box-shadow:0 4px 12px rgba(0,0,0,0.05); }
+.panel-head{ display:flex; align-items:center; gap:12px; margin-bottom:14px; }
+.panel-ic{ width:42px; height:42px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:20px; color:#fff; }
+.panel-ic.p1{ background:#6f42c1; } .panel-ic.p2{ background:#ff9800; } .panel-ic.p3{ background:#28a745; } .panel-ic.p4{ background:#007bff; }
+.panel-title{ font-size:14px; font-weight:800; margin:0; }
+.panel-sub{ font-size:11px; color:var(--muted); font-weight:600; }
+.panel-links{ display:flex; flex-wrap:wrap; gap:8px; }
+.mini-btn{ text-decoration:none; color:#fff; padding:8px 12px; border-radius:9px; font-size:12px; font-weight:700; border:none; cursor:pointer; }
+.panel-open{ display:block; width:100%; text-align:center; padding:11px; border-radius:10px; font-weight:800; color:#fff; text-decoration:none; border:none; cursor:pointer; font-size:13px; margin-top:4px; }
+
+/* ---- SECTION (data pages) ---- */
+.section{ background:var(--card); padding:22px; border-radius:18px; margin-bottom:25px; box-shadow:0 4px 12px rgba(0,0,0,0.06); border:1px solid var(--border); }
 .sectionTitle{ display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:20px; }
-.sectionTitle h2{ margin:0; }
-.openBtn{ border:none; padding:12px 20px; border-radius:10px; color:white; font-weight:bold; cursor:pointer; font-size:15px; }
-.restaurantBtn{ background:#ff5722; }
-.superBtn{ background:#28a745; }
-.schoolBtn{ background:#007bff; }
-.pharmacyBtn{ background:#6f42c1; }
-.tableBox{ display:none; overflow-x:auto; }
-table{ width:100%; border-collapse:collapse; min-width:1200px; }
-th{ background:#007bff; color:white; padding:14px; text-align:left; }
-td{ padding:15px; border-bottom:1px solid #eee; vertical-align:top; }
+.sectionTitle h2{ margin:0; font-size:18px; }
+table{ width:100%; border-collapse:collapse; min-width:1100px; }
+th{ background:var(--navy-900); color:var(--gold); padding:14px; text-align:left; font-size:13px; }
+td{ padding:15px; border-bottom:1px solid #eee; vertical-align:top; font-size:13px; }
 .card{ background:#f8f9fa; border:1px solid #ddd; border-radius:12px; padding:12px; }
-.big{ font-size:17px; font-weight:bold; color:#111; }
+.big{ font-size:16px; font-weight:bold; color:#111; }
 .label{ color:#666; font-size:12px; font-weight:bold; }
-.pass{ font-size:18px; font-weight:bold; color:#000; margin-top:4px; }
-.status-active{ color:#28a745; font-weight:bold; font-size:16px; }
-.status-disabled{ color:#dc3545; font-weight:bold; font-size:16px; }
+.pass{ font-size:17px; font-weight:bold; color:#000; margin-top:4px; }
+.status-active{ color:#28a745; font-weight:bold; font-size:15px; }
+.status-disabled{ color:#dc3545; font-weight:bold; font-size:15px; }
 .btn{ display:inline-block; padding:8px 14px; border-radius:8px; text-decoration:none; color:white; font-weight:bold; margin:3px; font-size:13px; }
 .activate{ background:#28a745; } .disable{ background:#dc3545; } .delete{ background:#111; } .renew{ background:#ff9800; }
-.registerBox{ background:#fff; padding:20px; border-radius:18px; margin-bottom:25px; box-shadow:0 4px 12px rgba(0,0,0,0.08); }
-.registerBtns{ display:flex; flex-wrap:wrap; gap:10px; }
-.registerBtns a{ text-decoration:none; color:white; padding:12px 18px; border-radius:10px; font-weight:bold; }
-.info-section{ background:#fff; padding:20px; border-radius:18px; margin-top:30px; box-shadow:0 4px 12px rgba(0,0,0,0.08); }
-textarea,input{ width:100%; padding:12px; border-radius:10px; border:1px solid #ccc; margin-top:10px; box-sizing:border-box; }
+.info-section{ background:var(--card); padding:22px; border-radius:18px; margin-top:0; box-shadow:0 4px 12px rgba(0,0,0,0.06); border:1px solid var(--border); }
+textarea,input,select{ width:100%; padding:12px; border-radius:10px; border:1px solid #ccc; margin-top:10px; box-sizing:border-box; font-family:inherit; }
 .saveBtn{ width:100%; background:#28a745; border:none; color:white; padding:14px; border-radius:10px; margin-top:15px; font-weight:bold; cursor:pointer; }
 .pharmacy-form{ display:grid; grid-template-columns:1fr 1fr 1fr 1fr auto; gap:10px; align-items:end; margin-top:10px; }
 .pharmacy-form input,.pharmacy-form select{ margin-top:0; }
@@ -43,7 +138,7 @@ textarea,input{ width:100%; padding:12px; border-radius:10px; border:1px solid #
 .pharmacy-msg.error{ background:#f8d7da; color:#721c24; border:1px solid #f5c6cb; }
 
 /* PHARMACY TABLE */
-.ph-table{ width:100%; border-collapse:collapse; margin-top:16px; min-width:900px; }
+.ph-table{ width:100%; border-collapse:collapse; margin-top:16px; min-width:1000px; }
 .ph-table th{ background:#6f42c1; color:white; padding:12px; text-align:left; font-size:13px; }
 .ph-table td{ padding:12px; border-bottom:1px solid #eee; font-size:13px; vertical-align:middle; }
 .badge-active{ background:#d4edda; color:#155724; padding:4px 10px; border-radius:12px; font-size:12px; font-weight:bold; }
@@ -52,321 +147,525 @@ textarea,input{ width:100%; padding:12px; border-radius:10px; border:1px solid #
 .alert-banner{ background:#fff3cd; border:1px solid #ffc107; border-radius:10px; padding:14px 18px; margin-bottom:16px; display:none; }
 .alert-banner.show{ display:block; }
 
-@media(max-width:900px){ .sectionTitle{ flex-direction:column; align-items:flex-start; } .pharmacy-form{ grid-template-columns:1fr; } }
+/* ---- REGISTRATION PANEL (page) ---- */
+.registerBtns{ display:flex; flex-wrap:wrap; gap:12px; }
+.registerBtns a{ text-decoration:none; color:white; padding:14px 20px; border-radius:12px; font-weight:800; font-size:14px; }
+
+/* overlay for mobile sidebar */
+.sb-overlay{ display:none; }
+
+@media(max-width:1100px){
+    .qa-grid{ grid-template-columns:repeat(3,1fr); }
+    .stat-grid{ grid-template-columns:repeat(2,1fr); }
+    .panel-grid{ grid-template-columns:repeat(2,1fr); }
+}
+@media(max-width:900px){
+    .sectionTitle{ flex-direction:column; align-items:flex-start; }
+    .pharmacy-form{ grid-template-columns:1fr; }
+    .sidebar{ position:fixed; left:-280px; z-index:50; transition:left 0.25s ease; box-shadow:0 0 30px rgba(0,0,0,0.3); }
+    .sidebar.open{ left:0; }
+    .tb-hamburger{ display:block; }
+    .sb-overlay{ display:none; position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:40; }
+    .sb-overlay.show{ display:block; }
+    .qa-grid{ grid-template-columns:repeat(2,1fr); }
+}
+@media(max-width:600px){
+    .qa-grid{ grid-template-columns:1fr 1fr; }
+    .stat-grid{ grid-template-columns:1fr; }
+    .panel-grid{ grid-template-columns:1fr; }
+    .content{ padding:18px; }
+    .topbar{ padding:12px 16px; }
+    .hero{ padding:24px; }
+}
 </style>
 </head>
 <body>
 
-<div class="top">
-    <h1>⚙️ System Admin Panel</h1>
-    <a href="/logout_admin" class="logout">Logout</a>
-</div>
+<div class="shell">
 
-<!-- REGISTER -->
-<div class="registerBox">
-    <h2>➕ Registration Panel</h2>
-    <div class="registerBtns">
-        <a href="/register" style="background:#ff5722;">🍽️ Register Restaurant</a>
-        <a href="/supermarket_register" style="background:#28a745;">🛒 Register Supermarket</a>
-        <a href="/school_register" style="background:#007bff;">🏫 Register School</a>
-        <a href="/payment_qr" style="background:#00b894;">💳 Payment QR (A4)</a>
-        <a href="/register_student" style="background:#6f42c1;">👨‍🎓 Register Student</a>
-    </div>
-</div>
+    <!-- ================= SIDEBAR ================= -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sb-brand">
+            <div class="logo">S</div>
+            <div>
+                <div class="name">Sahal Server</div>
+                <div class="sub">ONLINE STORE</div>
+            </div>
+        </div>
 
-<!-- RESTAURANTS -->
-<div class="section">
-    <div class="sectionTitle">
-        <h2>🍽️ Restaurants</h2>
-        <button class="openBtn restaurantBtn" onclick="toggleTable('restaurantTable')">Open Restaurants</button>
-    </div>
-    <div class="tableBox" id="restaurantTable">
-        <table>
-            <tr><th>Restaurant Info</th><th>System Passwords</th><th>Payment & Fee</th><th>Expiry</th><th>Status</th><th>Actions</th></tr>
-            {% for r in restaurants %}
-            <tr>
-                <td><div class="card"><div class="big">{{ r.name }}</div><br>📞 {{ r.phone }}<br><br>👤 Username: <b>{{ r.username }}</b><br><br>👨‍💼 Admin: <b>{{ r.admin_name }}</b><br><br>📧 {{ r.admin_email }}</div></td>
-                <td><div class="card"><div class="label">🔐 Login Password</div><div class="pass">{{ r.password }}</div><hr><div class="label">👨‍💼 Admin Password</div><div class="pass">{{ r.restaurant_admin_password or r["resturen_admin password"] }}</div><hr><div class="label">👨‍🍳 Kitchen Password</div><div class="pass">{{ r.kitchen_password }}</div></div></td>
-                <td><div class="card">💰 Fee: <b>${{ r.monthly_fee or r.price or r.fee }}</b><br><br>💳 Payment:<br><b>{{ r.payment }}</b></div></td>
-                <td><div class="card">📅 Expiry Date<br><br><b style="color:#ff9800;">{{ r.expiry_date or r.expiry }}</b></div></td>
-                <td>{% if r.status == 'active' or r.active == true %}<span class="status-active">✅ Active</span>{% else %}<span class="status-disabled">❌ Disabled</span>{% endif %}</td>
-                <td>
-                    <a href="/activate/restaurant/{{ r.id }}" class="btn activate">Activate</a>
-                    <a href="/disable/restaurant/{{ r.id }}" class="btn disable">Disable</a>
-                    <a href="/delete/restaurant/{{ r.id }}" class="btn delete">Delete</a>
-                    <a href="/renew/restaurant/{{ r.id }}" class="btn renew">Renew</a>
-                </td>
-            </tr>
-            {% endfor %}
-        </table>
-    </div>
-</div>
+        <div class="sb-section-label">Main Menu</div>
+        <ul class="sb-nav">
+            <li><button class="sb-link active" data-page="dashboard" onclick="showPage('dashboard',this)"><span class="ic">🏠</span> Dashboard <span class="arrow">›</span></button></li>
+            <li><button class="sb-link" data-page="registration" onclick="showPage('registration',this)"><span class="ic">👥</span> Registration Panel <span class="arrow">›</span></button></li>
+            <li><button class="sb-link" data-page="schools" onclick="showPage('schools',this)"><span class="ic">🏫</span> Schools <span class="arrow">›</span></button></li>
+            <li><button class="sb-link" data-page="infoposts" onclick="showPage('infoposts',this)"><span class="ic">📋</span> All Information Posts <span class="arrow">›</span></button></li>
+            <li><button class="sb-link" data-page="payments" onclick="showPage('payments',this)"><span class="ic">💳</span> Payment Dashboard <span class="arrow">›</span></button></li>
+            <li><button class="sb-link" data-page="restaurants" onclick="showPage('restaurants',this)"><span class="ic">🍽️</span> Restaurants <span class="arrow">›</span></button></li>
+            <li><button class="sb-link" data-page="supermarkets" onclick="showPage('supermarkets',this)"><span class="ic">🛒</span> Supermarkets <span class="arrow">›</span></button></li>
+            <li><button class="sb-link" data-page="pharmacy" onclick="showPage('pharmacy',this)"><span class="ic">💊</span> Pharmacy Management <span class="arrow">›</span></button></li>
+            <li><button class="sb-link" data-page="sysinfo" onclick="showPage('sysinfo',this)"><span class="ic">⚙️</span> System Information <span class="arrow">›</span></button></li>
+        </ul>
 
-<!-- SUPERMARKETS -->
-<div class="section">
-    <div class="sectionTitle">
-        <h2>🛒 Supermarkets</h2>
-        <button class="openBtn superBtn" onclick="toggleTable('supermarketTable')">Open Supermarkets</button>
-    </div>
-    <div class="tableBox" id="supermarketTable">
-        <table>
-            <tr><th>Supermarket Info</th><th>Password</th><th>Fee & Payment</th><th>Expiry</th><th>Status</th><th>Actions</th></tr>
-            {% for s in supermarkets %}
-            <tr>
-                <td><div class="card"><div class="big">{{ s.name }}</div><br>👤 Username: <b>{{ s.username }}</b></div></td>
-                <td><div class="card"><div class="label">🔐 Password</div><div class="pass">{{ s.password }}</div></div></td>
-                <td><div class="card">💰 Fee: <b>${{ s.monthly_fee or s.price or s.fee }}</b><br><br>💳 Payment:<br><b>{{ s.payment }}</b></div></td>
-                <td><div class="card">📅 {{ s.expiry_date or s.expiry }}</div></td>
-                <td>{% if s.status == 'active' or s.status == true %}<span class="status-active">✅ Active</span>{% else %}<span class="status-disabled">❌ Disabled</span>{% endif %}</td>
-                <td>
-                    <a href="/activate/supermarket/{{ s.id }}" class="btn activate">Activate</a>
-                    <a href="/disable/supermarket/{{ s.id }}" class="btn disable">Disable</a>
-                    <a href="/delete/supermarket/{{ s.id }}" class="btn delete">Delete</a>
-                    <a href="/renew/supermarket/{{ s.id }}" class="btn renew">Renew</a>
-                </td>
-            </tr>
-            {% endfor %}
-        </table>
-    </div>
-</div>
+        <div class="sb-footer">
+            <div class="badge">🛡️</div>
+            <div class="t1">Sahal Server</div>
+            <div class="t2">Online Store Admin</div>
+            <div class="t3">"One Platform • Many Services"</div>
+        </div>
+    </aside>
 
-<!-- SCHOOLS -->
-<div class="section">
-    <div class="sectionTitle">
-        <h2>🏫 Schools</h2>
-        <button class="openBtn schoolBtn" onclick="toggleTable('schoolTable')">Open Schools</button>
-    </div>
-    <div class="tableBox" id="schoolTable">
-        <table>
-            <tr><th>School Info</th><th>Passwords</th><th>Fee & Payment</th><th>Expiry</th><th>Status</th><th>Actions</th></tr>
-            {% for sc in schools %}
-            <tr>
-                <td><div class="card"><div class="big">{{ sc.school_name or sc.name }}</div><br>🆔 School Code: <b>{{ sc.school_code }}</b><br><br>📞 Phone: <b>{{ sc.phone }}</b><br><br>👤 Username: <b>{{ sc.username }}</b></div></td>
-                <td><div class="card"><div class="label">🔐 School Password</div><div class="pass">{{ sc.password }}</div></div></td>
-                <td><div class="card">💰 Fee: <b>${{ sc.monthly_fee or sc.price or sc.fee }}</b><br><br>💳 Payment:<br><b>{{ sc.payment }}</b></div></td>
-                <td><div class="card">📅 <b style="color:#ff9800;">{{ sc.expiry_date }}</b></div></td>
-                <td>{% if sc.status == 'active' or sc.active == true %}<span class="status-active">✅ Active</span>{% else %}<span class="status-disabled">❌ Disabled</span>{% endif %}</td>
-                <td>
-                    <a href="/activate/school/{{ sc.id }}" class="btn activate">Activate</a>
-                    <a href="/disable/school/{{ sc.id }}" class="btn disable">Disable</a>
-                    <a href="/delete/school/{{ sc.id }}" class="btn delete">Delete</a>
-                    <a href="/renew/school/{{ sc.id }}" class="btn renew">Renew</a>
-                </td>
-            </tr>
-            {% endfor %}
-        </table>
-    </div>
-</div>
+    <div class="sb-overlay" id="sbOverlay" onclick="closeSidebar()"></div>
 
-<!-- INFO POSTS -->
-<div class="section">
-    <div class="sectionTitle">
-        <h2>📰 All Information Posts</h2>
-        <button class="openBtn schoolBtn" onclick="toggleTable('allInfoPosts')">Open Information</button>
-    </div>
-    <div class="tableBox" id="allInfoPosts">
-        <button onclick="savePositions()" class="saveBtn" style="margin-bottom:20px;">💾 Save New Positions</button>
-        <div id="infoAdminList"></div>
-    </div>
-</div>
+    <!-- ================= MAIN ================= -->
+    <div class="main">
+        <div class="topbar">
+            <div class="tb-left">
+                <button class="tb-hamburger" onclick="openSidebar()">☰</button>
+                <div class="tb-icon">⚡</div>
+                <div>
+                    <p class="tb-title">System Admin Panel</p>
+                    <div class="tb-sub">Manage • Monitor • Grow</div>
+                </div>
+            </div>
+            <div class="tb-right">
+                <div class="tb-round">🔔</div>
+                <div class="tb-admin">
+                    <div class="tb-avatar">A</div>
+                    <div>
+                        <div class="an1">Admin</div>
+                        <div class="an2">System Administrator</div>
+                    </div>
+                </div>
+                <a href="/logout_admin" class="logout">Logout</a>
+            </div>
+        </div>
 
-<!-- PAYMENT DASHBOARD -->
-<div class="section">
-    <div class="sectionTitle">
-        <h2>💰 Payment Dashboard</h2>
-        <button class="openBtn restaurantBtn" onclick="toggleTable('paymentDashboard')">Open Payments</button>
-    </div>
-    <div class="tableBox" id="paymentDashboard">
-        <table>
-            <tr><th>Department</th><th>Name</th><th>Fee</th><th>Payment</th><th>Status</th><th>Expiry</th></tr>
-            {% for r in restaurants %}
-            <tr>
-                <td>🍽️ Restaurant</td><td>{{ r.name }}</td><td>${{ r.monthly_fee or r.price or r.fee }}</td><td>{{ r.payment }}</td>
-                <td>{% if r.status == 'active' or r.active == true %}<span class="status-active">✅ Paid</span>{% else %}<span class="status-disabled">❌ Not Paid</span>{% endif %}</td>
-                <td>{{ r.expiry_date or r.expiry }}</td>
-            </tr>
-            {% endfor %}
-            {% for s in supermarkets %}
-            <tr>
-                <td>🛒 Supermarket</td><td>{{ s.name }}</td><td>${{ s.monthly_fee or s.price or s.fee }}</td><td>{{ s.payment }}</td>
-                <td>{% if s.status == 'active' or s.status == true %}<span class="status-active">✅ Paid</span>{% else %}<span class="status-disabled">❌ Not Paid</span>{% endif %}</td>
-                <td>{{ s.expiry_date or s.expiry }}</td>
-            </tr>
-            {% endfor %}
-            {% for sc in schools %}
-            <tr>
-                <td>🏫 School</td><td>{{ sc.school_name or sc.name }}</td><td>${{ sc.monthly_fee or sc.price or sc.fee }}</td><td>{{ sc.payment }}</td>
-                <td>{% if sc.status == 'active' or sc.active == true %}<span class="status-active">✅ Paid</span>{% else %}<span class="status-disabled">❌ Not Paid</span>{% endif %}</td>
-                <td>{{ sc.expiry_date }}</td>
-            </tr>
-            {% endfor %}
-            {% for ph in pharmacies %}
-            <tr>
-                <td>💊 Pharmacy</td><td>{{ ph.pharmacy_name }}</td><td>${{ ph.monthly_fee }}/mo</td><td>{{ ph.payment_method or '—' }}</td>
-                <td>
+        <div class="content">
+
+            <!-- ============ DASHBOARD PAGE ============ -->
+            <div class="page active" id="page-dashboard">
+
+                <div class="hero">
+                    <div class="hero-left">
+                        <div class="hero-cart">🛒</div>
+                        <div>
+                            <h1 class="hero-title">Sahal Server<br><span class="accent">Online Store</span></h1>
+                            <div class="hero-tag">One Platform • Many Services</div>
+                        </div>
+                    </div>
+                    <div class="hero-icons">
+                        <div class="hero-icon"><div class="circ">🍽️</div>Restaurants</div>
+                        <div class="hero-icon"><div class="circ">🛒</div>Supermarket</div>
+                        <div class="hero-icon"><div class="circ">🏫</div>Schools</div>
+                        <div class="hero-icon"><div class="circ">💊</div>Pharmacy</div>
+                    </div>
+                </div>
+
+                <h2 class="blockTitle"><span class="ic">⚡</span> Quick Access</h2>
+                <div class="qa-grid">
+                    <a href="/register" class="qa-card qa-1"><div class="qic">🍽️</div>Register Restaurant</a>
+                    <a href="/supermarket_register" class="qa-card qa-2"><div class="qic">🛒</div>Register Supermarket</a>
+                    <a href="/school_register" class="qa-card qa-3"><div class="qic">🏫</div>Register School</a>
+                    <a href="/payment_qr" class="qa-card qa-4"><div class="qic">💳</div>Payment QR (A4)</a>
+                    <a href="/register_student" class="qa-card qa-5"><div class="qic">🎓</div>Register Student</a>
+                </div>
+
+                <div class="stat-grid">
+                    <div class="stat-card stat-1">
+                        <div class="stat-label">🍽️ Total Restaurants</div>
+                        <div class="stat-value">{{ restaurants|length }}</div>
+                    </div>
+                    <div class="stat-card stat-2">
+                        <div class="stat-label">🛒 Total Supermarkets</div>
+                        <div class="stat-value">{{ supermarkets|length }}</div>
+                    </div>
+                    <div class="stat-card stat-3">
+                        <div class="stat-label">🏫 Total Schools</div>
+                        <div class="stat-value">{{ schools|length }}</div>
+                    </div>
+                    <div class="stat-card stat-4">
+                        <div class="stat-label">💊 Total Pharmacies</div>
+                        <div class="stat-value">{{ pharmacies|length }}</div>
+                    </div>
+                </div>
+
+                <div class="panel-grid">
+                    <div class="panel-card">
+                        <div class="panel-head">
+                            <div class="panel-ic p1">👥</div>
+                            <div>
+                                <p class="panel-title">Registration Panel</p>
+                                <div class="panel-sub">Manage Users &amp; Institutions</div>
+                            </div>
+                        </div>
+                        <div class="panel-links">
+                            <a href="/register" class="mini-btn" style="background:#ff5722;">Register Restaurant</a>
+                            <a href="/supermarket_register" class="mini-btn" style="background:#28a745;">Register Supermarket</a>
+                            <a href="/school_register" class="mini-btn" style="background:#007bff;">Register School</a>
+                            <a href="/payment_qr" class="mini-btn" style="background:#00b894;">Payment QR (A4)</a>
+                            <a href="/register_student" class="mini-btn" style="background:#6f42c1;">Register Student</a>
+                        </div>
+                    </div>
+
+                    <div class="panel-card">
+                        <div class="panel-head">
+                            <div class="panel-ic p2">💰</div>
+                            <div>
+                                <p class="panel-title">Payment Dashboard</p>
+                                <div class="panel-sub">Manage Payments</div>
+                            </div>
+                        </div>
+                        <button class="panel-open" style="background:#ff5722;" onclick="showPage('payments')">Open Payments</button>
+                    </div>
+
+                    <div class="panel-card">
+                        <div class="panel-head">
+                            <div class="panel-ic p3">🍽️</div>
+                            <div>
+                                <p class="panel-title">Restaurants</p>
+                                <div class="panel-sub">Food &amp; Dining</div>
+                            </div>
+                        </div>
+                        <button class="panel-open" style="background:#28a745;" onclick="showPage('restaurants')">Open Restaurants</button>
+                    </div>
+
+                    <div class="panel-card">
+                        <div class="panel-head">
+                            <div class="panel-ic p4">🛒</div>
+                            <div>
+                                <p class="panel-title">Supermarkets</p>
+                                <div class="panel-sub">Retail &amp; Groceries</div>
+                            </div>
+                        </div>
+                        <button class="panel-open" style="background:#007bff;" onclick="showPage('supermarkets')">Open Supermarkets</button>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- ============ REGISTRATION PANEL PAGE ============ -->
+            <div class="page" id="page-registration">
+                <div class="section">
+                    <div class="sectionTitle"><h2>➕ Registration Panel</h2></div>
+                    <div class="registerBtns">
+                        <a href="/register" style="background:#ff5722;">🍽️ Register Restaurant</a>
+                        <a href="/supermarket_register" style="background:#28a745;">🛒 Register Supermarket</a>
+                        <a href="/school_register" style="background:#007bff;">🏫 Register School</a>
+                        <a href="/payment_qr" style="background:#00b894;">💳 Payment QR (A4)</a>
+                        <a href="/register_student" style="background:#6f42c1;">👨‍🎓 Register Student</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ============ SCHOOLS PAGE ============ -->
+            <div class="page" id="page-schools">
+                <div class="section">
+                    <div class="sectionTitle"><h2>🏫 Schools</h2></div>
+                    <div style="overflow-x:auto;">
+                        <table>
+                            <tr><th>School Info</th><th>Passwords</th><th>Fee &amp; Payment</th><th>Expiry</th><th>Status</th><th>Actions</th></tr>
+                            {% for sc in schools %}
+                            <tr>
+                                <td><div class="card"><div class="big">{{ sc.school_name or sc.name }}</div><br>🆔 School Code: <b>{{ sc.school_code }}</b><br><br>📞 Phone: <b>{{ sc.phone }}</b><br><br>👤 Username: <b>{{ sc.username }}</b></div></td>
+                                <td><div class="card"><div class="label">🔐 School Password</div><div class="pass">{{ sc.password }}</div></div></td>
+                                <td><div class="card">💰 Fee: <b>${{ sc.monthly_fee or sc.price or sc.fee }}</b><br><br>💳 Payment:<br><b>{{ sc.payment }}</b></div></td>
+                                <td><div class="card">📅 <b style="color:#ff9800;">{{ sc.expiry_date }}</b></div></td>
+                                <td>{% if sc.status == 'active' or sc.active == true %}<span class="status-active">✅ Active</span>{% else %}<span class="status-disabled">❌ Disabled</span>{% endif %}</td>
+                                <td>
+                                    <a href="/activate/school/{{ sc.id }}" class="btn activate">Activate</a>
+                                    <a href="/disable/school/{{ sc.id }}" class="btn disable">Disable</a>
+                                    <a href="/delete/school/{{ sc.id }}" class="btn delete">Delete</a>
+                                    <a href="/renew/school/{{ sc.id }}" class="btn renew">Renew</a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ============ INFO POSTS PAGE ============ -->
+            <div class="page" id="page-infoposts">
+                <div class="section">
+                    <div class="sectionTitle"><h2>📰 All Information Posts</h2></div>
+                    <button onclick="savePositions()" class="saveBtn" style="margin-bottom:20px;">💾 Save New Positions</button>
+                    <div id="infoAdminList"></div>
+                </div>
+            </div>
+
+            <!-- ============ PAYMENT DASHBOARD PAGE ============ -->
+            <div class="page" id="page-payments">
+                <div class="section">
+                    <div class="sectionTitle"><h2>💰 Payment Dashboard</h2></div>
+                    <div style="overflow-x:auto;">
+                        <table>
+                            <tr><th>Department</th><th>Name</th><th>Fee</th><th>Payment</th><th>Status</th><th>Expiry</th></tr>
+                            {% for r in restaurants %}
+                            <tr>
+                                <td>🍽️ Restaurant</td><td>{{ r.name }}</td><td>${{ r.monthly_fee or r.price or r.fee }}</td><td>{{ r.payment }}</td>
+                                <td>{% if r.status == 'active' or r.active == true %}<span class="status-active">✅ Paid</span>{% else %}<span class="status-disabled">❌ Not Paid</span>{% endif %}</td>
+                                <td>{{ r.expiry_date or r.expiry }}</td>
+                            </tr>
+                            {% endfor %}
+                            {% for s in supermarkets %}
+                            <tr>
+                                <td>🛒 Supermarket</td><td>{{ s.name }}</td><td>${{ s.monthly_fee or s.price or s.fee }}</td><td>{{ s.payment }}</td>
+                                <td>{% if s.status == 'active' or s.status == true %}<span class="status-active">✅ Paid</span>{% else %}<span class="status-disabled">❌ Not Paid</span>{% endif %}</td>
+                                <td>{{ s.expiry_date or s.expiry }}</td>
+                            </tr>
+                            {% endfor %}
+                            {% for sc in schools %}
+                            <tr>
+                                <td>🏫 School</td><td>{{ sc.school_name or sc.name }}</td><td>${{ sc.monthly_fee or sc.price or sc.fee }}</td><td>{{ sc.payment }}</td>
+                                <td>{% if sc.status == 'active' or sc.active == true %}<span class="status-active">✅ Paid</span>{% else %}<span class="status-disabled">❌ Not Paid</span>{% endif %}</td>
+                                <td>{{ sc.expiry_date }}</td>
+                            </tr>
+                            {% endfor %}
+                            {% for ph in pharmacies %}
+                            <tr>
+                                <td>💊 Pharmacy</td><td>{{ ph.pharmacy_name }}</td><td>${{ ph.monthly_fee }}/mo</td><td>{{ ph.payment_method or '—' }}</td>
+                                <td>
+                                    {% set today = now_date %}
+                                    {% if ph.expiry_date and ph.expiry_date < today %}
+                                        <span class="badge-expired">❌ Expired</span>
+                                    {% elif ph.active %}
+                                        <span class="badge-active">✅ Active</span>
+                                    {% else %}
+                                        <span class="status-disabled">❌ Disabled</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ ph.expiry_date or '—' }}</td>
+                            </tr>
+                            {% endfor %}
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ============ RESTAURANTS PAGE ============ -->
+            <div class="page" id="page-restaurants">
+                <div class="section">
+                    <div class="sectionTitle"><h2>🍽️ Restaurants</h2></div>
+                    <div style="overflow-x:auto;">
+                        <table>
+                            <tr><th>Restaurant Info</th><th>System Passwords</th><th>Payment &amp; Fee</th><th>Expiry</th><th>Status</th><th>Actions</th></tr>
+                            {% for r in restaurants %}
+                            <tr>
+                                <td><div class="card"><div class="big">{{ r.name }}</div><br>📞 {{ r.phone }}<br><br>👤 Username: <b>{{ r.username }}</b><br><br>👨‍💼 Admin: <b>{{ r.admin_name }}</b><br><br>📧 {{ r.admin_email }}</div></td>
+                                <td><div class="card"><div class="label">🔐 Login Password</div><div class="pass">{{ r.password }}</div><hr><div class="label">👨‍💼 Admin Password</div><div class="pass">{{ r.restaurant_admin_password or r["resturen_admin password"] }}</div><hr><div class="label">👨‍🍳 Kitchen Password</div><div class="pass">{{ r.kitchen_password }}</div></div></td>
+                                <td><div class="card">💰 Fee: <b>${{ r.monthly_fee or r.price or r.fee }}</b><br><br>💳 Payment:<br><b>{{ r.payment }}</b></div></td>
+                                <td><div class="card">📅 Expiry Date<br><br><b style="color:#ff9800;">{{ r.expiry_date or r.expiry }}</b></div></td>
+                                <td>{% if r.status == 'active' or r.active == true %}<span class="status-active">✅ Active</span>{% else %}<span class="status-disabled">❌ Disabled</span>{% endif %}</td>
+                                <td>
+                                    <a href="/activate/restaurant/{{ r.id }}" class="btn activate">Activate</a>
+                                    <a href="/disable/restaurant/{{ r.id }}" class="btn disable">Disable</a>
+                                    <a href="/delete/restaurant/{{ r.id }}" class="btn delete">Delete</a>
+                                    <a href="/renew/restaurant/{{ r.id }}" class="btn renew">Renew</a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ============ SUPERMARKETS PAGE ============ -->
+            <div class="page" id="page-supermarkets">
+                <div class="section">
+                    <div class="sectionTitle"><h2>🛒 Supermarkets</h2></div>
+                    <div style="overflow-x:auto;">
+                        <table>
+                            <tr><th>Supermarket Info</th><th>Password</th><th>Fee &amp; Payment</th><th>Expiry</th><th>Status</th><th>Actions</th></tr>
+                            {% for s in supermarkets %}
+                            <tr>
+                                <td><div class="card"><div class="big">{{ s.name }}</div><br>👤 Username: <b>{{ s.username }}</b></div></td>
+                                <td><div class="card"><div class="label">🔐 Password</div><div class="pass">{{ s.password }}</div></div></td>
+                                <td><div class="card">💰 Fee: <b>${{ s.monthly_fee or s.price or s.fee }}</b><br><br>💳 Payment:<br><b>{{ s.payment }}</b></div></td>
+                                <td><div class="card">📅 {{ s.expiry_date or s.expiry }}</div></td>
+                                <td>{% if s.status == 'active' or s.status == true %}<span class="status-active">✅ Active</span>{% else %}<span class="status-disabled">❌ Disabled</span>{% endif %}</td>
+                                <td>
+                                    <a href="/activate/supermarket/{{ s.id }}" class="btn activate">Activate</a>
+                                    <a href="/disable/supermarket/{{ s.id }}" class="btn disable">Disable</a>
+                                    <a href="/delete/supermarket/{{ s.id }}" class="btn delete">Delete</a>
+                                    <a href="/renew/supermarket/{{ s.id }}" class="btn renew">Renew</a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ============ PHARMACY MANAGEMENT PAGE ============ -->
+            <div class="page" id="page-pharmacy">
+                <div class="section">
+                    <div class="sectionTitle"><h2>💊 Pharmacy Management</h2></div>
+
+                    <!-- EXPIRY ALERTS -->
+                    {% for ph in pharmacies %}
                     {% set today = now_date %}
-                    {% if ph.expiry_date and ph.expiry_date < today %}
-                        <span class="badge-expired">❌ Expired</span>
-                    {% elif ph.active %}
-                        <span class="badge-active">✅ Active</span>
-                    {% else %}
-                        <span class="status-disabled">❌ Disabled</span>
-                    {% endif %}
-                </td>
-                <td>{{ ph.expiry_date or '—' }}</td>
-            </tr>
-            {% endfor %}
-        </table>
-    </div>
-</div>
-
-<!-- 💊 PHARMACY MANAGEMENT -->
-<div class="section">
-    <div class="sectionTitle">
-        <h2>💊 Pharmacy Management</h2>
-        <button class="openBtn pharmacyBtn" onclick="toggleTable('pharmacySection')">Open Pharmacy</button>
-    </div>
-    <div class="tableBox" id="pharmacySection">
-
-        <!-- EXPIRY ALERTS -->
-        {% for ph in pharmacies %}
-        {% set today = now_date %}
-        {% if ph.expiry_date %}
-            {% if ph.expiry_date < today %}
-            <div class="alert-banner show" style="border-color:#dc3545;background:#f8d7da;">
-                ❌ <b>{{ ph.pharmacy_name }}</b> ({{ ph.phone }}) — Subscription <b>EXPIRED</b> on {{ ph.expiry_date }}! Please renew immediately.
-            </div>
-            {% elif ph.days_left is defined and ph.days_left <= 30 %}
-            <div class="alert-banner show">
-                ⚠️ <b>{{ ph.pharmacy_name }}</b> ({{ ph.phone }}) — Subscription expiring in <b>{{ ph.days_left }} days</b> ({{ ph.expiry_date }}). Please renew!
-            </div>
-            {% endif %}
-        {% endif %}
-        {% endfor %}
-
-        <!-- REGISTER NEW PHARMACY -->
-        <h3 style="margin-bottom:12px;color:#6f42c1;">➕ Register New Pharmacy</h3>
-        <div class="pharmacy-form">
-            <div>
-                <label style="font-size:12px;font-weight:bold;color:#666;">Pharmacy Name *</label>
-                <input type="text" id="ph_pharmacy_name" placeholder="e.g. Al-Shifa Pharmacy" autocomplete="off">
-            </div>
-            <div>
-                <label style="font-size:12px;font-weight:bold;color:#666;">Phone Number *</label>
-                <input type="text" id="ph_phone" placeholder="e.g. 0612345678" autocomplete="off">
-            </div>
-            <div>
-                <label style="font-size:12px;font-weight:bold;color:#666;">Monthly Fee ($) *</label>
-                <input type="number" id="ph_fee" placeholder="e.g. 50" min="0" step="0.01">
-            </div>
-            <div>
-                <label style="font-size:12px;font-weight:bold;color:#666;">Subscription (months)</label>
-                <select id="ph_months">
-                    <option value="3">3 Months</option>
-                    <option value="6">6 Months</option>
-                    <option value="12">12 Months</option>
-                    <option value="1">1 Month</option>
-                    <option value="2">2 Months</option>
-                </select>
-            </div>
-            <div>
-                <label style="font-size:12px;font-weight:bold;color:#666;">Username *</label>
-                <input type="text" id="ph_username" placeholder="Login username" autocomplete="off">
-            </div>
-            <div>
-                <label style="font-size:12px;font-weight:bold;color:#666;">Password *</label>
-                <input type="text" id="ph_password" placeholder="Login password" autocomplete="off">
-            </div>
-            <div>
-                <label style="font-size:12px;font-weight:bold;color:#666;">Payment Account (1-4 digits)</label>
-                <input type="text" id="ph_payment_account" placeholder="e.g. 2231" maxlength="4" inputmode="numeric" autocomplete="off">
-            </div>
-            <button class="pharmacy-create-btn" onclick="registerPharmacy()" style="grid-column:span 1;margin-top:10px;">
-                ✅ Register Pharmacy
-            </button>
-        </div>
-        <div class="pharmacy-msg" id="pharmacyMsg"></div>
-
-        <!-- PHARMACY LIST -->
-        <h3 style="margin-top:24px;margin-bottom:12px;color:#6f42c1;">📋 Registered Pharmacies</h3>
-        <div style="overflow-x:auto;">
-            <table class="ph-table">
-                <tr>
-                    <th>Pharmacy Name</th><th>Phone</th><th>Username</th>
-                    <th>Fee/Month</th><th>Months</th><th>Total</th><th>Payment Acct</th>
-                    <th>Registered</th><th>Expiry</th><th>Days Left</th>
-                    <th>Status</th><th>Actions</th>
-                </tr>
-                {% for ph in pharmacies %}
-                <tr>
-                    <td><b>{{ ph.pharmacy_name }}</b></td>
-                    <td>📞 {{ ph.phone }}</td>
-                    <td><code>{{ ph.username }}</code></td>
-                    <td style="color:#6f42c1;font-weight:bold;">${{ ph.monthly_fee }}</td>
-                    <td>{{ ph.months }} mo</td>
-                    <td style="font-weight:bold;">${{ (ph.monthly_fee * ph.months)|round(2) }}</td>
-                    <td><code>{{ ph.payment_account or '—' }}</code></td>
-                    <td style="color:#888;font-size:12px;">{{ ph.created_at[:10] if ph.created_at else '—' }}</td>
-                    <td>
-                        <b class="{% if ph.expiry_date and ph.expiry_date < now_date %}status-disabled{% else %}renew{% endif %}" style="font-weight:bold;">
-                            {{ ph.expiry_date or '—' }}
-                        </b>
-                    </td>
-                    <td>
-                        {% if ph.days_left is defined %}
-                            {% if ph.days_left < 0 %}
-                                <span class="badge-expired">Expired</span>
-                            {% elif ph.days_left <= 30 %}
-                                <span class="badge-warning">{{ ph.days_left }}d</span>
-                            {% else %}
-                                <span class="badge-active">{{ ph.days_left }}d</span>
-                            {% endif %}
-                        {% else %}—{% endif %}
-                    </td>
-                    <td>
-                        {% if ph.active and ph.expiry_date and ph.expiry_date >= now_date %}
-                            <span class="badge-active">✅ Active</span>
-                        {% elif ph.expiry_date and ph.expiry_date < now_date %}
-                            <span class="badge-expired">❌ Expired</span>
-                        {% else %}
-                            <span class="badge-expired">❌ Disabled</span>
+                    {% if ph.expiry_date %}
+                        {% if ph.expiry_date < today %}
+                        <div class="alert-banner show" style="border-color:#dc3545;background:#f8d7da;">
+                            ❌ <b>{{ ph.pharmacy_name }}</b> ({{ ph.phone }}) — Subscription <b>EXPIRED</b> on {{ ph.expiry_date }}! Please renew immediately.
+                        </div>
+                        {% elif ph.days_left is defined and ph.days_left <= 30 %}
+                        <div class="alert-banner show">
+                            ⚠️ <b>{{ ph.pharmacy_name }}</b> ({{ ph.phone }}) — Subscription expiring in <b>{{ ph.days_left }} days</b> ({{ ph.expiry_date }}). Please renew!
+                        </div>
                         {% endif %}
-                    </td>
-                    <td>
-                        <button onclick="renewPharmacy(this)" data-id="{{ ph.id }}" class="btn renew" style="font-size:11px;">🔄 Renew</button>
-                        <button onclick="deletePharmacy(this)" data-id="{{ ph.id }}" data-name="{{ ph.pharmacy_name | e }}" class="btn delete" style="font-size:11px;">🗑</button>
-                    </td>
-                </tr>
-                {% else %}
-                <tr><td colspan="12" style="text-align:center;color:#888;padding:20px;">No pharmacies registered yet</td></tr>
-                {% endfor %}
-            </table>
-        </div>
+                    {% endif %}
+                    {% endfor %}
 
-        <div style="margin-top:20px;padding-top:20px;border-top:1px solid #eee;">
-            <a href="/pharmacy_login" target="_blank" style="display:inline-block;background:#6f42c1;color:white;padding:12px 20px;border-radius:10px;text-decoration:none;font-weight:bold;">
-                🔗 Open Pharmacy Dashboard
-            </a>
+                    <!-- REGISTER NEW PHARMACY -->
+                    <h3 style="margin-bottom:12px;color:#6f42c1;">➕ Register New Pharmacy</h3>
+                    <div class="pharmacy-form">
+                        <div>
+                            <label style="font-size:12px;font-weight:bold;color:#666;">Pharmacy Name *</label>
+                            <input type="text" id="ph_pharmacy_name" placeholder="e.g. Al-Shifa Pharmacy" autocomplete="off">
+                        </div>
+                        <div>
+                            <label style="font-size:12px;font-weight:bold;color:#666;">Phone Number *</label>
+                            <input type="text" id="ph_phone" placeholder="e.g. 0612345678" autocomplete="off">
+                        </div>
+                        <div>
+                            <label style="font-size:12px;font-weight:bold;color:#666;">Monthly Fee ($) *</label>
+                            <input type="number" id="ph_fee" placeholder="e.g. 50" min="0" step="0.01">
+                        </div>
+                        <div>
+                            <label style="font-size:12px;font-weight:bold;color:#666;">Subscription (months)</label>
+                            <select id="ph_months">
+                                <option value="3">3 Months</option>
+                                <option value="6">6 Months</option>
+                                <option value="12">12 Months</option>
+                                <option value="1">1 Month</option>
+                                <option value="2">2 Months</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="font-size:12px;font-weight:bold;color:#666;">Username *</label>
+                            <input type="text" id="ph_username" placeholder="Login username" autocomplete="off">
+                        </div>
+                        <div>
+                            <label style="font-size:12px;font-weight:bold;color:#666;">Password *</label>
+                            <input type="text" id="ph_password" placeholder="Login password" autocomplete="off">
+                        </div>
+                        <div>
+                            <label style="font-size:12px;font-weight:bold;color:#666;">Payment Account (1-4 digits)</label>
+                            <input type="text" id="ph_payment_account" placeholder="e.g. 2231" maxlength="4" inputmode="numeric" autocomplete="off">
+                        </div>
+                        <button class="pharmacy-create-btn" onclick="registerPharmacy()" style="grid-column:span 1;margin-top:10px;">
+                            ✅ Register Pharmacy
+                        </button>
+                    </div>
+                    <div class="pharmacy-msg" id="pharmacyMsg"></div>
+
+                    <!-- PHARMACY LIST -->
+                    <h3 style="margin-top:24px;margin-bottom:12px;color:#6f42c1;">📋 Registered Pharmacies</h3>
+                    <div style="overflow-x:auto;">
+                        <table class="ph-table">
+                            <tr>
+                                <th>Pharmacy Name</th><th>Phone</th><th>Username</th>
+                                <th>Fee/Month</th><th>Months</th><th>Total</th><th>Payment Acct</th>
+                                <th>Registered</th><th>Expiry</th><th>Days Left</th>
+                                <th>Status</th><th>Actions</th>
+                            </tr>
+                            {% for ph in pharmacies %}
+                            <tr>
+                                <td><b>{{ ph.pharmacy_name }}</b></td>
+                                <td>📞 {{ ph.phone }}</td>
+                                <td><code>{{ ph.username }}</code></td>
+                                <td style="color:#6f42c1;font-weight:bold;">${{ ph.monthly_fee }}</td>
+                                <td>{{ ph.months }} mo</td>
+                                <td style="font-weight:bold;">${{ (ph.monthly_fee * ph.months)|round(2) }}</td>
+                                <td><code>{{ ph.payment_account or '—' }}</code></td>
+                                <td style="color:#888;font-size:12px;">{{ ph.created_at[:10] if ph.created_at else '—' }}</td>
+                                <td>
+                                    <b class="{% if ph.expiry_date and ph.expiry_date < now_date %}status-disabled{% else %}renew{% endif %}" style="font-weight:bold;">
+                                        {{ ph.expiry_date or '—' }}
+                                    </b>
+                                </td>
+                                <td>
+                                    {% if ph.days_left is defined %}
+                                        {% if ph.days_left < 0 %}
+                                            <span class="badge-expired">Expired</span>
+                                        {% elif ph.days_left <= 30 %}
+                                            <span class="badge-warning">{{ ph.days_left }}d</span>
+                                        {% else %}
+                                            <span class="badge-active">{{ ph.days_left }}d</span>
+                                        {% endif %}
+                                    {% else %}—{% endif %}
+                                </td>
+                                <td>
+                                    {% if ph.active and ph.expiry_date and ph.expiry_date >= now_date %}
+                                        <span class="badge-active">✅ Active</span>
+                                    {% elif ph.expiry_date and ph.expiry_date < now_date %}
+                                        <span class="badge-expired">❌ Expired</span>
+                                    {% else %}
+                                        <span class="badge-expired">❌ Disabled</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <button onclick="renewPharmacy(this)" data-id="{{ ph.id }}" class="btn renew" style="font-size:11px;">🔄 Renew</button>
+                                    <button onclick="deletePharmacy(this)" data-id="{{ ph.id }}" data-name="{{ ph.pharmacy_name | e }}" class="btn delete" style="font-size:11px;">🗑</button>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr><td colspan="12" style="text-align:center;color:#888;padding:20px;">No pharmacies registered yet</td></tr>
+                            {% endfor %}
+                        </table>
+                    </div>
+
+                    <div style="margin-top:20px;padding-top:20px;border-top:1px solid #eee;">
+                        <a href="/pharmacy_login" target="_blank" style="display:inline-block;background:#6f42c1;color:white;padding:12px 20px;border-radius:10px;text-decoration:none;font-weight:bold;">
+                            🔗 Open Pharmacy Dashboard
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ============ SYSTEM INFORMATION PAGE ============ -->
+            <div class="page" id="page-sysinfo">
+                <div class="info-section">
+                    <h2>📢 System Information</h2>
+                    <input type="text" id="info_title" placeholder="Title">
+                    <textarea id="info_content" rows="6" placeholder="Write information..."></textarea>
+                    <input type="file" id="info_image">
+                    <input type="file" id="info_video">
+                    <button class="saveBtn" onclick="saveInfo()">💾 Save Information</button>
+                </div>
+            </div>
+
         </div>
     </div>
-</div>
-
-<!-- SYSTEM INFO -->
-<div class="info-section">
-    <h2>📢 System Information</h2>
-    <input type="text" id="info_title" placeholder="Title">
-    <textarea id="info_content" rows="6" placeholder="Write information..."></textarea>
-    <input type="file" id="info_image">
-    <input type="file" id="info_video">
-    <button class="saveBtn" onclick="saveInfo()">💾 Save Information</button>
 </div>
 
 <script>
 let infoData = [];
 
-function toggleTable(id){
-    let box = document.getElementById(id);
-    box.style.display = box.style.display === "block" ? "none" : "block";
+/* ================================
+   PAGE NAVIGATION (sidebar)
+   ================================ */
+function showPage(id, el){
+    document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+    const target = document.getElementById("page-" + id);
+    if(target) target.classList.add("active");
+
+    document.querySelectorAll(".sb-link").forEach(l => l.classList.remove("active"));
+    const link = el || document.querySelector('.sb-link[data-page="' + id + '"]');
+    if(link) link.classList.add("active");
+
+    closeSidebar();
+    window.scrollTo({top:0, behavior:"smooth"});
+}
+
+function openSidebar(){
+    document.getElementById("sidebar").classList.add("open");
+    document.getElementById("sbOverlay").classList.add("show");
+}
+function closeSidebar(){
+    document.getElementById("sidebar").classList.remove("open");
+    document.getElementById("sbOverlay").classList.remove("show");
 }
 
 function loadInfoAdmin(){
