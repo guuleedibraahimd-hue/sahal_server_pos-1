@@ -40,6 +40,13 @@ from firebase_admin import credentials, firestore, storage
 
 app = Flask(__name__)
 
+# ==========================================
+# 💳 SYSTEM RENEWAL PAYMENT NUMBER
+# The number account owners are told to send subscription
+# renewal payments to. Shown on every suspended dashboard.
+# ==========================================
+ADMIN_PAYMENT_NUMBER = "618276993"
+
 @app.route('/manifest.json')
 def serve_manifest():
     return send_from_directory('static', 'manifest.json')
@@ -413,19 +420,6 @@ def get_supermarkets_firestore():
     return supermarkets
 
 
-def get_schools_firestore():
-    schools = []
-    try:
-        docs = db.collection("schools").stream()
-        for doc in docs:
-            item = doc.to_dict()
-            item["id"] = doc.id
-            schools.append(item)
-    except Exception as e:
-        print("School Load Error:", e)
-    return schools
-
-
 def get_pharmacies_list():
     pharmacies = []
     try:
@@ -444,6 +438,75 @@ def get_pharmacies_list():
     except Exception as e:
         print("Pharmacy Load Error:", e)
     return pharmacies
+
+
+def get_renewal_requests():
+    """Pending renewal payment claims submitted from suspended dashboards
+    (restaurant / supermarket / pharmacy) for the admin to review."""
+    reqs = []
+    try:
+        docs = db.collection("renewal_requests").where("status", "==", "pending").stream()
+        for doc in docs:
+            item = doc.to_dict()
+            item["id"] = doc.id
+            reqs.append(item)
+        reqs.sort(key=lambda x: x.get("submitted_at", ""), reverse=True)
+    except Exception as e:
+        print("Renewal Requests Load Error:", e)
+    return reqs
+
+
+# ==========================================
+# 💳 SUBMIT RENEWAL PAYMENT CLAIM
+# Called from the suspended dashboard (restaurant / supermarket /
+# pharmacy) once the owner has sent payment to ADMIN_PAYMENT_NUMBER.
+# Public route — no admin login required, only a valid entity_id.
+# ==========================================
+RENEWAL_COLLECTION_MAP  = {"restaurant": "restaurants", "supermarket": "supermarkets", "pharmacy": "pharmacies"}
+RENEWAL_NAME_FIELD_MAP  = {"restaurant": "name", "supermarket": "name", "pharmacy": "pharmacy_name"}
+
+@app.route("/submit_renewal/<entity_type>/<entity_id>", methods=["POST"])
+def submit_renewal(entity_type, entity_id):
+    try:
+        if entity_type not in RENEWAL_COLLECTION_MAP:
+            return jsonify({"success": False, "error": "Invalid account type"}), 400
+
+        data              = request.get_json() or {}
+        sender_name       = data.get("sender_name", "").strip()
+        paid_from_number  = data.get("paid_from_number", "").strip()
+
+        if not sender_name or not paid_from_number:
+            return jsonify({"success": False, "error": "Fill all fields"})
+
+        entity_doc = db.collection(RENEWAL_COLLECTION_MAP[entity_type]).document(entity_id).get()
+        if not entity_doc.exists:
+            return jsonify({"success": False, "error": "Account not found"})
+
+        business_name = entity_doc.to_dict().get(RENEWAL_NAME_FIELD_MAP[entity_type], entity_id)
+
+        db.collection("renewal_requests").add({
+            "entity_type":      entity_type,
+            "entity_id":        entity_id,
+            "business_name":    business_name,
+            "sender_name":      sender_name,
+            "paid_from_number": paid_from_number,
+            "submitted_at":     datetime.now().isoformat(),
+            "status":           "pending"
+        })
+        return jsonify({"success": True, "message": "Renewal request sent"})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+
+@app.route("/admin/dismiss_renewal/<req_id>", methods=["DELETE"])
+def admin_dismiss_renewal(req_id):
+    if not session.get("admin_ok"):
+        return jsonify({"success": False, "error": "Unauthorized"}), 401
+    try:
+        db.collection("renewal_requests").document(req_id).delete()
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
 
 
 def get_orders_firestore():
@@ -540,8 +603,8 @@ def admin():
     try:
         restaurants  = get_restaurants_firestore()
         supermarkets = get_supermarkets_firestore()
-        schools      = get_schools_firestore()
         pharmacies   = get_pharmacies_list()
+        renewal_requests = get_renewal_requests()
         orders       = get_orders_firestore()
         total        = len(orders)
 
@@ -585,8 +648,8 @@ def admin():
             "admin.html",
             restaurants=restaurants,
             supermarkets=supermarkets,
-            schools=schools,
             pharmacies=pharmacies,
+            renewal_requests=renewal_requests,
             now_date=datetime.now().strftime("%Y-%m-%d"),
             orders=orders,
             total=total,
@@ -679,6 +742,7 @@ def change_passwords():
 # ✅ ACTIVATE RESTAURANT
 # =========================
 @app.route("/activate/<string:rid>")
+@app.route("/activate/restaurant/<string:rid>")
 def activate_restaurant(rid):
     try:
         if not session.get("admin_ok"):
@@ -706,6 +770,7 @@ def activate_restaurant(rid):
 # ❌ DISABLE RESTAURANT
 # =========================
 @app.route("/disable/<string:rid>")
+@app.route("/disable/restaurant/<string:rid>")
 def disable_restaurant(rid):
     try:
         if not session.get("admin_ok"):
@@ -732,6 +797,7 @@ def disable_restaurant(rid):
 # 🗑 DELETE RESTAURANT
 # =========================
 @app.route("/delete_restaurant/<string:rid>")
+@app.route("/delete/restaurant/<string:rid>")
 def delete_restaurant(rid):
     try:
         if not session.get("admin_ok"):
@@ -752,6 +818,7 @@ def delete_restaurant(rid):
 # ✅ ACTIVATE SUPERMARKET
 # =========================
 @app.route("/activate_market/<string:mid>")
+@app.route("/activate/supermarket/<string:mid>")
 def activate_market(mid):
     try:
         if not session.get("admin_ok"):
@@ -766,6 +833,7 @@ def activate_market(mid):
 # ❌ DISABLE SUPERMARKET
 # =========================
 @app.route("/disable_market/<string:mid>")
+@app.route("/disable/supermarket/<string:mid>")
 def disable_market(mid):
     try:
         if not session.get("admin_ok"):
@@ -780,6 +848,7 @@ def disable_market(mid):
 # 🗑 DELETE SUPERMARKET
 # =========================
 @app.route("/delete_market/<string:mid>")
+@app.route("/delete/supermarket/<string:mid>")
 def delete_market(mid):
     try:
         if not session.get("admin_ok"):
@@ -788,6 +857,29 @@ def delete_market(mid):
         return redirect("/admin")
     except Exception as e:
         return f"Delete market error ❌ {e}"
+
+
+# =========================
+# 🔄 RENEW SUPERMARKET
+# =========================
+@app.route("/renew/supermarket/<string:mid>")
+def renew_market(mid):
+    try:
+        if not session.get("admin_ok"):
+            return redirect("/admin")
+        market_ref = db.collection("supermarkets").document(mid)
+        if not market_ref.get().exists:
+            return f"Supermarket not found ❌ ID: {mid}"
+        new_expiry = (datetime.now() + timedelta(days=90)).strftime("%Y-%m-%d")
+        market_ref.update({
+            "active": True,
+            "status": "active",
+            "expiry_date": new_expiry,
+            "renewed_at": datetime.now().isoformat()
+        })
+        return redirect("/admin")
+    except Exception as e:
+        return f"Renew market error ❌ {e}"
 
 
 # =========================
@@ -1036,6 +1128,21 @@ def supermarket_dashboard():
         mid = session.get("market_id")
         if not mid:
             return redirect("/supermarket_login")
+
+        market_doc = db.collection("supermarkets").document(mid).get()
+        if market_doc.exists:
+            market = market_doc.to_dict()
+            is_active = market.get("active", market.get("status", True))
+            if is_active is False or is_active == "disabled":
+                return render_template(
+                    "renew.html",
+                    entity_type    = "supermarket",
+                    entity_label   = "Supermarket",
+                    entity_id      = mid,
+                    business_name  = market.get("name", session.get("market_name", "Supermarket")),
+                    payment_number = ADMIN_PAYMENT_NUMBER,
+                    logout_url     = "/logout"
+                )
 
         # PRODUCTS — KA SOO QAAD FIRESTORE
         products_raw = []
@@ -1533,8 +1640,20 @@ def dashboard(rid):
 
         restaurant = restaurant_doc.to_dict()
 
+        def suspended_page():
+            return render_template(
+                "renew.html",
+                rid            = rid,
+                entity_type    = "restaurant",
+                entity_label   = "Restaurant",
+                entity_id      = rid,
+                business_name  = restaurant.get("name", "Restaurant"),
+                payment_number = ADMIN_PAYMENT_NUMBER,
+                logout_url     = "/logout"
+            )
+
         if not restaurant.get("active", True):
-            return render_template("renew.html", rid=rid)
+            return suspended_page()
 
         expiry = restaurant.get("expiry", "")
         if expiry:
@@ -1542,7 +1661,7 @@ def dashboard(rid):
                 expiry_date = datetime.strptime(expiry, "%Y-%m-%d")
                 if datetime.now() >= expiry_date:
                     restaurant_ref.update({"active": False})
-                    return render_template("renew.html", rid=rid)
+                    return suspended_page()
             except Exception as expiry_error:
                 print("Expiry Error:", expiry_error)
 
@@ -3851,15 +3970,17 @@ def pharmacy_login():
                 ph = doc.to_dict()
                 if ph.get("password") == password:
                     expiry = ph.get("expiry_date", "")
-                    if expiry and expiry < today:
-                        return render_template("pharmacy_login.html", error="Subscription expired - Please renew with admin.")
-                    if not ph.get("active", True):
-                        return render_template("pharmacy_login.html", error="Account disabled - Contact admin.")
                     session["pharmacy_ok"]     = True
                     session["pharmacy_user"]   = username
                     session["pharmacy_name"]   = ph.get("pharmacy_name", username)
                     session["pharmacy_id"]     = doc.id
                     session["pharmacy_expiry"] = expiry
+                    if expiry and expiry < today:
+                        session["pharmacy_suspended"] = True
+                    elif not ph.get("active", True):
+                        session["pharmacy_suspended"] = True
+                    else:
+                        session.pop("pharmacy_suspended", None)
                     return redirect("/pharmacy")
         except Exception as e:
             print("Pharmacy login pharmacies error:", e)
@@ -3916,6 +4037,16 @@ def pharmacy_logout():
 def pharmacy():
     if not session.get("pharmacy_ok"):
         return redirect("/pharmacy_login")
+    if session.get("pharmacy_suspended"):
+        return render_template(
+            "renew.html",
+            entity_type    = "pharmacy",
+            entity_label   = "Pharmacy",
+            entity_id      = session.get("pharmacy_id", ""),
+            business_name  = session.get("pharmacy_name", ""),
+            payment_number = ADMIN_PAYMENT_NUMBER,
+            logout_url     = "/pharmacy/logout"
+        )
     try:
         ref       = get_pharmacy_ref()
         medicines = []
@@ -4418,6 +4549,37 @@ def admin_delete_pharmacy(pid):
                 db.collection("pharmacy_product").document(username).delete()
             except:
                 pass
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+
+# ==========================================
+# ✅ ACTIVATE / ❌ DISABLE PHARMACY (ADMIN)
+# ==========================================
+@app.route("/admin/activate_pharmacy/<string:pid>", methods=["POST"])
+def admin_activate_pharmacy(pid):
+    if not session.get("admin_ok"):
+        return jsonify({"success": False, "error": "Unauthorized"}), 401
+    try:
+        ph_ref = db.collection("pharmacies").document(pid)
+        if not ph_ref.get().exists:
+            return jsonify({"success": False, "error": "Not found"})
+        ph_ref.update({"active": True, "activated_at": datetime.now().isoformat()})
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+
+@app.route("/admin/disable_pharmacy/<string:pid>", methods=["POST"])
+def admin_disable_pharmacy(pid):
+    if not session.get("admin_ok"):
+        return jsonify({"success": False, "error": "Unauthorized"}), 401
+    try:
+        ph_ref = db.collection("pharmacies").document(pid)
+        if not ph_ref.get().exists:
+            return jsonify({"success": False, "error": "Not found"})
+        ph_ref.update({"active": False, "disabled_at": datetime.now().isoformat()})
         return jsonify({"success": True})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
