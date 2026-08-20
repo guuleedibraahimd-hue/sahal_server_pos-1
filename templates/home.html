@@ -252,7 +252,7 @@
             max-width:1320px;margin:36px auto 0;
             padding:0 40px;
             display:grid;
-            grid-template-columns:repeat(4,1fr);
+            grid-template-columns:repeat(3,1fr);
             gap:22px;
             position:relative;z-index:5;
         }
@@ -275,6 +275,8 @@
         .p-supermarket{background:linear-gradient(160deg,#1f9a52 0%,#0f5c30 100%);}
         .p-pharmacy{background:linear-gradient(160deg,#7b3fb5 0%,#4a1f7a 100%);}
         .p-dhibic{background:linear-gradient(160deg,#1f6fd0 0%,#123a80 100%);}
+        .p-cashier{background:linear-gradient(160deg,#0e9488 0%,#065f56 100%);}
+        .p-waiter{background:linear-gradient(160deg,#c0392b 0%,#7b1f14 100%);}
         .portal .p-ic{
             width:60px;height:60px;border-radius:50%;
             background:#fff;display:flex;align-items:center;justify-content:center;
@@ -583,6 +585,20 @@
         <p>Access your e-commerce dashboard and manage your online business.</p>
         <span class="access">Go to Dashboard <span class="arr">→</span></span>
     </button>
+
+    <a href="/waiter_login" class="portal p-waiter">
+        <div class="p-ic">🧑‍🍳</div>
+        <h3>Waiter Login</h3>
+        <p>Take table orders and send them straight to the kitchen.</p>
+        <span class="access">Access Portal <span class="arr">→</span></span>
+    </a>
+
+    <a href="/cashier_login" class="portal p-cashier">
+        <div class="p-ic">💰</div>
+        <h3>Cashier Login</h3>
+        <p>Collect payments, close orders and print receipts.</p>
+        <span class="access">Access Portal <span class="arr">→</span></span>
+    </a>
 </div>
 
 <!-- ===== FEATURE STRIP ===== -->

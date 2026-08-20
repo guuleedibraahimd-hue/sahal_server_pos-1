@@ -2248,6 +2248,82 @@ def staff_delete(rid, staff_id):
 
 
 # =====================================
+# 🧑‍🍳 WAITER / 💰 CASHIER — GENERIC LOGIN (no rid in URL)
+# Used by the homepage portal cards. Looks up the employee_id across
+# every restaurant's staff_accounts via a collection_group query, then
+# hands off to the same restaurant-scoped session + dashboard as the
+# per-restaurant login routes below.
+# =====================================
+def _find_staff_across_restaurants(employee_id, role, pin):
+    """Returns (rid, staff_dict) or (None, None)."""
+    try:
+        query = db.collection_group("staff_accounts").where("employee_id", "==", employee_id)
+        for doc in query.stream():
+            s = doc.to_dict()
+            if s.get("role") == role and s.get("pin") == pin:
+                s["id"] = doc.id
+                rid = doc.reference.parent.parent.id
+                return rid, s
+    except Exception as e:
+        print("Staff lookup error:", e)
+    return None, None
+
+
+@app.route("/waiter_login", methods=["GET", "POST"])
+def waiter_login_generic():
+    error = None
+    if request.method == "POST":
+        employee_id = request.form.get("employee_id", "").strip().upper()
+        pin         = request.form.get("pin", "").strip()
+        rid, found  = _find_staff_across_restaurants(employee_id, "waiter", pin)
+
+        if not found:
+            error = "Wrong employee ID or PIN ❌"
+        elif not found.get("active", True):
+            error = "This account has been disabled — contact your admin ❌"
+        else:
+            active, restaurant = restaurant_is_active(rid)
+            if not active:
+                return render_template("staff_suspended.html", restaurant_name=restaurant.get("name", "Restaurant"), portal="Waiter")
+            session["staff_ok"]   = True
+            session["staff_role"] = "waiter"
+            session["staff_rid"]  = rid
+            session["staff_id"]   = found["id"]
+            session["staff_name"] = found.get("name", "")
+            session["staff_employee_id"] = employee_id
+            return redirect(f"/waiter_dashboard/{rid}")
+
+    return render_template("waiter_login.html", rid=None, restaurant_name="Sahal Server POS", error=error)
+
+
+@app.route("/cashier_login", methods=["GET", "POST"])
+def cashier_login_generic():
+    error = None
+    if request.method == "POST":
+        employee_id = request.form.get("employee_id", "").strip().upper()
+        pin         = request.form.get("pin", "").strip()
+        rid, found  = _find_staff_across_restaurants(employee_id, "cashier", pin)
+
+        if not found:
+            error = "Wrong employee ID or PIN ❌"
+        elif not found.get("active", True):
+            error = "This account has been disabled — contact your admin ❌"
+        else:
+            active, restaurant = restaurant_is_active(rid)
+            if not active:
+                return render_template("staff_suspended.html", restaurant_name=restaurant.get("name", "Restaurant"), portal="Cashier")
+            session["staff_ok"]   = True
+            session["staff_role"] = "cashier"
+            session["staff_rid"]  = rid
+            session["staff_id"]   = found["id"]
+            session["staff_name"] = found.get("name", "")
+            session["staff_employee_id"] = employee_id
+            return redirect(f"/cashier_dashboard/{rid}")
+
+    return render_template("cashier_login.html", rid=None, restaurant_name="Sahal Server POS", error=error)
+
+
+# =====================================
 # 🧑‍🍳 WAITER — LOGIN / DASHBOARD / LOGOUT
 # =====================================
 @app.route("/waiter_login/<rid>", methods=["GET", "POST"])
