@@ -2407,6 +2407,7 @@ def waiter_dashboard(rid):
         return render_template("staff_suspended.html", restaurant_name=restaurant.get("name", "Restaurant"), portal="Waiter")
 
     restaurant_ref = db.collection("restaurants").document(rid)
+    employee_id = session.get("staff_employee_id", "")
 
     menu = []
     for doc in restaurant_ref.collection("menu").stream():
@@ -2416,28 +2417,76 @@ def waiter_dashboard(rid):
 
     today = datetime.now().strftime("%Y-%m-%d")
     my_orders = []
+    pending_count = 0
+    items_sold = 0
     total_sales = 0.0
     for doc in restaurant_ref.collection("orders") \
-            .order_by("created_at", direction=firestore.Query.DESCENDING).limit(100).stream():
+            .order_by("created_at", direction=firestore.Query.DESCENDING).limit(150).stream():
         o = doc.to_dict()
-        if o.get("employee_id") != session.get("staff_employee_id"):
+        if o.get("employee_id") != employee_id:
             continue
         created = o.get("created_at")
         created_date = created.strftime("%Y-%m-%d") if hasattr(created, "strftime") else str(created)[:10]
         o["id"] = doc.id
         my_orders.append(o)
-        if created_date == today and o.get("status") in ("paid", "PAID"):
-            total_sales += float(o.get("price", 0))
+        if created_date == today:
+            status = str(o.get("status", "")).lower()
+            if status != "paid":
+                pending_count += 1
+            else:
+                total_sales += float(o.get("price", 0))
+                items_sold += sum(int(i.get("qty", 1)) for i in (o.get("cart") or []))
+
+    orders_today = sum(1 for o in my_orders
+                        if (o.get("created_at").strftime("%Y-%m-%d") if hasattr(o.get("created_at"), "strftime") else str(o.get("created_at"))[:10]) == today)
+
+    # ---- This waiter's payments today (for My Transactions + donut) ----
+    today_payments = list(restaurant_ref.collection("payments")
+                           .where("waiter_employee_id", "==", employee_id)
+                           .where("date", "==", today).stream())
+
+    method_totals = {"cash": 0.0, "evc": 0.0, "edahab": 0.0, "card": 0.0, "other": 0.0}
+    my_transactions = []
+    for doc in today_payments:
+        p = doc.to_dict()
+        p["id"] = doc.id
+        method = str(p.get("method", "other")).lower()
+        if method not in method_totals:
+            method = "other"
+        method_totals[method] += float(p.get("amount", 0))
+        my_transactions.append(p)
+    my_transactions.sort(key=lambda x: x.get("created_at", ""), reverse=True)
+
+    donut_colors = [("cash", "#1f9e57"), ("evc", "#2f6fed"), ("edahab", "#7b3fb5"),
+                     ("card", "#e0651f"), ("other", "#cccccc")]
+    if total_sales > 0:
+        stops = []
+        cursor = 0.0
+        for key, color in donut_colors:
+            pct = (method_totals[key] / total_sales) * 100
+            start = round(cursor, 2)
+            end = round(cursor + pct, 2)
+            stops.append(f"{color} {start}% {end}%")
+            cursor += pct
+        donut_gradient = "conic-gradient(" + ", ".join(stops) + ")"
+    else:
+        donut_gradient = "conic-gradient(#e8ecf4 0% 100%)"
 
     return render_template(
         "waiter_dashboard.html",
         rid=rid,
         restaurant_name=restaurant.get("name", "Restaurant"),
         staff_name=session.get("staff_name", ""),
-        employee_id=session.get("staff_employee_id", ""),
+        employee_id=employee_id,
         menu=menu,
-        my_orders=my_orders[:20],
-        total_sales=round(total_sales, 2)
+        my_orders=my_orders[:30],
+        orders_today=orders_today,
+        pending_count=pending_count,
+        items_sold=items_sold,
+        total_sales=round(total_sales, 2),
+        my_transactions=my_transactions[:30],
+        method_totals={k: round(v, 2) for k, v in method_totals.items()},
+        donut_gradient=donut_gradient
     )
 
 
@@ -2548,6 +2597,24 @@ def cashier_dashboard(rid):
     today_cash = payment_summary["cash"]
     today_mobile = payment_summary["evc"] + payment_summary["edahab"] + payment_summary["card"] + payment_summary["other"]
 
+    # ---- Donut chart gradient (computed server-side so the template
+    # never has to embed Jinja math/conditionals inside a CSS value —
+    # linters choke on that and it's fragile to maintain) ----
+    donut_colors = [("cash", "#1f9e57"), ("evc", "#2f6fed"), ("edahab", "#7b3fb5"),
+                     ("card", "#e0651f"), ("other", "#cccccc")]
+    if today_sales > 0:
+        stops = []
+        cursor = 0.0
+        for key, color in donut_colors:
+            pct = (payment_summary[key] / today_sales) * 100
+            start = round(cursor, 2)
+            end = round(cursor + pct, 2)
+            stops.append(f"{color} {start}% {end}%")
+            cursor += pct
+        donut_gradient = "conic-gradient(" + ", ".join(stops) + ")"
+    else:
+        donut_gradient = "conic-gradient(#e8ecf4 0% 100%)"
+
     # ---- Top Selling Items (from today's paid orders' cart) ----
     item_agg = {}
     for o in todays_paid_orders:
@@ -2615,6 +2682,7 @@ def cashier_dashboard(rid):
         today_cash=round(today_cash, 2),
         today_mobile=round(today_mobile, 2),
         payment_summary={k: round(v, 2) for k, v in payment_summary.items()},
+        donut_gradient=donut_gradient,
         top_items=top_items,
         waiters_performance=waiters_performance,
         # this cashier's shift
@@ -2712,7 +2780,8 @@ def cashier_pay(rid, order_id):
         if not order_doc.exists:
             return jsonify({"success": False, "error": "Order not found"})
 
-        amount = float(order_doc.to_dict().get("price", 0))
+        order_data_dict = order_doc.to_dict()
+        amount = float(order_data_dict.get("price", 0))
         payment_id = get_next_payment_id(rid)
         now = datetime.now()
 
@@ -2720,8 +2789,11 @@ def cashier_pay(rid, order_id):
             "payment_id":     payment_id,
             "order_id":       order_id,
             "restaurant_id":  rid,
+            "table":          order_data_dict.get("table", ""),
             "cashier_id":     employee_id,
             "cashier_name":   session.get("staff_name", ""),
+            "waiter_employee_id": order_data_dict.get("employee_id", ""),
+            "waiter_name":    order_data_dict.get("employee_name", ""),
             "shift_id":       shift_id,
             "amount":         amount,
             "method":         method,

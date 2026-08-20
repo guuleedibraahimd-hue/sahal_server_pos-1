@@ -5,111 +5,322 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Waiter Dashboard - {{ restaurant_name }}</title>
 <style>
-*{ box-sizing:border-box; }
-body{ margin:0; font-family:Arial,sans-serif; background:#f4f6f9; color:#1b2330; }
-.topbar{
-    background:linear-gradient(120deg,#ff9800,#ff5722); color:#fff; padding:18px 20px;
-    display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;
+:root{
+    --navy:#2a1608; --orange:#ff5722; --orange-2:#ff9800; --green:#1f9e57;
+    --blue:#2f6fed; --purple:#7b3fb5; --bg:#f4f6fb; --card:#fff;
+    --text:#1a1a2e; --muted:#8a93a8; --border:#e8ecf4;
 }
-.topbar h1{ font-size:17px; margin:0; }
-.topbar .sub{ font-size:12px; opacity:0.9; }
-.logout{ background:rgba(255,255,255,0.2); color:#fff; text-decoration:none; padding:8px 14px; border-radius:10px; font-weight:700; font-size:13px; }
-.wrap{ max-width:960px; margin:0 auto; padding:18px; }
-.stat{ background:#fff; border-radius:16px; padding:18px; margin-bottom:18px; box-shadow:0 4px 12px rgba(0,0,0,0.06); text-align:center; }
-.stat .label{ font-size:12px; color:#888; font-weight:700; }
-.stat .value{ font-size:26px; font-weight:900; color:#ff5722; margin-top:4px; }
+*{ box-sizing:border-box; }
+body{ margin:0; font-family:Arial,sans-serif; background:var(--bg); color:var(--text); }
+a{ color:inherit; }
 
-.section{ background:#fff; border-radius:16px; padding:18px; margin-bottom:18px; box-shadow:0 4px 12px rgba(0,0,0,0.06); }
-.section h2{ font-size:15px; margin:0 0 14px; }
+.shell{ display:flex; min-height:100vh; }
 
-.table-input{ display:flex; gap:10px; margin-bottom:14px; }
-.table-input input{ flex:1; padding:12px; border-radius:10px; border:1px solid #ddd; font-size:14px; }
+/* ---- SIDEBAR ---- */
+.sidebar{ width:270px; flex-shrink:0; background:linear-gradient(180deg,#ff7a2e,#e8541a); color:#fff; display:flex; flex-direction:column; }
+.sb-brand{ display:flex; align-items:center; gap:12px; padding:22px 20px; }
+.sb-brand .logo{ width:42px; height:42px; border-radius:12px; background:rgba(255,255,255,0.25); display:flex; align-items:center; justify-content:center; font-size:20px; font-weight:900; color:#fff; }
+.sb-brand .name{ font-size:15px; font-weight:800; }
+.sb-brand .sub{ font-size:10.5px; color:rgba(255,255,255,0.85); font-weight:700; }
 
-.menu-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:10px; }
-.menu-item{ border:1px solid #eee; border-radius:12px; padding:10px; text-align:center; cursor:pointer; transition:0.15s; }
-.menu-item:hover{ border-color:#ff5722; background:#fff7f2; }
-.menu-item .name{ font-size:13px; font-weight:700; margin-top:4px; }
-.menu-item .price{ font-size:12px; color:#ff5722; font-weight:800; }
-.menu-item img{ width:100%; height:70px; object-fit:cover; border-radius:8px; }
+.sb-profile{ margin:0 16px 16px; padding:14px; background:#fff; color:var(--text); border-radius:14px; }
+.sb-profile-top{ display:flex; align-items:center; gap:10px; }
+.sb-avatar{ width:42px; height:42px; border-radius:50%; background:linear-gradient(135deg,var(--orange-2),var(--orange)); display:flex; align-items:center; justify-content:center; font-weight:800; color:#fff; font-size:15px; }
+.sb-profile .pn{ font-size:13px; font-weight:800; }
+.sb-profile .pid{ font-size:10.5px; font-weight:800; color:#fff; background:var(--orange); display:inline-block; padding:2px 8px; border-radius:8px; margin-top:2px; }
+.sb-profile .role{ font-size:11px; color:var(--muted); margin-top:4px; }
+.shift-tag{ margin-top:8px; font-size:11px; font-weight:800; color:var(--green); display:flex; align-items:center; gap:5px; }
+.shift-tag .dot{ width:7px; height:7px; border-radius:50%; background:var(--green); }
 
+.sb-nav{ list-style:none; margin:0; padding:0 10px; }
+.sb-nav li{ margin-bottom:2px; }
+.sb-link{ display:flex; align-items:center; gap:10px; padding:11px 14px; border-radius:12px; color:rgba(255,255,255,0.9); text-decoration:none; font-size:13.5px; font-weight:700; cursor:pointer; border:none; background:none; width:100%; text-align:left; }
+.sb-link:hover{ background:rgba(255,255,255,0.12); }
+.sb-link.active{ background:#fff; color:var(--orange); }
+.sb-link .badge{ margin-left:auto; background:#dc3545; color:#fff; font-size:10px; font-weight:800; padding:2px 7px; border-radius:10px; }
+.sb-bottom{ margin-top:auto; padding:14px 10px; }
+.sb-logout{ display:flex; align-items:center; gap:10px; padding:12px 14px; color:#fff; text-decoration:none; font-size:13.5px; font-weight:700; background:rgba(0,0,0,0.15); border-radius:12px; }
+
+/* ---- MAIN ---- */
+.main{ flex:1; min-width:0; }
+.topbar{ background:#fff; border-bottom:1px solid var(--border); padding:14px 26px; display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap; }
+.tb-restaurant{ display:flex; align-items:center; gap:8px; font-weight:800; font-size:15px; }
+.tb-right{ display:flex; align-items:center; gap:16px; font-size:13px; color:var(--muted); }
+
+.content{ padding:22px 26px 60px; }
+.page{ display:none; }
+.page.active{ display:block; }
+
+/* ---- STAT CARDS ---- */
+.stats-row{ display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:14px; margin-bottom:20px; }
+.stat-card{ background:var(--card); border-radius:16px; padding:16px; box-shadow:0 4px 12px rgba(0,0,0,0.05); display:flex; align-items:center; gap:12px; }
+.stat-ic{ width:42px; height:42px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:19px; color:#fff; flex-shrink:0; }
+.si-orange{ background:var(--orange); } .si-green{ background:var(--green); }
+.si-blue{ background:var(--blue); } .si-purple{ background:var(--purple); }
+.stat-info .label{ font-size:11.5px; color:var(--muted); font-weight:700; }
+.stat-info .value{ font-size:18px; font-weight:900; margin-top:2px; }
+
+.section{ background:var(--card); border-radius:16px; padding:18px; box-shadow:0 4px 12px rgba(0,0,0,0.05); margin-bottom:16px; }
+.section-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:10px; }
+.section-head h2{ font-size:15px; margin:0; }
+
+/* ---- NEW ORDER ---- */
+.search-box{ position:relative; margin-bottom:14px; }
+.search-box input{ width:100%; padding:12px 14px 12px 38px; border-radius:12px; border:1px solid #ddd; font-size:14px; }
+.search-box .si{ position:absolute; left:13px; top:50%; transform:translateY(-50%); color:var(--muted); }
+.table-input{ margin-bottom:14px; }
+.table-input input{ width:100%; max-width:260px; padding:11px 14px; border-radius:10px; border:1px solid #ddd; font-size:14px; }
+
+.menu-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:14px; }
+.menu-item{ border:1px solid #eee; border-radius:14px; overflow:hidden; cursor:pointer; transition:0.15s; background:#fff; }
+.menu-item:hover{ border-color:var(--orange); box-shadow:0 6px 18px rgba(255,87,34,0.15); transform:translateY(-2px); }
+.menu-item .img-wrap{ width:100%; height:110px; background:#f1f3f6; overflow:hidden; }
+.menu-item img{ width:100%; height:100%; object-fit:cover; display:block; }
+.menu-item .body{ padding:10px 12px; position:relative; }
+.menu-item .name{ font-size:13px; font-weight:800; }
+.menu-item .price{ font-size:12.5px; color:var(--orange); font-weight:800; margin-top:2px; }
+.menu-item .add-fab{ position:absolute; right:10px; bottom:10px; width:26px; height:26px; border-radius:50%; background:var(--orange); color:#fff; display:flex; align-items:center; justify-content:center; font-size:16px; font-weight:900; }
+
+.cart-bar{ display:flex; align-items:center; justify-content:space-between; background:var(--orange); color:#fff; border-radius:12px; padding:14px 18px; margin-top:16px; cursor:pointer; font-weight:800; font-size:14px; }
+.cart-panel{ display:none; margin-top:12px; }
+.cart-panel.show{ display:block; }
 .cart-row{ display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid #f0f0f0; font-size:13px; }
 .cart-row button{ background:#dc3545; color:#fff; border:none; border-radius:6px; padding:4px 8px; cursor:pointer; font-size:11px; }
-.cart-total{ display:flex; justify-content:space-between; font-weight:800; margin-top:10px; font-size:15px; }
-.send-btn{ width:100%; margin-top:14px; padding:14px; background:#ff5722; color:#fff; border:none; border-radius:12px; font-weight:800; cursor:pointer; font-size:14px; }
+.send-btn{ width:100%; margin-top:14px; padding:14px; background:var(--green); color:#fff; border:none; border-radius:12px; font-weight:800; cursor:pointer; font-size:14px; }
 
-.order-row{ display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid #f0f0f0; font-size:13px; }
+.order-row{ display:flex; justify-content:space-between; align-items:center; padding:11px 0; border-bottom:1px solid #f0f0f0; font-size:13px; }
 .status-pill{ padding:3px 10px; border-radius:20px; font-size:11px; font-weight:800; }
 .status-pending{ background:#fff3cd; color:#856404; }
 .status-preparing{ background:#cce5ff; color:#004085; }
 .status-ready{ background:#d4edda; color:#155724; }
 .status-paid{ background:#d1f2eb; color:#0e6655; }
 
+/* ---- TRANSACTIONS TABLE ---- */
+table.tx-tbl{ width:100%; border-collapse:collapse; font-size:13px; }
+table.tx-tbl th{ text-align:left; color:var(--muted); font-weight:700; font-size:11.5px; padding:8px 6px; border-bottom:1px solid var(--border); }
+table.tx-tbl td{ padding:9px 6px; border-bottom:1px solid #f4f4f4; }
+
+/* ---- DONUT ---- */
+.donut-wrap{ display:flex; align-items:center; gap:20px; flex-wrap:wrap; }
+.donut{ width:130px; height:130px; border-radius:50%; flex-shrink:0; }
+.legend{ flex:1; min-width:150px; }
+.legend-row{ display:flex; align-items:center; gap:8px; font-size:12.5px; padding:4px 0; }
+.legend-dot{ width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+.legend-row .lname{ flex:1; }
+.legend-row .lval{ font-weight:800; }
+
 .msg{ display:none; margin-top:10px; padding:10px; border-radius:8px; font-size:13px; font-weight:700; }
 .msg.show{ display:block; }
 .msg.ok{ background:#d4edda; color:#155724; }
 .msg.err{ background:#f8d7da; color:#721c24; }
+
+@media(max-width:800px){
+    .sidebar{ display:none; }
+    .content{ padding:16px; }
+}
 </style>
 </head>
 <body>
 
-<div class="topbar">
-    <div>
-        <h1>🧑‍🍳 {{ staff_name }} — {{ employee_id }}</h1>
-        <div class="sub">{{ restaurant_name }} · Waiter Dashboard</div>
-    </div>
-    <a href="/waiter_logout" class="logout">Logout</a>
-</div>
-
-<div class="wrap">
-
-    <div class="stat">
-        <div class="label">💰 My Sales Today (Paid Orders)</div>
-        <div class="value">${{ total_sales }}</div>
-    </div>
-
-    <div class="section">
-        <h2>🍔 New Order</h2>
-        <div class="table-input">
-            <input type="text" id="tableNo" placeholder="Table number">
-        </div>
-        <div class="menu-grid" id="menuGrid">
-            {% for item in menu %}
-            <div class="menu-item" data-id="{{ item.id }}" data-name="{{ item.name }}" data-price="{{ item.price|default(0) }}" onclick="addToCart(this)">
-                {% if item.image %}<img src="{{ item.image if item.image.startswith('http') else '/static/uploads/' + item.image }}">{% endif %}
-                <div class="name">{{ item.name }}</div>
-                <div class="price">${{ item.price }}</div>
+<div class="shell">
+    <!-- ================= SIDEBAR ================= -->
+    <aside class="sidebar">
+        <div class="sb-brand">
+            <div class="logo">S</div>
+            <div>
+                <div class="name">Sahal Server</div>
+                <div class="sub">RESTAURANT POS</div>
             </div>
-            {% endfor %}
         </div>
 
-        <div id="cartBox" style="margin-top:16px;"></div>
-        <div class="cart-total" id="cartTotal" style="display:none;">
-            <span>Total</span><span id="cartTotalValue">$0.00</span>
+        <div class="sb-profile">
+            <div class="sb-profile-top">
+                <div class="sb-avatar">{{ staff_name[:1]|upper }}</div>
+                <div>
+                    <div class="pn">{{ staff_name }}</div>
+                    <div class="pid">{{ employee_id }}</div>
+                </div>
+            </div>
+            <div class="role">Waiter</div>
+            <div class="shift-tag"><span class="dot"></span> Shift Active</div>
         </div>
-        <button class="send-btn" onclick="sendOrder()">📨 Send Order to Kitchen</button>
-        <div class="msg" id="orderMsg"></div>
+
+        <ul class="sb-nav">
+            <li><button class="sb-link active" data-page="dashboard" onclick="showPage('dashboard',this)">📊 Dashboard</button></li>
+            <li><button class="sb-link" data-page="neworder" onclick="showPage('neworder',this)">🍔 New Order</button></li>
+            <li><button class="sb-link" data-page="myorders" onclick="showPage('myorders',this)">📋 My Orders</button></li>
+            <li><button class="sb-link" data-page="transactions" onclick="showPage('transactions',this)">💳 My Transactions</button></li>
+            <li><a class="sb-link" href="/kitchen/{{ rid }}" target="_blank">🍳 Kitchen Orders</a></li>
+        </ul>
+
+        <div class="sb-bottom">
+            <a class="sb-logout" href="/waiter_logout">🚪 Logout</a>
+        </div>
+    </aside>
+
+    <!-- ================= MAIN ================= -->
+    <div class="main">
+        <div class="topbar">
+            <div class="tb-restaurant">🏪 {{ restaurant_name }}</div>
+            <div class="tb-right">{{ staff_name }} · Waiter</div>
+        </div>
+
+        <div class="content">
+
+        <!-- ============ DASHBOARD PAGE ============ -->
+        <div class="page active" id="page-dashboard">
+            <div class="stats-row">
+                <div class="stat-card"><div class="stat-ic si-orange">💰</div><div class="stat-info"><div class="label">My Sales Today</div><div class="value">${{ total_sales }}</div></div></div>
+                <div class="stat-card"><div class="stat-ic si-green">🧾</div><div class="stat-info"><div class="label">Orders Today</div><div class="value">{{ orders_today }}</div></div></div>
+                <div class="stat-card"><div class="stat-ic si-blue">🍽️</div><div class="stat-info"><div class="label">Items Sold</div><div class="value">{{ items_sold }}</div></div></div>
+                <div class="stat-card"><div class="stat-ic si-purple">⏳</div><div class="stat-info"><div class="label">Pending Orders</div><div class="value">{{ pending_count }}</div></div></div>
+            </div>
+
+            <div class="section">
+                <div class="section-head"><h2>📊 Today's Sales Summary</h2></div>
+                <div class="donut-wrap">
+                    <div class="donut" style="background:{{ donut_gradient }};
+                        mask:radial-gradient(farthest-side,transparent calc(100% - 22px),#000 calc(100% - 21px));
+                        -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 22px),#000 calc(100% - 21px));">
+                    </div>
+                    <div class="legend">
+                        <div class="legend-row"><span class="legend-dot" style="background:#1f9e57;"></span><span class="lname">Cash</span><span class="lval">${{ method_totals.cash }}</span></div>
+                        <div class="legend-row"><span class="legend-dot" style="background:#2f6fed;"></span><span class="lname">EVC Plus</span><span class="lval">${{ method_totals.evc }}</span></div>
+                        <div class="legend-row"><span class="legend-dot" style="background:#7b3fb5;"></span><span class="lname">eDahab</span><span class="lval">${{ method_totals.edahab }}</span></div>
+                        <div class="legend-row"><span class="legend-dot" style="background:#e0651f;"></span><span class="lname">Card</span><span class="lval">${{ method_totals.card }}</span></div>
+                        <div class="legend-row"><span class="legend-dot" style="background:#ccc;"></span><span class="lname">Other</span><span class="lval">${{ method_totals.other }}</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-head"><h2>📋 Recent Orders</h2></div>
+                {% for o in my_orders[:5] %}
+                <div class="order-row">
+                    <div>#{{ o.receipt_ref or o.id[:6] }} · Table {{ o.table }} — {{ o['items'] }}</div>
+                    <span class="status-pill status-{{ (o.status or 'pending')|lower }}">{{ o.status }}</span>
+                </div>
+                {% else %}
+                <div style="color:var(--muted);font-size:13px;text-align:center;padding:14px;">No orders yet</div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- ============ NEW ORDER PAGE ============ -->
+        <div class="page" id="page-neworder">
+            <div class="section">
+                <div class="section-head"><h2>🍔 New Order</h2></div>
+
+                <div class="table-input">
+                    <input type="text" id="tableNo" placeholder="Table number">
+                </div>
+
+                <div class="search-box">
+                    <span class="si">🔍</span>
+                    <input type="text" id="menuSearch" placeholder="Search items..." oninput="filterMenu()">
+                </div>
+
+                <div class="menu-grid" id="menuGrid">
+                    {% for item in menu %}
+                    <div class="menu-item" data-id="{{ item.id }}" data-name="{{ item.name|lower }}" data-display-name="{{ item.name }}" data-price="{{ item.price|default(0) }}" onclick="addToCart(this)">
+                        <div class="img-wrap">
+                            {% if item.image %}<img src="{{ item.image }}" alt="{{ item.name }}" loading="lazy">{% endif %}
+                        </div>
+                        <div class="body">
+                            <div class="name">{{ item.name }}</div>
+                            <div class="price">${{ item.price }}</div>
+                            <div class="add-fab">+</div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                <div id="noMenuResults" style="display:none;color:var(--muted);padding:14px;text-align:center;">No items match your search.</div>
+
+                <div class="cart-bar" onclick="toggleCart()">
+                    <span id="cartBarLabel">View Order (0 items)</span>
+                    <span id="cartBarTotal">Total: $0.00</span>
+                </div>
+                <div class="cart-panel" id="cartPanel">
+                    <div id="cartBox"></div>
+                    <button class="send-btn" onclick="sendOrder()">📨 Send Order to Kitchen</button>
+                    <div class="msg" id="orderMsg"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============ MY ORDERS PAGE ============ -->
+        <div class="page" id="page-myorders">
+            <div class="section">
+                <div class="section-head"><h2>📋 My Orders</h2></div>
+                {% for o in my_orders %}
+                <div class="order-row">
+                    <div>#{{ o.receipt_ref or o.id[:6] }} · Table {{ o.table }} — {{ o['items'] }}</div>
+                    <span class="status-pill status-{{ (o.status or 'pending')|lower }}">{{ o.status }}</span>
+                </div>
+                {% else %}
+                <div style="color:var(--muted);font-size:13px;text-align:center;padding:14px;">No orders yet</div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- ============ MY TRANSACTIONS PAGE ============ -->
+        <div class="page" id="page-transactions">
+            <div class="section">
+                <div class="section-head"><h2>💳 My Transactions Today</h2></div>
+                <div style="overflow-x:auto;">
+                <table class="tx-tbl">
+                    <tr><th>Payment ID</th><th>Table</th><th>Amount</th><th>Method</th><th>Time</th></tr>
+                    {% for t in my_transactions %}
+                    <tr>
+                        <td>{{ t.payment_id }}</td>
+                        <td>{{ t.table }}</td>
+                        <td><b>${{ "%.2f"|format(t.amount or 0) }}</b></td>
+                        <td>{{ t.method|upper }}</td>
+                        <td>{{ t.time }}</td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="5" style="text-align:center;color:var(--muted);padding:16px;">No transactions yet today</td></tr>
+                    {% endfor %}
+                </table>
+                </div>
+            </div>
+        </div>
+
+        </div>
     </div>
-
-    <div class="section">
-        <h2>📋 My Recent Orders</h2>
-        {% for o in my_orders %}
-        <div class="order-row">
-            <div>Table {{ o.table }} — {{ o['items'] }}</div>
-            <span class="status-pill status-{{ o.status|lower }}">{{ o.status }}</span>
-        </div>
-        {% else %}
-        <div style="color:#888;font-size:13px;text-align:center;padding:14px;">No orders yet</div>
-        {% endfor %}
-    </div>
-
 </div>
 
 <script>
+const RID = "{{ rid }}";
 let cart = [];
+
+function showPage(id, el){
+    document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+    const target = document.getElementById("page-" + id);
+    if(target) target.classList.add("active");
+
+    document.querySelectorAll(".sb-link").forEach(l => l.classList.remove("active"));
+    const link = el || document.querySelector('.sb-link[data-page="' + id + '"]');
+    if(link) link.classList.add("active");
+
+    window.scrollTo({top:0, behavior:"smooth"});
+}
+
+function filterMenu(){
+    const q = document.getElementById("menuSearch").value.trim().toLowerCase();
+    const items = document.querySelectorAll("#menuGrid .menu-item");
+    let visible = 0;
+    items.forEach(el => {
+        const match = !q || el.dataset.name.includes(q);
+        el.style.display = match ? "" : "none";
+        if(match) visible++;
+    });
+    document.getElementById("noMenuResults").style.display = visible === 0 ? "block" : "none";
+}
 
 function addToCart(el){
     const id    = el.dataset.id;
-    const name  = el.dataset.name;
+    const name  = el.dataset.displayName;
     const price = parseFloat(el.dataset.price) || 0;
     const existing = cart.find(c => c.id === id);
     if(existing){ existing.qty += 1; } else { cart.push({id, name, price, qty:1}); }
@@ -121,22 +332,25 @@ function removeFromCart(idx){
     renderCart();
 }
 
+function toggleCart(){
+    document.getElementById("cartPanel").classList.toggle("show");
+}
+
 function renderCart(){
     const box = document.getElementById("cartBox");
-    const totalBox = document.getElementById("cartTotal");
-    if(!cart.length){ box.innerHTML = ""; totalBox.style.display = "none"; return; }
-
     let total = 0;
+    let count = 0;
     box.innerHTML = cart.map((c, i) => {
         total += c.price * c.qty;
+        count += c.qty;
         return `<div class="cart-row">
             <span>${c.qty} × ${c.name}</span>
             <span>$${(c.price*c.qty).toFixed(2)} <button onclick="removeFromCart(${i})">✕</button></span>
         </div>`;
     }).join("");
 
-    totalBox.style.display = "flex";
-    document.getElementById("cartTotalValue").textContent = "$" + total.toFixed(2);
+    document.getElementById("cartBarLabel").textContent = `View Order (${count} items)`;
+    document.getElementById("cartBarTotal").textContent = "Total: $" + total.toFixed(2);
 }
 
 async function sendOrder(){
@@ -148,7 +362,7 @@ async function sendOrder(){
     if(!cart.length){ msg.classList.add("show","err"); msg.textContent = "❌ Cart is empty"; return; }
 
     try{
-        const res = await fetch("/order/{{ rid }}", {
+        const res = await fetch("/order/" + RID, {
             method: "POST",
             headers: {"Content-Type": "application/json"},
             body: JSON.stringify({
