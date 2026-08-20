@@ -91,7 +91,7 @@ body{ font-family:'Segoe UI',Arial,sans-serif; background:var(--bg); margin:0; c
 .qa-5{ background:linear-gradient(135deg,#8a5ce0,#6f42c1); }
 
 /* ---- STATS ---- */
-.stat-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:26px; }
+.stat-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-bottom:26px; }
 .stat-card{ border-radius:16px; padding:20px 22px; color:#fff; box-shadow:0 6px 16px rgba(0,0,0,0.1); }
 .stat-1{ background:linear-gradient(135deg,#6a5cf0,#4b3fd1); }
 .stat-2{ background:linear-gradient(135deg,#34c979,#1f9e57); }
@@ -100,17 +100,7 @@ body{ font-family:'Segoe UI',Arial,sans-serif; background:var(--bg); margin:0; c
 .stat-label{ font-size:12px; opacity:0.9; font-weight:700; }
 .stat-value{ font-size:30px; font-weight:900; margin-top:6px; }
 
-/* ---- PANEL CARDS ---- */
-.panel-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:26px; }
-.panel-card{ background:var(--card); border:1px solid var(--border); border-radius:18px; padding:20px; box-shadow:0 4px 12px rgba(0,0,0,0.05); }
-.panel-head{ display:flex; align-items:center; gap:12px; margin-bottom:14px; }
-.panel-ic{ width:42px; height:42px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:20px; color:#fff; }
-.panel-ic.p1{ background:#6f42c1; } .panel-ic.p2{ background:#ff9800; } .panel-ic.p3{ background:#28a745; } .panel-ic.p4{ background:#007bff; }
-.panel-title{ font-size:14px; font-weight:800; margin:0; }
-.panel-sub{ font-size:11px; color:var(--muted); font-weight:600; }
-.panel-links{ display:flex; flex-wrap:wrap; gap:8px; }
-.mini-btn{ text-decoration:none; color:#fff; padding:8px 12px; border-radius:9px; font-size:12px; font-weight:700; border:none; cursor:pointer; }
-.panel-open{ display:block; width:100%; text-align:center; padding:11px; border-radius:10px; font-weight:800; color:#fff; text-decoration:none; border:none; cursor:pointer; font-size:13px; margin-top:4px; }
+/* ---- PANEL CARDS removed from dashboard (kept selectors would be dead code) ---- */
 
 /* ---- SECTION (data pages) ---- */
 .section{ background:var(--card); padding:22px; border-radius:18px; margin-bottom:25px; box-shadow:0 4px 12px rgba(0,0,0,0.06); border:1px solid var(--border); }
@@ -163,7 +153,6 @@ textarea,input,select{ width:100%; padding:12px; border-radius:10px; border:1px 
 @media(max-width:1100px){
     .qa-grid{ grid-template-columns:repeat(3,1fr); }
     .stat-grid{ grid-template-columns:repeat(2,1fr); }
-    .panel-grid{ grid-template-columns:repeat(2,1fr); }
 }
 @media(max-width:900px){
     .sectionTitle{ flex-direction:column; align-items:flex-start; }
@@ -178,7 +167,6 @@ textarea,input,select{ width:100%; padding:12px; border-radius:10px; border:1px 
 @media(max-width:600px){
     .qa-grid{ grid-template-columns:1fr 1fr; }
     .stat-grid{ grid-template-columns:1fr; }
-    .panel-grid{ grid-template-columns:1fr; }
     .content{ padding:18px; }
     .topbar{ padding:12px 16px; }
     .hero{ padding:24px; }
@@ -286,61 +274,6 @@ textarea,input,select{ width:100%; padding:12px; border-radius:10px; border:1px 
                     <div class="stat-card stat-3">
                         <div class="stat-label">💊 Total Pharmacies</div>
                         <div class="stat-value">{{ pharmacies|length }}</div>
-                    </div>
-                    <div class="stat-card stat-4">
-                        <div class="stat-label">🔔 Pending Renewals</div>
-                        <div class="stat-value">{{ renewal_requests|length }}</div>
-                    </div>
-                </div>
-
-                <div class="panel-grid">
-                    <div class="panel-card">
-                        <div class="panel-head">
-                            <div class="panel-ic p1">👥</div>
-                            <div>
-                                <p class="panel-title">Registration Panel</p>
-                                <div class="panel-sub">Manage Users &amp; Institutions</div>
-                            </div>
-                        </div>
-                        <div class="panel-links">
-                            <a href="/register" class="mini-btn" style="background:#ff5722;">Register Restaurant</a>
-                            <a href="/supermarket_register" class="mini-btn" style="background:#28a745;">Register Supermarket</a>
-                            <a href="/payment_qr" class="mini-btn" style="background:#00b894;">Payment QR (A4)</a>
-                            <a href="/create_id_card" class="mini-btn" style="background:#6f42c1;">Create ID Card</a>
-                        </div>
-                    </div>
-
-                    <div class="panel-card">
-                        <div class="panel-head">
-                            <div class="panel-ic p2">💰</div>
-                            <div>
-                                <p class="panel-title">Payment Dashboard</p>
-                                <div class="panel-sub">Manage Payments</div>
-                            </div>
-                        </div>
-                        <button class="panel-open" style="background:#ff5722;" onclick="showPage('payments')">Open Payments</button>
-                    </div>
-
-                    <div class="panel-card">
-                        <div class="panel-head">
-                            <div class="panel-ic p3">🍽️</div>
-                            <div>
-                                <p class="panel-title">Restaurants</p>
-                                <div class="panel-sub">Food &amp; Dining</div>
-                            </div>
-                        </div>
-                        <button class="panel-open" style="background:#28a745;" onclick="showPage('restaurants')">Open Restaurants</button>
-                    </div>
-
-                    <div class="panel-card">
-                        <div class="panel-head">
-                            <div class="panel-ic p4">🛒</div>
-                            <div>
-                                <p class="panel-title">Supermarkets</p>
-                                <div class="panel-sub">Retail &amp; Groceries</div>
-                            </div>
-                        </div>
-                        <button class="panel-open" style="background:#007bff;" onclick="showPage('supermarkets')">Open Supermarkets</button>
                     </div>
                 </div>
 
