@@ -413,6 +413,39 @@ def get_supermarkets_firestore():
     return supermarkets
 
 
+def get_schools_firestore():
+    schools = []
+    try:
+        docs = db.collection("schools").stream()
+        for doc in docs:
+            item = doc.to_dict()
+            item["id"] = doc.id
+            schools.append(item)
+    except Exception as e:
+        print("School Load Error:", e)
+    return schools
+
+
+def get_pharmacies_list():
+    pharmacies = []
+    try:
+        today = datetime.now().date()
+        docs = db.collection("pharmacies").stream()
+        for doc in docs:
+            item = doc.to_dict()
+            item["id"] = doc.id
+            expiry_date = item.get("expiry_date")
+            if expiry_date:
+                try:
+                    item["days_left"] = (datetime.strptime(expiry_date, "%Y-%m-%d").date() - today).days
+                except Exception:
+                    pass
+            pharmacies.append(item)
+    except Exception as e:
+        print("Pharmacy Load Error:", e)
+    return pharmacies
+
+
 def get_orders_firestore():
     orders = []
     try:
@@ -507,6 +540,8 @@ def admin():
     try:
         restaurants  = get_restaurants_firestore()
         supermarkets = get_supermarkets_firestore()
+        schools      = get_schools_firestore()
+        pharmacies   = get_pharmacies_list()
         orders       = get_orders_firestore()
         total        = len(orders)
 
@@ -550,6 +585,9 @@ def admin():
             "admin.html",
             restaurants=restaurants,
             supermarkets=supermarkets,
+            schools=schools,
+            pharmacies=pharmacies,
+            now_date=datetime.now().strftime("%Y-%m-%d"),
             orders=orders,
             total=total,
             top_reviews=top_reviews,
