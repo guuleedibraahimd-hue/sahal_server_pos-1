@@ -9,7 +9,6 @@
         :root{
             --bg:#f3f4f6;
             --sidebar:#0f1523;
-            --sidebar-2:#161d2f;
             --card:#ffffff;
             --text:#111827;
             --muted:#6b7280;
@@ -22,10 +21,8 @@
         *{margin:0;padding:0;box-sizing:border-box;}
         body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);}
 
-        /* ===== LAYOUT ===== */
         .layout{display:flex;min-height:100vh;}
 
-        /* ===== SIDEBAR ===== */
         .sidebar{
             width:270px;flex-shrink:0;
             background:linear-gradient(180deg,var(--sidebar) 0%,#0b0f1a 100%);
@@ -60,11 +57,6 @@
             content:'';position:absolute;left:0;top:50%;transform:translateY(-50%);
             width:3px;height:22px;background:var(--orange);border-radius:3px;
         }
-        .side-nav .pill{
-            margin-left:auto;background:var(--red);color:#fff;
-            font-size:11px;font-weight:700;min-width:22px;height:22px;padding:0 6px;
-            border-radius:11px;display:flex;align-items:center;justify-content:center;
-        }
 
         .chef-card{
             margin-top:auto;
@@ -77,7 +69,6 @@
         .chef-card .g{font-family:'Poppins',sans-serif;font-size:17px;font-weight:700;margin:2px 0 8px;}
         .chef-card .s{font-size:12px;color:rgba(255,255,255,0.4);line-height:1.5;}
 
-        /* ===== MAIN ===== */
         .main{flex:1;padding:28px 34px;min-width:0;}
         .main-header{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;margin-bottom:22px;flex-wrap:wrap;}
         .main-title{display:flex;align-items:center;gap:14px;}
@@ -85,37 +76,7 @@
         .main-title h2{font-family:'Poppins',sans-serif;font-size:30px;font-weight:700;line-height:1;}
         .main-title p{color:var(--muted);font-size:14px;margin-top:6px;}
 
-        /* Waiter Calls button (top-right) — this is the notify toggle */
-        .notify-box{position:relative;}
-        .notify-header{
-            display:flex;align-items:center;gap:10px;
-            background:linear-gradient(135deg,#5b6ef0,#4f6ef5);
-            color:#fff;padding:14px 24px;border-radius:14px;cursor:pointer;
-            font-family:'Poppins',sans-serif;font-weight:600;font-size:15px;
-            box-shadow:0 8px 22px rgba(79,110,245,0.35);position:relative;user-select:none;
-        }
-        .notify-header .badge{
-            position:absolute;top:-8px;right:-8px;background:var(--red);color:#fff;
-            width:26px;height:26px;border-radius:50%;display:flex;align-items:center;
-            justify-content:center;font-size:13px;font-weight:700;border:2px solid #fff;
-        }
-        .notify-list{
-            display:none;position:absolute;top:60px;right:0;width:300px;z-index:60;
-            background:#fff;border-radius:16px;box-shadow:0 16px 44px rgba(0,0,0,0.18);
-            padding:12px;max-height:400px;overflow:auto;border:1px solid var(--line);
-        }
-        .notify-item{
-            background:#fffbeb;border:1px solid #fde68a;
-            padding:14px;border-radius:12px;margin-bottom:10px;font-size:14px;
-        }
-        .notify-item b{color:#92400e;}
-        .notify-item .done{
-            background:var(--green);color:#fff;border:none;border-radius:9px;
-            padding:9px 14px;font-weight:700;cursor:pointer;margin-top:8px;font-size:13px;
-        }
-
-        /* action buttons */
-        .top-actions{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:22px;}
+        .top-actions{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-bottom:22px;}
         .clear-btn{
             padding:15px;border:none;border-radius:13px;color:#fff;
             font-family:'Poppins',sans-serif;font-weight:600;font-size:15px;cursor:pointer;
@@ -123,16 +84,9 @@
         }
         .clear-btn:hover{filter:brightness(0.95);}
         #clearOrdersBtn{background:var(--red);}
-        #clearCallsBtn{background:var(--red);}
         #autoPrintBtn{background:var(--green);}
 
-        .queue-banner{
-            display:none;background:#fffbeb;color:#92400e;border:1px solid #fde68a;
-            border-radius:12px;padding:12px 18px;text-align:center;font-weight:600;margin-bottom:20px;
-        }
-
-        /* stat cards */
-        .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:26px;}
+        .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:26px;}
         .stat{
             background:var(--card);border-radius:16px;padding:20px;
             display:flex;align-items:center;gap:16px;box-shadow:0 2px 10px rgba(0,0,0,0.04);
@@ -144,7 +98,6 @@
         .stat.s1 .s-ic{background:#eef0fe;}
         .stat.s2 .s-ic{background:#fef3e2;}
         .stat.s3 .s-ic{background:#e6f6ee;}
-        .stat.s4 .s-ic{background:#eaf1fe;}
         .stat .s-num{font-family:'Poppins',sans-serif;font-size:26px;font-weight:700;line-height:1;}
         .stat .s-lbl{color:var(--muted);font-size:13px;margin-top:4px;}
 
@@ -153,7 +106,6 @@
         .orders-head h3{font-family:'Poppins',sans-serif;font-size:20px;font-weight:700;}
         .orders-head .rule{flex:1;height:1px;background:var(--line);}
 
-        /* ===== ORDER CARD ===== */
         #ordersContainer{display:flex;flex-direction:column;gap:18px;}
         .order{
             background:var(--card);border-radius:18px;padding:20px 22px;
@@ -164,8 +116,9 @@
         .order[data-status="ready"]{border-left-color:var(--green);}
         .order[data-status="pending"]{border-left-color:var(--blue);}
 
-        .order-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+        .order-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;}
         .order-top .o-title{display:flex;align-items:center;gap:9px;font-family:'Poppins',sans-serif;font-weight:700;font-size:17px;}
+        .o-ref{font-size:12.5px;color:var(--muted);font-weight:600;}
         .status-pill{
             padding:6px 16px;border-radius:20px;font-size:13px;font-weight:700;text-transform:capitalize;
             background:#eef0fe;color:var(--blue);
@@ -198,7 +151,7 @@
         .meta-row .m-v.money{color:var(--green);font-weight:700;}
         .meta-row .m-v.pending{color:var(--orange);text-transform:capitalize;}
 
-        .order-actions{display:flex;gap:12px;justify-content:flex-end;margin-top:16px;padding-top:16px;border-top:1px solid var(--line);}
+        .order-actions{display:flex;gap:12px;justify-content:flex-end;margin-top:16px;padding-top:16px;border-top:1px solid var(--line);flex-wrap:wrap;}
         .status-btn{
             padding:11px 26px;border:none;border-radius:11px;color:#fff;
             font-family:'Poppins',sans-serif;font-weight:600;font-size:14px;cursor:pointer;
@@ -207,6 +160,7 @@
         .status-btn:hover{filter:brightness(0.95);}
         .preparing{background:var(--orange);}
         .ready{background:var(--green);}
+        .print-btn{background:var(--blue);text-decoration:none;}
 
         .empty{
             background:var(--card);border-radius:18px;padding:60px 20px;text-align:center;
@@ -214,39 +168,6 @@
         }
         .empty .e-ic{font-size:48px;margin-bottom:12px;}
 
-        /* ===== incoming-call popup + active bar (preserved from original) ===== */
-        #incomingCallPopup{
-            display:none;position:fixed;bottom:30px;left:50%;transform:translateX(-50%);
-            width:340px;background:linear-gradient(160deg,#0D47A1,#1565C0 50%,#1E88E5);
-            border-radius:24px;padding:28px 24px 24px;z-index:9999;
-            box-shadow:0 12px 50px rgba(13,71,161,0.6);text-align:center;
-            animation:slideUp .4s cubic-bezier(.34,1.56,.64,1);
-        }
-        @keyframes slideUp{from{opacity:0;transform:translateX(-50%) translateY(60px) scale(.92);}to{opacity:1;transform:translateX(-50%) translateY(0) scale(1);}}
-        .ic-label{color:rgba(255,255,255,0.6);font-size:12px;margin-bottom:6px;letter-spacing:1px;text-transform:uppercase;}
-        .ic-name{color:#fff;font-size:24px;font-weight:800;margin-bottom:3px;}
-        .ic-sub{color:rgba(255,255,255,0.5);font-size:13px;margin-bottom:18px;}
-        .ic-message{background:rgba(255,255,255,0.13);border:1px solid rgba(255,255,255,0.22);border-radius:12px;padding:10px 14px;color:rgba(255,255,255,0.88);font-size:13px;margin-bottom:20px;text-align:left;display:none;}
-        .ic-message.visible{display:block;}
-        .ic-avatar-wrap{position:relative;width:80px;margin:0 auto 22px;}
-        .ic-ripple{position:absolute;inset:-12px;border:2px solid rgba(255,255,255,0.25);border-radius:50%;animation:ripple 1.8s ease-out infinite;}
-        .ic-ripple:nth-child(2){inset:-26px;border-color:rgba(255,255,255,0.12);animation-delay:.6s;}
-        @keyframes ripple{0%{opacity:1;transform:scale(1);}100%{opacity:0;transform:scale(1.5);}}
-        .ic-avatar{width:80px;height:80px;background:rgba(255,255,255,0.15);border:2px solid rgba(255,255,255,0.3);border-radius:50%;display:flex;align-items:center;justify-content:center;position:relative;z-index:1;font-size:38px;}
-        .ic-controls{display:flex;justify-content:center;gap:36px;}
-        .ic-btn{display:flex;flex-direction:column;align-items:center;gap:8px;background:none;border:none;cursor:pointer;padding:0;}
-        .ic-icon{width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:transform .15s;}
-        .ic-icon:active{transform:scale(0.9);}
-        .ic-icon.accept{background:#4CAF50;box-shadow:0 4px 18px rgba(76,175,80,0.45);}
-        .ic-icon.decline{background:#F44336;box-shadow:0 4px 18px rgba(244,67,54,0.45);}
-        .ic-icon svg{width:28px;height:28px;stroke:#fff;fill:none;stroke-width:2.5;}
-        .ic-btn-label{color:rgba(255,255,255,0.75);font-size:12px;font-weight:700;letter-spacing:.5px;}
-        #activeCallBar{display:none;position:fixed;top:0;left:0;right:0;background:#1565C0;color:#fff;padding:10px 20px;font-size:14px;font-weight:700;z-index:9998;align-items:center;justify-content:space-between;}
-        #activeCallBar.show{display:flex;}
-        #activeCallTimer{font-size:13px;color:rgba(255,255,255,0.8);font-weight:400;margin-left:8px;}
-        #kitchenEndBtn{background:#F44336;color:#fff;border:none;border-radius:8px;padding:6px 14px;font-weight:bold;cursor:pointer;font-size:13px;}
-
-        /* ===== responsive ===== */
         @media (max-width:980px){
             .sidebar{display:none;}
             .stats{grid-template-columns:1fr 1fr;}
@@ -258,24 +179,13 @@
             .top-actions{grid-template-columns:1fr;}
             .stats{grid-template-columns:1fr;}
             .main-title h2{font-size:24px;}
-            .notify-list{width:min(300px,86vw);}
         }
     </style>
 </head>
 <body>
 
-<!-- ACTIVE CALL BAR (preserved) -->
-<div id="activeCallBar">
-    <span>
-        <span id="activeCallLabel">📞 On call with Table –</span>
-        <span id="activeCallTimer"></span>
-    </span>
-    <button id="kitchenEndBtn" onclick="kitchenEndCall()">End Call</button>
-</div>
-
 <div class="layout">
 
-    <!-- SIDEBAR -->
     <aside class="sidebar">
         <div class="brand">
             <div class="logo">👨‍🍳</div>
@@ -286,10 +196,8 @@
         </div>
         <nav class="side-nav">
             <a href="#" class="active"><span class="ic">📋</span> Kitchen Orders</a>
-            <a href="javascript:void(0)" id="sideCallsBtn" onclick="document.getElementById('notifyHeader').click()"><span class="ic">🔔</span> Waiter Calls <span class="pill">{{ calls|length }}</span></a>
             <a href="/dashboard/{{ rid }}"><span class="ic">🍽️</span> Menu Items</a>
             <a href="/sales/{{ rid }}"><span class="ic">📊</span> Statistics</a>
-            <a href="/dashboard/{{ rid }}"><span class="ic">⚙️</span> Settings</a>
         </nav>
         <div class="chef-card">
             <div class="chef">👨‍🍳</div>
@@ -299,7 +207,6 @@
         </div>
     </aside>
 
-    <!-- MAIN -->
     <main class="main">
         <div class="main-header">
             <div class="main-title">
@@ -309,39 +216,17 @@
                     <p>Manage and prepare incoming orders</p>
                 </div>
             </div>
-
-            <!-- Waiter Calls toggle (notify) -->
-            <div class="notify-box">
-                <div class="notify-header" id="notifyHeader">
-                    🔔 Waiter Calls
-                    <div class="badge" id="callBadge">{{ calls|length }}</div>
-                </div>
-                <div class="notify-list" id="notifyList">
-                    {% for c in calls %}
-                    <div class="notify-item">
-                        <b>🚨 Table {{ c.get('table', '-') }}</b><br>Calling waiter now<br>
-                        <button class="done waiter-btn" data-table="{{ c.get('table', '') }}">I am coming</button>
-                    </div>
-                    {% endfor %}
-                </div>
-            </div>
         </div>
 
-        <!-- ACTION BUTTONS -->
         <div class="top-actions">
             <button class="clear-btn" id="clearOrdersBtn">🧹 Clear Kitchen Orders</button>
-            <button class="clear-btn" id="clearCallsBtn">🔔 Clear Calls</button>
             <button class="clear-btn" id="autoPrintBtn">🖨 Auto-Print: OFF</button>
         </div>
 
-        <div class="queue-banner" id="queueBanner"></div>
-
-        <!-- STAT CARDS -->
         <div class="stats">
             <div class="stat s1"><div class="s-ic">📋</div><div><div class="s-num">{{ stats.total }}</div><div class="s-lbl">Total Orders</div></div></div>
             <div class="stat s2"><div class="s-ic">⏱️</div><div><div class="s-num">{{ stats.preparing }}</div><div class="s-lbl">Preparing</div></div></div>
             <div class="stat s3"><div class="s-ic">✅</div><div><div class="s-num">{{ stats.ready }}</div><div class="s-lbl">Ready</div></div></div>
-            <div class="stat s4"><div class="s-ic">🔔</div><div><div class="s-num">{{ stats.calls }}</div><div class="s-lbl">Waiter Calls</div></div></div>
         </div>
 
         <div class="orders-head">
@@ -350,12 +235,11 @@
             <span class="rule"></span>
         </div>
 
-        <!-- ORDERS -->
         <div id="ordersContainer">
         {% for o in orders %}
         <div class="order" id="order{{ o.id }}" data-status="{{ o.get('status', 'pending') }}">
             <div class="order-top">
-                <div class="o-title">📋 Order #{{ orders|length - loop.index0 }}</div>
+                <div class="o-title">📋 Order #{{ orders|length - loop.index0 }} <span class="o-ref">Ref: {{ o.receipt_ref or o.id[:6] }}</span></div>
                 <span class="status-pill">{{ o.get('status', 'pending') }}</span>
             </div>
 
@@ -400,6 +284,7 @@
             </div>
 
             <div class="order-actions">
+                <a class="status-btn print-btn" href="/receipt/{{ rid }}/{{ o.id }}" target="_blank">🧾 Receipt</a>
                 <button class="preparing status-btn" data-id="{{ o.id }}" data-status="preparing">⏳ Preparing</button>
                 <button class="ready status-btn" data-id="{{ o.id }}" data-status="ready">✅ Ready</button>
             </div>
@@ -412,61 +297,18 @@
     </main>
 </div>
 
-<!-- INCOMING CALL POPUP (preserved) -->
-<div id="incomingCallPopup">
-    <div class="ic-label">📲 Incoming Call</div>
-    <div class="ic-name" id="icName">Table –</div>
-    <div class="ic-sub" id="icSub">Customer</div>
-    <div class="ic-message" id="icMessage"></div>
-    <div class="ic-avatar-wrap">
-        <div class="ic-ripple"></div>
-        <div class="ic-ripple"></div>
-        <div class="ic-avatar">🧑‍🍽️</div>
-    </div>
-    <div class="ic-controls">
-        <button class="ic-btn" onclick="declineCall()">
-            <div class="ic-icon decline">
-                <svg viewBox="0 0 24 24"><path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7 2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07C9.44 17.29 7.76 15.36 6.69 13a19.79 19.79 0 0 1-3.07-8.63A2 2 0 0 1 5.61 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L9.69 9.81"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
-            </div>
-            <span class="ic-btn-label">Decline</span>
-        </button>
-        <button class="ic-btn" onclick="acceptCall()">
-            <div class="ic-icon accept">
-                <svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07C9.36 17.29 7.52 15.39 6.5 13.08A19.79 19.79 0 0 1 3.42 4.4 2 2 0 0 1 5.41 2.25h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L9.91 9.96a16 16 0 0 0 6.13 6.13l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-            </div>
-            <span class="ic-btn-label">Answer</span>
-        </button>
-    </div>
-</div>
-
-<!-- SocketIO CDN -->
-<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
-
 <script>
 const RID = "{{ rid }}";
 
-/* ══════════════════════════════════════
-    ORDERS POLLING + BUTTONS
-══════════════════════════════════════ */
 document.addEventListener("DOMContentLoaded", function(){
-    document.getElementById("notifyHeader").addEventListener("click", function(){
-        let box = document.getElementById("notifyList");
-        box.style.display = box.style.display === "block" ? "none" : "block";
-    });
-
     document.getElementById("clearOrdersBtn").addEventListener("click", function(){
         fetch("/clear_orders/" + RID).then(() => location.reload());
     });
 
-    document.getElementById("clearCallsBtn").addEventListener("click", function(){
-        fetch("/clear_calls/" + RID).then(() => location.reload());
-    });
-
-    /* ── Auto-Print: silently print a new order's receipt the moment it
-       arrives, no need to open it or press Print. Shares the same
-       localStorage key the receipt page itself uses, so once this is
-       turned ON here, a receipt loaded in the background never has to
-       ask the confirm() question — it just prints. ── */
+    /* ── Auto-Print: silently print a new order's receipt (by its
+       receipt_ref) the moment it arrives, tied 1:1 to that order —
+       never re-prints an order already seen, and never touches an
+       order the kitchen already acted on before this page loaded. ── */
     const AUTOPRINT_KEY = "sahal_autoprint";
 
     function isAutoPrintOn(){
@@ -492,10 +334,15 @@ document.addEventListener("DOMContentLoaded", function(){
     }
 
     // Orders already on screen when the page loaded are NOT new — only
-    // orders that show up *after* this get silently printed.
+    // orders that show up *after* this get silently printed, and each
+    // order_id can only ever trigger one print (maps 1:1 to that
+    // order's receipt_ref on the receipt page itself).
     let knownOrderIds = new Set(getVisibleOrderIds());
+    let printedOrderIds = new Set();
 
     function silentPrintReceipt(orderId){
+        if(printedOrderIds.has(orderId)) return;
+        printedOrderIds.add(orderId);
         const iframe = document.createElement("iframe");
         iframe.style.position = "fixed";
         iframe.style.width = "0";
@@ -507,23 +354,9 @@ document.addEventListener("DOMContentLoaded", function(){
         setTimeout(() => { iframe.remove(); }, 8000);
     }
 
-    function attachWaiterBtns(){
-        document.querySelectorAll(".waiter-btn").forEach(function(btn){
-            btn.addEventListener("click", function(){
-                let table = btn.dataset.table;
-                fetch("/waiter_done/" + RID, {
-                    method:"POST",
-                    headers:{"Content-Type":"application/x-www-form-urlencoded"},
-                    body:"table=" + table
-                }).then(() => location.reload());
-            });
-        });
-    }
-    attachWaiterBtns();
-
     function attachStatusBtns(){
-        document.querySelectorAll(".status-btn").forEach(function(btn){
-            if(btn.dataset.bound === "1") return;   // ha ku celin listener-ka
+        document.querySelectorAll(".status-btn[data-id]").forEach(function(btn){
+            if(btn.dataset.bound === "1") return;
             btn.dataset.bound = "1";
             btn.addEventListener("click", function(){
                 let id = btn.dataset.id, status = btn.dataset.status;
@@ -544,16 +377,7 @@ document.addEventListener("DOMContentLoaded", function(){
             let parser = new DOMParser();
             let doc = parser.parseFromString(html, "text/html");
             let newOrders = doc.getElementById("ordersContainer");
-            let newBadge  = doc.getElementById("callBadge");
-            let newList   = doc.getElementById("notifyList");
             if(newOrders){ document.getElementById("ordersContainer").innerHTML = newOrders.innerHTML; attachStatusBtns(); }
-            if(newBadge)  document.getElementById("callBadge").innerText = newBadge.innerText;
-            if(newList){
-                let open = document.getElementById("notifyList").style.display;
-                document.getElementById("notifyList").innerHTML = newList.innerHTML;
-                document.getElementById("notifyList").style.display = open;
-                attachWaiterBtns();
-            }
 
             if(newOrders){
                 getVisibleOrderIds().forEach(id => {
@@ -566,340 +390,6 @@ document.addEventListener("DOMContentLoaded", function(){
         }).catch(()=>{});
     }, 3000);
 });
-
-/* ════════════════════════════════════════
-    80s SYNTH RINGTONE — KITCHEN SIDE
-════════════════════════════════════════ */
-let _ringNodes = null;
-
-function start80sRing(){
-    stop80sRing();
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const masterGain = ctx.createGain();
-    masterGain.gain.value = 0;
-    masterGain.connect(ctx.destination);
-    masterGain.gain.linearRampToValueAtTime(0.4, ctx.currentTime + 0.05);
-
-    const echo = ctx.createDelay(0.5);
-    echo.delayTime.value = 0.20;
-    const echoGain = ctx.createGain();
-    echoGain.gain.value = 0.3;
-    echo.connect(echoGain);
-    echoGain.connect(masterGain);
-
-    const osc1 = ctx.createOscillator(); osc1.type = 'sawtooth';
-    const env1 = ctx.createGain(); env1.gain.value = 0;
-    osc1.connect(env1); env1.connect(masterGain); env1.connect(echo);
-
-    const osc2 = ctx.createOscillator(); osc2.type = 'square';
-    const env2 = ctx.createGain(); env2.gain.value = 0;
-    osc2.connect(env2); env2.connect(masterGain);
-
-    const sub = ctx.createOscillator(); sub.type = 'sine';
-    const envSub = ctx.createGain(); envSub.gain.value = 0;
-    sub.connect(envSub); envSub.connect(masterGain);
-
-    osc1.start(); osc2.start(); sub.start();
-
-    const NOTES = [659, 784, 659, 784];
-    const NOTE_DUR = 0.16, NOTE_GAP = 0.04, BURST_GAP = 0.20, CYCLE_REST = 1.10;
-
-    function scheduleRing(t){
-        for(let i = 0; i < 4; i++){
-            let nt = t + i * (NOTE_DUR + NOTE_GAP), freq = NOTES[i];
-            osc1.frequency.setValueAtTime(freq, nt);
-            osc2.frequency.setValueAtTime(freq * 1.006, nt);
-            sub.frequency.setValueAtTime(freq / 2, nt);
-            env1.gain.setValueAtTime(0, nt); env1.gain.linearRampToValueAtTime(0.5, nt + 0.015);
-            env2.gain.setValueAtTime(0, nt); env2.gain.linearRampToValueAtTime(0.22, nt + 0.015);
-            envSub.gain.setValueAtTime(0, nt); envSub.gain.linearRampToValueAtTime(0.18, nt + 0.015);
-            env1.gain.setValueAtTime(0.5, nt + NOTE_DUR - 0.02); env1.gain.linearRampToValueAtTime(0, nt + NOTE_DUR);
-            env2.gain.setValueAtTime(0.22, nt + NOTE_DUR - 0.02); env2.gain.linearRampToValueAtTime(0, nt + NOTE_DUR);
-            envSub.gain.setValueAtTime(0.18, nt + NOTE_DUR - 0.02); envSub.gain.linearRampToValueAtTime(0, nt + NOTE_DUR);
-        }
-        let burstEnd = t + 4 * (NOTE_DUR + NOTE_GAP) + BURST_GAP;
-        for(let i = 0; i < 4; i++){
-            let nt = burstEnd + i * (NOTE_DUR + NOTE_GAP), freq = NOTES[i];
-            osc1.frequency.setValueAtTime(freq, nt);
-            osc2.frequency.setValueAtTime(freq * 1.006, nt);
-            sub.frequency.setValueAtTime(freq / 2, nt);
-            env1.gain.setValueAtTime(0, nt); env1.gain.linearRampToValueAtTime(0.5, nt + 0.015);
-            env2.gain.setValueAtTime(0, nt); env2.gain.linearRampToValueAtTime(0.22, nt + 0.015);
-            envSub.gain.setValueAtTime(0, nt); envSub.gain.linearRampToValueAtTime(0.18, nt + 0.015);
-            env1.gain.setValueAtTime(0.5, nt + NOTE_DUR - 0.02); env1.gain.linearRampToValueAtTime(0, nt + NOTE_DUR);
-            env2.gain.setValueAtTime(0.22, nt + NOTE_DUR - 0.02); env2.gain.linearRampToValueAtTime(0, nt + NOTE_DUR);
-            envSub.gain.setValueAtTime(0.18, nt + NOTE_DUR - 0.02); envSub.gain.linearRampToValueAtTime(0, nt + NOTE_DUR);
-        }
-        return burstEnd + 4 * (NOTE_DUR + NOTE_GAP) + CYCLE_REST;
-    }
-
-    let t = ctx.currentTime + 0.05;
-    for(let c = 0; c < 12; c++) t = scheduleRing(t);
-    _ringNodes = { ctx, masterGain, osc1, osc2, sub };
-}
-
-function stop80sRing(){
-    if(!_ringNodes) return;
-    try {
-        _ringNodes.masterGain.gain.cancelScheduledValues(_ringNodes.ctx.currentTime);
-        _ringNodes.masterGain.gain.setValueAtTime(_ringNodes.masterGain.gain.value, _ringNodes.ctx.currentTime);
-        _ringNodes.masterGain.gain.linearRampToValueAtTime(0, _ringNodes.ctx.currentTime + 0.08);
-        const nodes = _ringNodes;
-        setTimeout(() => { try { nodes.osc1.stop(); nodes.osc2.stop(); nodes.sub.stop(); nodes.ctx.close(); } catch(e){} }, 120);
-    } catch(e){}
-    _ringNodes = null;
-}
-
-/* ════════════════════════════════════════
-    WEBRTC — KITCHEN SIDE (via SocketIO)
-════════════════════════════════════════ */
-let kitchenPeer     = null;
-let kitchenStream   = null;
-let incomingTable   = "";     // table of the call currently shown in the popup / connected
-let incomingOffer   = null;   // SDP offer of the call currently shown in the popup
-let activeCallTable = "";     // table we are actually connected to (after Answer)
-let callQueue       = [];     // real calls that came in while busy: [{table, sdp, message}]
-let callTimerInt    = null;
-let callSecs        = 0;
-let noAnswerTimeout = null;
-
-// SocketIO connection
-const sio = io({transports:["polling"]});
-
-sio.on("connect", () => {
-    sio.emit("kitchen_join", { rid: RID });
-    console.log("Kitchen connected to SocketIO ✅");
-});
-
-/* ── Waiting-call banner (shown when a 2nd real call comes in while busy) ── */
-function updateQueueBanner(){
-    const box = document.getElementById("queueBanner");
-    if(!box) return;
-    if(callQueue.length === 0){
-        box.style.display = "none";
-        box.innerText = "";
-        return;
-    }
-    const names = callQueue.map(c => "Table " + c.table).join(", ");
-    box.innerText = "📋 Call kale ayaa sugaya: " + names;
-    box.style.display = "block";
-}
-
-/* ── Show the incoming-call popup for one specific real call ── */
-function showIncomingCall(table, sdp, message){
-    incomingTable = table;
-    incomingOffer = sdp;
-
-    document.getElementById("icName").innerText = "Table " + incomingTable;
-    document.getElementById("icSub").innerText  = "Customer is calling...";
-
-    let msgEl = document.getElementById("icMessage");
-    if(message && message.trim()){
-        msgEl.innerText = "💬 " + message;
-        msgEl.classList.add("visible");
-    } else {
-        msgEl.textContent = "";
-        msgEl.classList.remove("visible");
-    }
-
-    document.getElementById("incomingCallPopup").style.display = "block";
-    start80sRing();
-    clearTimeout(noAnswerTimeout);
-    noAnswerTimeout = setTimeout(() => {
-        if(document.getElementById("incomingCallPopup").style.display === "block"){
-            stop80sRing();
-            document.getElementById("incomingCallPopup").style.display = "none";
-            sio.emit("webrtc_end_kitchen", { rid: RID, table: incomingTable });
-            incomingTable = ""; incomingOffer = null;
-            showNextQueuedCall();
-        }
-    }, 3 * 60 * 1000);
-}
-
-/* ── After a call ends/declines/times out, bring up the next real waiting call ── */
-function showNextQueuedCall(){
-    if(kitchenPeer) return;
-    if(document.getElementById("incomingCallPopup").style.display === "block") return;
-    if(callQueue.length === 0) return;
-    const next = callQueue.shift();
-    updateQueueBanner();
-    showIncomingCall(next.table, next.sdp, next.message);
-}
-
-/* ── A real call ended (customer hung up / cancelled) or was cleared remotely ── */
-function handleRemoteEnd(table){
-    if(table){
-        callQueue = callQueue.filter(c => c.table !== table);
-        updateQueueBanner();
-    }
-
-    // If it was the call currently shown as an unanswered popup, just dismiss it
-    if(table && table === incomingTable && document.getElementById("incomingCallPopup").style.display === "block" && !kitchenPeer){
-        clearTimeout(noAnswerTimeout);
-        stop80sRing();
-        document.getElementById("incomingCallPopup").style.display = "none";
-        incomingTable = ""; incomingOffer = null;
-        showNextQueuedCall();
-        return;
-    }
-
-    // If it was the call we're actively connected to, end it
-    if(kitchenPeer && (!table || table === activeCallTable)){
-        kitchenEndCall();
-    }
-}
-
-/* ── Shared entry point for a real call, whether it arrived via the
-   instant socket event or the backup poll — same de-dupe/queue rules
-   either way, so the two paths can never show a duplicate/false call. ── */
-function handleIncomingCallData(table, sdp, message){
-    if(!table || !sdp) return;
-    const popupShowing = document.getElementById("incomingCallPopup").style.display === "block";
-    const busy = !!kitchenPeer || popupShowing;
-
-    if(busy){
-        // Already on a call or already showing a popup — this is a genuine second call.
-        // Queue it and show a small banner instead of interrupting the current call/popup.
-        if(table !== incomingTable && table !== activeCallTable && !callQueue.some(c => c.table === table)){
-            callQueue.push({ table: table, sdp: sdp, message: message || "" });
-            updateQueueBanner();
-        }
-        return;
-    }
-
-    showIncomingCall(table, sdp, message || "");
-}
-
-// Incoming offer from customer (a REAL call, sent only when the customer actually calls)
-sio.on("webrtc_offer", async (data) => {
-    handleIncomingCallData(data.table || "?", data.sdp, data.message || "");
-});
-
-/* ── Backup: poll the server every 2s in case the socket message
-   never arrived (dropped connection, proxy hiccup, tab was loading, etc).
-   The server deletes the record the moment a call is answered/declined/ended,
-   so a resolved call can never come back through here — and handleIncomingCallData()
-   above already ignores anything that's already showing/queued, so this
-   never causes a duplicate popup when the socket path worked fine. ── */
-async function pollActiveCalls(){
-    try{
-        const res = await fetch(`/get_active_calls/${RID}`);
-        const data = await res.json();
-        if(data.calls){
-            data.calls.forEach(c => {
-                if(c.table && c.sdp) handleIncomingCallData(c.table, c.sdp, c.message || "");
-            });
-        }
-    }catch(e){}
-}
-setInterval(pollActiveCalls, 1000);
-pollActiveCalls(); // check immediately on load, don't wait for the first interval tick
-
-// ICE from customer
-sio.on("webrtc_ice_customer", async (data) => {
-    if(kitchenPeer && data.candidate){
-        try { await kitchenPeer.addIceCandidate(new RTCIceCandidate(data.candidate)); } catch(e){}
-    }
-});
-
-// Call ended by customer (or cancelled before being answered)
-sio.on("webrtc_end", (data) => {
-    const table = (data && data.table) ? data.table : (incomingTable || activeCallTable);
-    handleRemoteEnd(table);
-});
-
-function startCallTimer(){
-    callSecs = 0;
-    clearInterval(callTimerInt);
-    callTimerInt = setInterval(() => {
-        callSecs++;
-        let m = String(Math.floor(callSecs/60)).padStart(2,"0");
-        let s = String(callSecs%60).padStart(2,"0");
-        document.getElementById("activeCallTimer").innerText = " • " + m + ":" + s;
-    }, 1000);
-}
-
-function stopCallTimer(){
-    clearInterval(callTimerInt);
-    document.getElementById("activeCallTimer").innerText = "";
-}
-
-async function acceptCall(){
-    clearTimeout(noAnswerTimeout);
-    stop80sRing();
-    document.getElementById("incomingCallPopup").style.display = "none";
-    activeCallTable = incomingTable;
-
-    try {
-        kitchenStream = await navigator.mediaDevices.getUserMedia({ audio:true, video:false });
-    } catch(e){ console.warn("Mic denied:", e); }
-
-    // Same TURN fallback as the customer side — without it, calls from mobile
-    // networks (carrier NAT) can silently never connect even though signaling succeeds.
-    kitchenPeer = new RTCPeerConnection({ iceServers:[
-        { urls:"stun:stun.l.google.com:19302" },
-        { urls:"turn:openrelay.metered.ca:80", username:"openrelayproject", credential:"openrelayproject" },
-        { urls:"turn:openrelay.metered.ca:443", username:"openrelayproject", credential:"openrelayproject" },
-        { urls:"turn:openrelay.metered.ca:443?transport=tcp", username:"openrelayproject", credential:"openrelayproject" }
-    ] });
-
-    if(kitchenStream){
-        kitchenStream.getTracks().forEach(t => kitchenPeer.addTrack(t, kitchenStream));
-    }
-
-    kitchenPeer.ontrack = (e) => {
-        let ra = new Audio();
-        ra.autoplay = true;
-        ra.srcObject = e.streams[0];
-    };
-
-    kitchenPeer.onicecandidate = (e) => {
-        if(e.candidate){
-            sio.emit("webrtc_ice_kitchen", { rid: RID, table: incomingTable, candidate: e.candidate });
-        }
-    };
-
-    kitchenPeer.oniceconnectionstatechange = () => {
-        const st = kitchenPeer.iceConnectionState;
-        if(st === "failed"){
-            document.getElementById("activeCallLabel").innerText = "📞 Call failed ❌ Table " + activeCallTable;
-            setTimeout(() => { if(kitchenPeer) kitchenEndCall(); }, 1800);
-        }
-    };
-
-    if(incomingOffer){
-        await kitchenPeer.setRemoteDescription(new RTCSessionDescription(incomingOffer));
-    }
-    const answer = await kitchenPeer.createAnswer();
-    await kitchenPeer.setLocalDescription(answer);
-    sio.emit("webrtc_answer", { rid: RID, table: incomingTable, sdp: answer });
-
-    document.getElementById("activeCallLabel").innerText = "📞 On call with Table " + incomingTable;
-    document.getElementById("activeCallBar").classList.add("show");
-    startCallTimer();
-}
-
-function declineCall(){
-    clearTimeout(noAnswerTimeout);
-    stop80sRing();
-    document.getElementById("incomingCallPopup").style.display = "none";
-    sio.emit("webrtc_end_kitchen", { rid: RID, table: incomingTable });
-    incomingTable = ""; incomingOffer = null;
-    showNextQueuedCall();
-}
-
-function kitchenEndCall(){
-    clearTimeout(noAnswerTimeout);
-    stop80sRing();
-    stopCallTimer();
-    document.getElementById("incomingCallPopup").style.display = "none";
-    document.getElementById("activeCallBar").classList.remove("show");
-    if(kitchenPeer){ kitchenPeer.close(); kitchenPeer = null; }
-    if(kitchenStream){ kitchenStream.getTracks().forEach(t=>t.stop()); kitchenStream = null; }
-    sio.emit("webrtc_end_kitchen", { rid: RID, table: incomingTable });
-    incomingTable = ""; incomingOffer = null; activeCallTable = "";
-    showNextQueuedCall();
-}
 </script>
 </body>
 </html>

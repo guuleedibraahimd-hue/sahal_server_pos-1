@@ -74,7 +74,7 @@ a{ color:inherit; }
 .menu-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:14px; }
 .menu-item{ border:1px solid #eee; border-radius:14px; overflow:hidden; cursor:pointer; transition:0.15s; background:#fff; }
 .menu-item:hover{ border-color:var(--orange); box-shadow:0 6px 18px rgba(255,87,34,0.15); transform:translateY(-2px); }
-.menu-item .img-wrap{ width:100%; height:110px; background:#f1f3f6; overflow:hidden; }
+.menu-item .img-wrap{ width:100%; height:110px; background:#f1f3f6; overflow:hidden; display:flex; align-items:center; justify-content:center; }
 .menu-item img{ width:100%; height:100%; object-fit:cover; display:block; }
 .menu-item .body{ padding:10px 12px; position:relative; }
 .menu-item .name{ font-size:13px; font-weight:800; }
@@ -102,7 +102,11 @@ table.tx-tbl td{ padding:9px 6px; border-bottom:1px solid #f4f4f4; }
 
 /* ---- DONUT ---- */
 .donut-wrap{ display:flex; align-items:center; gap:20px; flex-wrap:wrap; }
-.donut{ width:130px; height:130px; border-radius:50%; flex-shrink:0; }
+.donut{
+    width:130px; height:130px; border-radius:50%; flex-shrink:0;
+    mask:radial-gradient(farthest-side,transparent calc(100% - 22px),#000 calc(100% - 21px));
+    -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 22px),#000 calc(100% - 21px));
+}
 .legend{ flex:1; min-width:150px; }
 .legend-row{ display:flex; align-items:center; gap:8px; font-size:12.5px; padding:4px 0; }
 .legend-dot{ width:10px; height:10px; border-radius:50%; flex-shrink:0; }
@@ -179,10 +183,7 @@ table.tx-tbl td{ padding:9px 6px; border-bottom:1px solid #f4f4f4; }
             <div class="section">
                 <div class="section-head"><h2>📊 Today's Sales Summary</h2></div>
                 <div class="donut-wrap">
-                    <div class="donut" style="background:{{ donut_gradient }};
-                        mask:radial-gradient(farthest-side,transparent calc(100% - 22px),#000 calc(100% - 21px));
-                        -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 22px),#000 calc(100% - 21px));">
-                    </div>
+                    <div class="donut" id="salesDonut" data-gradient="{{ donut_gradient }}"></div>
                     <div class="legend">
                         <div class="legend-row"><span class="legend-dot" style="background:#1f9e57;"></span><span class="lname">Cash</span><span class="lval">${{ method_totals.cash }}</span></div>
                         <div class="legend-row"><span class="legend-dot" style="background:#2f6fed;"></span><span class="lname">EVC Plus</span><span class="lval">${{ method_totals.evc }}</span></div>
@@ -224,7 +225,7 @@ table.tx-tbl td{ padding:9px 6px; border-bottom:1px solid #f4f4f4; }
                     {% for item in menu %}
                     <div class="menu-item" data-id="{{ item.id }}" data-name="{{ item.name|lower }}" data-display-name="{{ item.name }}" data-price="{{ item.price|default(0) }}" onclick="addToCart(this)">
                         <div class="img-wrap">
-                            {% if item.image %}<img src="{{ item.image }}" alt="{{ item.name }}" loading="lazy">{% endif %}
+                            {% if item.image %}<img src="{{ item.image }}" alt="{{ item.name }}" loading="lazy" onerror="this.parentNode.innerHTML='🍽️'">{% else %}<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:34px;">🍽️</div>{% endif %}
                         </div>
                         <div class="body">
                             <div class="name">{{ item.name }}</div>
@@ -293,6 +294,9 @@ table.tx-tbl td{ padding:9px 6px; border-bottom:1px solid #f4f4f4; }
 <script>
 const RID = "{{ rid }}";
 let cart = [];
+
+const donutEl = document.getElementById("salesDonut");
+if(donutEl){ donutEl.style.background = donutEl.dataset.gradient; }
 
 function showPage(id, el){
     document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
@@ -373,10 +377,11 @@ async function sendOrder(){
         const data = await res.json();
         if(data.success){
             msg.classList.add("show","ok");
-            msg.textContent = "✅ Order sent to kitchen!";
+            msg.textContent = "✅ Order sent to kitchen! Opening receipt...";
             cart = [];
             renderCart();
             document.getElementById("tableNo").value = "";
+            if(data.receipt_url){ window.open(data.receipt_url, "_blank"); }
             setTimeout(() => location.reload(), 1200);
         } else {
             msg.classList.add("show","err");

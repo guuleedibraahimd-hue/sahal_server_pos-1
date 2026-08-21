@@ -3100,32 +3100,63 @@ def create_order(rid):
         if not table or not cart:
             return jsonify({"error": "Invalid order"}), 400
 
-        items_text  = ", ".join([f"{i.get('qty')}x {i.get('name')}" for i in cart])
-        total_price = sum(float(i.get("price", 0)) * int(i.get("qty", 1)) for i in cart)
-
-        order_data = {
-            "items":      items_text,
-            "cart":       cart,
-            "table":      table,
-            "price":      total_price,
-            "status":     "pending",
-            "created_at": datetime.utcnow(),
-            "kitchen_cleared": False,
-            "receipt_ref": get_next_receipt_ref(rid)
-        }
-
-        # Tag the order with the waiter who placed it, if this request
-        # came from a logged-in waiter session for this restaurant.
+        waiter_employee_id = ""
         if session.get("staff_ok") and session.get("staff_role") == "waiter" and session.get("staff_rid") == rid:
-            order_data["employee_id"]   = session.get("staff_employee_id", "")
-            order_data["employee_name"] = session.get("staff_name", "")
+            waiter_employee_id = session.get("staff_employee_id", "")
 
-        # ✅ HAL MEEl KALIYA - restaurants subcollection
-        order_ref = db.collection("restaurants").document(rid)\
-                      .collection("orders").document()
-        order_id  = order_ref.id
+        restaurant_ref = db.collection("restaurants").document(rid)
 
-        order_ref.set(order_data)
+        # If this same waiter has an OPEN (not-yet-paid, not kitchen-cleared)
+        # order still on this table, add the new items to it instead of
+        # creating a second separate ticket — matches "same table, same
+        # waiter, still open -> add to it" behaviour.
+        existing_order_id = None
+        existing_cart = []
+        if waiter_employee_id:
+            for doc in restaurant_ref.collection("orders") \
+                    .where("table", "==", table) \
+                    .where("employee_id", "==", waiter_employee_id) \
+                    .where("status", "in", ["pending", "preparing", "ready"]) \
+                    .limit(1).stream():
+                existing_order_id = doc.id
+                existing_cart = doc.to_dict().get("cart", [])
+                break
+
+        if existing_order_id:
+            merged_cart = existing_cart + cart
+            items_text  = ", ".join([f"{i.get('qty')}x {i.get('name')}" for i in merged_cart])
+            total_price = sum(float(i.get("price", 0)) * int(i.get("qty", 1)) for i in merged_cart)
+
+            order_ref = restaurant_ref.collection("orders").document(existing_order_id)
+            order_ref.update({
+                "items":      items_text,
+                "cart":       merged_cart,
+                "price":      total_price,
+                "status":     "pending",          # back to kitchen's attention
+                "updated_at": datetime.utcnow()
+            })
+            order_id = existing_order_id
+        else:
+            items_text  = ", ".join([f"{i.get('qty')}x {i.get('name')}" for i in cart])
+            total_price = sum(float(i.get("price", 0)) * int(i.get("qty", 1)) for i in cart)
+
+            order_data = {
+                "items":      items_text,
+                "cart":       cart,
+                "table":      table,
+                "price":      total_price,
+                "status":     "pending",
+                "created_at": datetime.utcnow(),
+                "kitchen_cleared": False,
+                "receipt_ref": get_next_receipt_ref(rid)
+            }
+            if waiter_employee_id:
+                order_data["employee_id"]   = waiter_employee_id
+                order_data["employee_name"] = session.get("staff_name", "")
+
+            order_ref = restaurant_ref.collection("orders").document()
+            order_id  = order_ref.id
+            order_ref.set(order_data)
 
         return jsonify({
             "success":     True,
@@ -3334,25 +3365,16 @@ def kitchen(rid):
 
             orders.append(order)
 
-        calls = []
-        call_docs = restaurant_ref.collection("waiter_calls").stream()
-        for doc in call_docs:
-            call_item = doc.to_dict()
-            call_item["id"] = doc.id
-            calls.append(call_item)
-
         # ✅ Tirooyinka stat-cards
         stats = {
             "total": len(orders),
             "preparing": sum(1 for o in orders if o.get("status") == "preparing"),
             "ready": sum(1 for o in orders if o.get("status") == "ready"),
-            "calls": len(calls),
         }
 
         return render_template(
             "kitchen.html",
             orders=orders,
-            calls=calls,
             rid=rid,
             stats=stats,
             restaurant_name=restaurant.get("name", "Restaurant")
