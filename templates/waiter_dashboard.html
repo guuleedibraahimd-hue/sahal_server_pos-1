@@ -91,6 +91,12 @@ a{ color:inherit; }
 .cart-row button{ background:#dc3545; color:#fff; border:none; border-radius:6px; padding:4px 8px; cursor:pointer; font-size:11px; }
 .send-btn{ width:100%; margin-top:14px; padding:14px; background:var(--green); color:#fff; border:none; border-radius:12px; font-weight:800; cursor:pointer; font-size:14px; }
 
+.waiting-bar{ display:flex; align-items:center; justify-content:space-between; background:#fff3cd; color:#856404; border:1.5px solid #ffe08a; border-radius:12px; padding:14px 18px; margin-top:16px; cursor:pointer; font-weight:800; font-size:14px; }
+.waiting-arrow{ transition:transform 0.2s; }
+.waiting-arrow.open{ transform:rotate(180deg); }
+.waiting-panel{ display:none; background:#fff; border:1px solid #f0e2b0; border-top:none; border-radius:0 0 12px 12px; padding:6px 18px; margin-top:-8px; }
+.waiting-panel.show{ display:block; }
+
 .order-row{ display:flex; justify-content:space-between; align-items:center; padding:11px 0; border-bottom:1px solid #f0f0f0; font-size:13px; }
 .status-pill{ padding:3px 10px; border-radius:20px; font-size:11px; font-weight:800; }
 .status-pending{ background:#fff3cd; color:#856404; }
@@ -286,8 +292,11 @@ table.tx-tbl td{ padding:9px 6px; border-bottom:1px solid #f4f4f4; }
             </div>
 
             {% if waiting_orders %}
-            <div class="section">
-                <div class="section-head"><h2>⏳ Waiting to Print ({{ waiting_orders|length }})</h2></div>
+            <div class="waiting-bar" onclick="toggleWaiting()">
+                <span>⏳ Waiting to Print ({{ waiting_orders|length }})</span>
+                <span class="waiting-arrow" id="waitingArrow">▼</span>
+            </div>
+            <div class="waiting-panel" id="waitingPanel">
                 {% for o in waiting_orders %}
                 <div class="order-row">
                     <div>#{{ o.receipt_ref or o.id[:6] }} · Table {{ o.table }} — {{ o['items'] }}</div>
@@ -445,6 +454,15 @@ function removeFromCart(idx){
 
 function toggleCart(){
     document.getElementById("cartPanel").classList.toggle("show");
+}
+
+function toggleWaiting(){
+    const panel = document.getElementById("waitingPanel");
+    const arrow = document.getElementById("waitingArrow");
+    if(!panel) return;
+    panel.classList.toggle("show");
+    arrow.classList.toggle("open");
+    arrow.textContent = panel.classList.contains("show") ? "▲" : "▼";
 }
 
 function renderCart(){
