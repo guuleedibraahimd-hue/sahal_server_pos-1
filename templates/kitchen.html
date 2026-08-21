@@ -143,6 +143,9 @@
         .item-line{
             display:flex;align-items:center;gap:10px;padding:6px 0;font-size:15px;font-weight:500;
         }
+        .item-line.already-confirmed{ opacity:0.55; }
+        .item-line.already-confirmed span:not(.confirmed-tag){ text-decoration:line-through; }
+        .confirmed-tag{ font-size:10.5px; font-weight:800; color:var(--green); text-decoration:none!important; background:#e6f6ee; padding:2px 8px; border-radius:10px; margin-left:auto; }
         .item-line .thumb{
             width:34px;height:34px;border-radius:9px;flex-shrink:0;object-fit:cover;
             background:#f1f3f7;display:inline-flex;align-items:center;justify-content:center;font-size:16px;
@@ -271,12 +274,13 @@
                     {% endif %}
                     <div class="b-label">{{ 'All Items' if o.new_display_items else 'Items' }}</div>
                     {% for it in o.display_items %}
-                    <div class="item-line">
+                    <div class="item-line{{ ' already-confirmed' if it.already_confirmed else '' }}">
                         {% if it.image %}
                         <img class="thumb" src="{{ it.image }}" alt="" onerror="this.outerHTML='<span class=\'thumb\'>🍽️</span>'">
                         {% else %}<span class="thumb">🍽️</span>{% endif %}
                         <span class="qty">{{ it.qty }}x</span>
                         <span>{{ it.name }}</span>
+                        {% if it.already_confirmed %}<span class="confirmed-tag">✓ sent</span>{% endif %}
                     </div>
                     {% endfor %}
                 </div>

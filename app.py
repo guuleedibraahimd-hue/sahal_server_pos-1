@@ -3489,9 +3489,19 @@ def kitchen(rid):
                 order["new_display_items"] = build_display_items(order, cart_override=last_added_cart)
                 last_added_at = order.get("last_added_at")
                 order["last_added_marker"] = last_added_at.isoformat() if hasattr(last_added_at, "isoformat") else str(last_added_at)
+                # Old items always come first in the merged cart (new
+                # items are appended on top of it when a waiter edits an
+                # order) — so everything before that boundary was already
+                # sent/confirmed to the kitchen on an earlier update, and
+                # gets struck through in the "All Items" list below.
+                old_count = max(0, len(order["display_items"]) - len(order["new_display_items"]))
+                for idx, it in enumerate(order["display_items"]):
+                    it["already_confirmed"] = idx < old_count
             else:
                 order["new_display_items"] = []
                 order["last_added_marker"] = ""
+                for it in order["display_items"]:
+                    it["already_confirmed"] = False
 
             orders.append(order)
 
