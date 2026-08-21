@@ -298,8 +298,11 @@
             <a href="/static/qr/{{ img }}" download class="btn download">
                 ⬇ Download QR
             </a>
-            <button class="btn print" onclick="printQR()">
-                🖨 Print QR
+            <button class="btn print" onclick="printQR('a4')">
+                🖨 Print A4
+            </button>
+            <button class="btn print" onclick="printQR('receipt')">
+                🧾 Print Receipt
             </button>
             <button class="btn close" onclick="closeQRResult()">
                 ✕ Close
@@ -313,22 +316,63 @@
 <button class="close-btn" onclick="closeQRResult()">Close</button>
 
 <script>
-function printQR(){
+function printQR(format){
     const img = document.getElementById("qrimg").src;
+    const restaurantName = {{ restaurant|tojson }};
+    const tableNo = {{ table|tojson }};
     const w = window.open("", "_blank");
-    w.document.write(`
-        <html>
-        <body style="text-align:center;padding:40px;">
-            <img src="${img}" style="width:300px;height:300px;">
-            <script>
-                window.onload=function(){
-                    window.print();
-                    window.close();
-                }
-            <\/script>
-        </body>
-        </html>
-    `);
+
+    if(format === "receipt"){
+        // Narrow thermal-receipt-width layout (~80mm)
+        w.document.write(`
+            <html>
+            <head><title>Table QR</title></head>
+            <body style="font-family:Arial;text-align:center;width:280px;margin:20px auto;padding:0;">
+                <div style="font-weight:900;font-size:16px;">${restaurantName}</div>
+                <div style="font-size:12px;color:#555;margin:4px 0 10px;">— Delicious food, great experience —</div>
+                <div style="border-top:1px dashed #999;margin:8px 0;"></div>
+                <div style="font-size:13px;font-weight:700;">TABLE</div>
+                <div style="font-size:28px;font-weight:900;margin:2px 0 10px;">${tableNo}</div>
+                <img src="${img}" style="width:220px;height:220px;">
+                <div style="font-size:12px;font-weight:700;margin-top:10px;">Scan to view our menu</div>
+                <div style="border-top:1px dashed #999;margin:10px 0;"></div>
+                <div style="font-size:10px;color:#888;">Powered by Sahal Server</div>
+                <script>
+                    window.onload=function(){
+                        window.print();
+                        window.close();
+                    }
+                <\/script>
+            </body>
+            </html>
+        `);
+    } else {
+        // Full A4 sheet layout
+        w.document.write(`
+            <html>
+            <head><title>Table QR</title></head>
+            <body style="font-family:Arial;text-align:center;margin:0;padding:60px 20px;">
+                <div style="max-width:420px;margin:0 auto;border:1.5px solid #dbe4ff;border-radius:20px;padding:32px 28px;box-shadow:0 8px 24px rgba(0,0,0,0.08);">
+                    <div style="font-weight:900;font-size:26px;color:#1e3a8a;">${restaurantName}</div>
+                    <div style="font-size:14px;color:#555;font-style:italic;margin:6px 0 18px;">— Delicious food, great experience —</div>
+                    <div style="border-top:1px dashed #bbb;margin:14px 0;"></div>
+                    <div style="font-size:14px;font-weight:700;color:#2563eb;">TABLE</div>
+                    <div style="font-size:46px;font-weight:900;color:#1e3a8a;margin:2px 0 18px;">${tableNo}</div>
+                    <div style="border-top:1px dashed #bbb;margin:14px 0;"></div>
+                    <img src="${img}" style="width:300px;height:300px;">
+                    <div style="font-size:15px;font-weight:700;margin-top:18px;">📱 Scan to view our menu</div>
+                    <div style="font-size:12px;color:#888;margin-top:4px;">Thank you for dining with us! ♥</div>
+                </div>
+                <script>
+                    window.onload=function(){
+                        window.print();
+                        window.close();
+                    }
+                <\/script>
+            </body>
+            </html>
+        `);
+    }
     w.document.close();
 }
 

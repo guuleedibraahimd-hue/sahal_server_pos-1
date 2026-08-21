@@ -136,6 +136,7 @@ table.orders-tbl td{ padding:10px 6px; border-bottom:1px solid #f4f4f4; vertical
 .modal-bg{ display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); align-items:center; justify-content:center; z-index:100; padding:16px; }
 .modal-bg.show{ display:flex; }
 .modal{ background:#fff; border-radius:18px; padding:24px; width:100%; max-width:360px; text-align:center; }
+.qr-modal-box{ max-width:460px; max-height:88vh; overflow-y:auto; }
 .modal h3{ margin:0 0 16px; font-size:16px; text-align:left; }
 .method-grid{ display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:14px; }
 .method-opt{ padding:12px; border:1.5px solid #ddd; border-radius:10px; text-align:center; font-size:13px; font-weight:700; cursor:pointer; }
@@ -500,7 +501,7 @@ table.orders-tbl td{ padding:10px 6px; border-bottom:1px solid #f4f4f4; vertical
 
 <!-- GENERATE QR MODAL -->
 <div class="modal-bg" id="qrModal">
-    <div class="modal">
+    <div class="modal qr-modal-box">
         <h3>📷 Generate Table QR</h3>
         <input type="text" id="tableInput" placeholder="Table No">
         <button class="qr-btn" onclick="generateQR()">Generate</button>
@@ -614,24 +615,65 @@ function closeQRModal(){ document.getElementById("qrModal").classList.remove("sh
    these functions never actually register; these real definitions
    here are what the onclick="printQR()" / onclick="closeQRResult()"
    in the injected card actually resolve to and run). */
-function printQR(){
+function printQR(format){
     const imgEl = document.querySelector("#qrResult #qrimg");
     if(!imgEl) return;
     const img = imgEl.src;
+    const nameEl = document.querySelector("#qrResult .restaurant-name");
+    const tableEl = document.querySelector("#qrResult .table-number");
+    const restaurantName = nameEl ? nameEl.textContent.trim() : "";
+    const tableNo = tableEl ? tableEl.textContent.trim() : "";
     const w = window.open("", "_blank");
-    w.document.write(`
-        <html>
-        <body style="text-align:center;padding:40px;">
-            <img src="${img}" style="width:300px;height:300px;">
-            <script>
-                window.onload=function(){
-                    window.print();
-                    window.close();
-                }
-            <\/script>
-        </body>
-        </html>
-    `);
+
+    if(format === "receipt"){
+        w.document.write(`
+            <html>
+            <head><title>Table QR</title></head>
+            <body style="font-family:Arial;text-align:center;width:280px;margin:20px auto;padding:0;">
+                <div style="font-weight:900;font-size:16px;">${restaurantName}</div>
+                <div style="font-size:12px;color:#555;margin:4px 0 10px;">— Delicious food, great experience —</div>
+                <div style="border-top:1px dashed #999;margin:8px 0;"></div>
+                <div style="font-size:13px;font-weight:700;">TABLE</div>
+                <div style="font-size:28px;font-weight:900;margin:2px 0 10px;">${tableNo}</div>
+                <img src="${img}" style="width:220px;height:220px;">
+                <div style="font-size:12px;font-weight:700;margin-top:10px;">Scan to view our menu</div>
+                <div style="border-top:1px dashed #999;margin:10px 0;"></div>
+                <div style="font-size:10px;color:#888;">Powered by Sahal Server</div>
+                <script>
+                    window.onload=function(){
+                        window.print();
+                        window.close();
+                    }
+                <\/script>
+            </body>
+            </html>
+        `);
+    } else {
+        w.document.write(`
+            <html>
+            <head><title>Table QR</title></head>
+            <body style="font-family:Arial;text-align:center;margin:0;padding:60px 20px;">
+                <div style="max-width:420px;margin:0 auto;border:1.5px solid #dbe4ff;border-radius:20px;padding:32px 28px;box-shadow:0 8px 24px rgba(0,0,0,0.08);">
+                    <div style="font-weight:900;font-size:26px;color:#1e3a8a;">${restaurantName}</div>
+                    <div style="font-size:14px;color:#555;font-style:italic;margin:6px 0 18px;">— Delicious food, great experience —</div>
+                    <div style="border-top:1px dashed #bbb;margin:14px 0;"></div>
+                    <div style="font-size:14px;font-weight:700;color:#2563eb;">TABLE</div>
+                    <div style="font-size:46px;font-weight:900;color:#1e3a8a;margin:2px 0 18px;">${tableNo}</div>
+                    <div style="border-top:1px dashed #bbb;margin:14px 0;"></div>
+                    <img src="${img}" style="width:300px;height:300px;">
+                    <div style="font-size:15px;font-weight:700;margin-top:18px;">📱 Scan to view our menu</div>
+                    <div style="font-size:12px;color:#888;margin-top:4px;">Thank you for dining with us! ♥</div>
+                </div>
+                <script>
+                    window.onload=function(){
+                        window.print();
+                        window.close();
+                    }
+                <\/script>
+            </body>
+            </html>
+        `);
+    }
     w.document.close();
 }
 
