@@ -2389,9 +2389,26 @@ def waiter_login(rid):
             session["staff_id"]   = found["id"]
             session["staff_name"] = found.get("name", "")
             session["staff_employee_id"] = employee_id
+            next_url = request.form.get("next") or request.args.get("next")
+            if next_url and next_url.startswith(f"/waiter_dashboard/{rid}"):
+                return redirect(next_url)
             return redirect(f"/waiter_dashboard/{rid}")
 
-    return render_template("waiter_login.html", rid=rid, restaurant_name=restaurant_name, error=error)
+    return render_template("waiter_login.html", rid=rid, restaurant_name=restaurant_name, error=error, next=request.args.get("next", ""))
+
+
+# =====================================
+# 📱 TABLE QR DEEP-LINK — jumps a logged-in waiter straight to
+# "New Order" with the table pre-filled (no typing, no menu digging).
+# If not logged in yet, sends them to login first and continues here
+# automatically once they authenticate.
+# =====================================
+@app.route("/waiter_order/<rid>/<table>")
+def waiter_order_deeplink(rid, table):
+    target = f"/waiter_dashboard/{rid}?table={table}&view=neworder"
+    if not session.get("staff_ok") or session.get("staff_role") != "waiter" or session.get("staff_rid") != rid:
+        return redirect(f"/waiter_login/{rid}?next={target}")
+    return redirect(target)
 
 
 @app.route("/waiter_dashboard/<rid>")
@@ -2511,7 +2528,9 @@ def waiter_dashboard(rid):
         waiting_orders=waiting_orders,
         my_transactions=my_transactions[:30],
         method_totals={k: round(v, 2) for k, v in method_totals.items()},
-        donut_gradient=donut_gradient
+        donut_gradient=donut_gradient,
+        prefill_table=request.args.get("table", ""),
+        open_view=request.args.get("view", "")
     )
 
 
@@ -3106,7 +3125,7 @@ def generate_qr(rid):
         os.makedirs(qr_folder, exist_ok=True)
         file_path = os.path.join(qr_folder, filename)
 
-        url = f"https://sahalserver.com/menu/{rid}/{table}"
+        url = f"https://sahalserver.com/waiter_order/{rid}/{table}"
 
         qr = qrcode.QRCode(
             version=1,

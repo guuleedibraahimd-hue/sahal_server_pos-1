@@ -408,6 +408,20 @@ let lastOrderId = null;
 const donutEl = document.getElementById("salesDonut");
 if(donutEl){ donutEl.style.background = donutEl.dataset.gradient; }
 
+/* ── Deep-link from a table's QR code: jump straight to New Order
+   with the table pre-filled, so the waiter never has to type it or
+   go hunting for the right page. ── */
+const PREFILL_TABLE = "{{ prefill_table }}";
+const OPEN_VIEW      = "{{ open_view }}";
+document.addEventListener("DOMContentLoaded", () => {
+    if(PREFILL_TABLE){
+        document.getElementById("tableNo").value = PREFILL_TABLE;
+    }
+    if(OPEN_VIEW === "neworder"){
+        showPage("neworder");
+    }
+});
+
 function showPage(id, el){
     document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
     const target = document.getElementById("page-" + id);

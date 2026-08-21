@@ -47,6 +47,7 @@ button:hover{ filter:brightness(1.05); }
     <div class="sub">Waiter Portal</div>
 
     <form method="POST">
+        {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
         <label>Employee ID</label>
         <input type="text" name="employee_id" placeholder="e.g. WTR-001" autocomplete="off" required autofocus>
 
