@@ -348,6 +348,9 @@ body.paper-58 .receipt-bottom {
         <div class="thank-you">★ THANK YOU ★</div>
         <div class="footer-note">We appreciate your business!</div>
         <div class="footer-note">• PLEASE COME AGAIN •</div>
+        {% if customer_phone %}
+        <div class="footer-note">📞 Customer: {{ customer_phone }}</div>
+        {% endif %}
         <div class="powered">Powered by Sahal Server</div>
 
     </div>

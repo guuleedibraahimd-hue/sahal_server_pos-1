@@ -168,6 +168,7 @@ table.tx-tbl td{ padding:9px 6px; border-bottom:1px solid #f4f4f4; }
             <li><button class="sb-link active" data-page="dashboard" onclick="showPage('dashboard',this)">📊 Dashboard</button></li>
             <li><button class="sb-link" data-page="neworder" onclick="showPage('neworder',this)">🍔 New Order</button></li>
             <li><button class="sb-link" data-page="myorders" onclick="showPage('myorders',this)">📋 My Orders</button></li>
+            <li><button class="sb-link" data-page="mycustomers" onclick="showPage('mycustomers',this)">👥 My Customers</button></li>
             <li><button class="sb-link" data-page="transactions" onclick="showPage('transactions',this)">💳 My Transactions</button></li>
             <li><a class="sb-link" href="/kitchen/{{ rid }}" target="_blank">🍳 Kitchen Orders</a></li>
         </ul>
@@ -227,11 +228,36 @@ table.tx-tbl td{ padding:9px 6px; border-bottom:1px solid #f4f4f4; }
 
         <!-- ============ NEW ORDER PAGE ============ -->
         <div class="page" id="page-neworder">
+
+            {% if waiting_orders %}
+            <div class="section">
+                <div class="section-head"><h2>⏳ Waiting to Print ({{ waiting_orders|length }})</h2></div>
+                {% for o in waiting_orders %}
+                <div class="order-row">
+                    <div>#{{ o.receipt_ref or o.id[:6] }} · Table {{ o.table }} — {{ o['items'] }}</div>
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <span class="status-pill status-{{ (o.status or 'pending')|lower }}">{{ o.status }}</span>
+                        <a href="/receipt/{{ rid }}/{{ o.id }}" target="_blank" class="receipt-link" data-order-id="{{ o.id }}" onclick="markPrinted(this)">🖨️</a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
             <div class="section">
                 <div class="section-head"><h2>🍔 New Order</h2></div>
 
                 <div class="table-input">
                     <input type="text" id="tableNo" placeholder="Table number">
+                </div>
+
+                <div class="table-input">
+                    <input type="text" id="customerPhone" placeholder="Customer phone (optional)" list="customerPhoneList">
+                    <datalist id="customerPhoneList">
+                        {% for c in my_customers %}
+                        <option value="{{ c.phone }}">{{ c.phone }} — {{ c.visits }} visits</option>
+                        {% endfor %}
+                    </datalist>
                 </div>
 
                 <div class="search-box">
@@ -293,6 +319,28 @@ table.tx-tbl td{ padding:9px 6px; border-bottom:1px solid #f4f4f4; }
             </div>
         </div>
 
+        <!-- ============ MY CUSTOMERS PAGE ============ -->
+        <div class="page" id="page-mycustomers">
+            <div class="section">
+                <div class="section-head"><h2>👥 My Customers ({{ my_customers|length }})</h2></div>
+                <div style="overflow-x:auto;">
+                <table class="tx-tbl">
+                    <tr><th>Phone</th><th>Visits</th><th>Total Spent</th><th>Last Order</th></tr>
+                    {% for c in my_customers %}
+                    <tr>
+                        <td>{{ c.phone }}</td>
+                        <td>{{ c.visits }}</td>
+                        <td><b>${{ "%.2f"|format(c.total_spent) }}</b></td>
+                        <td>{{ c.last_order }}</td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="4" style="text-align:center;color:var(--muted);padding:16px;">No customer phone numbers recorded yet</td></tr>
+                    {% endfor %}
+                </table>
+                </div>
+            </div>
+        </div>
+
         <!-- ============ MY TRANSACTIONS PAGE ============ -->
         <div class="page" id="page-transactions">
             <div class="section">
@@ -337,6 +385,7 @@ table.tx-tbl td{ padding:9px 6px; border-bottom:1px solid #f4f4f4; }
 const RID = "{{ rid }}";
 let cart = [];
 let lastReceiptUrl = null;
+let lastOrderId = null;
 
 const donutEl = document.getElementById("salesDonut");
 if(donutEl){ donutEl.style.background = donutEl.dataset.gradient; }
@@ -417,6 +466,7 @@ function renderCart(){
 
 async function sendOrder(){
     const table = document.getElementById("tableNo").value.trim();
+    const customer_phone = document.getElementById("customerPhone").value.trim();
     const msg = document.getElementById("orderMsg");
     msg.className = "msg";
 
@@ -429,6 +479,7 @@ async function sendOrder(){
             headers: {"Content-Type": "application/json"},
             body: JSON.stringify({
                 table,
+                customer_phone,
                 cart: cart.map(c => ({ name: c.name, price: c.price, qty: c.qty }))
             })
         });
@@ -439,7 +490,9 @@ async function sendOrder(){
             cart = [];
             renderCart();
             document.getElementById("tableNo").value = "";
+            document.getElementById("customerPhone").value = "";
             lastReceiptUrl = data.receipt_url || null;
+            lastOrderId = data.order_id || null;
             document.getElementById("printModalTitle").textContent = data.merged ? "Order Updated!" : "Order Sent!";
             document.getElementById("printModal").classList.add("show");
         } else {
@@ -454,13 +507,30 @@ async function sendOrder(){
 
 function printNow(){
     if(lastReceiptUrl){ window.open(lastReceiptUrl, "_blank"); }
-    document.getElementById("printModal").classList.remove("show");
-    location.reload();
+    if(lastOrderId){
+        fetch(`/mark_receipt_printed/${RID}/${lastOrderId}`, { method: "POST" }).finally(() => {
+            document.getElementById("printModal").classList.remove("show");
+            location.reload();
+        });
+    } else {
+        document.getElementById("printModal").classList.remove("show");
+        location.reload();
+    }
 }
 
 function printLater(){
     document.getElementById("printModal").classList.remove("show");
     location.reload();
+}
+
+function markPrinted(el){
+    const orderId = el.dataset.orderId;
+    if(orderId){
+        fetch(`/mark_receipt_printed/${RID}/${orderId}`, { method: "POST" }).catch(() => {});
+    }
+    // Let the receipt tab open normally (target="_blank"); reload this
+    // page shortly after so the order drops out of "Waiting to Print".
+    setTimeout(() => location.reload(), 600);
 }
 </script>
 

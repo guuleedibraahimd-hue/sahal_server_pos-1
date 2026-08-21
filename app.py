@@ -2440,6 +2440,29 @@ def waiter_dashboard(rid):
     orders_today = sum(1 for o in my_orders
                         if (o.get("created_at").strftime("%Y-%m-%d") if hasattr(o.get("created_at"), "strftime") else str(o.get("created_at"))[:10]) == today)
 
+    # ---- My Customers: aggregate by customer_phone across this waiter's orders ----
+    customer_agg = {}
+    for o in my_orders:
+        phone = (o.get("customer_phone") or "").strip()
+        if not phone:
+            continue
+        if phone not in customer_agg:
+            customer_agg[phone] = {"phone": phone, "visits": 0, "total_spent": 0.0, "last_order": ""}
+        customer_agg[phone]["visits"] += 1
+        if str(o.get("status", "")).lower() == "paid":
+            customer_agg[phone]["total_spent"] += float(o.get("price", 0))
+        created = o.get("created_at")
+        created_str = created.strftime("%Y-%m-%d %H:%M") if hasattr(created, "strftime") else str(created)
+        if created_str > customer_agg[phone]["last_order"]:
+            customer_agg[phone]["last_order"] = created_str
+    my_customers = sorted(customer_agg.values(), key=lambda x: x["visits"], reverse=True)
+    for c in my_customers:
+        c["total_spent"] = round(c["total_spent"], 2)
+
+    # ---- Orders still waiting to be printed (not yet marked printed, not paid) ----
+    waiting_orders = [o for o in my_orders
+                       if not o.get("receipt_printed") and str(o.get("status", "")).lower() != "paid"]
+
     # ---- This waiter's payments today (for My Transactions + donut) ----
     today_payments = list(restaurant_ref.collection("payments")
                            .where("waiter_employee_id", "==", employee_id)
@@ -2484,10 +2507,24 @@ def waiter_dashboard(rid):
         pending_count=pending_count,
         items_sold=items_sold,
         total_sales=round(total_sales, 2),
+        my_customers=my_customers,
+        waiting_orders=waiting_orders,
         my_transactions=my_transactions[:30],
         method_totals={k: round(v, 2) for k, v in method_totals.items()},
         donut_gradient=donut_gradient
     )
+
+
+@app.route("/mark_receipt_printed/<rid>/<order_id>", methods=["POST"])
+def mark_receipt_printed(rid, order_id):
+    if not session.get("staff_ok") or session.get("staff_role") != "waiter" or session.get("staff_rid") != rid:
+        return jsonify({"success": False, "error": "Unauthorized"}), 401
+    try:
+        db.collection("restaurants").document(rid).collection("orders").document(order_id) \
+          .update({"receipt_printed": True})
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
 
 
 @app.route("/waiter_logout")
@@ -2566,6 +2603,12 @@ def cashier_dashboard(rid):
         )
 
     today = datetime.now().strftime("%Y-%m-%d")
+
+    menu_items = []
+    for mdoc in restaurant_ref.collection("menu").stream():
+        m = mdoc.to_dict()
+        m["id"] = mdoc.id
+        menu_items.append(m)
 
     pending_orders = []
     todays_paid_orders = []
@@ -2689,7 +2732,8 @@ def cashier_dashboard(rid):
         shift_collected=round(shift_collected, 2),
         shift_orders_count=len(shift_transactions),
         shift_method_totals={k: round(v, 2) for k, v in shift_method_totals.items()},
-        shift_transactions=shift_transactions[:30]
+        shift_transactions=shift_transactions[:30],
+        menu_items=menu_items
     )
 
 
@@ -2931,6 +2975,8 @@ def get_calls(rid):
 # =====================================
 @app.route("/add_menu/<rid>", methods=["POST"])
 def add_menu(rid):
+    if not session.get("staff_ok") or session.get("staff_role") != "cashier" or session.get("staff_rid") != rid:
+        return "Unauthorized — only the Cashier can add menu items ❌", 401
     try:
         name = request.form["name"]
         price = request.form["price"]
@@ -2948,7 +2994,7 @@ def add_menu(rid):
         }
 
         db.collection("restaurants").document(rid).collection("menu").add(menu_data)
-        return redirect(f"/dashboard/{rid}")
+        return redirect(f"/cashier_dashboard/{rid}")
 
     except Exception as e:
         return f"Add Menu Error ❌ {str(e)}"
@@ -3098,6 +3144,7 @@ def create_order(rid):
 
         table = str(data.get("table", "")).strip()
         cart  = data.get("cart", [])
+        customer_phone = str(data.get("customer_phone", "")).strip()
 
         if not table or not cart:
             return jsonify({"error": "Invalid order"}), 400
@@ -3130,13 +3177,17 @@ def create_order(rid):
             total_price = sum(float(i.get("price", 0)) * int(i.get("qty", 1)) for i in merged_cart)
 
             order_ref = restaurant_ref.collection("orders").document(existing_order_id)
-            order_ref.update({
+            update_fields = {
                 "items":      items_text,
                 "cart":       merged_cart,
                 "price":      total_price,
                 "status":     "pending",          # back to kitchen's attention
+                "receipt_printed": False,          # updated — needs reprint
                 "updated_at": datetime.utcnow()
-            })
+            }
+            if customer_phone:
+                update_fields["customer_phone"] = customer_phone
+            order_ref.update(update_fields)
             order_id = existing_order_id
         else:
             items_text  = ", ".join([f"{i.get('qty')}x {i.get('name')}" for i in cart])
@@ -3150,8 +3201,11 @@ def create_order(rid):
                 "status":     "pending",
                 "created_at": datetime.utcnow(),
                 "kitchen_cleared": False,
+                "receipt_printed": False,
                 "receipt_ref": get_next_receipt_ref(rid)
             }
+            if customer_phone:
+                order_data["customer_phone"] = customer_phone
             if waiter_employee_id:
                 order_data["employee_id"]   = waiter_employee_id
                 order_data["employee_name"] = session.get("staff_name", "")
@@ -3684,6 +3738,7 @@ def receipt(rid, order_id):
             phone           = rest.get("phone", ""),
             payment         = rest.get("payment", ""),
             table           = order.get("table", ""),
+            customer_phone  = order.get("customer_phone", ""),
             ref             = receipt_ref,
             items           = items,
             subtotal        = subtotal,

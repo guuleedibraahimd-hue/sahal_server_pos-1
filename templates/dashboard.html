@@ -603,10 +603,6 @@ hr{border:none;border-top:1px solid var(--border);margin:0;}
 
     <!-- ACTION BUTTONS -->
     <div class="action-row">
-        <button class="action-btn btn-blue" onclick="document.getElementById('addMenuSection').scrollIntoView({behavior:'smooth'})">
-            <svg viewBox="0 0 24 24" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            Add Menu
-        </button>
         <button class="action-btn btn-green" onclick="document.getElementById('addAdSection').scrollIntoView({behavior:'smooth'})">
             <svg viewBox="0 0 24 24" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
             Add Advertisement
@@ -667,31 +663,6 @@ hr{border:none;border-top:1px solid var(--border);margin:0;}
                 <div class="sub">Today</div>
             </div>
         </div>
-    </div>
-
-    <!-- ADD MENU -->
-    <div class="section-card" id="addMenuSection">
-        <div class="section-head">
-            <div class="section-head-icon">
-                <svg viewBox="0 0 24 24" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-            </div>
-            <h2>Add Menu</h2>
-        </div>
-        <form action="/add_menu/{{rid}}" method="post" enctype="multipart/form-data">
-            <div class="form-row">
-                <input name="name" placeholder="Food Name" required>
-                <input name="price" placeholder="Price" required>
-                <label class="file-label">
-                    <svg viewBox="0 0 24 24" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                    Choose File
-                    <input type="file" name="image" required onchange="this.parentElement.querySelector('span') && (this.parentElement.querySelector('span').textContent = this.files[0]?.name || 'No file chosen')">
-                </label>
-                <button type="submit" class="submit-btn">
-                    <svg viewBox="0 0 24 24" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                    Add
-                </button>
-            </div>
-        </form>
     </div>
 
     <!-- ADD AD -->

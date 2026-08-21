@@ -69,14 +69,9 @@ a{ color:inherit; }
 @media(max-width:900px){ .grid-3{ grid-template-columns:1fr; } }
 
 .section{ background:var(--card); border-radius:16px; padding:18px; box-shadow:0 4px 12px rgba(0,0,0,0.05); margin-bottom:16px; }
-.section-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:10px; }
+.section-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
 .section-head h2{ font-size:15px; margin:0; display:flex; align-items:center; gap:8px; }
 .count-badge{ background:#fdecea; color:#dc3545; font-size:11px; font-weight:800; padding:2px 8px; border-radius:10px; }
-
-/* ---- ORDERS VIEW TOGGLE ---- */
-.view-toggle{ display:flex; background:#eef1f7; border-radius:10px; padding:3px; gap:2px; }
-.view-toggle button{ border:none; background:transparent; padding:8px 14px; border-radius:8px; font-size:12.5px; font-weight:800; cursor:pointer; color:var(--muted); }
-.view-toggle button.active{ background:#fff; color:var(--blue); box-shadow:0 2px 6px rgba(0,0,0,0.08); }
 
 /* ---- ORDERS TABLE ---- */
 table.orders-tbl{ width:100%; border-collapse:collapse; font-size:13px; }
@@ -92,27 +87,6 @@ table.orders-tbl td{ padding:10px 6px; border-bottom:1px solid #f4f4f4; vertical
 .tbl-actions button, .tbl-actions a{ padding:6px 12px; border-radius:8px; border:none; font-weight:800; font-size:11.5px; cursor:pointer; text-decoration:none; }
 .pay-btn{ background:var(--green); color:#fff; }
 .receipt-btn{ background:var(--blue); color:#fff; }
-
-/* ---- WAITER GROUPED VIEW ---- */
-.waiter-group{ border:1px solid var(--border); border-radius:14px; margin-bottom:14px; overflow:hidden; }
-.wg-head{ display:flex; align-items:center; gap:12px; padding:14px 16px; background:#f8f9fd; cursor:pointer; user-select:none; }
-.wg-head:hover{ background:#f0f3fb; }
-.wg-avatar{ width:38px; height:38px; border-radius:50%; background:var(--blue); color:#fff; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:800; flex-shrink:0; }
-.wg-info{ flex:1; min-width:120px; }
-.wg-name{ font-size:14px; font-weight:800; }
-.wg-sub{ font-size:11.5px; color:var(--muted); margin-top:1px; }
-.wg-stats{ display:flex; align-items:center; gap:18px; flex-wrap:wrap; }
-.wg-stat{ text-align:right; }
-.wg-stat .k{ font-size:10.5px; color:var(--muted); font-weight:700; text-transform:uppercase; }
-.wg-stat .v{ font-size:14px; font-weight:900; }
-.wg-pct-wrap{ width:110px; }
-.wg-pct-bar{ height:7px; border-radius:6px; background:#e8ecf4; overflow:hidden; margin-top:4px; }
-.wg-pct-fill{ height:100%; background:var(--blue); border-radius:6px; }
-.wg-chevron{ font-size:12px; color:var(--muted); transition:transform 0.2s; flex-shrink:0; }
-.waiter-group.open .wg-chevron{ transform:rotate(180deg); }
-.wg-body{ display:none; padding:6px 16px 14px; }
-.waiter-group.open .wg-body{ display:block; }
-.wg-unassigned .wg-avatar{ background:#8a93a8; }
 
 /* ---- SHIFT SUMMARY ---- */
 .shift-summary .status-active{ background:#d4edda; color:#155724; font-size:11px; font-weight:800; padding:3px 10px; border-radius:20px; }
@@ -175,6 +149,21 @@ table.orders-tbl td{ padding:10px 6px; border-bottom:1px solid #f4f4f4; vertical
 .qr-btn{ width:100%; padding:13px; background:var(--blue); color:#fff; border:none; border-radius:10px; font-weight:800; cursor:pointer; font-size:14px; margin-bottom:10px; }
 .close-plain-btn{ width:100%; padding:12px; background:#f1f3f6; color:#333; border:none; border-radius:10px; font-weight:700; cursor:pointer; font-size:13px; }
 
+/* ---- ADD MENU ---- */
+.add-menu-form{ display:grid; grid-template-columns:1.3fr 0.8fr 1fr 1.3fr auto; gap:10px; align-items:center; }
+.add-menu-form input, .add-menu-form select{ padding:11px 14px; border-radius:10px; border:1px solid #ddd; font-size:13px; font-family:inherit; }
+.add-menu-form .file-label{ display:flex; align-items:center; gap:8px; padding:11px 14px; border-radius:10px; border:1px solid #ddd; font-size:13px; cursor:pointer; background:#f8f9fa; }
+.add-menu-form .file-label input{ display:none; border:none; padding:0; }
+@media(max-width:900px){ .add-menu-form{ grid-template-columns:1fr; } }
+
+.menu-manage-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:14px; }
+.menu-manage-card{ border:1px solid #eee; border-radius:14px; overflow:hidden; background:#fff; }
+.mm-img{ width:100%; height:100px; background:#f1f3f6; display:flex; align-items:center; justify-content:center; font-size:30px; overflow:hidden; }
+.mm-img img{ width:100%; height:100%; object-fit:cover; }
+.mm-name{ font-size:13px; font-weight:800; padding:8px 10px 0; }
+.mm-price{ font-size:12.5px; color:var(--orange); font-weight:800; padding:2px 10px; }
+.mm-cat{ font-size:10.5px; color:var(--muted); padding:0 10px 10px; text-transform:capitalize; }
+
 @media(max-width:800px){
     .sidebar{ display:none; }
     .content{ padding:16px; }
@@ -213,6 +202,7 @@ table.orders-tbl td{ padding:10px 6px; border-bottom:1px solid #f4f4f4; vertical
             <li><button class="sb-link" data-page="orders" onclick="showPage('orders',this)">🧾 Orders {% if pending_count %}<span class="badge">{{ pending_count }}</span>{% endif %}</button></li>
             <li><button class="sb-link" data-page="payments" onclick="showPage('payments',this)">💳 Payments</button></li>
             <li><button class="sb-link" data-page="receipts" onclick="showPage('receipts',this)">📄 Receipt History</button></li>
+            <li><button class="sb-link" data-page="addmenu" onclick="showPage('addmenu',this)">🍽️ Add Menu</button></li>
             <li><button class="sb-link" onclick="openQRModal()">📷 Generate QR</button></li>
             {% endif %}
         </ul>
@@ -293,14 +283,8 @@ table.orders-tbl td{ padding:10px 6px; border-bottom:1px solid #f4f4f4; vertical
             <div class="section">
                 <div class="section-head">
                     <h2>🧾 Orders Awaiting Payment <span class="count-badge">{{ pending_count }}</span></h2>
-                    <div class="view-toggle">
-                        <button id="viewFlatBtn" class="active" onclick="setOrdersView('flat')">📋 Dhammaan</button>
-                        <button id="viewWaiterBtn" onclick="setOrdersView('waiter')">👤 Waiter</button>
-                    </div>
                 </div>
-
-                <!-- FLAT LIST VIEW (asalka) -->
-                <div id="ordersFlatView" style="overflow-x:auto;">
+                <div style="overflow-x:auto;">
                 <table class="orders-tbl">
                     <tr><th>Order</th><th>Table</th><th>Waiter</th><th>Items</th><th>Amount</th><th>Status</th><th>Action</th></tr>
                     {% for o in pending_orders %}
@@ -327,69 +311,6 @@ table.orders-tbl td{ padding:10px 6px; border-bottom:1px solid #f4f4f4; vertical
                     <tr><td colspan="7" style="text-align:center;color:var(--muted);padding:16px;">No orders awaiting payment</td></tr>
                     {% endfor %}
                 </table>
-                </div>
-
-                <!-- WAITER GROUPED VIEW (cusub) -->
-                <div id="ordersWaiterView" style="display:none;">
-                    {% set ns = namespace(groups={}, order_list=[], total_all=0) %}
-                    {% for o in pending_orders %}
-                        {% set wname = o.employee_name or 'Aan La Qeexin' %}
-                        {% set amt = o.price or 0 %}
-                        {% set ns.total_all = ns.total_all + amt %}
-                        {% if wname not in ns.groups %}
-                            {% set ns.groups = ns.groups.update({wname: {'orders': [], 'total': 0}}) or ns.groups %}
-                            {% set ns.order_list = ns.order_list + [wname] %}
-                        {% endif %}
-                        {% set _ = ns.groups[wname]['orders'].append(o) %}
-                        {% set _ = ns.groups[wname].update({'total': ns.groups[wname]['total'] + amt}) %}
-                    {% endfor %}
-
-                    {% for wname in ns.order_list %}
-                        {% set g = ns.groups[wname] %}
-                        {% set pct = (g.total / ns.total_all * 100) if ns.total_all > 0 else 0 %}
-                        <div class="waiter-group {{ 'wg-unassigned' if wname == 'Aan La Qeexin' else '' }}">
-                            <div class="wg-head" onclick="toggleWaiterGroup(this)">
-                                <div class="wg-avatar">{{ wname[:1]|upper }}</div>
-                                <div class="wg-info">
-                                    <div class="wg-name">{{ wname }}</div>
-                                    <div class="wg-sub">{{ g.orders|length }} order{{ 's' if g.orders|length != 1 else '' }}</div>
-                                </div>
-                                <div class="wg-stats">
-                                    <div class="wg-stat">
-                                        <div class="k">Total</div>
-                                        <div class="v">${{ "%.2f"|format(g.total) }}</div>
-                                    </div>
-                                    <div class="wg-pct-wrap">
-                                        <div class="wg-stat"><div class="k">Boqolkiiba</div><div class="v">{{ "%.1f"|format(pct) }}%</div></div>
-                                        <div class="wg-pct-bar"><div class="wg-pct-fill" style="width:{{ pct }}%;"></div></div>
-                                    </div>
-                                    <div class="wg-chevron">▼</div>
-                                </div>
-                            </div>
-                            <div class="wg-body">
-                                <table class="orders-tbl">
-                                    <tr><th>Order</th><th>Table</th><th>Items</th><th>Amount</th><th>Status</th><th>Action</th></tr>
-                                    {% for o in g.orders %}
-                                    <tr>
-                                        <td>#{{ o.receipt_ref or o.id[:6] }}</td>
-                                        <td>{{ o.table }}</td>
-                                        <td>{{ o['items'] }}</td>
-                                        <td><b>${{ "%.2f"|format(o.price or 0) }}</b></td>
-                                        <td><span class="status-pill status-{{ (o.status or 'pending')|lower }}">{{ o.status }}</span></td>
-                                        <td>
-                                            <div class="tbl-actions">
-                                                <button class="pay-btn" data-order-id="{{ o.id }}" data-order-total="{{ o.price or 0 }}" onclick="openPayModal(this)">Pay</button>
-                                                <a class="receipt-btn" href="/receipt/{{ rid }}/{{ o.id }}" target="_blank">Receipt</a>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
-                                </table>
-                            </div>
-                        </div>
-                    {% else %}
-                    <div style="text-align:center;color:var(--muted);padding:16px;">No orders awaiting payment</div>
-                    {% endfor %}
                 </div>
             </div>
         </div>
@@ -428,6 +349,46 @@ table.orders-tbl td{ padding:10px 6px; border-bottom:1px solid #f4f4f4; vertical
                 {% else %}
                 <div style="color:var(--muted);font-size:13px;text-align:center;padding:14px;">No transactions yet this shift</div>
                 {% endfor %}
+            </div>
+        </div>
+
+        <!-- ============ ADD MENU PAGE ============ -->
+        <div class="page" id="page-addmenu">
+            <div class="section">
+                <div class="section-head"><h2>➕ Add Menu Item</h2></div>
+                <form action="/add_menu/{{ rid }}" method="post" enctype="multipart/form-data" class="add-menu-form">
+                    <input type="text" name="name" placeholder="Food Name" required>
+                    <input type="text" name="price" placeholder="Price" required>
+                    <select name="category" required>
+                        <option value="quraac">🌅 Quraac</option>
+                        <option value="qado">☀️ Qado</option>
+                        <option value="casariyo">🌤️ Casariyo</option>
+                        <option value="casho">🌙 Casho</option>
+                    </select>
+                    <label class="file-label">
+                        📷 Choose Image
+                        <input type="file" name="image" accept="image/*" required>
+                    </label>
+                    <button type="submit" class="qr-btn" style="margin-bottom:0;">✅ Add Item</button>
+                </form>
+            </div>
+
+            <div class="section">
+                <div class="section-head"><h2>🍽️ Menu Items ({{ menu_items|length }})</h2></div>
+                <div class="menu-manage-grid">
+                    {% for m in menu_items %}
+                    <div class="menu-manage-card">
+                        <div class="mm-img">
+                            {% if m.image %}<img src="{{ m.image }}" alt="{{ m.name }}" onerror="this.parentNode.innerHTML='🍽️'">{% else %}🍽️{% endif %}
+                        </div>
+                        <div class="mm-name">{{ m.name }}</div>
+                        <div class="mm-price">${{ m.price }}</div>
+                        {% if m.category %}<div class="mm-cat">{{ m.category|capitalize }}</div>{% endif %}
+                    </div>
+                    {% else %}
+                    <div style="color:var(--muted);font-size:13px;text-align:center;padding:14px;grid-column:1/-1;">No menu items yet</div>
+                    {% endfor %}
+                </div>
             </div>
         </div>
 
@@ -553,39 +514,6 @@ function showPage(id, el){
 
     window.scrollTo({top:0, behavior:"smooth"});
 }
-
-/* --- Orders view toggle: Flat list <-> Waiter grouped --- */
-function setOrdersView(mode){
-    const flatBtn = document.getElementById("viewFlatBtn");
-    const waiterBtn = document.getElementById("viewWaiterBtn");
-    const flatView = document.getElementById("ordersFlatView");
-    const waiterView = document.getElementById("ordersWaiterView");
-
-    if(mode === "waiter"){
-        flatView.style.display = "none";
-        waiterView.style.display = "block";
-        flatBtn.classList.remove("active");
-        waiterBtn.classList.add("active");
-        localStorage.setItem("cashier_orders_view", "waiter");
-    } else {
-        flatView.style.display = "block";
-        waiterView.style.display = "none";
-        flatBtn.classList.add("active");
-        waiterBtn.classList.remove("active");
-        localStorage.setItem("cashier_orders_view", "flat");
-    }
-}
-
-function toggleWaiterGroup(headEl){
-    const group = headEl.closest(".waiter-group");
-    group.classList.toggle("open");
-}
-
-/* Restore last-used view on load */
-document.addEventListener("DOMContentLoaded", function(){
-    const saved = localStorage.getItem("cashier_orders_view");
-    if(saved === "waiter"){ setOrdersView("waiter"); }
-});
 
 async function openShift(){
     const opening_cash = parseFloat(document.getElementById("opening_cash").value) || 0;
