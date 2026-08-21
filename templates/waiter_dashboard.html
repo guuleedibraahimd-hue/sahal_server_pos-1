@@ -68,6 +68,9 @@ a{ color:inherit; }
 .search-box{ position:relative; margin-bottom:14px; }
 .search-box input{ width:100%; padding:12px 14px 12px 38px; border-radius:12px; border:1px solid #ddd; font-size:14px; }
 .search-box .si{ position:absolute; left:13px; top:50%; transform:translateY(-50%); color:var(--muted); }
+.cat-tabs{ display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px; }
+.cat-tab{ padding:9px 16px; border-radius:20px; border:1.5px solid #eee; background:#fff; font-size:13px; font-weight:700; cursor:pointer; color:var(--text); }
+.cat-tab.active{ background:var(--orange); border-color:var(--orange); color:#fff; }
 .table-input{ margin-bottom:14px; }
 .table-input input{ width:100%; max-width:260px; padding:11px 14px; border-radius:10px; border:1px solid #ddd; font-size:14px; }
 
@@ -94,6 +97,7 @@ a{ color:inherit; }
 .status-preparing{ background:#cce5ff; color:#004085; }
 .status-ready{ background:#d4edda; color:#155724; }
 .status-paid{ background:#d1f2eb; color:#0e6655; }
+.receipt-link{ text-decoration:none; font-size:15px; }
 
 /* ---- TRANSACTIONS TABLE ---- */
 table.tx-tbl{ width:100%; border-collapse:collapse; font-size:13px; }
@@ -117,6 +121,17 @@ table.tx-tbl td{ padding:9px 6px; border-bottom:1px solid #f4f4f4; }
 .msg.show{ display:block; }
 .msg.ok{ background:#d4edda; color:#155724; }
 .msg.err{ background:#f8d7da; color:#721c24; }
+
+.modal-bg{ display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); align-items:center; justify-content:center; z-index:100; padding:16px; }
+.modal-bg.show{ display:flex; }
+.modal{ background:#fff; border-radius:18px; padding:26px; width:100%; max-width:340px; text-align:center; }
+.modal .ic{ font-size:38px; margin-bottom:8px; }
+.modal h3{ font-size:16px; margin:0 0 6px; }
+.modal p{ font-size:13px; color:var(--muted); margin-bottom:18px; }
+.modal-actions{ display:flex; flex-direction:column; gap:8px; }
+.modal-actions button{ padding:13px; border:none; border-radius:10px; font-weight:800; cursor:pointer; font-size:14px; }
+.print-now-btn{ background:var(--orange); color:#fff; }
+.print-later-btn{ background:#f1f3f6; color:#333; }
 
 @media(max-width:800px){
     .sidebar{ display:none; }
@@ -199,7 +214,10 @@ table.tx-tbl td{ padding:9px 6px; border-bottom:1px solid #f4f4f4; }
                 {% for o in my_orders[:5] %}
                 <div class="order-row">
                     <div>#{{ o.receipt_ref or o.id[:6] }} · Table {{ o.table }} — {{ o['items'] }}</div>
-                    <span class="status-pill status-{{ (o.status or 'pending')|lower }}">{{ o.status }}</span>
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <span class="status-pill status-{{ (o.status or 'pending')|lower }}">{{ o.status }}</span>
+                        <a href="/receipt/{{ rid }}/{{ o.id }}" target="_blank" class="receipt-link">🧾</a>
+                    </div>
                 </div>
                 {% else %}
                 <div style="color:var(--muted);font-size:13px;text-align:center;padding:14px;">No orders yet</div>
@@ -221,9 +239,17 @@ table.tx-tbl td{ padding:9px 6px; border-bottom:1px solid #f4f4f4; }
                     <input type="text" id="menuSearch" placeholder="Search items..." oninput="filterMenu()">
                 </div>
 
+                <div class="cat-tabs">
+                    <button class="cat-tab active" data-cat="all" onclick="filterCategory(this)">All Items</button>
+                    <button class="cat-tab" data-cat="quraac" onclick="filterCategory(this)">🌅 Quraac</button>
+                    <button class="cat-tab" data-cat="qado" onclick="filterCategory(this)">☀️ Qado</button>
+                    <button class="cat-tab" data-cat="casariyo" onclick="filterCategory(this)">🌤️ Casariyo</button>
+                    <button class="cat-tab" data-cat="casho" onclick="filterCategory(this)">🌙 Casho</button>
+                </div>
+
                 <div class="menu-grid" id="menuGrid">
                     {% for item in menu %}
-                    <div class="menu-item" data-id="{{ item.id }}" data-name="{{ item.name|lower }}" data-display-name="{{ item.name }}" data-price="{{ item.price|default(0) }}" onclick="addToCart(this)">
+                    <div class="menu-item" data-id="{{ item.id }}" data-name="{{ item.name|lower }}" data-display-name="{{ item.name }}" data-price="{{ item.price|default(0) }}" data-category="{{ item.category|default('') }}" onclick="addToCart(this)">
                         <div class="img-wrap">
                             {% if item.image %}<img src="{{ item.image }}" alt="{{ item.name }}" loading="lazy" onerror="this.parentNode.innerHTML='🍽️'">{% else %}<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:34px;">🍽️</div>{% endif %}
                         </div>
@@ -256,7 +282,10 @@ table.tx-tbl td{ padding:9px 6px; border-bottom:1px solid #f4f4f4; }
                 {% for o in my_orders %}
                 <div class="order-row">
                     <div>#{{ o.receipt_ref or o.id[:6] }} · Table {{ o.table }} — {{ o['items'] }}</div>
-                    <span class="status-pill status-{{ (o.status or 'pending')|lower }}">{{ o.status }}</span>
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <span class="status-pill status-{{ (o.status or 'pending')|lower }}">{{ o.status }}</span>
+                        <a href="/receipt/{{ rid }}/{{ o.id }}" target="_blank" class="receipt-link">🧾</a>
+                    </div>
                 </div>
                 {% else %}
                 <div style="color:var(--muted);font-size:13px;text-align:center;padding:14px;">No orders yet</div>
@@ -291,9 +320,23 @@ table.tx-tbl td{ padding:9px 6px; border-bottom:1px solid #f4f4f4; }
     </div>
 </div>
 
+<!-- PRINT NOW OR LATER MODAL -->
+<div class="modal-bg" id="printModal">
+    <div class="modal">
+        <div class="ic">🧾</div>
+        <h3 id="printModalTitle">Order Sent!</h3>
+        <p>Ma rabtaa inaad hadda daabacdo rasiidka, mise ma sugaysaa?</p>
+        <div class="modal-actions">
+            <button class="print-now-btn" onclick="printNow()">🖨️ Print Now</button>
+            <button class="print-later-btn" onclick="printLater()">⏳ Wait / Print Later</button>
+        </div>
+    </div>
+</div>
+
 <script>
 const RID = "{{ rid }}";
 let cart = [];
+let lastReceiptUrl = null;
 
 const donutEl = document.getElementById("salesDonut");
 if(donutEl){ donutEl.style.background = donutEl.dataset.gradient; }
@@ -311,11 +354,26 @@ function showPage(id, el){
 }
 
 function filterMenu(){
+    applyFilters();
+}
+
+let activeCategory = "all";
+
+function filterCategory(el){
+    document.querySelectorAll(".cat-tab").forEach(t => t.classList.remove("active"));
+    el.classList.add("active");
+    activeCategory = el.dataset.cat;
+    applyFilters();
+}
+
+function applyFilters(){
     const q = document.getElementById("menuSearch").value.trim().toLowerCase();
     const items = document.querySelectorAll("#menuGrid .menu-item");
     let visible = 0;
     items.forEach(el => {
-        const match = !q || el.dataset.name.includes(q);
+        const matchSearch = !q || el.dataset.name.includes(q);
+        const matchCat = activeCategory === "all" || el.dataset.category === activeCategory;
+        const match = matchSearch && matchCat;
         el.style.display = match ? "" : "none";
         if(match) visible++;
     });
@@ -377,12 +435,13 @@ async function sendOrder(){
         const data = await res.json();
         if(data.success){
             msg.classList.add("show","ok");
-            msg.textContent = "✅ Order sent to kitchen! Opening receipt...";
+            msg.textContent = data.merged ? "✅ Order updated!" : "✅ Order sent to kitchen!";
             cart = [];
             renderCart();
             document.getElementById("tableNo").value = "";
-            if(data.receipt_url){ window.open(data.receipt_url, "_blank"); }
-            setTimeout(() => location.reload(), 1200);
+            lastReceiptUrl = data.receipt_url || null;
+            document.getElementById("printModalTitle").textContent = data.merged ? "Order Updated!" : "Order Sent!";
+            document.getElementById("printModal").classList.add("show");
         } else {
             msg.classList.add("show","err");
             msg.textContent = "❌ " + (data.error || "Failed to send order");
@@ -391,6 +450,17 @@ async function sendOrder(){
         msg.classList.add("show","err");
         msg.textContent = "❌ Server error";
     }
+}
+
+function printNow(){
+    if(lastReceiptUrl){ window.open(lastReceiptUrl, "_blank"); }
+    document.getElementById("printModal").classList.remove("show");
+    location.reload();
+}
+
+function printLater(){
+    document.getElementById("printModal").classList.remove("show");
+    location.reload();
 }
 </script>
 

@@ -2934,6 +2934,7 @@ def add_menu(rid):
     try:
         name = request.form["name"]
         price = request.form["price"]
+        category = request.form.get("category", "").strip()
         image_file = request.files["image"]
 
         image_url = upload_to_firebase_storage(image_file, folder=f"menu/{rid}")
@@ -2941,6 +2942,7 @@ def add_menu(rid):
         menu_data = {
             "name": name,
             "price": price,
+            "category": category,
             "image": image_url,
             "created_at": datetime.now()
         }
@@ -3162,6 +3164,7 @@ def create_order(rid):
             "success":     True,
             "message":     "Order sent ✅",
             "order_id":    order_id,
+            "merged":      bool(existing_order_id),
             "receipt_url": f"/receipt/{rid}/{order_id}"
         })
 
