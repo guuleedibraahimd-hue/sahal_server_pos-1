@@ -88,6 +88,21 @@ table.orders-tbl td{ padding:10px 6px; border-bottom:1px solid #f4f4f4; vertical
 .pay-btn{ background:var(--green); color:#fff; }
 .receipt-btn{ background:var(--blue); color:#fff; }
 
+/* ---- ORDERS: DHAMMAAN / WAITER TOGGLE ---- */
+.view-toggle{ display:flex; gap:6px; background:#f1f3f6; border-radius:10px; padding:4px; }
+.toggle-btn{ border:none; background:none; padding:8px 16px; border-radius:8px; font-size:12.5px; font-weight:800; cursor:pointer; color:var(--muted); }
+.toggle-btn.active{ background:#fff; color:var(--blue); box-shadow:0 2px 6px rgba(0,0,0,0.08); }
+
+.waiter-summary-card{ border:1px solid var(--border); border-radius:14px; padding:16px; margin-bottom:12px; }
+.waiter-summary-head{ display:flex; justify-content:space-between; align-items:center; cursor:pointer; gap:14px; flex-wrap:wrap; }
+.waiter-summary-right{ display:flex; align-items:center; gap:22px; }
+.expand-arrow{ transition:transform 0.2s; color:var(--muted); }
+.expand-arrow.open{ transform:rotate(180deg); }
+.waiter-pct-bar{ height:6px; background:#f1f3f6; border-radius:4px; margin-top:12px; overflow:hidden; }
+.waiter-pct-fill{ height:100%; background:var(--blue); border-radius:4px; }
+.waiter-orders-detail{ display:none; }
+.waiter-orders-detail.show{ display:block; }
+
 /* ---- SHIFT SUMMARY ---- */
 .shift-summary .status-active{ background:#d4edda; color:#155724; font-size:11px; font-weight:800; padding:3px 10px; border-radius:20px; }
 .ss-row{ display:flex; justify-content:space-between; font-size:13px; padding:8px 0; border-bottom:1px solid #f4f4f4; }
@@ -97,7 +112,11 @@ table.orders-tbl td{ padding:10px 6px; border-bottom:1px solid #f4f4f4; vertical
 
 /* ---- DONUT ---- */
 .donut-wrap{ display:flex; align-items:center; gap:20px; flex-wrap:wrap; }
-.donut{ width:150px; height:150px; border-radius:50%; flex-shrink:0; }
+.donut{
+    width:150px; height:150px; border-radius:50%; flex-shrink:0;
+    mask:radial-gradient(farthest-side,transparent calc(100% - 26px),#000 calc(100% - 25px));
+    -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 26px),#000 calc(100% - 25px));
+}
 .legend{ flex:1; min-width:150px; }
 .legend-row{ display:flex; align-items:center; gap:8px; font-size:12.5px; padding:4px 0; }
 .legend-dot{ width:10px; height:10px; border-radius:50%; flex-shrink:0; }
@@ -286,34 +305,94 @@ table.orders-tbl td{ padding:10px 6px; border-bottom:1px solid #f4f4f4; vertical
             <div class="section">
                 <div class="section-head">
                     <h2>🧾 Orders Awaiting Payment <span class="count-badge">{{ pending_count }}</span></h2>
+                    <div class="view-toggle">
+                        <button class="toggle-btn active" data-view="all" onclick="setOrdersView('all',this)">📄 Dhammaan</button>
+                        <button class="toggle-btn" data-view="waiter" onclick="setOrdersView('waiter',this)">👤 Waiter</button>
+                    </div>
                 </div>
-                <div style="overflow-x:auto;">
-                <table class="orders-tbl">
-                    <tr><th>Order</th><th>Table</th><th>Waiter</th><th>Items</th><th>Amount</th><th>Status</th><th>Action</th></tr>
-                    {% for o in pending_orders %}
-                    <tr>
-                        <td>#{{ o.receipt_ref or o.id[:6] }}</td>
-                        <td>{{ o.table }}</td>
-                        <td>
+
+                <!-- ============ ALL ORDERS VIEW ============ -->
+                <div id="ordersViewAll">
+                    <div style="overflow-x:auto;">
+                    <table class="orders-tbl">
+                        <tr><th>Order</th><th>Table</th><th>Waiter</th><th>Items</th><th>Amount</th><th>Status</th><th>Action</th></tr>
+                        {% for o in pending_orders %}
+                        <tr>
+                            <td>#{{ o.receipt_ref or o.id[:6] }}</td>
+                            <td>{{ o.table }}</td>
+                            <td>
+                                <div class="waiter-cell">
+                                    <div class="w-avatar">{{ (o.employee_name or '—')[:1]|upper }}</div>
+                                    {{ o.employee_name or '—' }}
+                                </div>
+                            </td>
+                            <td>{{ o['items'] }}</td>
+                            <td><b>${{ "%.2f"|format(o.price or 0) }}</b></td>
+                            <td><span class="status-pill status-{{ (o.status or 'pending')|lower }}">{{ o.status }}</span></td>
+                            <td>
+                                <div class="tbl-actions">
+                                    <button class="pay-btn" data-order-id="{{ o.id }}" data-order-total="{{ o.price or 0 }}" onclick="openPayModal(this)">Pay</button>
+                                    <a class="receipt-btn" href="/receipt/{{ rid }}/{{ o.id }}" target="_blank">Receipt</a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="7" style="text-align:center;color:var(--muted);padding:16px;">No orders awaiting payment</td></tr>
+                        {% endfor %}
+                    </table>
+                    </div>
+                </div>
+
+                <!-- ============ BY WAITER VIEW ============ -->
+                <div id="ordersViewWaiter" style="display:none;">
+                    {% for w in pending_waiters %}
+                    <div class="waiter-summary-card">
+                        <div class="waiter-summary-head" onclick="toggleWaiterOrders('{{ w.employee_id }}')">
                             <div class="waiter-cell">
-                                <div class="w-avatar">{{ (o.employee_name or '—')[:1]|upper }}</div>
-                                {{ o.employee_name or '—' }}
+                                <div class="w-avatar" style="{% if w.employee_id == '__unassigned__' %}background:#9ca3af;{% endif %}">{{ w.name[:1]|upper }}</div>
+                                <div>
+                                    <div style="font-weight:800;">{{ w.name }}</div>
+                                    <div style="font-size:11.5px;color:var(--muted);">{{ w.count }} orders</div>
+                                </div>
                             </div>
-                        </td>
-                        <td>{{ o['items'] }}</td>
-                        <td><b>${{ "%.2f"|format(o.price or 0) }}</b></td>
-                        <td><span class="status-pill status-{{ (o.status or 'pending')|lower }}">{{ o.status }}</span></td>
-                        <td>
-                            <div class="tbl-actions">
-                                <button class="pay-btn" data-order-id="{{ o.id }}" data-order-total="{{ o.price or 0 }}" onclick="openPayModal(this)">Pay</button>
-                                <a class="receipt-btn" href="/receipt/{{ rid }}/{{ o.id }}" target="_blank">Receipt</a>
+                            <div class="waiter-summary-right">
+                                <div style="text-align:right;">
+                                    <div style="font-size:11px;color:var(--muted);">TOTAL</div>
+                                    <div style="font-weight:900;font-size:16px;">${{ "%.2f"|format(w.total) }}</div>
+                                </div>
+                                <div style="text-align:right;min-width:90px;">
+                                    <div style="font-size:11px;color:var(--muted);">BOQOLKIIBA</div>
+                                    <div style="font-weight:800;">{{ w.percentage }}%</div>
+                                </div>
+                                <span class="expand-arrow" id="arrow-{{ w.employee_id }}">▼</span>
                             </div>
-                        </td>
-                    </tr>
+                        </div>
+                        <div class="waiter-pct-bar"><div class="waiter-pct-fill" style="width:{{ w.percentage }}%;"></div></div>
+
+                        <div class="waiter-orders-detail" id="detail-{{ w.employee_id }}">
+                            <table class="orders-tbl" style="margin-top:10px;">
+                                <tr><th>Order</th><th>Table</th><th>Items</th><th>Amount</th><th>Status</th><th>Action</th></tr>
+                                {% for o in w.orders %}
+                                <tr>
+                                    <td>#{{ o.receipt_ref or o.id[:6] }}</td>
+                                    <td>{{ o.table }}</td>
+                                    <td>{{ o['items'] }}</td>
+                                    <td><b>${{ "%.2f"|format(o.price or 0) }}</b></td>
+                                    <td><span class="status-pill status-{{ (o.status or 'pending')|lower }}">{{ o.status }}</span></td>
+                                    <td>
+                                        <div class="tbl-actions">
+                                            <button class="pay-btn" data-order-id="{{ o.id }}" data-order-total="{{ o.price or 0 }}" onclick="openPayModal(this)">Pay</button>
+                                            <a class="receipt-btn" href="/receipt/{{ rid }}/{{ o.id }}" target="_blank">Receipt</a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </table>
+                        </div>
+                    </div>
                     {% else %}
-                    <tr><td colspan="7" style="text-align:center;color:var(--muted);padding:16px;">No orders awaiting payment</td></tr>
+                    <div style="color:var(--muted);font-size:13px;text-align:center;padding:16px;">No orders awaiting payment</div>
                     {% endfor %}
-                </table>
                 </div>
             </div>
         </div>
@@ -323,10 +402,7 @@ table.orders-tbl td{ padding:10px 6px; border-bottom:1px solid #f4f4f4; vertical
             <div class="section">
                 <div class="section-head"><h2>📊 Payment Methods Summary</h2></div>
                 <div class="donut-wrap">
-                    <div class="donut" style="background:{{ donut_gradient }};
-                        mask:radial-gradient(farthest-side,transparent calc(100% - 26px),#000 calc(100% - 25px));
-                        -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 26px),#000 calc(100% - 25px));">
-                    </div>
+                    <div class="donut" id="paymentsDonut" data-gradient="{{ donut_gradient }}"></div>
                     <div class="legend">
                         <div class="legend-row"><span class="legend-dot" style="background:#1f9e57;"></span><span class="lname">Cash</span><span class="lval">${{ payment_summary.cash }}</span></div>
                         <div class="legend-row"><span class="legend-dot" style="background:#2f6fed;"></span><span class="lname">EVC Plus</span><span class="lval">${{ payment_summary.evc }}</span></div>
@@ -515,6 +591,24 @@ const RID = "{{ rid }}";
 let currentOrderId = null;
 let currentOrderTotal = 0;
 let selectedMethod = "cash";
+
+const paymentsDonutEl = document.getElementById("paymentsDonut");
+if(paymentsDonutEl){ paymentsDonutEl.style.background = paymentsDonutEl.dataset.gradient; }
+
+function setOrdersView(view, el){
+    document.querySelectorAll(".toggle-btn").forEach(b => b.classList.remove("active"));
+    el.classList.add("active");
+    document.getElementById("ordersViewAll").style.display = (view === "all") ? "block" : "none";
+    document.getElementById("ordersViewWaiter").style.display = (view === "waiter") ? "block" : "none";
+}
+
+function toggleWaiterOrders(employeeId){
+    const detail = document.getElementById("detail-" + employeeId);
+    const arrow = document.getElementById("arrow-" + employeeId);
+    if(!detail) return;
+    detail.classList.toggle("show");
+    arrow.classList.toggle("open");
+}
 
 function showPage(id, el){
     document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));

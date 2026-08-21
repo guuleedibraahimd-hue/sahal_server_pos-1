@@ -2658,6 +2658,29 @@ def cashier_dashboard(rid):
         elif created_date == today:
             todays_paid_orders.append(o)
 
+    # ---- "Orders Awaiting Payment" broken down by waiter (for the
+    # Dhammaan / Waiter toggle) — orders with no employee_id are
+    # grouped under "Aan La Qeexin" (Unassigned). Sorted so whichever
+    # waiter has the most pending value always sits at the top. ----
+    pending_by_waiter = {}
+    pending_total_amount = 0.0
+    for o in pending_orders:
+        wid  = o.get("employee_id") or "__unassigned__"
+        name = o.get("employee_name") or "Aan La Qeexin"
+        if wid not in pending_by_waiter:
+            pending_by_waiter[wid] = {"employee_id": wid, "name": name, "orders": [], "count": 0, "total": 0.0}
+        pending_by_waiter[wid]["orders"].append(o)
+        pending_by_waiter[wid]["count"] += 1
+        amount = float(o.get("price", 0))
+        pending_by_waiter[wid]["total"] += amount
+        pending_total_amount += amount
+
+    for w in pending_by_waiter.values():
+        w["total"] = round(w["total"], 2)
+        w["percentage"] = round((w["total"] / pending_total_amount) * 100, 1) if pending_total_amount > 0 else 0.0
+
+    pending_waiters = sorted(pending_by_waiter.values(), key=lambda x: x["total"], reverse=True)
+
     # ---- Restaurant-wide TODAY stats (all cashiers/shifts) ----
     today_payments = list(restaurant_ref.collection("payments").where("date", "==", today).stream())
     payment_summary = {"cash": 0.0, "evc": 0.0, "edahab": 0.0, "card": 0.0, "other": 0.0}
@@ -2795,6 +2818,7 @@ def cashier_dashboard(rid):
         opening_cash=round(opening_cash, 2),
         expected_cash=round(expected_cash, 2),
         pending_orders=pending_orders[:30],
+        pending_waiters=pending_waiters,
         pending_count=len(pending_orders),
         # restaurant-wide today
         today_sales=round(today_sales, 2),
