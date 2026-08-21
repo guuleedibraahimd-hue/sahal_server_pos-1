@@ -136,6 +136,10 @@
         .o-image img{width:100%;height:100%;object-fit:cover;display:block;}
 
         .o-block .b-label{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;}
+        .new-items-box{background:#fff8e6;border:1.5px solid #ffe08a;border-radius:12px;padding:10px 12px;margin-bottom:14px;}
+        .new-label{color:#c77800!important;margin-bottom:6px!important;}
+        .new-item-line{font-weight:700;}
+        .updated-badge{background:#fff3cd;color:#856404;font-size:11px;font-weight:800;padding:4px 10px;border-radius:12px;margin-left:8px;}
         .item-line{
             display:flex;align-items:center;gap:10px;padding:6px 0;font-size:15px;font-weight:500;
         }
@@ -237,9 +241,9 @@
 
         <div id="ordersContainer">
         {% for o in orders %}
-        <div class="order" id="order{{ o.id }}" data-status="{{ o.get('status', 'pending') }}">
+        <div class="order" id="order{{ o.id }}" data-status="{{ o.get('status', 'pending') }}" data-last-added="{{ o.last_added_marker }}">
             <div class="order-top">
-                <div class="o-title">📋 Order #{{ orders|length - loop.index0 }} <span class="o-ref">Ref: {{ o.receipt_ref or o.id[:6] }}</span></div>
+                <div class="o-title">📋 Order #{{ orders|length - loop.index0 }} <span class="o-ref">Ref: {{ o.receipt_ref or o.id[:6] }}</span>{% if o.new_display_items %}<span class="updated-badge">🆕 Updated</span>{% endif %}</div>
                 <span class="status-pill">{{ o.get('status', 'pending') }}</span>
             </div>
 
@@ -251,7 +255,21 @@
                 </div>
 
                 <div class="o-block">
-                    <div class="b-label">Items</div>
+                    {% if o.new_display_items %}
+                    <div class="new-items-box">
+                        <div class="b-label new-label">🆕 Newly Added</div>
+                        {% for it in o.new_display_items %}
+                        <div class="item-line new-item-line">
+                            {% if it.image %}
+                            <img class="thumb" src="{{ it.image }}" alt="" onerror="this.outerHTML='<span class=\'thumb\'>🍽️</span>'">
+                            {% else %}<span class="thumb">🍽️</span>{% endif %}
+                            <span class="qty">{{ it.qty }}x</span>
+                            <span>{{ it.name }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    <div class="b-label">{{ 'All Items' if o.new_display_items else 'Items' }}</div>
                     {% for it in o.display_items %}
                     <div class="item-line">
                         {% if it.image %}
@@ -333,16 +351,23 @@ document.addEventListener("DOMContentLoaded", function(){
             .map(el => el.id.replace("order", ""));
     }
 
+    function getLastAddedMarker(orderId){
+        const el = document.getElementById("order" + orderId);
+        return el ? el.dataset.lastAdded : "";
+    }
+
     // Orders already on screen when the page loaded are NOT new — only
-    // orders that show up *after* this get silently printed, and each
-    // order_id can only ever trigger one print (maps 1:1 to that
-    // order's receipt_ref on the receipt page itself).
+    // orders that show up *after* this get silently printed. An order
+    // that's ALREADY known can still trigger one more print if a waiter
+    // edits it and adds new items — tracked by last_added_marker so the
+    // same update never prints twice, and only the new-items delta
+    // matters (not the fact that the order existed before).
     let knownOrderIds = new Set(getVisibleOrderIds());
     let printedOrderIds = new Set();
+    let seenUpdateMarkers = {};
+    knownOrderIds.forEach(id => { seenUpdateMarkers[id] = getLastAddedMarker(id); });
 
     function silentPrintReceipt(orderId){
-        if(printedOrderIds.has(orderId)) return;
-        printedOrderIds.add(orderId);
         const iframe = document.createElement("iframe");
         iframe.style.position = "fixed";
         iframe.style.width = "0";
@@ -381,8 +406,15 @@ document.addEventListener("DOMContentLoaded", function(){
 
             if(newOrders){
                 getVisibleOrderIds().forEach(id => {
+                    const marker = getLastAddedMarker(id);
                     if(!knownOrderIds.has(id)){
+                        // Brand-new order
                         knownOrderIds.add(id);
+                        seenUpdateMarkers[id] = marker;
+                        if(isAutoPrintOn()) silentPrintReceipt(id);
+                    } else if(marker && marker !== seenUpdateMarkers[id]){
+                        // Existing order was edited — new items were added
+                        seenUpdateMarkers[id] = marker;
                         if(isAutoPrintOn()) silentPrintReceipt(id);
                     }
                 });

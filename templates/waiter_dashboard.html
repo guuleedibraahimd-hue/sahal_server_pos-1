@@ -96,6 +96,9 @@ a{ color:inherit; }
 .waiting-arrow.open{ transform:rotate(180deg); }
 .waiting-panel{ display:none; background:#fff; border:1px solid #f0e2b0; border-top:none; border-radius:0 0 12px 12px; padding:6px 18px; margin-top:-8px; }
 .waiting-panel.show{ display:block; }
+.edit-order-btn{ background:#0a7cff; color:#fff; border:none; border-radius:8px; padding:6px 12px; font-size:12px; font-weight:800; cursor:pointer; }
+.existing-order-banner{ display:flex; justify-content:space-between; align-items:center; gap:10px; background:#eef4ff; border:1.5px solid #cfe0ff; border-radius:10px; padding:12px 14px; margin-bottom:14px; font-size:13px; flex-wrap:wrap; }
+.existing-order-banner button{ background:#dc3545; color:#fff; border:none; border-radius:8px; padding:6px 10px; font-size:11px; font-weight:800; cursor:pointer; white-space:nowrap; }
 
 .order-row{ display:flex; justify-content:space-between; align-items:center; padding:11px 0; border-bottom:1px solid #f0f0f0; font-size:13px; }
 .status-pill{ padding:3px 10px; border-radius:20px; font-size:11px; font-weight:800; }
@@ -238,6 +241,11 @@ table.tx-tbl td{ padding:9px 6px; border-bottom:1px solid #f4f4f4; }
             <div class="section">
                 <div class="section-head"><h2>🍔 New Order</h2></div>
 
+                <div class="existing-order-banner" id="existingOrderBanner" style="display:none;">
+                    <span>📋 Currently in this order: <b id="existingOrderItemsText"></b></span>
+                    <button type="button" onclick="clearEdit()">✕ New Order Instead</button>
+                </div>
+
                 <div class="table-input">
                     <input type="text" id="tableNo" placeholder="Table number">
                 </div>
@@ -302,6 +310,7 @@ table.tx-tbl td{ padding:9px 6px; border-bottom:1px solid #f4f4f4; }
                     <div>#{{ o.receipt_ref or o.id[:6] }} · Table {{ o.table }} — {{ o['items'] }}</div>
                     <div style="display:flex;align-items:center;gap:8px;">
                         <span class="status-pill status-{{ (o.status or 'pending')|lower }}">{{ o.status }}</span>
+                        <button class="edit-order-btn" data-table="{{ o.table }}" data-items="{{ o['items'] }}" onclick="editOrder(this)">✏️ Edit</button>
                         <a href="/receipt/{{ rid }}/{{ o.id }}" target="_blank" class="receipt-link" data-order-id="{{ o.id }}" onclick="markPrinted(this)">🖨️</a>
                     </div>
                 </div>
@@ -465,6 +474,34 @@ function toggleWaiting(){
     arrow.textContent = panel.classList.contains("show") ? "▲" : "▼";
 }
 
+/* ── Edit an order already in "Waiting to Print": load its table
+   number and show what's already in it (read-only, for reference)
+   WITHOUT re-adding those items to the cart — the cart only ever
+   holds what the waiter adds from here on, so when Send is pressed
+   the server merges just the new items into the existing order and
+   the kitchen only sees the delta, never a duplicate of old items. ── */
+function editOrder(btn){
+    const table = btn.dataset.table;
+    const items = btn.dataset.items;
+
+    document.getElementById("tableNo").value = table;
+    document.getElementById("existingOrderItemsText").textContent = items;
+    document.getElementById("existingOrderBanner").style.display = "flex";
+
+    cart = [];
+    renderCart();
+
+    showPage("neworder");
+    setTimeout(() => {
+        document.querySelector(".table-input").scrollIntoView({behavior:"smooth", block:"center"});
+    }, 150);
+}
+
+function clearEdit(){
+    document.getElementById("existingOrderBanner").style.display = "none";
+    document.getElementById("tableNo").value = "";
+}
+
 function renderCart(){
     const box = document.getElementById("cartBox");
     let total = 0;
@@ -509,6 +546,7 @@ async function sendOrder(){
             renderCart();
             document.getElementById("tableNo").value = "";
             document.getElementById("customerPhone").value = "";
+            document.getElementById("existingOrderBanner").style.display = "none";
             lastReceiptUrl = data.receipt_url || null;
             lastOrderId = data.order_id || null;
             document.getElementById("printModalTitle").textContent = data.merged ? "Order Updated!" : "Order Sent!";

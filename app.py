@@ -3228,14 +3228,22 @@ def create_order(rid):
             items_text  = ", ".join([f"{i.get('qty')}x {i.get('name')}" for i in merged_cart])
             total_price = sum(float(i.get("price", 0)) * int(i.get("qty", 1)) for i in merged_cart)
 
+            # The items sent in THIS request only — the delta the kitchen
+            # actually needs to prepare, since everything else in
+            # merged_cart was already sent and (maybe) already made.
+            new_items_text = ", ".join([f"{i.get('qty')}x {i.get('name')}" for i in cart])
+
             order_ref = restaurant_ref.collection("orders").document(existing_order_id)
             update_fields = {
-                "items":      items_text,
-                "cart":       merged_cart,
-                "price":      total_price,
-                "status":     "pending",          # back to kitchen's attention
-                "receipt_printed": False,          # updated — needs reprint
-                "updated_at": datetime.utcnow()
+                "items":            items_text,
+                "cart":             merged_cart,
+                "price":            total_price,
+                "status":           "pending",          # back to kitchen's attention
+                "receipt_printed":  False,               # updated — needs reprint
+                "last_added_cart":  cart,
+                "last_added_items": new_items_text,
+                "last_added_at":    datetime.utcnow(),
+                "updated_at":       datetime.utcnow()
             }
             if customer_phone:
                 update_fields["customer_phone"] = customer_phone
@@ -3408,12 +3416,12 @@ def kitchen(rid):
             if nm:
                 menu_images[nm] = md.get("image", "")
 
-        def build_display_items(order):
-            """Ka dhig order-ka liis nadiif ah: [{name, qty, image}].
+        def build_display_items(order, cart_override=None):
+            """Ka dhig order-ka (ama cart gaar ah) liis nadiif ah: [{name, qty, image}].
             Cart ayaa la door bidayaa (waa nadiif), haddii uusan jirin items
             text-ka ('2x Burger') ayaa la kala qaadayaa."""
             display = []
-            cart = order.get("cart")
+            cart = cart_override if cart_override is not None else order.get("cart")
             if cart and isinstance(cart, list):
                 for c in cart:
                     nm = (c.get("name") or "").strip()
@@ -3424,7 +3432,7 @@ def kitchen(rid):
                         "qty": c.get("qty", 1),
                         "image": menu_images.get(nm.lower(), "")
                     })
-            else:
+            elif cart_override is None:
                 raw = order.get("items", "") or ""
                 for part in raw.split(","):
                     part = part.strip()
@@ -3471,6 +3479,19 @@ def kitchen(rid):
             order["main_image"] = next(
                 (d["image"] for d in order["display_items"] if d["image"]), ""
             )
+
+            # Newly-added items on this order since it was first sent
+            # (present only when a waiter edited an already-open order) —
+            # lets the kitchen see just the delta instead of re-reading
+            # the whole ticket as if it were brand new.
+            last_added_cart = order.get("last_added_cart")
+            if last_added_cart:
+                order["new_display_items"] = build_display_items(order, cart_override=last_added_cart)
+                last_added_at = order.get("last_added_at")
+                order["last_added_marker"] = last_added_at.isoformat() if hasattr(last_added_at, "isoformat") else str(last_added_at)
+            else:
+                order["new_display_items"] = []
+                order["last_added_marker"] = ""
 
             orders.append(order)
 
