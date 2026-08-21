@@ -31,6 +31,7 @@ import random
 import json
 import re
 import time
+from urllib.parse import quote
 
 from zoneinfo import ZoneInfo
 from datetime import datetime, timedelta, timezone
@@ -2405,9 +2406,15 @@ def waiter_login(rid):
 # =====================================
 @app.route("/waiter_order/<rid>/<table>")
 def waiter_order_deeplink(rid, table):
-    target = f"/waiter_dashboard/{rid}?table={table}&view=neworder"
+    target = f"/waiter_dashboard/{rid}?table={quote(str(table))}&view=neworder"
     if not session.get("staff_ok") or session.get("staff_role") != "waiter" or session.get("staff_rid") != rid:
-        return redirect(f"/waiter_login/{rid}?next={target}")
+        # target itself contains ? and & — it MUST be percent-encoded before
+        # being embedded as the value of another query string param, or the
+        # outer parser splits it apart and table/view get silently dropped
+        # (this was the exact bug: worked when already logged in — no
+        # redirect through login needed — but broke on a fresh mobile
+        # session that had to log in first).
+        return redirect(f"/waiter_login/{rid}?next={quote(target, safe='')}")
     return redirect(target)
 
 

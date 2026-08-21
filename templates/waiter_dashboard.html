@@ -37,7 +37,8 @@ a{ color:inherit; }
 .sb-link{ display:flex; align-items:center; gap:10px; padding:11px 14px; border-radius:12px; color:rgba(255,255,255,0.9); text-decoration:none; font-size:13.5px; font-weight:700; cursor:pointer; border:none; background:none; width:100%; text-align:left; }
 .sb-link:hover{ background:rgba(255,255,255,0.12); }
 .sb-link.active{ background:#fff; color:var(--orange); }
-.sb-link .badge{ margin-left:auto; background:#dc3545; color:#fff; font-size:10px; font-weight:800; padding:2px 7px; border-radius:10px; }
+.sb-link .badge{ margin-left:auto; background:#dc3545; color:#fff; font-size:10px; font-weight:800; padding:2px 7px; border-radius:10px; animation:badgePulse 1.6s ease-in-out infinite; }
+@keyframes badgePulse{ 0%,100%{ box-shadow:0 0 0 0 rgba(220,53,69,0.6); } 50%{ box-shadow:0 0 0 5px rgba(220,53,69,0); } }
 .sb-bottom{ margin-top:auto; padding:14px 10px; }
 .sb-logout{ display:flex; align-items:center; gap:10px; padding:12px 14px; color:#fff; text-decoration:none; font-size:13.5px; font-weight:700; background:rgba(0,0,0,0.15); border-radius:12px; }
 
@@ -176,6 +177,7 @@ table.tx-tbl td{ padding:9px 6px; border-bottom:1px solid #f4f4f4; }
         <ul class="sb-nav">
             <li><button class="sb-link active" data-page="dashboard" onclick="showPage('dashboard',this)">📊 Dashboard</button></li>
             <li><button class="sb-link" data-page="neworder" onclick="showPage('neworder',this)">🍔 New Order</button></li>
+            <li><button class="sb-link" data-page="waitingprint" onclick="showPage('waitingprint',this)">⏳ Waiting to Print {% if waiting_orders %}<span class="badge">{{ waiting_orders|length }}</span>{% endif %}</button></li>
             <li><button class="sb-link" data-page="myorders" onclick="showPage('myorders',this)">📋 My Orders</button></li>
             <li><button class="sb-link" data-page="mycustomers" onclick="showPage('mycustomers',this)">👥 My Customers</button></li>
             <li><button class="sb-link" data-page="transactions" onclick="showPage('transactions',this)">💳 My Transactions</button></li>
@@ -317,6 +319,25 @@ table.tx-tbl td{ padding:9px 6px; border-bottom:1px solid #f4f4f4; }
                 {% endfor %}
             </div>
             {% endif %}
+        </div>
+
+        <!-- ============ WAITING TO PRINT PAGE ============ -->
+        <div class="page" id="page-waitingprint">
+            <div class="section">
+                <div class="section-head"><h2>⏳ Waiting to Print ({{ waiting_orders|length }})</h2></div>
+                {% for o in waiting_orders %}
+                <div class="order-row">
+                    <div>#{{ o.receipt_ref or o.id[:6] }} · Table {{ o.table }} — {{ o['items'] }}</div>
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <span class="status-pill status-{{ (o.status or 'pending')|lower }}">{{ o.status }}</span>
+                        <button class="edit-order-btn" data-table="{{ o.table }}" data-items="{{ o['items'] }}" onclick="editOrder(this)">✏️ Edit</button>
+                        <a href="/receipt/{{ rid }}/{{ o.id }}" target="_blank" class="receipt-link" data-order-id="{{ o.id }}" onclick="markPrinted(this)">🖨️</a>
+                    </div>
+                </div>
+                {% else %}
+                <div style="color:var(--muted);font-size:13px;text-align:center;padding:14px;">Nothing waiting to print right now</div>
+                {% endfor %}
+            </div>
         </div>
 
         <!-- ============ MY ORDERS PAGE ============ -->
