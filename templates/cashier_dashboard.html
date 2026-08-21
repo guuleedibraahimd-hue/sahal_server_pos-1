@@ -183,6 +183,11 @@ table.orders-tbl td{ padding:10px 6px; border-bottom:1px solid #f4f4f4; vertical
 .mm-name{ font-size:13px; font-weight:800; padding:8px 10px 0; }
 .mm-price{ font-size:12.5px; color:var(--orange); font-weight:800; padding:2px 10px; }
 .mm-cat{ font-size:10.5px; color:var(--muted); padding:0 10px 10px; text-transform:capitalize; }
+.mm-actions{ display:flex; gap:6px; padding:0 10px 10px; }
+.mm-edit-btn{ flex:1; background:#0a7cff; color:#fff; border:none; border-radius:8px; padding:7px; font-size:11px; font-weight:800; cursor:pointer; }
+.mm-del-btn{ background:#dc3545; color:#fff; border:none; border-radius:8px; padding:7px 10px; font-size:11px; font-weight:800; cursor:pointer; }
+.file-label{ position:relative; }
+#am_preview{ vertical-align:middle; margin-right:4px; }
 .date-search-row{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
 .date-search-row input[type="date"]{ padding:10px 14px; border-radius:10px; border:1px solid #ddd; font-size:13px; font-family:inherit; }
 
@@ -435,37 +440,43 @@ table.orders-tbl td{ padding:10px 6px; border-bottom:1px solid #f4f4f4; vertical
         <div class="page" id="page-addmenu">
             <div class="section">
                 <div class="section-head"><h2>➕ Add Menu Item</h2></div>
-                <form action="/add_menu/{{ rid }}" method="post" enctype="multipart/form-data" class="add-menu-form">
-                    <input type="text" name="name" placeholder="Food Name" required>
-                    <input type="text" name="price" placeholder="Price" required>
-                    <select name="category" required>
+                <form id="addMenuForm" class="add-menu-form" onsubmit="return submitAddMenu(event)">
+                    <input type="text" id="am_name" placeholder="Food Name" required>
+                    <input type="text" id="am_price" placeholder="Price" required>
+                    <select id="am_category" required>
                         <option value="quraac">🌅 Quraac</option>
                         <option value="qado">☀️ Qado</option>
                         <option value="casariyo">🌤️ Casariyo</option>
                         <option value="casho">🌙 Casho</option>
                     </select>
-                    <label class="file-label">
-                        📷 Choose Image
-                        <input type="file" name="image" accept="image/*" required>
+                    <label class="file-label" id="am_fileLabel">
+                        <img id="am_preview" style="display:none;width:26px;height:26px;border-radius:6px;object-fit:cover;">
+                        <span id="am_fileText">📷 Choose Image</span>
+                        <input type="file" id="am_image" accept="image/*" required onchange="previewAddMenuImage(this)">
                     </label>
-                    <button type="submit" class="qr-btn" style="margin-bottom:0;">✅ Add Item</button>
+                    <button type="submit" class="qr-btn" id="am_submitBtn" style="margin-bottom:0;">✅ Add Item</button>
                 </form>
+                <div class="msg" id="addMenuMsg"></div>
             </div>
 
             <div class="section">
-                <div class="section-head"><h2>🍽️ Menu Items ({{ menu_items|length }})</h2></div>
-                <div class="menu-manage-grid">
+                <div class="section-head"><h2>🍽️ Menu Items (<span id="menuItemsCount">{{ menu_items|length }}</span>)</h2></div>
+                <div class="menu-manage-grid" id="menuManageGrid">
                     {% for m in menu_items %}
-                    <div class="menu-manage-card">
+                    <div class="menu-manage-card" id="mmcard-{{ m.id }}">
                         <div class="mm-img">
                             {% if m.image %}<img src="{{ m.image }}" alt="{{ m.name }}" onerror="this.parentNode.innerHTML='🍽️'">{% else %}🍽️{% endif %}
                         </div>
                         <div class="mm-name">{{ m.name }}</div>
                         <div class="mm-price">${{ m.price }}</div>
                         {% if m.category %}<div class="mm-cat">{{ m.category|capitalize }}</div>{% endif %}
+                        <div class="mm-actions">
+                            <button class="mm-edit-btn" data-id="{{ m.id }}" data-name="{{ m.name }}" data-price="{{ m.price }}" data-category="{{ m.category|default('quraac') }}" onclick="openEditMenu(this)">✏️ Edit</button>
+                            <button class="mm-del-btn" data-id="{{ m.id }}" data-name="{{ m.name|e }}" onclick="deleteMenuItem(this)">🗑</button>
+                        </div>
                     </div>
                     {% else %}
-                    <div style="color:var(--muted);font-size:13px;text-align:center;padding:14px;grid-column:1/-1;">No menu items yet</div>
+                    <div style="color:var(--muted);font-size:13px;text-align:center;padding:14px;grid-column:1/-1;" id="noMenuItemsMsg">No menu items yet</div>
                     {% endfor %}
                 </div>
             </div>
@@ -571,6 +582,31 @@ table.orders-tbl td{ padding:10px 6px; border-bottom:1px solid #f4f4f4; vertical
         <div class="modal-actions">
             <button class="cancel-btn" onclick="closeCloseModal()">Cancel</button>
             <button class="confirm-btn" onclick="confirmCloseShift()">Confirm Close</button>
+        </div>
+    </div>
+</div>
+
+<!-- EDIT MENU ITEM MODAL -->
+<div class="modal-bg" id="editMenuModal">
+    <div class="modal">
+        <h3>✏️ Edit Menu Item</h3>
+        <input type="hidden" id="em_id">
+        <input type="text" id="em_name" placeholder="Food Name" style="margin-bottom:10px;">
+        <input type="text" id="em_price" placeholder="Price" style="margin-bottom:10px;">
+        <select id="em_category" style="width:100%;padding:12px;border-radius:10px;border:1px solid #ddd;font-size:14px;margin-bottom:10px;">
+            <option value="quraac">🌅 Quraac</option>
+            <option value="qado">☀️ Qado</option>
+            <option value="casariyo">🌤️ Casariyo</option>
+            <option value="casho">🌙 Casho</option>
+        </select>
+        <label class="file-label" style="margin-bottom:10px;">
+            📷 Change Image (optional)
+            <input type="file" id="em_image" accept="image/*">
+        </label>
+        <div class="msg" id="editMenuMsg"></div>
+        <div class="modal-actions">
+            <button class="cancel-btn" onclick="closeEditMenu()">Cancel</button>
+            <button class="confirm-btn" onclick="submitEditMenu()">Save Changes</button>
         </div>
     </div>
 </div>
@@ -787,6 +823,178 @@ function generateQR(){
         // a stale QR from an earlier table.
         document.getElementById("qrResult").innerHTML = data;
     });
+}
+
+/* ================================
+   ➕ ADD MENU ITEM (AJAX — no page reload/redirect)
+   ================================ */
+function previewAddMenuImage(input){
+    const file = input.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+        const img = document.getElementById("am_preview");
+        img.src = e.target.result;
+        img.style.display = "inline-block";
+        document.getElementById("am_fileText").textContent = file.name;
+    };
+    reader.readAsDataURL(file);
+}
+
+function renderMenuCard(item){
+    const card = document.createElement("div");
+    card.className = "menu-manage-card";
+    card.id = "mmcard-" + item.id;
+    const catLabel = item.category ? item.category.charAt(0).toUpperCase() + item.category.slice(1) : "";
+    card.innerHTML = `
+        <div class="mm-img">${item.image ? `<img src="${item.image}" alt="${item.name}" onerror="this.parentNode.innerHTML='🍽️'">` : "🍽️"}</div>
+        <div class="mm-name">${item.name}</div>
+        <div class="mm-price">$${item.price}</div>
+        ${item.category ? `<div class="mm-cat">${catLabel}</div>` : ""}
+        <div class="mm-actions">
+            <button class="mm-edit-btn" data-id="${item.id}" data-name="${item.name}" data-price="${item.price}" data-category="${item.category || 'quraac'}" onclick="openEditMenu(this)">✏️ Edit</button>
+            <button class="mm-del-btn" data-id="${item.id}" data-name="${item.name}" onclick="deleteMenuItem(this)">🗑</button>
+        </div>
+    `;
+    return card;
+}
+
+async function submitAddMenu(e){
+    e.preventDefault();
+    const name = document.getElementById("am_name").value.trim();
+    const price = document.getElementById("am_price").value.trim();
+    const category = document.getElementById("am_category").value;
+    const imageFile = document.getElementById("am_image").files[0];
+    const msg = document.getElementById("addMenuMsg");
+    const btn = document.getElementById("am_submitBtn");
+    msg.className = "msg";
+
+    if(!name || !price){
+        msg.classList.add("show","err");
+        msg.textContent = "❌ Fill in the food name and price";
+        return false;
+    }
+
+    const fd = new FormData();
+    fd.append("name", name);
+    fd.append("price", price);
+    fd.append("category", category);
+    if(imageFile) fd.append("image", imageFile);
+
+    btn.disabled = true;
+    btn.textContent = "⏳ Adding...";
+
+    try{
+        const res = await fetch("/add_menu/" + RID, { method: "POST", body: fd });
+        const data = await res.json();
+        if(data.success){
+            msg.classList.add("show","ok");
+            msg.textContent = `✅ "${data.item.name}" added to the menu`;
+
+            const noItemsMsg = document.getElementById("noMenuItemsMsg");
+            if(noItemsMsg) noItemsMsg.remove();
+            document.getElementById("menuManageGrid").prepend(renderMenuCard(data.item));
+            const countEl = document.getElementById("menuItemsCount");
+            countEl.textContent = parseInt(countEl.textContent) + 1;
+
+            document.getElementById("addMenuForm").reset();
+            document.getElementById("am_preview").style.display = "none";
+            document.getElementById("am_fileText").textContent = "📷 Choose Image";
+        } else {
+            msg.classList.add("show","err");
+            msg.textContent = "❌ " + (data.error || "Failed to add item");
+        }
+    } catch(err){
+        msg.classList.add("show","err");
+        msg.textContent = "❌ Server error, please try again";
+    } finally {
+        btn.disabled = false;
+        btn.textContent = "✅ Add Item";
+    }
+    return false;
+}
+
+/* ================================
+   ✏️ EDIT MENU ITEM
+   ================================ */
+function openEditMenu(btn){
+    document.getElementById("em_id").value = btn.dataset.id;
+    document.getElementById("em_name").value = btn.dataset.name;
+    document.getElementById("em_price").value = btn.dataset.price;
+    document.getElementById("em_category").value = btn.dataset.category;
+    document.getElementById("em_image").value = "";
+    document.getElementById("editMenuMsg").className = "msg";
+    document.getElementById("editMenuModal").classList.add("show");
+}
+
+function closeEditMenu(){
+    document.getElementById("editMenuModal").classList.remove("show");
+}
+
+async function submitEditMenu(){
+    const id = document.getElementById("em_id").value;
+    const name = document.getElementById("em_name").value.trim();
+    const price = document.getElementById("em_price").value.trim();
+    const category = document.getElementById("em_category").value;
+    const imageFile = document.getElementById("em_image").files[0];
+    const msg = document.getElementById("editMenuMsg");
+    msg.className = "msg";
+
+    if(!name || !price){
+        msg.classList.add("show","err");
+        msg.textContent = "❌ Fill in the food name and price";
+        return;
+    }
+
+    const fd = new FormData();
+    fd.append("name", name);
+    fd.append("price", price);
+    fd.append("category", category);
+    if(imageFile) fd.append("image", imageFile);
+
+    try{
+        const res = await fetch(`/edit_menu_item/${RID}/${id}`, { method: "POST", body: fd });
+        const data = await res.json();
+        if(data.success){
+            const oldCard = document.getElementById("mmcard-" + id);
+            if(oldCard) oldCard.replaceWith(renderMenuCard(data.item));
+            closeEditMenu();
+        } else {
+            msg.classList.add("show","err");
+            msg.textContent = "❌ " + (data.error || "Failed to save changes");
+        }
+    } catch(err){
+        msg.classList.add("show","err");
+        msg.textContent = "❌ Server error, please try again";
+    }
+}
+
+/* ================================
+   🗑 DELETE MENU ITEM
+   ================================ */
+async function deleteMenuItem(btn){
+    const id = btn.dataset.id;
+    const name = btn.dataset.name;
+    if(!confirm(`Delete "${name}" from the menu? This cannot be undone.`)) return;
+
+    try{
+        const res = await fetch(`/delete_menu_item/${RID}/${id}`, { method: "DELETE" });
+        const data = await res.json();
+        if(data.success){
+            const card = document.getElementById("mmcard-" + id);
+            if(card) card.remove();
+            const countEl = document.getElementById("menuItemsCount");
+            countEl.textContent = Math.max(0, parseInt(countEl.textContent) - 1);
+            if(countEl.textContent === "0"){
+                document.getElementById("menuManageGrid").innerHTML =
+                    '<div style="color:var(--muted);font-size:13px;text-align:center;padding:14px;grid-column:1/-1;" id="noMenuItemsMsg">No menu items yet</div>';
+            }
+        } else {
+            alert("❌ " + (data.error || "Failed to delete item"));
+        }
+    } catch(err){
+        alert("❌ Server error, please try again");
+    }
 }
 </script>
 

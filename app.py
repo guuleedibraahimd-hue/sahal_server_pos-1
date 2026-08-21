@@ -3078,14 +3078,19 @@ def get_calls(rid):
 @app.route("/add_menu/<rid>", methods=["POST"])
 def add_menu(rid):
     if not session.get("staff_ok") or session.get("staff_role") != "cashier" or session.get("staff_rid") != rid:
-        return "Unauthorized — only the Cashier can add menu items ❌", 401
+        return jsonify({"success": False, "error": "Unauthorized — only the Cashier can add menu items"}), 401
     try:
-        name = request.form["name"]
-        price = request.form["price"]
+        name = request.form.get("name", "").strip()
+        price = request.form.get("price", "").strip()
         category = request.form.get("category", "").strip()
-        image_file = request.files["image"]
+        image_file = request.files.get("image")
 
-        image_url = upload_to_firebase_storage(image_file, folder=f"menu/{rid}")
+        if not name or not price:
+            return jsonify({"success": False, "error": "Food name and price are required"})
+
+        image_url = ""
+        if image_file and image_file.filename:
+            image_url = upload_to_firebase_storage(image_file, folder=f"menu/{rid}")
 
         menu_data = {
             "name": name,
@@ -3095,11 +3100,53 @@ def add_menu(rid):
             "created_at": datetime.now()
         }
 
-        db.collection("restaurants").document(rid).collection("menu").add(menu_data)
-        return redirect(f"/cashier_dashboard/{rid}")
+        doc_ref = db.collection("restaurants").document(rid).collection("menu").add(menu_data)
+        menu_data["id"] = doc_ref[1].id
+        return jsonify({"success": True, "item": menu_data})
 
     except Exception as e:
-        return f"Add Menu Error ❌ {str(e)}"
+        return jsonify({"success": False, "error": str(e)})
+
+
+@app.route("/edit_menu_item/<rid>/<item_id>", methods=["POST"])
+def edit_menu_item(rid, item_id):
+    if not session.get("staff_ok") or session.get("staff_role") != "cashier" or session.get("staff_rid") != rid:
+        return jsonify({"success": False, "error": "Unauthorized — only the Cashier can edit menu items"}), 401
+    try:
+        name = request.form.get("name", "").strip()
+        price = request.form.get("price", "").strip()
+        category = request.form.get("category", "").strip()
+        image_file = request.files.get("image")
+
+        if not name or not price:
+            return jsonify({"success": False, "error": "Food name and price are required"})
+
+        item_ref = db.collection("restaurants").document(rid).collection("menu").document(item_id)
+        if not item_ref.get().exists:
+            return jsonify({"success": False, "error": "Menu item not found"})
+
+        update_fields = {"name": name, "price": price, "category": category}
+        if image_file and image_file.filename:
+            update_fields["image"] = upload_to_firebase_storage(image_file, folder=f"menu/{rid}")
+
+        item_ref.update(update_fields)
+        updated = item_ref.get().to_dict()
+        updated["id"] = item_id
+        return jsonify({"success": True, "item": updated})
+
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+
+@app.route("/delete_menu_item/<rid>/<item_id>", methods=["DELETE"])
+def delete_menu_item(rid, item_id):
+    if not session.get("staff_ok") or session.get("staff_role") != "cashier" or session.get("staff_rid") != rid:
+        return jsonify({"success": False, "error": "Unauthorized — only the Cashier can delete menu items"}), 401
+    try:
+        db.collection("restaurants").document(rid).collection("menu").document(item_id).delete()
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
 
 
 # =====================================
