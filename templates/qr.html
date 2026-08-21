@@ -301,8 +301,8 @@
             <button class="btn print" onclick="printQR()">
                 🖨 Print QR
             </button>
-            <button class="btn close" onclick="goBack()">
-                ✕ Share QR
+            <button class="btn close" onclick="closeQRResult()">
+                ✕ Close
             </button>
         </div>
 
@@ -310,7 +310,7 @@
 </div>
 
 <br>
-<button class="close-btn" onclick="goBack()">Close</button>
+<button class="close-btn" onclick="closeQRResult()">Close</button>
 
 <script>
 function printQR(){
@@ -332,7 +332,14 @@ function printQR(){
     w.document.close();
 }
 
-function goBack(){
+/* This markup gets used two ways: (1) fetched as HTML text and injected
+   into a dashboard's #qrResult div via innerHTML — in which case this
+   whole <script> block never actually runs (browsers don't execute
+   <script> tags inserted that way), so the onclick just resolves to
+   whatever printQR/closeQRResult the OUTER page already defined —
+   or (2) loaded directly as its own page, in which case THIS script
+   is what runs and needs a real fallback. Covering both here. */
+function closeQRResult(){
     window.location.href="/dashboard/{{ rid }}";
 }
 </script>

@@ -763,12 +763,42 @@ hr{border:none;border-top:1px solid var(--border);margin:0;}
 const RID = "{{rid}}"
 
 function openQR()     { document.getElementById("qrPopup").style.display="flex" }
-function closeQR()    { document.getElementById("qrPopup").style.display="none" }
+function closeQR()    { document.getElementById("qrPopup").style.display="none"; document.getElementById("qrResult").innerHTML="" }
 
 // Close popup on backdrop click
 document.querySelectorAll('.popup').forEach(p=>{
     p.addEventListener('click',e=>{ if(e.target===p) p.style.display="none" })
 })
+
+/* Called from the QR card's own buttons — that card's HTML is fetched
+   as text and injected via innerHTML, so its own <script> never
+   executes; these real definitions here are what its
+   onclick="printQR()" / onclick="closeQRResult()" actually resolve
+   to and run. */
+function printQR(){
+    const imgEl = document.querySelector("#qrResult #qrimg");
+    if(!imgEl) return;
+    const img = imgEl.src;
+    const w = window.open("", "_blank");
+    w.document.write(`
+        <html>
+        <body style="text-align:center;padding:40px;">
+            <img src="${img}" style="width:300px;height:300px;">
+            <script>
+                window.onload=function(){
+                    window.print();
+                    window.close();
+                }
+            <\/script>
+        </body>
+        </html>
+    `);
+    w.document.close();
+}
+
+function closeQRResult(){
+    closeQR();
+}
 
 function generateQR(){
     let table = document.getElementById("tableInput").value

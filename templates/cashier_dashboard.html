@@ -163,6 +163,8 @@ table.orders-tbl td{ padding:10px 6px; border-bottom:1px solid #f4f4f4; vertical
 .mm-name{ font-size:13px; font-weight:800; padding:8px 10px 0; }
 .mm-price{ font-size:12.5px; color:var(--orange); font-weight:800; padding:2px 10px; }
 .mm-cat{ font-size:10.5px; color:var(--muted); padding:0 10px 10px; text-transform:capitalize; }
+.date-search-row{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+.date-search-row input[type="date"]{ padding:10px 14px; border-radius:10px; border:1px solid #ddd; font-size:13px; font-family:inherit; }
 
 @media(max-width:800px){
     .sidebar{ display:none; }
@@ -395,17 +397,27 @@ table.orders-tbl td{ padding:10px 6px; border-bottom:1px solid #f4f4f4; vertical
         <!-- ============ WAITERS PAGE ============ -->
         <div class="page" id="page-waiters">
             <div class="section">
-                <div class="section-head"><h2>👥 Waiters Today</h2></div>
-                {% for w in waiters_performance %}
-                <div class="wp-row">
-                    <div class="w-avatar">{{ w.name[:1]|upper }}</div>
-                    <div class="wp-name">{{ w.name }}</div>
-                    <div class="wp-orders">{{ w.orders }} ord</div>
-                    <div class="wp-sales">${{ "%.2f"|format(w.sales) }}</div>
-                </div>
-                {% else %}
-                <div style="color:var(--muted);font-size:13px;text-align:center;padding:14px;">No waiter orders yet today</div>
-                {% endfor %}
+                <div class="section-head"><h2>👥 Waiters Performance</h2></div>
+                <form method="get" action="#waiters" class="date-search-row" onsubmit="return goToWaitersDate(event)">
+                    <input type="date" id="reportDateInput" value="{{ report_date }}">
+                    <button type="submit" class="qr-btn" style="margin-bottom:0;width:auto;padding:11px 20px;">🔍 Search Date</button>
+                </form>
+                <table class="tx-tbl" style="margin-top:14px;">
+                    <tr><th>Waiter</th><th>Orders</th><th>Sales</th><th>% of Day</th><th>Active Hours</th></tr>
+                    {% for w in waiters_performance %}
+                    <tr>
+                        <td>
+                            <div class="waiter-cell"><div class="w-avatar">{{ w.name[:1]|upper }}</div>{{ w.name }}</div>
+                        </td>
+                        <td>{{ w.orders }}</td>
+                        <td><b>${{ "%.2f"|format(w.sales) }}</b></td>
+                        <td>{{ w.percentage }}%</td>
+                        <td>{{ w.active_hours }}</td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="5" style="text-align:center;color:var(--muted);padding:16px;">No waiters registered yet</td></tr>
+                    {% endfor %}
+                </table>
             </div>
         </div>
 
@@ -515,6 +527,18 @@ function showPage(id, el){
     window.scrollTo({top:0, behavior:"smooth"});
 }
 
+function goToWaitersDate(e){
+    e.preventDefault();
+    const d = document.getElementById("reportDateInput").value;
+    if(d){ window.location.href = `/cashier_dashboard/${RID}?report_date=${d}#waiters`; }
+    return false;
+}
+
+// If we just reloaded from a date search, reopen the Waiters page.
+if(new URLSearchParams(window.location.search).has("report_date")){
+    document.addEventListener("DOMContentLoaded", () => showPage("waiters"));
+}
+
 async function openShift(){
     const opening_cash = parseFloat(document.getElementById("opening_cash").value) || 0;
     const res = await fetch(`/cashier_shift/${RID}/open`, {
@@ -584,6 +608,37 @@ async function confirmCloseShift(){
 function openQRModal(){ document.getElementById("qrModal").classList.add("show"); }
 function closeQRModal(){ document.getElementById("qrModal").classList.remove("show"); document.getElementById("qrResult").innerHTML = ""; }
 
+/* Called from the QR card's own buttons (that card's HTML is fetched
+   as text and injected into #qrResult via innerHTML — browsers never
+   execute <script> tags inserted that way, so the card's own copies of
+   these functions never actually register; these real definitions
+   here are what the onclick="printQR()" / onclick="closeQRResult()"
+   in the injected card actually resolve to and run). */
+function printQR(){
+    const imgEl = document.querySelector("#qrResult #qrimg");
+    if(!imgEl) return;
+    const img = imgEl.src;
+    const w = window.open("", "_blank");
+    w.document.write(`
+        <html>
+        <body style="text-align:center;padding:40px;">
+            <img src="${img}" style="width:300px;height:300px;">
+            <script>
+                window.onload=function(){
+                    window.print();
+                    window.close();
+                }
+            <\/script>
+        </body>
+        </html>
+    `);
+    w.document.close();
+}
+
+function closeQRResult(){
+    closeQRModal();
+}
+
 function generateQR(){
     const table = document.getElementById("tableInput").value;
     fetch("/generate_qr/" + RID, {
@@ -591,6 +646,9 @@ function generateQR(){
         headers: {"Content-Type": "application/x-www-form-urlencoded"},
         body: "table=" + encodeURIComponent(table)
     }).then(res => res.text()).then(data => {
+        // Fresh generation every time the form is submitted — always
+        // replaces whatever was here before, so reopening never shows
+        // a stale QR from an earlier table.
         document.getElementById("qrResult").innerHTML = data;
     });
 }

@@ -431,9 +431,18 @@ if(donutEl){ donutEl.style.background = donutEl.dataset.gradient; }
 
 /* ── Deep-link from a table's QR code: jump straight to New Order
    with the table pre-filled, so the waiter never has to type it or
-   go hunting for the right page. ── */
+   go hunting for the right page. Also remembers (for the rest of this
+   browser tab's session) that we arrived via a table QR scan — used
+   below to skip the "Print Now?" prompt, since a phone that just
+   scanned a table QR has no printer attached to it. ── */
 const PREFILL_TABLE = "{{ prefill_table }}";
 const OPEN_VIEW      = "{{ open_view }}";
+if(PREFILL_TABLE){
+    try{ sessionStorage.setItem("sahal_via_qr", "1"); }catch(e){}
+}
+function cameViaQR(){
+    try{ return sessionStorage.getItem("sahal_via_qr") === "1"; }catch(e){ return false; }
+}
 document.addEventListener("DOMContentLoaded", () => {
     if(PREFILL_TABLE){
         document.getElementById("tableNo").value = PREFILL_TABLE;
@@ -584,8 +593,19 @@ async function sendOrder(){
             document.getElementById("existingOrderBanner").style.display = "none";
             lastReceiptUrl = data.receipt_url || null;
             lastOrderId = data.order_id || null;
-            document.getElementById("printModalTitle").textContent = data.merged ? "Order Updated!" : "Order Sent!";
-            document.getElementById("printModal").classList.add("show");
+
+            if(cameViaQR()){
+                // Arrived here via a table QR scan on a phone — there's
+                // no printer attached to this device, so skip the
+                // Print Now / Wait prompt entirely and go straight to
+                // "Waiting to Print" (unmarked, exactly like choosing
+                // "Wait / Print Later" would do) so the desktop/kitchen
+                // side can print it once it's actually near a printer.
+                setTimeout(() => location.reload(), 900);
+            } else {
+                document.getElementById("printModalTitle").textContent = data.merged ? "Order Updated!" : "Order Sent!";
+                document.getElementById("printModal").classList.add("show");
+            }
         } else {
             msg.classList.add("show","err");
             msg.textContent = "❌ " + (data.error || "Failed to send order");
