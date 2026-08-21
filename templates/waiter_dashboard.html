@@ -229,21 +229,6 @@ table.tx-tbl td{ padding:9px 6px; border-bottom:1px solid #f4f4f4; }
         <!-- ============ NEW ORDER PAGE ============ -->
         <div class="page" id="page-neworder">
 
-            {% if waiting_orders %}
-            <div class="section">
-                <div class="section-head"><h2>⏳ Waiting to Print ({{ waiting_orders|length }})</h2></div>
-                {% for o in waiting_orders %}
-                <div class="order-row">
-                    <div>#{{ o.receipt_ref or o.id[:6] }} · Table {{ o.table }} — {{ o['items'] }}</div>
-                    <div style="display:flex;align-items:center;gap:8px;">
-                        <span class="status-pill status-{{ (o.status or 'pending')|lower }}">{{ o.status }}</span>
-                        <a href="/receipt/{{ rid }}/{{ o.id }}" target="_blank" class="receipt-link" data-order-id="{{ o.id }}" onclick="markPrinted(this)">🖨️</a>
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
-            {% endif %}
-
             <div class="section">
                 <div class="section-head"><h2>🍔 New Order</h2></div>
 
@@ -299,6 +284,21 @@ table.tx-tbl td{ padding:9px 6px; border-bottom:1px solid #f4f4f4; }
                     <div class="msg" id="orderMsg"></div>
                 </div>
             </div>
+
+            {% if waiting_orders %}
+            <div class="section">
+                <div class="section-head"><h2>⏳ Waiting to Print ({{ waiting_orders|length }})</h2></div>
+                {% for o in waiting_orders %}
+                <div class="order-row">
+                    <div>#{{ o.receipt_ref or o.id[:6] }} · Table {{ o.table }} — {{ o['items'] }}</div>
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <span class="status-pill status-{{ (o.status or 'pending')|lower }}">{{ o.status }}</span>
+                        <a href="/receipt/{{ rid }}/{{ o.id }}" target="_blank" class="receipt-link" data-order-id="{{ o.id }}" onclick="markPrinted(this)">🖨️</a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
         </div>
 
         <!-- ============ MY ORDERS PAGE ============ -->

@@ -2603,6 +2603,14 @@ def cashier_dashboard(rid):
         )
 
     today = datetime.now().strftime("%Y-%m-%d")
+    report_date = request.args.get("report_date", today)
+    try:
+        rd_obj = datetime.strptime(report_date, "%Y-%m-%d")
+    except Exception:
+        rd_obj = datetime.now()
+        report_date = today
+    report_day_start = rd_obj.replace(hour=0, minute=0, second=0, microsecond=0)
+    report_day_end = report_day_start + timedelta(days=1)
 
     menu_items = []
     for mdoc in restaurant_ref.collection("menu").stream():
@@ -2671,16 +2679,59 @@ def cashier_dashboard(rid):
             item_agg[name]["sales"] += price * qty
     top_items = sorted(item_agg.values(), key=lambda x: x["sales"], reverse=True)[:5]
 
-    # ---- Waiters Performance Today (from today's paid orders) ----
+    # ---- Waiters Performance for the searched report_date (defaults to
+    # today) — includes every registered waiter, even ones with zero
+    # orders that day, with % share of that day's sales and an "active
+    # hours" span (first order -> last order that day, since there's
+    # no separate waiter clock-in/out system — this is a real, derived
+    # figure, not a fabricated one). ----
+    report_orders = []
+    for doc in restaurant_ref.collection("orders") \
+            .where("created_at", ">=", report_day_start) \
+            .where("created_at", "<", report_day_end).stream():
+        o = doc.to_dict()
+        report_orders.append(o)
+
     waiter_agg = {}
-    for o in todays_paid_orders:
+    for doc in restaurant_ref.collection("staff_accounts").where("role", "==", "waiter").stream():
+        s = doc.to_dict()
+        wid = s.get("employee_id")
+        if wid:
+            waiter_agg[wid] = {"employee_id": wid, "name": s.get("name", wid),
+                                "orders": 0, "sales": 0.0, "percentage": 0.0,
+                                "first_order": None, "last_order": None, "active_hours": "—"}
+
+    report_day_sales_total = 0.0
+    for o in report_orders:
         wid = o.get("employee_id")
         if not wid:
             continue
         if wid not in waiter_agg:
-            waiter_agg[wid] = {"employee_id": wid, "name": o.get("employee_name", wid), "orders": 0, "sales": 0.0}
-        waiter_agg[wid]["orders"] += 1
-        waiter_agg[wid]["sales"] += float(o.get("price", 0))
+            waiter_agg[wid] = {"employee_id": wid, "name": o.get("employee_name", wid),
+                                "orders": 0, "sales": 0.0, "percentage": 0.0,
+                                "first_order": None, "last_order": None, "active_hours": "—"}
+        created = o.get("created_at")
+        if hasattr(created, "timestamp"):
+            if waiter_agg[wid]["first_order"] is None or created < waiter_agg[wid]["first_order"]:
+                waiter_agg[wid]["first_order"] = created
+            if waiter_agg[wid]["last_order"] is None or created > waiter_agg[wid]["last_order"]:
+                waiter_agg[wid]["last_order"] = created
+        if str(o.get("status", "")).lower() == "paid":
+            waiter_agg[wid]["orders"] += 1
+            amount = float(o.get("price", 0))
+            waiter_agg[wid]["sales"] += amount
+            report_day_sales_total += amount
+
+    for w in waiter_agg.values():
+        if report_day_sales_total > 0:
+            w["percentage"] = round((w["sales"] / report_day_sales_total) * 100, 1)
+        w["sales"] = round(w["sales"], 2)
+        if w["first_order"] and w["last_order"]:
+            span = w["last_order"] - w["first_order"]
+            total_minutes = int(span.total_seconds() // 60)
+            h, m = divmod(total_minutes, 60)
+            w["active_hours"] = f"{h}h {m}m" if total_minutes > 0 else "< 1m"
+
     waiters_performance = sorted(waiter_agg.values(), key=lambda x: x["sales"], reverse=True)
 
     # ---- THIS cashier's shift-scoped totals ----
@@ -2728,6 +2779,7 @@ def cashier_dashboard(rid):
         donut_gradient=donut_gradient,
         top_items=top_items,
         waiters_performance=waiters_performance,
+        report_date=report_date,
         # this cashier's shift
         shift_collected=round(shift_collected, 2),
         shift_orders_count=len(shift_transactions),
