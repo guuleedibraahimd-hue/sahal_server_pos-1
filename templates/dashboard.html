@@ -202,9 +202,6 @@ body{
     padding:10px 20px;font-weight:800;font-size:13px;cursor:pointer;
     font-family:'Plus Jakarta Sans',sans-serif;
 }
-.arb-status{ font-size:12px;font-weight:700; }
-.arb-status.ok{ color:var(--green); }
-.arb-status.err{ color:var(--red); }
 
 .topbar-right{
     display:flex;align-items:center;gap:12px;
@@ -656,20 +653,18 @@ hr{border:none;border-top:1px solid var(--border);margin:0;}
             <p>Manage your menu, ads and restaurant easily</p>
         </div>
 
-        <div class="admin-reverify-box">
+        <form class="admin-reverify-box" action="/restaurant_admin_login/{{ rid }}" method="post">
             <div class="arb-icon">🛡️</div>
             <div class="arb-text">
                 <div class="arb-title">Admin Login</div>
-                <div class="arb-sub">Access your admin account</div>
+                <div class="arb-sub">Open the full analytics &amp; staff panel</div>
             </div>
-            <input type="text" id="arb_username" placeholder="Username">
             <div class="arb-pass-wrap">
-                <input type="password" id="arb_password" placeholder="Password">
+                <input type="password" id="arb_password" name="password" placeholder="Admin password" required>
                 <span class="arb-eye" onclick="toggleArbPassword()">👁️</span>
             </div>
-            <button class="arb-login-btn" onclick="verifyAdminLogin()">Login</button>
-            <span class="arb-status" id="arbStatus"></span>
-        </div>
+            <button type="submit" class="arb-login-btn">Login</button>
+        </form>
 
         <div class="topbar-right">
             <div class="topbar-icon">
@@ -854,46 +849,12 @@ function updateSidebarClock(){
 updateSidebarClock();
 setInterval(updateSidebarClock, 30000);
 
-/* ── Admin quick re-verify box (topbar) ──
-   The dashboard is already gated by a real session set at /login —
-   this box just re-checks the same username/password inline, for an
-   admin whose session might have lapsed mid-work, without navigating
-   away from what they're doing. */
+/* ── Admin Login box (topbar): plain form → /restaurant_admin_login,
+   opens the full analytics/staff panel. Only JS needed here is the
+   show/hide password toggle. ── */
 function toggleArbPassword(){
     const input = document.getElementById("arb_password");
     input.type = input.type === "password" ? "text" : "password";
-}
-
-async function verifyAdminLogin(){
-    const username = document.getElementById("arb_username").value.trim();
-    const password = document.getElementById("arb_password").value.trim();
-    const status = document.getElementById("arbStatus");
-    status.className = "arb-status";
-
-    if(!username || !password){
-        status.classList.add("err");
-        status.textContent = "❌ Enter both fields";
-        return;
-    }
-
-    try{
-        const res = await fetch(`/verify_admin_login/${RID}`, {
-            method: "POST",
-            headers: {"Content-Type": "application/json"},
-            body: JSON.stringify({ username, password })
-        });
-        const data = await res.json();
-        if(data.success){
-            status.classList.add("ok");
-            status.textContent = "✅ Verified";
-        } else {
-            status.classList.add("err");
-            status.textContent = "❌ " + (data.error || "Wrong credentials");
-        }
-    } catch(e){
-        status.classList.add("err");
-        status.textContent = "❌ Server error";
-    }
 }
 
 function openQR()     { document.getElementById("qrPopup").style.display="flex" }

@@ -354,6 +354,32 @@ select, .range-select{
     font-size:14px;
 }
 
+/* staff cards */
+.staff-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:14px; margin-top:14px; }
+.staff-card{ border:1px solid #eee; border-radius:12px; padding:14px; }
+.staff-card-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+.staff-name{ font-weight:800; font-size:14px; }
+.staff-role-badge{ font-size:11px; font-weight:800; padding:3px 10px; border-radius:12px; text-transform:capitalize; }
+.staff-role-badge.waiter{ background:#fff4de; color:#c77800; }
+.staff-role-badge.cashier{ background:var(--green-light); color:var(--green); }
+.staff-detail{ font-size:12.5px; color:var(--text-muted); margin-top:3px; }
+.staff-actions{ display:flex; gap:8px; margin-top:12px; }
+.staff-actions button{ flex:1; padding:8px; border:none; border-radius:8px; font-weight:700; font-size:12px; cursor:pointer; }
+.btn-edit-staff{ background:var(--blue); color:#fff; }
+.btn-del-staff{ background:var(--red); color:#fff; }
+.staff-status-active{ color:var(--green); font-weight:700; font-size:12px; }
+.staff-status-off{ color:var(--red); font-weight:700; font-size:12px; }
+
+/* edit staff modal */
+.modal-bg{ display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); align-items:center; justify-content:center; z-index:999; padding:16px; }
+.modal-bg.show{ display:flex; }
+.modal-box{ background:#fff; border-radius:16px; padding:24px; width:100%; max-width:340px; }
+.modal-box h3{ margin:0 0 16px; font-size:16px; }
+.modal-box input{ width:100%; padding:11px 12px; border-radius:8px; border:1px solid #e5e5ee; font-size:14px; margin-bottom:12px; box-sizing:border-box; }
+.modal-actions{ display:flex; gap:8px; }
+.modal-actions button{ flex:1; padding:11px; border:none; border-radius:9px; font-weight:700; cursor:pointer; font-size:13px; }
+.btn-cancel{ background:#f1f1f6; color:#333; }
+
 /* menu grid */
 .menu-item{
     display:flex;
@@ -407,6 +433,9 @@ canvas{max-width:100%;}
         </a>
         <a class="nav-item" href="#settings-section">
             <span class="icon">⚙️</span> Settings
+        </a>
+        <a class="nav-item" href="#staff-section">
+            <span class="icon">👥</span> Staff
         </a>
         <a class="nav-item" href="#system-section">
             <span class="icon">🧹</span> System Controls
@@ -601,6 +630,38 @@ canvas{max-width:100%;}
             </form>
         </div>
 
+        <!-- STAFF -->
+        <div class="panel" id="staff-section" style="margin-bottom:16px;">
+            <div class="panel-head">
+                <h3 style="margin:0;">👥 Staff ({{ staff|length }})</h3>
+                <a href="/staff_manage/{{ rid }}" target="_blank" class="range-select" style="text-decoration:none;">➕ Add Staff</a>
+            </div>
+            <p style="font-size:12.5px;color:var(--text-muted);margin:-6px 0 4px;">
+                Waiter/Cashier customer-limit tracking isn't built yet, so it isn't shown here — everything below (name, role, employee ID, PIN, active status) is real.
+            </p>
+            <div class="staff-grid">
+                {% for s in staff %}
+                <div class="staff-card" id="staffcard-{{ s.id }}">
+                    <div class="staff-card-head">
+                        <span class="staff-name">{{ s.name }}</span>
+                        <span class="staff-role-badge {{ s.role }}">{{ s.role }}</span>
+                    </div>
+                    <div class="staff-detail">🆔 {{ s.employee_id }}</div>
+                    <div class="staff-detail">🔐 PIN: {{ s.pin }}</div>
+                    <div class="staff-detail">
+                        {% if s.active %}<span class="staff-status-active">✅ Active</span>{% else %}<span class="staff-status-off">❌ Disabled</span>{% endif %}
+                    </div>
+                    <div class="staff-actions">
+                        <button class="btn-edit-staff" data-id="{{ s.id }}" data-name="{{ s.name }}" data-employee-id="{{ s.employee_id }}" onclick="openEditStaff(this)">✏️ Edit</button>
+                        <button class="btn-del-staff" data-id="{{ s.id }}" data-name="{{ s.name|e }}" onclick="deleteStaff(this)">🗑 Delete</button>
+                    </div>
+                </div>
+                {% else %}
+                <p class="empty">No staff accounts yet</p>
+                {% endfor %}
+            </div>
+        </div>
+
         <!-- SYSTEM CONTROLS -->
         <div class="panel" id="system-section" style="margin-bottom:30px;">
             <h3>🧹 System Controls</h3>
@@ -711,6 +772,86 @@ new Chart(document.getElementById('categoryChart'), {
         scales:{y:{beginAtZero:true}}
     }
 });
+</script>
+
+<!-- EDIT STAFF MODAL -->
+<div class="modal-bg" id="editStaffModal">
+    <div class="modal-box">
+        <h3>✏️ Edit Staff</h3>
+        <input type="hidden" id="es_id">
+        <input type="text" id="es_name" placeholder="Name">
+        <input type="text" id="es_employee_id" placeholder="Employee ID">
+        <input type="text" id="es_pin" placeholder="New PIN (leave blank to keep current)" maxlength="6">
+        <div id="editStaffMsg" style="font-size:12.5px;font-weight:700;margin-bottom:10px;"></div>
+        <div class="modal-actions">
+            <button class="btn-cancel" onclick="closeEditStaff()">Cancel</button>
+            <button class="btn-primary" style="width:auto;flex:1;" onclick="submitEditStaff()">Save</button>
+        </div>
+    </div>
+</div>
+
+<script>
+const RID_STAFF = "{{ rid }}";
+
+function openEditStaff(btn){
+    document.getElementById("es_id").value = btn.dataset.id;
+    document.getElementById("es_name").value = btn.dataset.name;
+    document.getElementById("es_employee_id").value = btn.dataset.employeeId;
+    document.getElementById("es_pin").value = "";
+    document.getElementById("editStaffMsg").textContent = "";
+    document.getElementById("editStaffModal").classList.add("show");
+}
+
+function closeEditStaff(){
+    document.getElementById("editStaffModal").classList.remove("show");
+}
+
+async function submitEditStaff(){
+    const id = document.getElementById("es_id").value;
+    const name = document.getElementById("es_name").value.trim();
+    const employee_id = document.getElementById("es_employee_id").value.trim();
+    const pin = document.getElementById("es_pin").value.trim();
+    const msg = document.getElementById("editStaffMsg");
+    msg.style.color = "";
+    msg.textContent = "";
+
+    try{
+        const res = await fetch(`/staff_manage/${RID_STAFF}/edit/${id}`, {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({ name, employee_id, pin })
+        });
+        const data = await res.json();
+        if(data.success){
+            location.reload();
+        } else {
+            msg.style.color = "var(--red)";
+            msg.textContent = "❌ " + (data.error || "Failed to save");
+        }
+    } catch(e){
+        msg.style.color = "var(--red)";
+        msg.textContent = "❌ Server error";
+    }
+}
+
+async function deleteStaff(btn){
+    const id = btn.dataset.id;
+    const name = btn.dataset.name;
+    if(!confirm(`Delete staff account "${name}"? This cannot be undone.`)) return;
+
+    try{
+        const res = await fetch(`/staff_manage/${RID_STAFF}/delete/${id}`, { method: "DELETE" });
+        const data = await res.json();
+        if(data.success){
+            const card = document.getElementById("staffcard-" + id);
+            if(card) card.remove();
+        } else {
+            alert("❌ " + (data.error || "Failed to delete"));
+        }
+    } catch(e){
+        alert("❌ Server error");
+    }
+}
 </script>
 
 </body>

@@ -2049,11 +2049,20 @@ def restaurant_admin(rid):
         category_labels = list(category_revenue.keys()) or ["No Data"]
         category_values = [round(v, 2) for v in category_revenue.values()] or [0]
 
+        # ---------- Staff (waiters + cashiers) ----------
+        staff = []
+        for doc in restaurant_ref.collection("staff_accounts").stream():
+            s = doc.to_dict()
+            s["id"] = doc.id
+            staff.append(s)
+        staff.sort(key=lambda x: (x.get("role", ""), x.get("employee_id", "")))
+
         return render_template(
             "restaurant_admin.html",
             r=restaurant,
             menu=menu,
             orders=orders,
+            staff=staff,
             total=round(total, 2),
             profit=round(total, 2),
             loss=0,
@@ -2249,10 +2258,22 @@ def get_active_cashier_shift(rid, employee_id):
 
 # =====================================
 # 🧑‍💼 STAFF MANAGEMENT (Admin — create/list/toggle/delete Waiter & Cashier accounts)
+# Reachable from either restaurant admin surface: the menu/ads dashboard
+# (session["restaurant_login"]) or the analytics panel at
+# /restaurant_admin (session["admin_<rid>"]) — both are legitimate
+# "I am this restaurant's owner" credentials, just two different
+# passwords, so either one authorizes staff management.
 # =====================================
+def _restaurant_admin_authorized(rid):
+    return (
+        (session.get("restaurant_login") and session.get("restaurant_id") == rid)
+        or session.get("admin_" + str(rid))
+    )
+
+
 @app.route("/staff_manage/<rid>")
 def staff_manage(rid):
-    if not session.get("restaurant_login") or session.get("restaurant_id") != rid:
+    if not _restaurant_admin_authorized(rid):
         return redirect("/login")
     try:
         restaurant_doc = db.collection("restaurants").document(rid).get()
@@ -2273,7 +2294,7 @@ def staff_manage(rid):
 
 @app.route("/staff_manage/<rid>/create", methods=["POST"])
 def staff_create(rid):
-    if not session.get("restaurant_login") or session.get("restaurant_id") != rid:
+    if not _restaurant_admin_authorized(rid):
         return jsonify({"success": False, "error": "Unauthorized"}), 401
     try:
         data = request.get_json() or {}
@@ -2312,9 +2333,51 @@ def staff_create(rid):
         return jsonify({"success": False, "error": str(e)})
 
 
+@app.route("/staff_manage/<rid>/edit/<staff_id>", methods=["POST"])
+def staff_edit(rid, staff_id):
+    if not _restaurant_admin_authorized(rid):
+        return jsonify({"success": False, "error": "Unauthorized"}), 401
+    try:
+        data = request.get_json() or {}
+        name = data.get("name", "").strip()
+        pin  = data.get("pin", "").strip()
+        new_employee_id = data.get("employee_id", "").strip().upper()
+
+        staff_ref = db.collection("restaurants").document(rid).collection("staff_accounts")
+        item_ref = staff_ref.document(staff_id)
+        item_doc = item_ref.get()
+        if not item_doc.exists:
+            return jsonify({"success": False, "error": "Staff account not found"})
+
+        update_fields = {}
+        if name:
+            update_fields["name"] = name
+        if pin:
+            if not pin.isdigit() or not (4 <= len(pin) <= 6):
+                return jsonify({"success": False, "error": "PIN must be 4-6 digits"})
+            update_fields["pin"] = pin
+        if new_employee_id and new_employee_id != item_doc.to_dict().get("employee_id"):
+            if not re.match(r'^[A-Z0-9\-_]{2,20}$', new_employee_id):
+                return jsonify({"success": False, "error": "Employee ID may only use letters, numbers, - and _ (2-20 characters)"})
+            existing = list(staff_ref.where("employee_id", "==", new_employee_id).limit(1).stream())
+            if existing and existing[0].id != staff_id:
+                return jsonify({"success": False, "error": f"Employee ID '{new_employee_id}' is already in use"})
+            update_fields["employee_id"] = new_employee_id
+
+        if not update_fields:
+            return jsonify({"success": False, "error": "Nothing to update"})
+
+        item_ref.update(update_fields)
+        updated = item_ref.get().to_dict()
+        updated["id"] = staff_id
+        return jsonify({"success": True, "staff": updated})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+
 @app.route("/staff_manage/<rid>/toggle/<staff_id>", methods=["POST"])
 def staff_toggle(rid, staff_id):
-    if not session.get("restaurant_login") or session.get("restaurant_id") != rid:
+    if not _restaurant_admin_authorized(rid):
         return jsonify({"success": False, "error": "Unauthorized"}), 401
     try:
         ref = db.collection("restaurants").document(rid).collection("staff_accounts").document(staff_id)
@@ -2330,7 +2393,7 @@ def staff_toggle(rid, staff_id):
 
 @app.route("/staff_manage/<rid>/delete/<staff_id>", methods=["DELETE"])
 def staff_delete(rid, staff_id):
-    if not session.get("restaurant_login") or session.get("restaurant_id") != rid:
+    if not _restaurant_admin_authorized(rid):
         return jsonify({"success": False, "error": "Unauthorized"}), 401
     try:
         db.collection("restaurants").document(rid).collection("staff_accounts").document(staff_id).delete()
