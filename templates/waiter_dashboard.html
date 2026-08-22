@@ -75,15 +75,15 @@ a{ color:inherit; }
 .table-input{ margin-bottom:14px; }
 .table-input input{ width:100%; max-width:260px; padding:11px 14px; border-radius:10px; border:1px solid #ddd; font-size:14px; }
 
-.menu-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:14px; }
-.menu-item{ border:1px solid #eee; border-radius:14px; overflow:hidden; cursor:pointer; transition:0.15s; background:#fff; }
+.menu-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(110px,1fr)); gap:10px; }
+.menu-item{ border:1px solid #eee; border-radius:12px; overflow:hidden; cursor:pointer; transition:0.15s; background:#fff; }
 .menu-item:hover{ border-color:var(--orange); box-shadow:0 6px 18px rgba(255,87,34,0.15); transform:translateY(-2px); }
-.menu-item .img-wrap{ width:100%; height:110px; background:#f1f3f6; overflow:hidden; display:flex; align-items:center; justify-content:center; }
+.menu-item .img-wrap{ width:100%; height:64px; background:#f1f3f6; overflow:hidden; display:flex; align-items:center; justify-content:center; }
 .menu-item img{ width:100%; height:100%; object-fit:cover; display:block; }
-.menu-item .body{ padding:10px 12px; position:relative; }
-.menu-item .name{ font-size:13px; font-weight:800; }
-.menu-item .price{ font-size:12.5px; color:var(--orange); font-weight:800; margin-top:2px; }
-.menu-item .add-fab{ position:absolute; right:10px; bottom:10px; width:26px; height:26px; border-radius:50%; background:var(--orange); color:#fff; display:flex; align-items:center; justify-content:center; font-size:16px; font-weight:900; }
+.menu-item .body{ padding:7px 9px; position:relative; }
+.menu-item .name{ font-size:11.5px; font-weight:800; padding-right:22px; }
+.menu-item .price{ font-size:11px; color:var(--orange); font-weight:800; margin-top:2px; }
+.menu-item .add-fab{ position:absolute; right:7px; bottom:7px; width:20px; height:20px; border-radius:50%; background:var(--orange); color:#fff; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:900; }
 
 .cart-bar{ display:flex; align-items:center; justify-content:space-between; background:var(--orange); color:#fff; border-radius:12px; padding:14px 18px; margin-top:16px; cursor:pointer; font-weight:800; font-size:14px; }
 .cart-panel{ display:none; margin-top:12px; }
@@ -597,12 +597,6 @@ async function sendOrder(){
             lastOrderId = data.order_id || null;
 
             if(cameViaQR()){
-                // Arrived here via a table QR scan on a phone — there's
-                // no printer attached to this device, so skip the
-                // Print Now / Wait prompt entirely and go straight to
-                // "Waiting to Print" (unmarked, exactly like choosing
-                // "Wait / Print Later" would do) so the desktop/kitchen
-                // side can print it once it's actually near a printer.
                 setTimeout(() => location.reload(), 900);
             } else {
                 document.getElementById("printModalTitle").textContent = data.merged ? "Order Updated!" : "Order Sent!";
@@ -641,8 +635,6 @@ function markPrinted(el){
     if(orderId){
         fetch(`/mark_receipt_printed/${RID}/${orderId}`, { method: "POST" }).catch(() => {});
     }
-    // Let the receipt tab open normally (target="_blank"); reload this
-    // page shortly after so the order drops out of "Waiting to Print".
     setTimeout(() => location.reload(), 600);
 }
 </script>
