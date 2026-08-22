@@ -1993,6 +1993,12 @@ def restaurant_admin(rid):
         item_sales = defaultdict(lambda: {"qty": 0, "revenue": 0.0, "image": "", "name": ""})
         category_revenue = defaultdict(float)  # {category: revenue}
 
+        # Real money report figures — ONLY orders that were actually
+        # paid count as revenue collected (unlike `total` below, which
+        # sums every order regardless of status).
+        paid_revenue_all_time = 0.0
+        paid_orders_all_time = 0
+
         for doc in order_docs:
             order = doc.to_dict()
             order["id"] = doc.id
@@ -2007,6 +2013,10 @@ def restaurant_admin(rid):
             created_at = _parse_created_at(order.get("created_at"))
             status = str(order.get("status") or "pending").lower()
             status_counts[status] += 1
+
+            if status == "paid":
+                paid_revenue_all_time += price
+                paid_orders_all_time += 1
 
             # Only bucket into the range-filtered charts if we have a valid date
             if created_at and created_at >= range_start:
@@ -2065,6 +2075,23 @@ def restaurant_admin(rid):
             s["id"] = doc.id
             staff.append(s)
         staff.sort(key=lambda x: (x.get("role", ""), x.get("employee_id", "")))
+
+        # ---------- Staff work summary (ALL-TIME, not just today) — for
+        # the Staff page's "work they've done" overview ----------
+        staff_work_summary = []
+        for s in staff:
+            eid = s.get("employee_id")
+            role = s.get("role")
+            if not eid or role not in ("waiter", "cashier"):
+                continue
+            txs, tx_total = _staff_all_time_transactions(rid, eid, role)
+            staff_work_summary.append({
+                "name": s.get("name", ""),
+                "employee_id": eid,
+                "role": role,
+                "transaction_count": len(txs),
+                "total_amount": tx_total
+            })
 
         # ---------- Waiter performance (today's paid orders, % of today's sales) ----------
         today_str = datetime.now().strftime("%Y-%m-%d")
@@ -2158,6 +2185,9 @@ def restaurant_admin(rid):
             staff=staff,
             waiter_performance=waiter_performance,
             cashier_performance=cashier_performance,
+            staff_work_summary=staff_work_summary,
+            paid_revenue_all_time=round(paid_revenue_all_time, 2),
+            paid_orders_all_time=paid_orders_all_time,
             total=round(total, 2),
             profit=round(total, 2),
             loss=0,

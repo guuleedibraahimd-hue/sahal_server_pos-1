@@ -413,6 +413,12 @@ select, .range-select{
 .report-tbl th{ text-align:left; padding:10px 8px; background:#faf9ff; font-size:11.5px; color:var(--text-muted); border-bottom:1px solid #eee; }
 .report-tbl td{ padding:10px 8px; border-bottom:1px solid #f4f4f4; }
 
+/* Money report cards */
+.money-cards{ display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:14px; }
+.money-card{ background:var(--purple-light); border-radius:14px; padding:18px; }
+.money-card-label{ font-size:12px; font-weight:700; color:var(--purple); }
+.money-card-value{ font-size:24px; font-weight:900; color:var(--text-dark); margin-top:6px; }
+
 /* menu grid */
 .menu-item{
     display:flex;
@@ -713,9 +719,36 @@ canvas{max-width:100%;}
                 <p class="empty">No staff accounts yet</p>
                 {% endfor %}
             </div>
-            <div style="margin-top:16px;padding-top:16px;border-top:1px solid #eee;">
+        </div>
+
+        <div class="panel" id="staff-work-section" style="margin-bottom:16px;">
+            <h3>🛠️ Work Done — All-Time</h3>
+            <p style="font-size:12.5px;color:var(--text-muted);margin:-8px 0 14px;">
+                Every waiter and cashier's total transactions and money handled since their very first day — for detailed line-by-line history and a PDF export, open Reports.
+            </p>
+            <div style="overflow-x:auto;">
+                <table class="report-tbl">
+                    <thead>
+                        <tr><th>Name</th><th>Role</th><th>Employee ID</th><th>Transactions</th><th>Total Amount</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for w in staff_work_summary %}
+                        <tr>
+                            <td style="font-weight:700;">{{ w.name }}</td>
+                            <td style="text-transform:capitalize;">{{ w.role }}</td>
+                            <td>{{ w.employee_id }}</td>
+                            <td>{{ w.transaction_count }}</td>
+                            <td style="font-weight:700;">${{ "%.2f"|format(w.total_amount) }}</td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="5" class="empty">No staff accounts yet</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div style="margin-top:16px;">
                 <button class="range-select" style="cursor:pointer;" onclick="showPage('reports', document.querySelector('.nav-item[data-page=reports]'))">
-                    📊 View full performance reports (all-time, searchable, PDF) →
+                    📊 Open full Reports (search, PDF, per-order detail) →
                 </button>
             </div>
         </div>
@@ -724,6 +757,28 @@ canvas{max-width:100%;}
 
         <!-- ============ REPORTS PAGE ============ -->
         <div class="page" id="page-reports">
+
+        <div class="panel" id="money-report-section" style="margin-bottom:16px;">
+            <h3>💰 Restaurant Revenue — All Orders, All Time</h3>
+            <p style="font-size:12.5px;color:var(--text-muted);margin:-8px 0 16px;">
+                Only orders that were actually paid count as revenue — pending/cancelled orders are not included.
+            </p>
+            <div class="money-cards">
+                <div class="money-card">
+                    <div class="money-card-label">Total Revenue Collected</div>
+                    <div class="money-card-value">${{ paid_revenue_all_time }}</div>
+                </div>
+                <div class="money-card">
+                    <div class="money-card-label">Paid Orders</div>
+                    <div class="money-card-value">{{ paid_orders_all_time }}</div>
+                </div>
+                <div class="money-card">
+                    <div class="money-card-label">Average Order Value</div>
+                    <div class="money-card-value">${{ "%.2f"|format(paid_revenue_all_time / paid_orders_all_time) if paid_orders_all_time else "0.00" }}</div>
+                </div>
+            </div>
+        </div>
+
         <div class="panel" id="reports-section" style="margin-bottom:16px;">
             <h3>📊 Staff Transaction Reports</h3>
             <p style="font-size:12.5px;color:var(--text-muted);margin:-8px 0 16px;">
@@ -813,8 +868,8 @@ const PAGE_TITLES = {
     orders:    ["Orders", "Every order this restaurant has received."],
     menu:      ["Menu Items", "Read-only — managed by your Cashier."],
     settings:  ["Settings", "Update restaurant credentials and passwords."],
-    staff:     ["Staff", "Create, edit and manage Waiter/Cashier accounts."],
-    reports:   ["Reports", "All-time staff transaction history and PDF export."],
+    staff:     ["Staff", "Accounts, and the all-time work each of them has done."],
+    reports:   ["Reports", "Restaurant revenue totals, plus per-staff transaction history and PDF export."],
     system:    ["System Controls", "Bulk actions — use with care."]
 };
 
