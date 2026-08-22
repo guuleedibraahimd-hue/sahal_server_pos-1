@@ -396,6 +396,23 @@ select, .range-select{
 .perf-bar-fill{ height:100%; width:0; background:var(--blue); border-radius:4px; }
 .perf-bar-fill.cashier{ background:var(--green); }
 
+/* Reports page */
+.role-toggle{ display:flex; gap:8px; margin-bottom:14px; }
+.role-toggle-btn{ padding:10px 18px; border-radius:10px; border:1.5px solid #eee; background:#fff; font-weight:700; font-size:13px; cursor:pointer; color:var(--text-dark); }
+.role-toggle-btn.active{ background:var(--purple); border-color:var(--purple); color:#fff; }
+.report-search{ width:100%; max-width:320px; padding:11px 14px; border-radius:10px; border:1px solid #e5e5ee; font-size:13px; margin-bottom:14px; display:block; }
+.report-staff-list{ display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:8px; }
+.report-staff-item{ display:flex; flex-direction:column; align-items:flex-start; gap:2px; padding:12px 14px; border-radius:10px; border:1.5px solid #eee; background:#fff; cursor:pointer; text-align:left; font-family:inherit; }
+.report-staff-item:hover{ border-color:var(--purple); }
+.report-staff-item.selected{ border-color:var(--purple); background:var(--purple-light); }
+.rsi-name{ font-weight:800; font-size:13.5px; }
+.rsi-id{ font-size:11px; color:var(--text-muted); }
+.report-detail-head{ display:flex; justify-content:space-between; align-items:center; gap:14px; flex-wrap:wrap; }
+.report-total-box{ display:flex; justify-content:space-between; align-items:center; background:var(--purple-light); border-radius:12px; padding:14px 18px; margin-top:16px; font-weight:800; font-size:15px; color:var(--purple); }
+.report-tbl{ width:100%; border-collapse:collapse; font-size:13px; }
+.report-tbl th{ text-align:left; padding:10px 8px; background:#faf9ff; font-size:11.5px; color:var(--text-muted); border-bottom:1px solid #eee; }
+.report-tbl td{ padding:10px 8px; border-bottom:1px solid #f4f4f4; }
+
 /* menu grid */
 .menu-item{
     display:flex;
@@ -452,6 +469,9 @@ canvas{max-width:100%;}
         </a>
         <a class="nav-item" data-page="staff" onclick="showPage('staff', this); return false;" href="#">
             <span class="icon">👥</span> Staff
+        </a>
+        <a class="nav-item" data-page="reports" onclick="showPage('reports', this); return false;" href="#">
+            <span class="icon">📊</span> Reports
         </a>
         <a class="nav-item" data-page="system" onclick="showPage('system', this); return false;" href="#">
             <span class="icon">🧹</span> System Controls
@@ -693,49 +713,70 @@ canvas{max-width:100%;}
                 <p class="empty">No staff accounts yet</p>
                 {% endfor %}
             </div>
-        </div>
-
-        <div class="panel" id="waiter-perf-section" style="margin-bottom:16px;">
-            <h3>🧑‍🍳 Waiter Performance — Today</h3>
-            <p style="font-size:12.5px;color:var(--text-muted);margin:-8px 0 14px;">
-                Share of today's paid sales that came from each waiter's tables.
-            </p>
-            {% for w in waiter_performance %}
-            <div class="perf-row">
-                <div class="perf-row-head">
-                    <span class="perf-name">{{ w.name }}</span>
-                    <span class="perf-orders">{{ w.orders }} orders</span>
-                    <span class="perf-sales">${{ w.sales }}</span>
-                    <span class="perf-pct">{{ w.percentage }}%</span>
-                </div>
-                <div class="perf-bar"><div class="perf-bar-fill" data-pct="{{ w.percentage }}"></div></div>
+            <div style="margin-top:16px;padding-top:16px;border-top:1px solid #eee;">
+                <button class="range-select" style="cursor:pointer;" onclick="showPage('reports', document.querySelector('.nav-item[data-page=reports]'))">
+                    📊 View full performance reports (all-time, searchable, PDF) →
+                </button>
             </div>
-            {% else %}
-            <p class="empty">No waiters registered yet</p>
-            {% endfor %}
-        </div>
-
-        <div class="panel" id="cashier-perf-section" style="margin-bottom:16px;">
-            <h3>💰 Cashier Performance — Today</h3>
-            <p style="font-size:12.5px;color:var(--text-muted);margin:-8px 0 14px;">
-                Each cashier's most recent shift length today, orders they personally confirmed/paid, and their share of all orders confirmed today.
-            </p>
-            {% for c in cashier_performance %}
-            <div class="perf-row">
-                <div class="perf-row-head">
-                    <span class="perf-name">{{ c.name }}</span>
-                    <span class="perf-orders">🕐 {{ c.shift_hours }} ({{ c.shift_status }})</span>
-                    <span class="perf-sales">{{ c.orders_confirmed }} confirmed</span>
-                    <span class="perf-pct">{{ c.percentage }}%</span>
-                </div>
-                <div class="perf-bar"><div class="perf-bar-fill cashier" data-pct="{{ c.percentage }}"></div></div>
-            </div>
-            {% else %}
-            <p class="empty">No cashiers registered yet</p>
-            {% endfor %}
         </div>
         </div>
         <!-- ============ END STAFF PAGE ============ -->
+
+        <!-- ============ REPORTS PAGE ============ -->
+        <div class="page" id="page-reports">
+        <div class="panel" id="reports-section" style="margin-bottom:16px;">
+            <h3>📊 Staff Transaction Reports</h3>
+            <p style="font-size:12.5px;color:var(--text-muted);margin:-8px 0 16px;">
+                Full history from each staff member's very first transaction — not limited to today.
+            </p>
+
+            <div class="role-toggle">
+                <button class="role-toggle-btn active" data-role="waiter" onclick="setReportRole('waiter', this)">🧑‍🍳 Waiters</button>
+                <button class="role-toggle-btn" data-role="cashier" onclick="setReportRole('cashier', this)">💰 Cashiers</button>
+            </div>
+
+            <input type="text" id="reportSearchBox" placeholder="🔍 Search by name…" class="report-search" oninput="filterReportStaffList()">
+
+            <div class="report-staff-list" id="reportStaffList">
+                {% for s in staff %}
+                <button class="report-staff-item" data-role="{{ s.role }}" data-name="{{ s.name|lower }}"
+                        data-employee-id="{{ s.employee_id }}" data-display-name="{{ s.name }}"
+                        onclick="loadStaffReport(this)">
+                    <span class="rsi-name">{{ s.name }}</span>
+                    <span class="rsi-id">{{ s.employee_id }}</span>
+                </button>
+                {% endfor %}
+            </div>
+
+            <div id="reportDetailBox" style="display:none;margin-top:22px;padding-top:20px;border-top:1px solid #eee;">
+                <div class="report-detail-head">
+                    <div>
+                        <h3 id="reportDetailName" style="margin:0;">—</h3>
+                        <p id="reportDetailMeta" style="font-size:12.5px;color:var(--text-muted);margin:4px 0 0;">—</p>
+                    </div>
+                    <a id="reportPdfLink" href="#" target="_blank" class="btn-primary" style="width:auto;text-decoration:none;padding:11px 20px;">
+                        📄 Download PDF (Landscape)
+                    </a>
+                </div>
+
+                <div class="report-total-box">
+                    <span>Total Amount (all-time)</span>
+                    <span id="reportTotalAmount">$0.00</span>
+                </div>
+
+                <div style="overflow-x:auto;margin-top:14px;">
+                    <table class="report-tbl">
+                        <thead>
+                            <tr><th>Time</th><th>Table</th><th>Waiter</th><th>Amount</th></tr>
+                        </thead>
+                        <tbody id="reportTxBody"></tbody>
+                    </table>
+                </div>
+                <p id="reportEmptyMsg" class="empty" style="display:none;">No transactions found for this staff member yet.</p>
+            </div>
+        </div>
+        </div>
+        <!-- ============ END REPORTS PAGE ============ -->
 
         <!-- ============ SYSTEM CONTROLS PAGE ============ -->
         <div class="page" id="page-system">
@@ -772,7 +813,8 @@ const PAGE_TITLES = {
     orders:    ["Orders", "Every order this restaurant has received."],
     menu:      ["Menu Items", "Read-only — managed by your Cashier."],
     settings:  ["Settings", "Update restaurant credentials and passwords."],
-    staff:     ["Staff", "Accounts, and today's waiter/cashier performance."],
+    staff:     ["Staff", "Create, edit and manage Waiter/Cashier accounts."],
+    reports:   ["Reports", "All-time staff transaction history and PDF export."],
     system:    ["System Controls", "Bulk actions — use with care."]
 };
 
@@ -899,6 +941,76 @@ new Chart(document.getElementById('categoryChart'), {
 
 <script>
 const RID_STAFF = "{{ rid }}";
+
+/* ================================
+   📊 STAFF REPORTS (all-time, searchable, PDF export)
+   ================================ */
+let currentReportRole = "waiter";
+
+function setReportRole(role, btn){
+    currentReportRole = role;
+    document.querySelectorAll(".role-toggle-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    document.getElementById("reportDetailBox").style.display = "none";
+    document.getElementById("reportSearchBox").value = "";
+    filterReportStaffList();
+}
+
+function filterReportStaffList(){
+    const q = document.getElementById("reportSearchBox").value.trim().toLowerCase();
+    document.querySelectorAll(".report-staff-item").forEach(item => {
+        const matchesRole = item.dataset.role === currentReportRole;
+        const matchesSearch = !q || item.dataset.name.includes(q);
+        item.style.display = (matchesRole && matchesSearch) ? "" : "none";
+    });
+}
+filterReportStaffList();
+
+async function loadStaffReport(btn){
+    document.querySelectorAll(".report-staff-item").forEach(b => b.classList.remove("selected"));
+    btn.classList.add("selected");
+
+    const employeeId = btn.dataset.employeeId;
+    const name = btn.dataset.displayName;
+    const role = btn.dataset.role;
+
+    const box = document.getElementById("reportDetailBox");
+    box.style.display = "block";
+    document.getElementById("reportDetailName").textContent = name;
+    document.getElementById("reportDetailMeta").textContent = "Loading…";
+    document.getElementById("reportTxBody").innerHTML = "";
+    document.getElementById("reportEmptyMsg").style.display = "none";
+
+    try{
+        const res = await fetch(`/staff_report_data/${RID_STAFF}/${employeeId}?role=${role}`);
+        const data = await res.json();
+        if(!data.success){
+            document.getElementById("reportDetailMeta").textContent = "❌ " + (data.error || "Failed to load");
+            return;
+        }
+
+        document.getElementById("reportDetailMeta").textContent =
+            `${employeeId} · ${role.charAt(0).toUpperCase() + role.slice(1)} · ${data.transaction_count} transactions (all-time)`;
+        document.getElementById("reportTotalAmount").textContent = "$" + data.total_amount.toFixed(2);
+        document.getElementById("reportPdfLink").href = `/staff_report_pdf/${RID_STAFF}/${employeeId}?role=${role}`;
+
+        const tbody = document.getElementById("reportTxBody");
+        if(data.transactions.length === 0){
+            document.getElementById("reportEmptyMsg").style.display = "block";
+        } else {
+            tbody.innerHTML = data.transactions.map(t => `
+                <tr>
+                    <td>${t.time}</td>
+                    <td>${t.table}</td>
+                    <td>${t.waiter || "—"}</td>
+                    <td style="font-weight:700;">$${t.amount.toFixed(2)}</td>
+                </tr>
+            `).join("");
+        }
+    } catch(e){
+        document.getElementById("reportDetailMeta").textContent = "❌ Server error";
+    }
+}
 
 function openEditStaff(btn){
     document.getElementById("es_id").value = btn.dataset.id;

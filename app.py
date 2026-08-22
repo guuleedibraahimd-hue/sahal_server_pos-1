@@ -7,7 +7,8 @@ from flask import (
     session,
     url_for,
     flash,
-    send_from_directory
+    send_from_directory,
+    Response
 )
 
 from flask_socketio import (
@@ -38,6 +39,14 @@ from datetime import datetime, timedelta, timezone
 
 import firebase_admin
 from firebase_admin import credentials, firestore, storage
+
+from io import BytesIO
+from reportlab.lib.pagesizes import letter, landscape
+from reportlab.lib import colors
+from reportlab.lib.units import inch
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+from reportlab.lib.enums import TA_CENTER
 
 app = Flask(__name__)
 
@@ -2486,6 +2495,169 @@ def staff_delete(rid, staff_id):
         return jsonify({"success": True})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
+
+
+# =====================================
+# 📊 STAFF TRANSACTION REPORT — all-time history (not scoped to "today"),
+# for a single waiter or cashier, plus a landscape PDF export.
+# =====================================
+def _staff_all_time_transactions(rid, employee_id, role):
+    """Returns (transactions, total_amount) — every paid order (waiter)
+    or every payment processed (cashier) this employee has ever been
+    tied to, no date filter. Each transaction: {time, table, waiter, amount}."""
+    restaurant_ref = db.collection("restaurants").document(rid)
+    transactions = []
+    total_amount = 0.0
+
+    if role == "waiter":
+        for doc in restaurant_ref.collection("orders") \
+                .where("employee_id", "==", employee_id) \
+                .where("status", "==", "paid").stream():
+            o = doc.to_dict()
+            created = o.get("created_at")
+            if hasattr(created, "strftime"):
+                time_str = created.strftime("%Y-%m-%d %H:%M")
+            else:
+                time_str = str(created)[:16] if created else "—"
+            amount = float(o.get("price", 0))
+            transactions.append({
+                "time": time_str,
+                "table": o.get("table", "—"),
+                "waiter": o.get("employee_name", ""),
+                "amount": round(amount, 2)
+            })
+            total_amount += amount
+    elif role == "cashier":
+        for doc in restaurant_ref.collection("payments") \
+                .where("cashier_id", "==", employee_id).stream():
+            p = doc.to_dict()
+            date_str = p.get("date", "")
+            time_str = p.get("time", "")
+            amount = float(p.get("amount", 0))
+            transactions.append({
+                "time": f"{date_str} {time_str}".strip() or "—",
+                "table": p.get("table", "—"),
+                "waiter": p.get("waiter_name", "—"),
+                "amount": round(amount, 2)
+            })
+            total_amount += amount
+
+    transactions.sort(key=lambda t: t["time"], reverse=True)
+    return transactions, round(total_amount, 2)
+
+
+@app.route("/staff_report_data/<rid>/<employee_id>")
+def staff_report_data(rid, employee_id):
+    if not _restaurant_admin_authorized(rid):
+        return jsonify({"success": False, "error": "Unauthorized"}), 401
+    try:
+        role = request.args.get("role", "waiter")
+        staff_docs = list(db.collection("restaurants").document(rid).collection("staff_accounts")
+                           .where("employee_id", "==", employee_id).limit(1).stream())
+        if not staff_docs:
+            return jsonify({"success": False, "error": "Staff account not found"})
+        staff = staff_docs[0].to_dict()
+
+        transactions, total_amount = _staff_all_time_transactions(rid, employee_id, role)
+
+        return jsonify({
+            "success": True,
+            "name": staff.get("name", ""),
+            "employee_id": employee_id,
+            "role": role,
+            "transaction_count": len(transactions),
+            "total_amount": total_amount,
+            "transactions": transactions[:500]
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+
+@app.route("/staff_report_pdf/<rid>/<employee_id>")
+def staff_report_pdf(rid, employee_id):
+    if not _restaurant_admin_authorized(rid):
+        return "Unauthorized ❌", 401
+    try:
+        role = request.args.get("role", "waiter")
+        restaurant_doc = db.collection("restaurants").document(rid).get()
+        restaurant_name = restaurant_doc.to_dict().get("name", "Restaurant") if restaurant_doc.exists else "Restaurant"
+
+        staff_docs = list(db.collection("restaurants").document(rid).collection("staff_accounts")
+                           .where("employee_id", "==", employee_id).limit(1).stream())
+        if not staff_docs:
+            return "Staff account not found ❌", 404
+        staff = staff_docs[0].to_dict()
+
+        transactions, total_amount = _staff_all_time_transactions(rid, employee_id, role)
+
+        buffer = BytesIO()
+        doc = SimpleDocTemplate(
+            buffer, pagesize=landscape(letter),
+            topMargin=0.5 * inch, bottomMargin=0.5 * inch,
+            leftMargin=0.6 * inch, rightMargin=0.6 * inch
+        )
+        styles = getSampleStyleSheet()
+        title_style = ParagraphStyle("RestName", parent=styles["Title"], alignment=TA_CENTER, fontSize=20)
+        sub_style = ParagraphStyle("Sub", parent=styles["Normal"], alignment=TA_CENTER, fontSize=11, textColor=colors.HexColor("#555555"))
+
+        story = [
+            Paragraph(restaurant_name, title_style),
+            Spacer(1, 6),
+            Paragraph(
+                f"Staff Transaction Report — {staff.get('name','')} ({employee_id}) — {role.capitalize()}",
+                sub_style
+            ),
+            Spacer(1, 4),
+            Paragraph(f"Generated {datetime.now().strftime('%Y-%m-%d %H:%M')} — {len(transactions)} transactions", sub_style),
+            Spacer(1, 18),
+        ]
+
+        table_data = [["Time", "Table", "Waiter", "Amount"]]
+        for t in transactions:
+            table_data.append([t["time"], str(t["table"]), t["waiter"] or "—", f"${t['amount']:.2f}"])
+        table_data.append(["", "", "TOTAL", f"${total_amount:.2f}"])
+
+        tbl = Table(table_data, colWidths=[2.2*inch, 1.3*inch, 2.5*inch, 1.5*inch], repeatRows=1)
+        tbl.setStyle(TableStyle([
+            # Header row — dark fill + white text so it still reads
+            # clearly if printed in black & white (not relying on a
+            # light color alone to separate it from the body rows).
+            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1a1a2e")),
+            ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+            ("FONTSIZE", (0, 0), (-1, 0), 10),
+            ("BOTTOMPADDING", (0, 0), (-1, 0), 8),
+            ("TOPPADDING", (0, 0), (-1, 0), 8),
+            # Body — plain borders (visible in grayscale) instead of
+            # alternating background colors as the only distinguisher.
+            ("FONTSIZE", (0, 1), (-1, -1), 9),
+            ("GRID", (0, 0), (-1, -2), 0.5, colors.HexColor("#cccccc")),
+            ("ALIGN", (3, 0), (3, -1), "RIGHT"),
+            ("ALIGN", (1, 0), (1, -1), "CENTER"),
+            # Total row
+            ("FONTNAME", (0, -1), (-1, -1), "Helvetica-Bold"),
+            ("FONTSIZE", (0, -1), (-1, -1), 11),
+            ("LINEABOVE", (0, -1), (-1, -1), 1, colors.black),
+            ("TOPPADDING", (0, -1), (-1, -1), 10),
+        ]))
+        story.append(tbl)
+
+        if not transactions:
+            story.append(Spacer(1, 20))
+            story.append(Paragraph("No transactions found for this staff member.", styles["Normal"]))
+
+        doc.build(story)
+        pdf_bytes = buffer.getvalue()
+        buffer.close()
+
+        filename = f"{restaurant_name}_{staff.get('name','staff')}_report.pdf".replace(" ", "_")
+        return Response(
+            pdf_bytes,
+            mimetype="application/pdf",
+            headers={"Content-Disposition": f"inline; filename={filename}"}
+        )
+    except Exception as e:
+        return f"Report PDF Error ❌ {str(e)}", 500
 
 
 # =====================================
