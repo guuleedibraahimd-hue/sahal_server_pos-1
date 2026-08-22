@@ -244,7 +244,7 @@
 
         <div id="ordersContainer">
         {% for o in orders %}
-        <div class="order" id="order{{ o.id }}" data-status="{{ o.get('status', 'pending') }}" data-last-added="{{ o.last_added_marker }}">
+        <div class="order" id="order{{ o.id }}" data-status="{{ o.get('status', 'pending') }}" data-last-added="{{ o.last_added_marker }}" data-kitchen-printed="{{ '1' if o.get('kitchen_printed') else '0' }}">
             <div class="order-top">
                 <div class="o-title">📋 Order #{{ orders|length - loop.index0 }} <span class="o-ref">Ref: {{ o.receipt_ref or o.id[:6] }}</span>{% if o.new_display_items %}<span class="updated-badge">🆕 Updated</span>{% endif %}</div>
                 <span class="status-pill">{{ o.get('status', 'pending') }}</span>
@@ -327,14 +327,26 @@ document.addEventListener("DOMContentLoaded", function(){
         fetch("/clear_orders/" + RID).then(() => location.reload());
     });
 
-    /* ── Auto-Print: silently print a new order's receipt (by its
-       receipt_ref) the moment it arrives, tied 1:1 to that order —
-       never re-prints an order already seen, and never touches an
-       order the kitchen already acted on before this page loaded. ── */
+    /* ── Auto-Print: every order the waiter sends goes straight to the
+       printer automatically — no one has to click anything. Defaults
+       ON (the button just lets kitchen staff pause it if needed).
+
+       A browser genuinely cannot detect whether a printer cable is
+       physically connected — window.print() just hands the job to the
+       OS/print spooler regardless. What we CAN guarantee: an order is
+       only marked "kitchen printed" after the print was actually
+       triggered, and on every page load (e.g. kitchen staff reopening
+       the screen after plugging the printer back in) we re-scan ALL
+       visible orders and print anything still unmarked — so a job
+       that never reached a disconnected printer gets sent again the
+       next time this screen is open, and nothing is silently lost. ── */
     const AUTOPRINT_KEY = "sahal_autoprint";
 
     function isAutoPrintOn(){
-        try{ return localStorage.getItem(AUTOPRINT_KEY) === "yes"; }catch(e){ return false; }
+        try{
+            const v = localStorage.getItem(AUTOPRINT_KEY);
+            return v === null ? true : v === "yes";   // ON by default
+        }catch(e){ return true; }
     }
     function updateAutoPrintBtn(){
         const btn = document.getElementById("autoPrintBtn");
@@ -360,14 +372,12 @@ document.addEventListener("DOMContentLoaded", function(){
         return el ? el.dataset.lastAdded : "";
     }
 
-    // Orders already on screen when the page loaded are NOT new — only
-    // orders that show up *after* this get silently printed. An order
-    // that's ALREADY known can still trigger one more print if a waiter
-    // edits it and adds new items — tracked by last_added_marker so the
-    // same update never prints twice, and only the new-items delta
-    // matters (not the fact that the order existed before).
+    function isKitchenPrinted(orderId){
+        const el = document.getElementById("order" + orderId);
+        return el ? el.dataset.kitchenPrinted === "1" : true;
+    }
+
     let knownOrderIds = new Set(getVisibleOrderIds());
-    let printedOrderIds = new Set();
     let seenUpdateMarkers = {};
     knownOrderIds.forEach(id => { seenUpdateMarkers[id] = getLastAddedMarker(id); });
 
@@ -381,7 +391,26 @@ document.addEventListener("DOMContentLoaded", function(){
         iframe.src = "/receipt/" + RID + "/" + orderId;
         document.body.appendChild(iframe);
         setTimeout(() => { iframe.remove(); }, 8000);
+
+        fetch("/mark_kitchen_printed/" + RID + "/" + orderId, { method: "POST" })
+            .then(() => {
+                const el = document.getElementById("order" + orderId);
+                if(el) el.dataset.kitchenPrinted = "1";
+            })
+            .catch(() => {});
     }
+
+    function catchUpUnprinted(){
+        if(!isAutoPrintOn()) return;
+        getVisibleOrderIds().forEach(id => {
+            if(!isKitchenPrinted(id)) silentPrintReceipt(id);
+        });
+    }
+
+    // Catch up immediately on load — covers "printer just got plugged
+    // back in, reopen this screen" and "orders arrived while auto-print
+    // was off".
+    catchUpUnprinted();
 
     function attachStatusBtns(){
         document.querySelectorAll(".status-btn[data-id]").forEach(function(btn){
@@ -412,13 +441,18 @@ document.addEventListener("DOMContentLoaded", function(){
                 getVisibleOrderIds().forEach(id => {
                     const marker = getLastAddedMarker(id);
                     if(!knownOrderIds.has(id)){
-                        // Brand-new order
+                        // Brand-new order — print it the moment it shows up.
                         knownOrderIds.add(id);
                         seenUpdateMarkers[id] = marker;
                         if(isAutoPrintOn()) silentPrintReceipt(id);
                     } else if(marker && marker !== seenUpdateMarkers[id]){
-                        // Existing order was edited — new items were added
+                        // Existing order was edited — new items were added.
                         seenUpdateMarkers[id] = marker;
+                        if(isAutoPrintOn()) silentPrintReceipt(id);
+                    } else if(!isKitchenPrinted(id)){
+                        // Safety net: still marked unprinted from an
+                        // earlier attempt (e.g. printer was offline) —
+                        // keep retrying every cycle until it succeeds.
                         if(isAutoPrintOn()) silentPrintReceipt(id);
                     }
                 });

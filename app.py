@@ -2553,6 +2553,23 @@ def mark_receipt_printed(rid, order_id):
         return jsonify({"success": False, "error": str(e)})
 
 
+# The kitchen's own auto-print tracking — separate from mark_receipt_printed
+# above, which is the WAITER's customer-copy tracking. No staff-role check
+# here: the kitchen screen isn't behind a waiter/cashier login, only the
+# shared kitchen password (or nothing, depending on setup), so this just
+# needs a valid order under this restaurant.
+@app.route("/mark_kitchen_printed/<rid>/<order_id>", methods=["POST"])
+def mark_kitchen_printed(rid, order_id):
+    try:
+        order_ref = db.collection("restaurants").document(rid).collection("orders").document(order_id)
+        if not order_ref.get().exists:
+            return jsonify({"success": False, "error": "Order not found"})
+        order_ref.update({"kitchen_printed": True})
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+
 @app.route("/waiter_logout")
 def waiter_logout():
     for k in ("staff_ok", "staff_role", "staff_rid", "staff_id", "staff_name", "staff_employee_id"):
@@ -3337,6 +3354,7 @@ def create_order(rid):
                 "price":            total_price,
                 "status":           "pending",          # back to kitchen's attention
                 "receipt_printed":  False,               # updated — needs reprint
+                "kitchen_printed":  False,               # new items — kitchen needs to re-print too
                 "last_added_cart":  cart,
                 "last_added_items": new_items_text,
                 "last_added_at":    datetime.utcnow(),
@@ -3359,6 +3377,7 @@ def create_order(rid):
                 "created_at": datetime.utcnow(),
                 "kitchen_cleared": False,
                 "receipt_printed": False,
+                "kitchen_printed": False,
                 "receipt_ref": get_next_receipt_ref(rid)
             }
             if customer_phone:
