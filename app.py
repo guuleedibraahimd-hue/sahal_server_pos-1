@@ -888,6 +888,12 @@ def renew_market(mid):
 # =========================
 @app.route("/delete_menu/<mid>/<rid>")
 def delete_menu(mid, rid):
+    # Menu management is Cashier-only (matches /add_menu, /edit_menu_item,
+    # /delete_menu_item) — this older route was previously reachable with
+    # no auth check at all; gating it the same way closes that gap rather
+    # than leaving two ways to delete a menu item with different rules.
+    if not session.get("staff_ok") or session.get("staff_role") != "cashier" or session.get("staff_rid") != rid:
+        return "Unauthorized — only the Cashier can delete menu items ❌", 401
     try:
         restaurant_ref = db.collection("restaurants").document(rid)
         menu_ref = restaurant_ref.collection("menu").document(mid)
@@ -1689,17 +1695,65 @@ def dashboard(rid):
 
         ads = list(reversed(ads))
 
+        # Real, computed stats — no placeholders. Views has no tracking
+        # system behind it yet, so it's left out rather than faked.
+        today = datetime.now().strftime("%Y-%m-%d")
+        total_orders_today = 0
+        total_sales_today = 0.0
+        for doc in restaurant_ref.collection("orders").stream():
+            o = doc.to_dict()
+            created = o.get("created_at")
+            created_date = created.strftime("%Y-%m-%d") if hasattr(created, "strftime") else str(created)[:10]
+            if created_date == today:
+                total_orders_today += 1
+                if str(o.get("status", "")).lower() == "paid":
+                    total_sales_today += float(o.get("price", 0))
+
         return render_template(
             "dashboard.html",
             rid=rid,
             restaurant=restaurant.get("name", "Restaurant"),
+            restaurant_phone=restaurant.get("phone", ""),
+            restaurant_expiry=restaurant.get("expiry", ""),
             menu=menu,
-            ads=ads
+            ads=ads,
+            total_orders_today=total_orders_today,
+            total_sales_today=round(total_sales_today, 2)
         )
 
     except Exception as e:
         print("Dashboard Error:", e)
         return f"Dashboard Error ❌ {str(e)}"
+
+
+@app.route("/verify_admin_login/<rid>", methods=["POST"])
+def verify_admin_login(rid):
+    """Quick inline re-verification widget on the dashboard topbar —
+    the page itself is already gated by session['restaurant_login'];
+    this just re-checks the same username/password against THIS
+    restaurant so an admin whose session lapsed mid-work can confirm
+    they're still who they say they are without leaving the page."""
+    if not session.get("restaurant_login") or session.get("restaurant_id") != rid:
+        return jsonify({"success": False, "error": "Session expired — please log in again"}), 401
+    try:
+        data = request.get_json() or {}
+        username = data.get("username", "").strip()
+        password = data.get("password", "").strip()
+
+        restaurant_doc = db.collection("restaurants").document(rid).get()
+        if not restaurant_doc.exists:
+            return jsonify({"success": False, "error": "Restaurant not found"})
+
+        r = restaurant_doc.to_dict()
+        if r.get("username") == username and r.get("password") == password:
+            session["restaurant_login"] = True
+            session["restaurant_id"] = rid
+            session["restaurant_name"] = r.get("name")
+            return jsonify({"success": True})
+
+        return jsonify({"success": False, "error": "Wrong username or password"})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
 
 
 # =====================================
@@ -2226,14 +2280,26 @@ def staff_create(rid):
         name = data.get("name", "").strip()
         role = data.get("role", "").strip().lower()
         pin  = data.get("pin", "").strip()
+        custom_employee_id = data.get("employee_id", "").strip().upper()
 
         if not name or role not in ("waiter", "cashier") or not pin:
             return jsonify({"success": False, "error": "Fill all fields (role must be waiter or cashier)"})
         if not pin.isdigit() or not (4 <= len(pin) <= 6):
             return jsonify({"success": False, "error": "PIN must be 4-6 digits"})
 
-        employee_id = get_next_employee_id(rid, role)
-        db.collection("restaurants").document(rid).collection("staff_accounts").add({
+        staff_ref = db.collection("restaurants").document(rid).collection("staff_accounts")
+
+        if custom_employee_id:
+            if not re.match(r'^[A-Z0-9\-_]{2,20}$', custom_employee_id):
+                return jsonify({"success": False, "error": "Employee ID may only use letters, numbers, - and _ (2-20 characters)"})
+            existing = list(staff_ref.where("employee_id", "==", custom_employee_id).limit(1).stream())
+            if existing:
+                return jsonify({"success": False, "error": f"Employee ID '{custom_employee_id}' is already in use"})
+            employee_id = custom_employee_id
+        else:
+            employee_id = get_next_employee_id(rid, role)
+
+        staff_ref.add({
             "name": name,
             "role": role,
             "employee_id": employee_id,

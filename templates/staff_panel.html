@@ -19,7 +19,7 @@ body{ margin:0; font-family:Arial,sans-serif; background:#f4f6f9; color:#1b2330;
 .section{ background:#fff; border-radius:16px; padding:20px; margin-bottom:20px; box-shadow:0 4px 12px rgba(0,0,0,0.06); }
 .section h2{ font-size:15px; margin:0 0 14px; }
 
-.form-row{ display:grid; grid-template-columns:1fr 1fr 1fr auto; gap:10px; align-items:end; }
+.form-row{ display:grid; grid-template-columns:1fr 1fr 1fr 1fr auto; gap:10px; align-items:end; }
 .form-row div{ display:flex; flex-direction:column; }
 label{ font-size:11px; font-weight:800; color:#666; margin-bottom:4px; }
 input, select{ padding:11px; border-radius:10px; border:1px solid #ddd; font-size:13px; }
@@ -75,6 +75,10 @@ input, select{ padding:11px; border-radius:10px; border:1px solid #ddd; font-siz
                 </select>
             </div>
             <div>
+                <label>Employee ID (optional)</label>
+                <input type="text" id="s_employee_id" placeholder="e.g. AHM1 or 001 (auto if blank)">
+            </div>
+            <div>
                 <label>PIN (4-6 digits)</label>
                 <input type="text" id="s_pin" placeholder="e.g. 1234" inputmode="numeric" maxlength="6">
             </div>
@@ -116,9 +120,10 @@ input, select{ padding:11px; border-radius:10px; border:1px solid #ddd; font-siz
 
 <script>
 async function createStaff(){
-    const name = document.getElementById("s_name").value.trim();
-    const role = document.getElementById("s_role").value;
-    const pin  = document.getElementById("s_pin").value.trim();
+    const name        = document.getElementById("s_name").value.trim();
+    const role        = document.getElementById("s_role").value;
+    const employee_id = document.getElementById("s_employee_id").value.trim();
+    const pin         = document.getElementById("s_pin").value.trim();
     const msg  = document.getElementById("createMsg");
     msg.className = "msg";
 
@@ -128,7 +133,7 @@ async function createStaff(){
         const res = await fetch("/staff_manage/{{ rid }}/create", {
             method: "POST",
             headers: {"Content-Type": "application/json"},
-            body: JSON.stringify({ name, role, pin })
+            body: JSON.stringify({ name, role, pin, employee_id })
         });
         const data = await res.json();
         if(data.success){
