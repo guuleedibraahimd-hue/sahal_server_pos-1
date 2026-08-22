@@ -2595,6 +2595,84 @@ def _staff_all_time_transactions(rid, employee_id, role):
     return transactions, round(total_amount, 2)
 
 
+@app.route("/staff_daily_breakdown/<rid>/<employee_id>")
+def staff_daily_breakdown(rid, employee_id):
+    """For a WAITER: every day they've ever worked, with that day's
+    order count and total — searchable by date on the frontend."""
+    if not _restaurant_admin_authorized(rid):
+        return jsonify({"success": False, "error": "Unauthorized"}), 401
+    try:
+        transactions, total = _staff_all_time_transactions(rid, employee_id, "waiter")
+        daily = defaultdict(lambda: {"orders": 0, "total": 0.0})
+        for t in transactions:
+            date_key = t["time"][:10]  # "YYYY-MM-DD HH:MM" -> "YYYY-MM-DD"
+            daily[date_key]["orders"] += 1
+            daily[date_key]["total"] += t["amount"]
+
+        days = [
+            {"date": d, "orders": v["orders"], "total": round(v["total"], 2)}
+            for d, v in daily.items()
+        ]
+        days.sort(key=lambda x: x["date"], reverse=True)
+
+        return jsonify({"success": True, "days": days, "grand_total": total})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+
+@app.route("/staff_shift_history/<rid>/<employee_id>")
+def staff_shift_history(rid, employee_id):
+    """For a CASHIER: every shift they've ever worked (clock-in/out
+    time) with the exact orders they processed inside each one — order
+    ref, table, time, amount — so the shift totals can be reconciled."""
+    if not _restaurant_admin_authorized(rid):
+        return jsonify({"success": False, "error": "Unauthorized"}), 401
+    try:
+        restaurant_ref = db.collection("restaurants").document(rid)
+
+        shifts = []
+        for doc in restaurant_ref.collection("cashier_shifts") \
+                .where("cashier_employee_id", "==", employee_id).stream():
+            s = doc.to_dict()
+            s["id"] = doc.id
+            shifts.append(s)
+
+        payments_by_shift = defaultdict(list)
+        for doc in restaurant_ref.collection("payments") \
+                .where("cashier_id", "==", employee_id).stream():
+            p = doc.to_dict()
+            payments_by_shift[p.get("shift_id", "")].append(p)
+
+        result = []
+        for s in shifts:
+            shift_payments = payments_by_shift.get(s["id"], [])
+            orders = [{
+                "ref": p.get("payment_id", ""),
+                "table": p.get("table", ""),
+                "time": f"{p.get('date','')} {p.get('time','')}".strip(),
+                "amount": round(float(p.get("amount", 0)), 2)
+            } for p in shift_payments]
+            orders.sort(key=lambda x: x["time"])
+            shift_total = round(sum(o["amount"] for o in orders), 2)
+
+            result.append({
+                "shift_code": s.get("shift_code", s["id"][:8]),
+                "opened_at": s.get("opened_at", ""),
+                "closed_at": s.get("closed_at", ""),
+                "status": s.get("status", ""),
+                "opening_cash": s.get("opening_cash", 0),
+                "expected_cash": s.get("expected_cash", ""),
+                "actual_cash": s.get("actual_cash", ""),
+                "orders": orders,
+                "shift_total": shift_total
+            })
+
+        result.sort(key=lambda x: x["opened_at"], reverse=True)
+        return jsonify({"success": True, "shifts": result})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+
 @app.route("/staff_report_data/<rid>/<employee_id>")
 def staff_report_data(rid, employee_id):
     if not _restaurant_admin_authorized(rid):

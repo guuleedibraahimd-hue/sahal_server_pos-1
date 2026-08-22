@@ -395,6 +395,22 @@ select, .range-select{
 .perf-bar{ height:7px; background:#f1f1f6; border-radius:4px; overflow:hidden; }
 .perf-bar-fill{ height:100%; width:0; background:var(--blue); border-radius:4px; }
 .perf-bar-fill.cashier{ background:var(--green); }
+.perf-expand-arrow{ transition:transform 0.2s; color:var(--text-muted); font-size:12px; }
+.perf-expand-arrow.open{ transform:rotate(180deg); }
+.staff-detail-box{ display:none; margin-top:14px; padding-top:14px; border-top:1px dashed #ddd; }
+.staff-detail-box.show{ display:block; }
+.day-search-row{ display:flex; gap:10px; margin-bottom:12px; }
+.day-search-row input{ padding:9px 12px; border-radius:8px; border:1px solid #e5e5ee; font-size:13px; max-width:200px; }
+.day-row{ display:flex; justify-content:space-between; align-items:center; padding:9px 0; border-bottom:1px solid #f4f4f4; font-size:13px; }
+.day-row .dr-date{ font-weight:700; }
+.day-row .dr-orders{ color:var(--text-muted); font-size:12px; }
+.day-row .dr-total{ font-weight:800; color:var(--purple); }
+.shift-block{ border:1px solid #eee; border-radius:12px; padding:14px; margin-bottom:12px; }
+.shift-block-head{ display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:10px; }
+.shift-block-head .sb-code{ font-weight:800; font-size:13px; }
+.shift-block-head .sb-times{ font-size:11.5px; color:var(--text-muted); }
+.shift-block-head .sb-total{ font-weight:800; color:var(--green); }
+.shift-order-line{ display:flex; justify-content:space-between; font-size:12.5px; padding:5px 0; border-bottom:1px solid #f7f7fa; }
 
 /* Reports page */
 .role-toggle{ display:flex; gap:8px; margin-bottom:14px; }
@@ -731,13 +747,15 @@ canvas{max-width:100%;}
             </p>
             {% for w in staff_work_summary %}
             <div class="perf-row">
-                <div class="perf-row-head">
+                <div class="perf-row-head" style="cursor:pointer;" onclick="toggleStaffDetail('{{ w.employee_id }}', '{{ w.role }}')">
                     <span class="perf-name">{{ w.name }}</span>
                     <span class="perf-orders">{{ w.transaction_count }} transactions</span>
                     <span class="perf-sales">${{ "%.2f"|format(w.total_amount) }}</span>
                     <span class="perf-pct">{{ w.percentage }}%</span>
+                    <span class="perf-expand-arrow" id="arrow-{{ w.employee_id }}">▼</span>
                 </div>
                 <div class="perf-bar"><div class="perf-bar-fill{{ ' cashier' if w.role == 'cashier' else '' }}" data-pct="{{ w.percentage }}"></div></div>
+                <div class="staff-detail-box" id="detail-{{ w.employee_id }}"></div>
             </div>
             {% else %}
             <p class="empty">No staff accounts yet</p>
@@ -794,6 +812,9 @@ canvas{max-width:100%;}
                 <a id="reportExcelLink" href="#" class="btn-primary" style="width:auto;padding:11px 22px;text-decoration:none;background:var(--green);display:none;" target="_blank">
                     📊 Download Excel
                 </a>
+                <button id="reportPrintBtn" class="btn-primary" style="width:auto;padding:11px 22px;background:var(--blue);display:none;" onclick="printDateRangeReport()">
+                    🖨️ Print Report
+                </button>
             </div>
 
             <div id="reportRangeMsg" style="font-size:13px;font-weight:700;margin-top:12px;"></div>
@@ -992,10 +1013,12 @@ async function loadDateRangeReport(){
     const msg = document.getElementById("reportRangeMsg");
     const box = document.getElementById("reportRangeBox");
     const excelLink = document.getElementById("reportExcelLink");
+    const printBtn = document.getElementById("reportPrintBtn");
 
     msg.style.color = "";
     msg.textContent = "";
     excelLink.style.display = "none";
+    printBtn.style.display = "none";
 
     if(!from || !to){
         msg.style.color = "var(--red)";
@@ -1043,11 +1066,176 @@ async function loadDateRangeReport(){
 
         excelLink.href = `/orders_report_excel/${RID_STAFF}?from=${from}&to=${to}`;
         excelLink.style.display = "inline-block";
+
+        lastReportData = { from, to, rows: data.rows, total: data.total_amount, count: data.row_count };
+        printBtn.style.display = "inline-block";
     } catch(e){
         msg.style.color = "var(--red)";
         msg.textContent = "❌ Server error";
         box.style.display = "none";
     }
+}
+
+/* ── Print: opens a clean printable page in a new tab and calls the
+   browser's own print dialog — Color vs Black & White is a setting
+   inside THAT native dialog (every browser/OS provides it), the page
+   itself just needs to be readable either way, which is why colored
+   cells here are paired with plain borders/labels, not color alone. ── */
+let lastReportData = null;
+
+/* ================================
+   👤 STAFF PAGE — click-to-expand detail
+   Waiter → daily breakdown (searchable by date)
+   Cashier → shift history (clock-in/out + orders processed inside)
+   ================================ */
+const staffDetailCache = {};
+
+async function toggleStaffDetail(employeeId, role){
+    const box = document.getElementById("detail-" + employeeId);
+    const arrow = document.getElementById("arrow-" + employeeId);
+    if(!box) return;
+
+    const isOpen = box.classList.contains("show");
+    if(isOpen){
+        box.classList.remove("show");
+        arrow.classList.remove("open");
+        return;
+    }
+    box.classList.add("show");
+    arrow.classList.add("open");
+
+    if(staffDetailCache[employeeId]){
+        box.innerHTML = staffDetailCache[employeeId];
+        return;
+    }
+
+    box.innerHTML = `<p style="color:var(--text-muted);font-size:13px;">Loading…</p>`;
+
+    try{
+        if(role === "waiter"){
+            const res = await fetch(`/staff_daily_breakdown/${RID_STAFF}/${employeeId}`);
+            const data = await res.json();
+            if(!data.success){ box.innerHTML = `<p style="color:var(--red);font-size:13px;">❌ ${data.error||"Failed to load"}</p>`; return; }
+            renderWaiterDailyBreakdown(box, employeeId, data.days);
+        } else {
+            const res = await fetch(`/staff_shift_history/${RID_STAFF}/${employeeId}`);
+            const data = await res.json();
+            if(!data.success){ box.innerHTML = `<p style="color:var(--red);font-size:13px;">❌ ${data.error||"Failed to load"}</p>`; return; }
+            renderCashierShiftHistory(box, data.shifts);
+        }
+        staffDetailCache[employeeId] = box.innerHTML;
+    } catch(e){
+        box.innerHTML = `<p style="color:var(--red);font-size:13px;">❌ Server error</p>`;
+    }
+}
+
+function renderWaiterDailyBreakdown(box, employeeId, days){
+    const daysHtml = days.length
+        ? days.map(d => `
+            <div class="day-row" data-date="${d.date}">
+                <span class="dr-date">${d.date}</span>
+                <span class="dr-orders">${d.orders} orders</span>
+                <span class="dr-total">$${d.total.toFixed(2)}</span>
+            </div>
+        `).join("")
+        : `<p class="empty">No days worked yet</p>`;
+
+    box.innerHTML = `
+        <div class="day-search-row">
+            <input type="date" id="daySearch-${employeeId}" onchange="filterWaiterDay('${employeeId}')">
+            <button class="range-select" style="cursor:pointer;" onclick="document.getElementById('daySearch-${employeeId}').value='';filterWaiterDay('${employeeId}')">Clear</button>
+        </div>
+        <div id="dayList-${employeeId}">${daysHtml}</div>
+    `;
+}
+
+function filterWaiterDay(employeeId){
+    const val = document.getElementById(`daySearch-${employeeId}`).value;
+    document.querySelectorAll(`#dayList-${employeeId} .day-row`).forEach(row => {
+        row.style.display = (!val || row.dataset.date === val) ? "" : "none";
+    });
+}
+
+function renderCashierShiftHistory(box, shifts){
+    if(shifts.length === 0){
+        box.innerHTML = `<p class="empty">No shifts recorded yet</p>`;
+        return;
+    }
+    box.innerHTML = shifts.map(s => {
+        const ordersHtml = s.orders.length
+            ? s.orders.map(o => `
+                <div class="shift-order-line">
+                    <span>Ref ${o.ref} · Table ${o.table} · ${o.time}</span>
+                    <span style="font-weight:700;">$${o.amount.toFixed(2)}</span>
+                </div>
+            `).join("")
+            : `<p style="color:var(--text-muted);font-size:12px;">No orders in this shift</p>`;
+
+        return `
+            <div class="shift-block">
+                <div class="shift-block-head">
+                    <span class="sb-code">${s.shift_code} <span style="font-weight:600;color:var(--text-muted);">(${s.status})</span></span>
+                    <span class="sb-times">🕐 In: ${s.opened_at || "—"} · Out: ${s.closed_at || "still open"}</span>
+                    <span class="sb-total">$${s.shift_total.toFixed(2)}</span>
+                </div>
+                ${ordersHtml}
+            </div>
+        `;
+    }).join("");
+}
+
+function printDateRangeReport(){
+    if(!lastReportData) return;
+    const { from, to, rows, total, count } = lastReportData;
+    const restaurantName = {{ r.name|tojson }};
+
+    const rowsHtml = rows.map(r => `
+        <tr>
+            <td>${r.time}</td>
+            <td style="text-align:center;">${r.table}</td>
+            <td>${r.items || "—"}</td>
+            <td style="text-align:right;font-weight:700;">$${r.amount.toFixed(2)}</td>
+            <td>${r.waiter_name}</td>
+            <td>${r.waiter_id}</td>
+            <td>${r.waiter_phone}</td>
+        </tr>
+    `).join("");
+
+    const w = window.open("", "_blank");
+    w.document.write(`
+        <html>
+        <head>
+            <title>${restaurantName} — Orders Report</title>
+            <style>
+                @page { size: landscape; margin: 14mm; }
+                body{ font-family: Arial, sans-serif; color:#111; margin:0; padding:20px; }
+                h1{ text-align:center; font-size:22px; margin:0 0 4px; }
+                .sub{ text-align:center; color:#555; font-size:12px; margin-bottom:18px; }
+                table{ width:100%; border-collapse:collapse; font-size:11px; }
+                th{ background:#1a1a2e; color:#fff; text-align:left; padding:8px 6px; }
+                td{ padding:7px 6px; border-bottom:1px solid #ccc; }
+                tfoot td{ font-weight:700; border-top:2px solid #111; border-bottom:none; }
+            </style>
+        </head>
+        <body>
+            <h1>${restaurantName}</h1>
+            <div class="sub">Orders Report — ${from} to ${to} — ${count} paid orders</div>
+            <table>
+                <thead>
+                    <tr><th>Time</th><th>Table</th><th>Items</th><th>Amount</th><th>Waiter</th><th>Employee ID</th><th>Phone</th></tr>
+                </thead>
+                <tbody>${rowsHtml}</tbody>
+                <tfoot>
+                    <tr><td colspan="3"></td><td>$${total.toFixed(2)}</td><td colspan="3">TOTAL</td></tr>
+                </tfoot>
+            </table>
+            <script>
+                window.onload = function(){ window.print(); }
+            <\/script>
+        </body>
+        </html>
+    `);
+    w.document.close();
 }
 
 function openEditStaff(btn){
