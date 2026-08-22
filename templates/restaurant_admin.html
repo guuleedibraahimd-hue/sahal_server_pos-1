@@ -380,6 +380,22 @@ select, .range-select{
 .modal-actions button{ flex:1; padding:11px; border:none; border-radius:9px; font-weight:700; cursor:pointer; font-size:13px; }
 .btn-cancel{ background:#f1f1f6; color:#333; }
 
+/* paged navigation */
+.page{ display:none; }
+.page.active{ display:block; }
+
+/* performance rows (waiter/cashier) */
+.perf-row{ margin-bottom:16px; }
+.perf-row:last-child{ margin-bottom:0; }
+.perf-row-head{ display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-bottom:6px; }
+.perf-name{ font-weight:800; font-size:14px; min-width:110px; }
+.perf-orders{ font-size:12.5px; color:var(--text-muted); }
+.perf-sales{ font-weight:700; font-size:13px; color:var(--purple); }
+.perf-pct{ margin-left:auto; font-weight:800; font-size:14px; }
+.perf-bar{ height:7px; background:#f1f1f6; border-radius:4px; overflow:hidden; }
+.perf-bar-fill{ height:100%; background:var(--blue); border-radius:4px; }
+.perf-bar-fill.cashier{ background:var(--green); }
+
 /* menu grid */
 .menu-item{
     display:flex;
@@ -422,22 +438,22 @@ canvas{max-width:100%;}
             </div>
         </div>
 
-        <a class="nav-item active" href="#dashboard-top">
+        <a class="nav-item active" data-page="dashboard" onclick="showPage('dashboard', this); return false;" href="#">
             <span class="icon">📊</span> Dashboard
         </a>
-        <a class="nav-item" href="#orders-section">
+        <a class="nav-item" data-page="orders" onclick="showPage('orders', this); return false;" href="#">
             <span class="icon">📦</span> Orders
         </a>
-        <a class="nav-item" href="#menu-section">
+        <a class="nav-item" data-page="menu" onclick="showPage('menu', this); return false;" href="#">
             <span class="icon">🍽</span> Menu Items
         </a>
-        <a class="nav-item" href="#settings-section">
+        <a class="nav-item" data-page="settings" onclick="showPage('settings', this); return false;" href="#">
             <span class="icon">⚙️</span> Settings
         </a>
-        <a class="nav-item" href="#staff-section">
+        <a class="nav-item" data-page="staff" onclick="showPage('staff', this); return false;" href="#">
             <span class="icon">👥</span> Staff
         </a>
-        <a class="nav-item" href="#system-section">
+        <a class="nav-item" data-page="system" onclick="showPage('system', this); return false;" href="#">
             <span class="icon">🧹</span> System Controls
         </a>
 
@@ -459,9 +475,12 @@ canvas{max-width:100%;}
         </div>
 
         <div class="page-title">
-            <h2>Dashboard</h2>
-            <p>Welcome back! Here's what's happening with {{ r.name }} today.</p>
+            <h2 id="pageTitleText">Dashboard</h2>
+            <p id="pageTitleSub">Welcome back! Here's what's happening with {{ r.name }} today.</p>
         </div>
+
+        <!-- ============ DASHBOARD PAGE ============ -->
+        <div class="page active" id="page-dashboard">
 
         <!-- range filter -->
         <div style="text-align:right;margin-bottom:14px;">
@@ -535,7 +554,7 @@ canvas{max-width:100%;}
                     {% for t in top_items %}
                     <div class="list-row">
                         <div class="list-left">
-                            <img src="/static/uploads/{{ t.image }}" onerror="this.style.display='none'">
+                            {% if t.image %}<img src="{{ t.image }}" onerror="this.style.display='none'">{% endif %}
                             <div>
                                 <div class="list-name">{{ t.name }}</div>
                                 <div class="list-sub">{{ t.qty }} orders</div>
@@ -557,14 +576,17 @@ canvas{max-width:100%;}
             </div>
         </div>
 
-        <!-- ORDERS SECTION -->
+        </div>
+        <!-- ============ END DASHBOARD PAGE ============ -->
+
+        <!-- ============ ORDERS PAGE ============ -->
+        <div class="page" id="page-orders">
         <div class="panel" id="orders-section" style="margin-bottom:16px;">
-            <div class="panel-head" style="cursor:pointer;" onclick="toggleOrders()">
-                <h3>📦 Orders History</h3>
-                <button type="button" class="range-select" style="cursor:pointer;">⬇ View Orders</button>
+            <div class="panel-head">
+                <h3>📦 Orders History ({{ orders|length }})</h3>
             </div>
 
-            <div id="ordersHistoryBox" style="display:none;">
+            <div id="ordersHistoryBox">
                 {% if orders %}
                     {% for o in orders %}
                     <div class="list-row">
@@ -583,29 +605,37 @@ canvas{max-width:100%;}
                 {% endif %}
             </div>
         </div>
+        </div>
+        <!-- ============ END ORDERS PAGE ============ -->
 
-        <!-- MENU SECTION -->
+        <!-- ============ MENU PAGE ============ -->
+        <div class="page" id="page-menu">
         <div class="panel" id="menu-section" style="margin-bottom:16px;">
-            <h3>🍽 Menu</h3>
+            <h3>🍽 Menu ({{ menu|length }})</h3>
+            <p style="font-size:12.5px;color:var(--text-muted);margin:-8px 0 14px;">
+                Menu items are managed by your Cashier (Add/Edit/Delete) — this is a read-only view.
+            </p>
             {% if menu %}
                 {% for m in menu %}
                 <div class="menu-item">
                     <div style="display:flex;align-items:center;">
-                        <img src="/static/uploads/{{ m.image }}" onerror="this.style.display='none'">
+                        {% if m.image %}<img src="{{ m.image }}" onerror="this.style.display='none'">{% endif %}
                         <div>
                             <div class="list-name">{{ m.name }}</div>
-                            <div class="list-sub">${{ m.price }}</div>
+                            <div class="list-sub">${{ m.price }}{% if m.category %} · {{ m.category|capitalize }}{% endif %}</div>
                         </div>
                     </div>
-                    <a href="/delete_menu/{{m.id}}/{{rid}}" class="btn-danger">Delete</a>
                 </div>
                 {% endfor %}
             {% else %}
                 <p class="empty">No menu items found</p>
             {% endif %}
         </div>
+        </div>
+        <!-- ============ END MENU PAGE ============ -->
 
-        <!-- SETTINGS -->
+        <!-- ============ SETTINGS PAGE ============ -->
+        <div class="page" id="page-settings">
         <div class="panel form-panel" id="settings-section" style="margin-bottom:16px;">
             <h3>⚙️ Restaurant Settings</h3>
             <form method="post">
@@ -629,15 +659,18 @@ canvas{max-width:100%;}
                 <button type="submit" class="btn-primary">Update Settings</button>
             </form>
         </div>
+        </div>
+        <!-- ============ END SETTINGS PAGE ============ -->
 
-        <!-- STAFF -->
+        <!-- ============ STAFF PAGE ============ -->
+        <div class="page" id="page-staff">
         <div class="panel" id="staff-section" style="margin-bottom:16px;">
             <div class="panel-head">
-                <h3 style="margin:0;">👥 Staff ({{ staff|length }})</h3>
+                <h3 style="margin:0;">👥 Staff Accounts ({{ staff|length }})</h3>
                 <a href="/staff_manage/{{ rid }}" target="_blank" class="range-select" style="text-decoration:none;">➕ Add Staff</a>
             </div>
             <p style="font-size:12.5px;color:var(--text-muted);margin:-6px 0 4px;">
-                Waiter/Cashier customer-limit tracking isn't built yet, so it isn't shown here — everything below (name, role, employee ID, PIN, active status) is real.
+                Customer-limit tracking per waiter isn't built yet. Everything below (accounts, and the performance figures further down) is real, computed data.
             </p>
             <div class="staff-grid">
                 {% for s in staff %}
@@ -662,7 +695,50 @@ canvas{max-width:100%;}
             </div>
         </div>
 
-        <!-- SYSTEM CONTROLS -->
+        <div class="panel" id="waiter-perf-section" style="margin-bottom:16px;">
+            <h3>🧑‍🍳 Waiter Performance — Today</h3>
+            <p style="font-size:12.5px;color:var(--text-muted);margin:-8px 0 14px;">
+                Share of today's paid sales that came from each waiter's tables.
+            </p>
+            {% for w in waiter_performance %}
+            <div class="perf-row">
+                <div class="perf-row-head">
+                    <span class="perf-name">{{ w.name }}</span>
+                    <span class="perf-orders">{{ w.orders }} orders</span>
+                    <span class="perf-sales">${{ w.sales }}</span>
+                    <span class="perf-pct">{{ w.percentage }}%</span>
+                </div>
+                <div class="perf-bar"><div class="perf-bar-fill" style="width:{{ w.percentage }}%;"></div></div>
+            </div>
+            {% else %}
+            <p class="empty">No waiters registered yet</p>
+            {% endfor %}
+        </div>
+
+        <div class="panel" id="cashier-perf-section" style="margin-bottom:16px;">
+            <h3>💰 Cashier Performance — Today</h3>
+            <p style="font-size:12.5px;color:var(--text-muted);margin:-8px 0 14px;">
+                Each cashier's most recent shift length today, orders they personally confirmed/paid, and their share of all orders confirmed today.
+            </p>
+            {% for c in cashier_performance %}
+            <div class="perf-row">
+                <div class="perf-row-head">
+                    <span class="perf-name">{{ c.name }}</span>
+                    <span class="perf-orders">🕐 {{ c.shift_hours }} ({{ c.shift_status }})</span>
+                    <span class="perf-sales">{{ c.orders_confirmed }} confirmed</span>
+                    <span class="perf-pct">{{ c.percentage }}%</span>
+                </div>
+                <div class="perf-bar"><div class="perf-bar-fill cashier" style="width:{{ c.percentage }}%;"></div></div>
+            </div>
+            {% else %}
+            <p class="empty">No cashiers registered yet</p>
+            {% endfor %}
+        </div>
+        </div>
+        <!-- ============ END STAFF PAGE ============ -->
+
+        <!-- ============ SYSTEM CONTROLS PAGE ============ -->
+        <div class="page" id="page-system">
         <div class="panel" id="system-section" style="margin-bottom:30px;">
             <h3>🧹 System Controls</h3>
             <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:10px;">
@@ -679,6 +755,8 @@ canvas{max-width:100%;}
                 </a>
             </div>
         </div>
+        </div>
+        <!-- ============ END SYSTEM CONTROLS PAGE ============ -->
 
     </div>
 </div>
@@ -689,9 +767,30 @@ function changeRange(){
     window.location.href = "?range=" + value;
 }
 
-function toggleOrders(){
-    let box = document.getElementById("ordersHistoryBox");
-    box.style.display = (box.style.display === "block") ? "none" : "block";
+const PAGE_TITLES = {
+    dashboard: ["Dashboard", "Welcome back! Here's what's happening with " + {{ r.name|tojson }} + " today."],
+    orders:    ["Orders", "Every order this restaurant has received."],
+    menu:      ["Menu Items", "Read-only — managed by your Cashier."],
+    settings:  ["Settings", "Update restaurant credentials and passwords."],
+    staff:     ["Staff", "Accounts, and today's waiter/cashier performance."],
+    system:    ["System Controls", "Bulk actions — use with care."]
+};
+
+function showPage(id, el){
+    document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+    const target = document.getElementById("page-" + id);
+    if(target) target.classList.add("active");
+
+    document.querySelectorAll(".nav-item[data-page]").forEach(l => l.classList.remove("active"));
+    if(el) el.classList.add("active");
+
+    const titles = PAGE_TITLES[id];
+    if(titles){
+        document.getElementById("pageTitleText").textContent = titles[0];
+        document.getElementById("pageTitleSub").textContent = titles[1];
+    }
+
+    document.querySelector(".main").scrollTo({top:0, behavior:"smooth"});
 }
 
 // ---- Chart data injected from Flask (real Firestore-derived data) ----

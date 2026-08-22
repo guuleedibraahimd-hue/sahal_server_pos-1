@@ -2057,12 +2057,92 @@ def restaurant_admin(rid):
             staff.append(s)
         staff.sort(key=lambda x: (x.get("role", ""), x.get("employee_id", "")))
 
+        # ---------- Waiter performance (today's paid orders, % of today's sales) ----------
+        today_str = datetime.now().strftime("%Y-%m-%d")
+        waiter_agg = {}
+        for s in staff:
+            if s.get("role") == "waiter":
+                waiter_agg[s.get("employee_id")] = {
+                    "employee_id": s.get("employee_id"), "name": s.get("name", ""),
+                    "orders": 0, "sales": 0.0, "percentage": 0.0
+                }
+        today_waiter_sales_total = 0.0
+        for o in orders:
+            if str(o.get("status", "")).lower() != "paid":
+                continue
+            created_at = _parse_created_at(o.get("created_at"))
+            if not created_at or created_at.strftime("%Y-%m-%d") != today_str:
+                continue
+            wid = o.get("employee_id")
+            if not wid or wid not in waiter_agg:
+                continue
+            amount = float(o.get("price", 0))
+            waiter_agg[wid]["orders"] += 1
+            waiter_agg[wid]["sales"] += amount
+            today_waiter_sales_total += amount
+        for w in waiter_agg.values():
+            w["sales"] = round(w["sales"], 2)
+            w["percentage"] = round((w["sales"] / today_waiter_sales_total) * 100, 1) if today_waiter_sales_total > 0 else 0.0
+        waiter_performance = sorted(waiter_agg.values(), key=lambda x: x["sales"], reverse=True)
+
+        # ---------- Cashier performance (most recent shift: hours worked +
+        # orders they personally confirmed/paid, as a % of today's total
+        # confirmed orders across all cashiers) ----------
+        cashier_agg = {}
+        for s in staff:
+            if s.get("role") == "cashier":
+                cashier_agg[s.get("employee_id")] = {
+                    "employee_id": s.get("employee_id"), "name": s.get("name", ""),
+                    "orders_confirmed": 0, "shift_hours": "—", "shift_status": "No shift today", "percentage": 0.0
+                }
+
+        today_payments_count = {}
+        total_confirmed_today = 0
+        for doc in restaurant_ref.collection("payments").where("date", "==", today_str).stream():
+            p = doc.to_dict()
+            cid = p.get("cashier_id")
+            if cid:
+                today_payments_count[cid] = today_payments_count.get(cid, 0) + 1
+                total_confirmed_today += 1
+
+        for cid, agg in cashier_agg.items():
+            agg["orders_confirmed"] = today_payments_count.get(cid, 0)
+            agg["percentage"] = round((agg["orders_confirmed"] / total_confirmed_today) * 100, 1) if total_confirmed_today > 0 else 0.0
+
+            # Most recent shift today for this cashier
+            shift_docs = list(restaurant_ref.collection("cashier_shifts")
+                               .where("cashier_employee_id", "==", cid)
+                               .order_by("opened_at", direction=firestore.Query.DESCENDING)
+                               .limit(1).stream())
+            if shift_docs:
+                shift = shift_docs[0].to_dict()
+                opened_at = shift.get("opened_at", "")
+                try:
+                    opened_dt = datetime.strptime(opened_at[:19], "%Y-%m-%dT%H:%M:%S") if "T" in opened_at else datetime.strptime(opened_at, "%Y-%m-%d %H:%M:%S")
+                    if shift.get("status") == "closed" and shift.get("closed_at"):
+                        closed_at = shift.get("closed_at")
+                        closed_dt = datetime.strptime(closed_at[:19], "%Y-%m-%dT%H:%M:%S") if "T" in closed_at else datetime.strptime(closed_at, "%Y-%m-%d %H:%M:%S")
+                        span = closed_dt - opened_dt
+                        agg["shift_status"] = "Closed"
+                    else:
+                        span = datetime.now() - opened_dt
+                        agg["shift_status"] = "Active now"
+                    total_minutes = int(span.total_seconds() // 60)
+                    h, m = divmod(max(0, total_minutes), 60)
+                    agg["shift_hours"] = f"{h}h {m}m"
+                except Exception:
+                    pass
+
+        cashier_performance = sorted(cashier_agg.values(), key=lambda x: x["orders_confirmed"], reverse=True)
+
         return render_template(
             "restaurant_admin.html",
             r=restaurant,
             menu=menu,
             orders=orders,
             staff=staff,
+            waiter_performance=waiter_performance,
+            cashier_performance=cashier_performance,
             total=round(total, 2),
             profit=round(total, 2),
             loss=0,
