@@ -47,6 +47,9 @@ from reportlab.lib.units import inch
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 from reportlab.lib.enums import TA_CENTER
+from openpyxl import Workbook
+from openpyxl.styles import Font, PatternFill, Alignment
+from openpyxl.utils import get_column_letter
 
 app = Flask(__name__)
 
@@ -2093,6 +2096,17 @@ def restaurant_admin(rid):
                 "total_amount": tx_total
             })
 
+        # Percentage share within each role group (waiters compared to
+        # waiters, cashiers to cashiers — comparing across roles isn't
+        # meaningful since they earn differently).
+        role_totals = defaultdict(float)
+        for w in staff_work_summary:
+            role_totals[w["role"]] += w["total_amount"]
+        for w in staff_work_summary:
+            group_total = role_totals[w["role"]]
+            w["percentage"] = round((w["total_amount"] / group_total) * 100, 1) if group_total > 0 else 0.0
+        staff_work_summary.sort(key=lambda x: (x["role"], -x["total_amount"]))
+
         # ---------- Waiter performance (today's paid orders, % of today's sales) ----------
         today_str = datetime.now().strftime("%Y-%m-%d")
         waiter_agg = {}
@@ -2426,6 +2440,7 @@ def staff_create(rid):
         name = data.get("name", "").strip()
         role = data.get("role", "").strip().lower()
         pin  = data.get("pin", "").strip()
+        phone = data.get("phone", "").strip()
         custom_employee_id = data.get("employee_id", "").strip().upper()
 
         if not name or role not in ("waiter", "cashier") or not pin:
@@ -2450,6 +2465,7 @@ def staff_create(rid):
             "role": role,
             "employee_id": employee_id,
             "pin": pin,
+            "phone": phone,
             "active": True,
             "created_at": datetime.now().isoformat()
         })
@@ -2466,6 +2482,7 @@ def staff_edit(rid, staff_id):
         data = request.get_json() or {}
         name = data.get("name", "").strip()
         pin  = data.get("pin", "").strip()
+        phone = data.get("phone", None)
         new_employee_id = data.get("employee_id", "").strip().upper()
 
         staff_ref = db.collection("restaurants").document(rid).collection("staff_accounts")
@@ -2481,6 +2498,8 @@ def staff_edit(rid, staff_id):
             if not pin.isdigit() or not (4 <= len(pin) <= 6):
                 return jsonify({"success": False, "error": "PIN must be 4-6 digits"})
             update_fields["pin"] = pin
+        if phone is not None:
+            update_fields["phone"] = phone.strip()
         if new_employee_id and new_employee_id != item_doc.to_dict().get("employee_id"):
             if not re.match(r'^[A-Z0-9\-_]{2,20}$', new_employee_id):
                 return jsonify({"success": False, "error": "Employee ID may only use letters, numbers, - and _ (2-20 characters)"})
@@ -2688,6 +2707,155 @@ def staff_report_pdf(rid, employee_id):
         )
     except Exception as e:
         return f"Report PDF Error ❌ {str(e)}", 500
+
+
+def _date_range_paid_rows(rid, from_date, to_date):
+    """Shared by the JSON preview and the Excel export — every PAID
+    order in [from_date, to_date] with time/table/items/amount and the
+    serving waiter's name/employee_id/phone. Returns (rows, total)."""
+    day_start = datetime.strptime(from_date, "%Y-%m-%d")
+    day_end = datetime.strptime(to_date, "%Y-%m-%d") + timedelta(days=1)
+    restaurant_ref = db.collection("restaurants").document(rid)
+
+    waiter_lookup = {}
+    for doc in restaurant_ref.collection("staff_accounts").where("role", "==", "waiter").stream():
+        s = doc.to_dict()
+        waiter_lookup[s.get("employee_id", "")] = {
+            "name": s.get("name", ""),
+            "phone": s.get("phone", "") or "—"
+        }
+
+    rows = []
+    total_amount = 0.0
+    # Single-field range filter on created_at only (no equality filter
+    # mixed in) — avoids the composite-index requirement; status=='paid'
+    # is filtered in Python instead.
+    for doc in restaurant_ref.collection("orders") \
+            .where("created_at", ">=", day_start) \
+            .where("created_at", "<", day_end).stream():
+        o = doc.to_dict()
+        if str(o.get("status", "")).lower() != "paid":
+            continue
+
+        created = o.get("created_at")
+        time_str = created.strftime("%Y-%m-%d %H:%M") if hasattr(created, "strftime") else str(created)[:16]
+        amount = float(o.get("price", 0))
+        eid = o.get("employee_id", "")
+        waiter_info = waiter_lookup.get(eid, {"name": o.get("employee_name", "") or "—", "phone": "—"})
+
+        rows.append({
+            "time": time_str,
+            "table": o.get("table", "—"),
+            "items": o.get("items", ""),
+            "amount": round(amount, 2),
+            "waiter_name": waiter_info["name"] or "—",
+            "waiter_id": eid or "—",
+            "waiter_phone": waiter_info["phone"]
+        })
+        total_amount += amount
+
+    rows.sort(key=lambda r: r["time"], reverse=True)
+    return rows, round(total_amount, 2)
+
+
+@app.route("/orders_report_data/<rid>")
+def orders_report_data(rid):
+    """JSON preview for the date-range report, shown in the browser
+    before the admin decides to download the Excel file."""
+    if not _restaurant_admin_authorized(rid):
+        return jsonify({"success": False, "error": "Unauthorized"}), 401
+    try:
+        from_date = request.args.get("from", "")
+        to_date = request.args.get("to", "")
+        if not from_date or not to_date:
+            return jsonify({"success": False, "error": "Both dates are required"})
+
+        rows, total_amount = _date_range_paid_rows(rid, from_date, to_date)
+        return jsonify({
+            "success": True,
+            "rows": rows[:500],
+            "row_count": len(rows),
+            "total_amount": total_amount
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+
+@app.route("/orders_report_excel/<rid>")
+def orders_report_excel(rid):
+    """Date-range Excel export of every PAID order: time, table, items,
+    amount, and the waiter who served it (name, employee ID, phone)."""
+    if not _restaurant_admin_authorized(rid):
+        return "Unauthorized ❌", 401
+    try:
+        from_date = request.args.get("from", "")
+        to_date = request.args.get("to", "")
+        if not from_date or not to_date:
+            return "Both 'from' and 'to' dates are required ❌", 400
+
+        restaurant_doc = db.collection("restaurants").document(rid).get()
+        restaurant_name = restaurant_doc.to_dict().get("name", "Restaurant") if restaurant_doc.exists else "Restaurant"
+
+        rows, total_amount = _date_range_paid_rows(rid, from_date, to_date)
+
+        # ---------- Build the workbook ----------
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Orders Report"
+        ws.page_setup.orientation = "landscape"
+
+        ws.merge_cells("A1:G1")
+        ws["A1"] = restaurant_name
+        ws["A1"].font = Font(bold=True, size=16)
+        ws["A1"].alignment = Alignment(horizontal="center")
+
+        ws.merge_cells("A2:G2")
+        ws["A2"] = f"Orders Report — {from_date} to {to_date}"
+        ws["A2"].font = Font(size=11, color="666666")
+        ws["A2"].alignment = Alignment(horizontal="center")
+
+        headers = ["Time", "Table", "Items", "Amount", "Waiter Name", "Waiter Employee ID", "Waiter Phone"]
+        header_row = 4
+        for col, h in enumerate(headers, start=1):
+            cell = ws.cell(row=header_row, column=col, value=h)
+            cell.font = Font(bold=True, color="FFFFFF")
+            cell.fill = PatternFill("solid", fgColor="1A1A2E")
+            cell.alignment = Alignment(horizontal="center")
+
+        r = header_row + 1
+        for row in rows:
+            ws.cell(row=r, column=1, value=row["time"])
+            ws.cell(row=r, column=2, value=row["table"])
+            ws.cell(row=r, column=3, value=row["items"])
+            ws.cell(row=r, column=4, value=row["amount"]).number_format = '"$"#,##0.00'
+            ws.cell(row=r, column=5, value=row["waiter_name"])
+            ws.cell(row=r, column=6, value=row["waiter_id"])
+            ws.cell(row=r, column=7, value=row["waiter_phone"])
+            r += 1
+
+        # Total row
+        ws.cell(row=r, column=3, value="TOTAL").font = Font(bold=True)
+        total_cell = ws.cell(row=r, column=4, value=round(total_amount, 2))
+        total_cell.font = Font(bold=True)
+        total_cell.number_format = '"$"#,##0.00'
+
+        widths = [17, 8, 34, 12, 18, 16, 16]
+        for i, w in enumerate(widths, start=1):
+            ws.column_dimensions[get_column_letter(i)].width = w
+
+        buffer = BytesIO()
+        wb.save(buffer)
+        excel_bytes = buffer.getvalue()
+        buffer.close()
+
+        filename = f"{restaurant_name}_orders_{from_date}_to_{to_date}.xlsx".replace(" ", "_")
+        return Response(
+            excel_bytes,
+            mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={"Content-Disposition": f"attachment; filename={filename}"}
+        )
+    except Exception as e:
+        return f"Excel Report Error ❌ {str(e)}", 500
 
 
 # =====================================

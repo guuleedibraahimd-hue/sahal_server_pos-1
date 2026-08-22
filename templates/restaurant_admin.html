@@ -411,6 +411,9 @@ select, .range-select{
 .report-total-box{ display:flex; justify-content:space-between; align-items:center; background:var(--purple-light); border-radius:12px; padding:14px 18px; margin-top:16px; font-weight:800; font-size:15px; color:var(--purple); }
 .report-tbl{ width:100%; border-collapse:collapse; font-size:13px; }
 .report-tbl th{ text-align:left; padding:10px 8px; background:#faf9ff; font-size:11.5px; color:var(--text-muted); border-bottom:1px solid #eee; }
+.date-range-row{ display:flex; align-items:end; gap:14px; flex-wrap:wrap; }
+.date-range-row label{ font-size:12px; font-weight:700; color:var(--text-muted); display:block; margin-bottom:5px; }
+.date-range-row input[type="date"]{ padding:10px 12px; border-radius:10px; border:1px solid #e5e5ee; font-size:13px; }
 .report-tbl td{ padding:10px 8px; border-bottom:1px solid #f4f4f4; }
 
 /* Money report cards */
@@ -711,7 +714,7 @@ canvas{max-width:100%;}
                         {% if s.active %}<span class="staff-status-active">✅ Active</span>{% else %}<span class="staff-status-off">❌ Disabled</span>{% endif %}
                     </div>
                     <div class="staff-actions">
-                        <button class="btn-edit-staff" data-id="{{ s.id }}" data-name="{{ s.name }}" data-employee-id="{{ s.employee_id }}" onclick="openEditStaff(this)">✏️ Edit</button>
+                        <button class="btn-edit-staff" data-id="{{ s.id }}" data-name="{{ s.name }}" data-employee-id="{{ s.employee_id }}" data-phone="{{ s.phone|default('') }}" onclick="openEditStaff(this)">✏️ Edit</button>
                         <button class="btn-del-staff" data-id="{{ s.id }}" data-name="{{ s.name|e }}" onclick="deleteStaff(this)">🗑 Delete</button>
                     </div>
                 </div>
@@ -724,31 +727,24 @@ canvas{max-width:100%;}
         <div class="panel" id="staff-work-section" style="margin-bottom:16px;">
             <h3>🛠️ Work Done — All-Time</h3>
             <p style="font-size:12.5px;color:var(--text-muted);margin:-8px 0 14px;">
-                Every waiter and cashier's total transactions and money handled since their very first day — for detailed line-by-line history and a PDF export, open Reports.
+                Every waiter and cashier's total money handled since their very first day — compared against others of the same role. For a date-range money report and Excel export, open Reports.
             </p>
-            <div style="overflow-x:auto;">
-                <table class="report-tbl">
-                    <thead>
-                        <tr><th>Name</th><th>Role</th><th>Employee ID</th><th>Transactions</th><th>Total Amount</th></tr>
-                    </thead>
-                    <tbody>
-                        {% for w in staff_work_summary %}
-                        <tr>
-                            <td style="font-weight:700;">{{ w.name }}</td>
-                            <td style="text-transform:capitalize;">{{ w.role }}</td>
-                            <td>{{ w.employee_id }}</td>
-                            <td>{{ w.transaction_count }}</td>
-                            <td style="font-weight:700;">${{ "%.2f"|format(w.total_amount) }}</td>
-                        </tr>
-                        {% else %}
-                        <tr><td colspan="5" class="empty">No staff accounts yet</td></tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+            {% for w in staff_work_summary %}
+            <div class="perf-row">
+                <div class="perf-row-head">
+                    <span class="perf-name">{{ w.name }}</span>
+                    <span class="perf-orders">{{ w.transaction_count }} transactions</span>
+                    <span class="perf-sales">${{ "%.2f"|format(w.total_amount) }}</span>
+                    <span class="perf-pct">{{ w.percentage }}%</span>
+                </div>
+                <div class="perf-bar"><div class="perf-bar-fill{{ ' cashier' if w.role == 'cashier' else '' }}" data-pct="{{ w.percentage }}"></div></div>
             </div>
-            <div style="margin-top:16px;">
+            {% else %}
+            <p class="empty">No staff accounts yet</p>
+            {% endfor %}
+            <div style="margin-top:20px;padding-top:16px;border-top:1px solid #eee;">
                 <button class="range-select" style="cursor:pointer;" onclick="showPage('reports', document.querySelector('.nav-item[data-page=reports]'))">
-                    📊 Open full Reports (search, PDF, per-order detail) →
+                    📅 Open Reports (date-range money report, Excel export) →
                 </button>
             </div>
         </div>
@@ -780,54 +776,43 @@ canvas{max-width:100%;}
         </div>
 
         <div class="panel" id="reports-section" style="margin-bottom:16px;">
-            <h3>📊 Staff Transaction Reports</h3>
+            <h3>📅 Orders Report — Pick a Date Range</h3>
             <p style="font-size:12.5px;color:var(--text-muted);margin:-8px 0 16px;">
-                Full history from each staff member's very first transaction — not limited to today.
+                Every paid order between two dates — money collected, items, table, time, and the waiter who served each one. Preview here, then download as Excel.
             </p>
 
-            <div class="role-toggle">
-                <button class="role-toggle-btn active" data-role="waiter" onclick="setReportRole('waiter', this)">🧑‍🍳 Waiters</button>
-                <button class="role-toggle-btn" data-role="cashier" onclick="setReportRole('cashier', this)">💰 Cashiers</button>
-            </div>
-
-            <input type="text" id="reportSearchBox" placeholder="🔍 Search by name…" class="report-search" oninput="filterReportStaffList()">
-
-            <div class="report-staff-list" id="reportStaffList">
-                {% for s in staff %}
-                <button class="report-staff-item" data-role="{{ s.role }}" data-name="{{ s.name|lower }}"
-                        data-employee-id="{{ s.employee_id }}" data-display-name="{{ s.name }}"
-                        onclick="loadStaffReport(this)">
-                    <span class="rsi-name">{{ s.name }}</span>
-                    <span class="rsi-id">{{ s.employee_id }}</span>
-                </button>
-                {% endfor %}
-            </div>
-
-            <div id="reportDetailBox" style="display:none;margin-top:22px;padding-top:20px;border-top:1px solid #eee;">
-                <div class="report-detail-head">
-                    <div>
-                        <h3 id="reportDetailName" style="margin:0;">—</h3>
-                        <p id="reportDetailMeta" style="font-size:12.5px;color:var(--text-muted);margin:4px 0 0;">—</p>
-                    </div>
-                    <a id="reportPdfLink" href="#" target="_blank" class="btn-primary" style="width:auto;text-decoration:none;padding:11px 20px;">
-                        📄 Download PDF (Landscape)
-                    </a>
+            <div class="date-range-row">
+                <div>
+                    <label>From</label>
+                    <input type="date" id="reportFromDate">
                 </div>
+                <div>
+                    <label>To</label>
+                    <input type="date" id="reportToDate">
+                </div>
+                <button class="btn-primary" style="width:auto;padding:11px 22px;" onclick="loadDateRangeReport()">🔍 Generate Report</button>
+                <a id="reportExcelLink" href="#" class="btn-primary" style="width:auto;padding:11px 22px;text-decoration:none;background:var(--green);display:none;" target="_blank">
+                    📊 Download Excel
+                </a>
+            </div>
 
+            <div id="reportRangeMsg" style="font-size:13px;font-weight:700;margin-top:12px;"></div>
+
+            <div id="reportRangeBox" style="display:none;margin-top:18px;">
                 <div class="report-total-box">
-                    <span>Total Amount (all-time)</span>
-                    <span id="reportTotalAmount">$0.00</span>
+                    <span id="reportRangeCountLabel">0 orders</span>
+                    <span id="reportRangeTotalAmount">$0.00</span>
                 </div>
 
                 <div style="overflow-x:auto;margin-top:14px;">
                     <table class="report-tbl">
                         <thead>
-                            <tr><th>Time</th><th>Table</th><th>Waiter</th><th>Amount</th></tr>
+                            <tr><th>Time</th><th>Table</th><th>Items</th><th>Amount</th><th>Waiter</th><th>Employee ID</th><th>Phone</th></tr>
                         </thead>
-                        <tbody id="reportTxBody"></tbody>
+                        <tbody id="reportRangeBody"></tbody>
                     </table>
                 </div>
-                <p id="reportEmptyMsg" class="empty" style="display:none;">No transactions found for this staff member yet.</p>
+                <p id="reportRangeEmptyMsg" class="empty" style="display:none;">No paid orders in this date range.</p>
             </div>
         </div>
         </div>
@@ -869,7 +854,7 @@ const PAGE_TITLES = {
     menu:      ["Menu Items", "Read-only — managed by your Cashier."],
     settings:  ["Settings", "Update restaurant credentials and passwords."],
     staff:     ["Staff", "Accounts, and the all-time work each of them has done."],
-    reports:   ["Reports", "Restaurant revenue totals, plus per-staff transaction history and PDF export."],
+    reports:   ["Reports", "Pick a date range to see every paid order's money, items, table, time and waiter — then export to Excel."],
     system:    ["System Controls", "Bulk actions — use with care."]
 };
 
@@ -985,6 +970,7 @@ new Chart(document.getElementById('categoryChart'), {
         <input type="hidden" id="es_id">
         <input type="text" id="es_name" placeholder="Name">
         <input type="text" id="es_employee_id" placeholder="Employee ID">
+        <input type="text" id="es_phone" placeholder="Phone (optional)" inputmode="tel">
         <input type="text" id="es_pin" placeholder="New PIN (leave blank to keep current)" maxlength="6">
         <div id="editStaffMsg" style="font-size:12.5px;font-weight:700;margin-bottom:10px;"></div>
         <div class="modal-actions">
@@ -998,72 +984,69 @@ new Chart(document.getElementById('categoryChart'), {
 const RID_STAFF = "{{ rid }}";
 
 /* ================================
-   📊 STAFF REPORTS (all-time, searchable, PDF export)
+   📅 DATE-RANGE ORDERS REPORT (money report — not staff-scoped)
    ================================ */
-let currentReportRole = "waiter";
+async function loadDateRangeReport(){
+    const from = document.getElementById("reportFromDate").value;
+    const to = document.getElementById("reportToDate").value;
+    const msg = document.getElementById("reportRangeMsg");
+    const box = document.getElementById("reportRangeBox");
+    const excelLink = document.getElementById("reportExcelLink");
 
-function setReportRole(role, btn){
-    currentReportRole = role;
-    document.querySelectorAll(".role-toggle-btn").forEach(b => b.classList.remove("active"));
-    btn.classList.add("active");
-    document.getElementById("reportDetailBox").style.display = "none";
-    document.getElementById("reportSearchBox").value = "";
-    filterReportStaffList();
-}
+    msg.style.color = "";
+    msg.textContent = "";
+    excelLink.style.display = "none";
 
-function filterReportStaffList(){
-    const q = document.getElementById("reportSearchBox").value.trim().toLowerCase();
-    document.querySelectorAll(".report-staff-item").forEach(item => {
-        const matchesRole = item.dataset.role === currentReportRole;
-        const matchesSearch = !q || item.dataset.name.includes(q);
-        item.style.display = (matchesRole && matchesSearch) ? "" : "none";
-    });
-}
-filterReportStaffList();
+    if(!from || !to){
+        msg.style.color = "var(--red)";
+        msg.textContent = "❌ Pick both a From and a To date";
+        box.style.display = "none";
+        return;
+    }
 
-async function loadStaffReport(btn){
-    document.querySelectorAll(".report-staff-item").forEach(b => b.classList.remove("selected"));
-    btn.classList.add("selected");
-
-    const employeeId = btn.dataset.employeeId;
-    const name = btn.dataset.displayName;
-    const role = btn.dataset.role;
-
-    const box = document.getElementById("reportDetailBox");
-    box.style.display = "block";
-    document.getElementById("reportDetailName").textContent = name;
-    document.getElementById("reportDetailMeta").textContent = "Loading…";
-    document.getElementById("reportTxBody").innerHTML = "";
-    document.getElementById("reportEmptyMsg").style.display = "none";
+    msg.textContent = "Loading…";
 
     try{
-        const res = await fetch(`/staff_report_data/${RID_STAFF}/${employeeId}?role=${role}`);
+        const res = await fetch(`/orders_report_data/${RID_STAFF}?from=${from}&to=${to}`);
         const data = await res.json();
         if(!data.success){
-            document.getElementById("reportDetailMeta").textContent = "❌ " + (data.error || "Failed to load");
+            msg.style.color = "var(--red)";
+            msg.textContent = "❌ " + (data.error || "Failed to load");
+            box.style.display = "none";
             return;
         }
 
-        document.getElementById("reportDetailMeta").textContent =
-            `${employeeId} · ${role.charAt(0).toUpperCase() + role.slice(1)} · ${data.transaction_count} transactions (all-time)`;
-        document.getElementById("reportTotalAmount").textContent = "$" + data.total_amount.toFixed(2);
-        document.getElementById("reportPdfLink").href = `/staff_report_pdf/${RID_STAFF}/${employeeId}?role=${role}`;
+        msg.textContent = "";
+        box.style.display = "block";
+        document.getElementById("reportRangeCountLabel").textContent = `${data.row_count} paid orders`;
+        document.getElementById("reportRangeTotalAmount").textContent = "$" + data.total_amount.toFixed(2);
 
-        const tbody = document.getElementById("reportTxBody");
-        if(data.transactions.length === 0){
-            document.getElementById("reportEmptyMsg").style.display = "block";
+        const tbody = document.getElementById("reportRangeBody");
+        const emptyMsg = document.getElementById("reportRangeEmptyMsg");
+        if(data.rows.length === 0){
+            tbody.innerHTML = "";
+            emptyMsg.style.display = "block";
         } else {
-            tbody.innerHTML = data.transactions.map(t => `
+            emptyMsg.style.display = "none";
+            tbody.innerHTML = data.rows.map(r => `
                 <tr>
-                    <td>${t.time}</td>
-                    <td>${t.table}</td>
-                    <td>${t.waiter || "—"}</td>
-                    <td style="font-weight:700;">$${t.amount.toFixed(2)}</td>
+                    <td>${r.time}</td>
+                    <td>${r.table}</td>
+                    <td>${r.items || "—"}</td>
+                    <td style="font-weight:700;">$${r.amount.toFixed(2)}</td>
+                    <td>${r.waiter_name}</td>
+                    <td>${r.waiter_id}</td>
+                    <td>${r.waiter_phone}</td>
                 </tr>
             `).join("");
         }
+
+        excelLink.href = `/orders_report_excel/${RID_STAFF}?from=${from}&to=${to}`;
+        excelLink.style.display = "inline-block";
     } catch(e){
-        document.getElementById("reportDetailMeta").textContent = "❌ Server error";
+        msg.style.color = "var(--red)";
+        msg.textContent = "❌ Server error";
+        box.style.display = "none";
     }
 }
 
@@ -1071,6 +1054,7 @@ function openEditStaff(btn){
     document.getElementById("es_id").value = btn.dataset.id;
     document.getElementById("es_name").value = btn.dataset.name;
     document.getElementById("es_employee_id").value = btn.dataset.employeeId;
+    document.getElementById("es_phone").value = btn.dataset.phone || "";
     document.getElementById("es_pin").value = "";
     document.getElementById("editStaffMsg").textContent = "";
     document.getElementById("editStaffModal").classList.add("show");
@@ -1084,6 +1068,7 @@ async function submitEditStaff(){
     const id = document.getElementById("es_id").value;
     const name = document.getElementById("es_name").value.trim();
     const employee_id = document.getElementById("es_employee_id").value.trim();
+    const phone = document.getElementById("es_phone").value.trim();
     const pin = document.getElementById("es_pin").value.trim();
     const msg = document.getElementById("editStaffMsg");
     msg.style.color = "";
@@ -1093,7 +1078,7 @@ async function submitEditStaff(){
         const res = await fetch(`/staff_manage/${RID_STAFF}/edit/${id}`, {
             method: "POST",
             headers: {"Content-Type": "application/json"},
-            body: JSON.stringify({ name, employee_id, pin })
+            body: JSON.stringify({ name, employee_id, phone, pin })
         });
         const data = await res.json();
         if(data.success){
