@@ -393,7 +393,7 @@ select, .range-select{
 .perf-sales{ font-weight:700; font-size:13px; color:var(--purple); }
 .perf-pct{ margin-left:auto; font-weight:800; font-size:14px; }
 .perf-bar{ height:7px; background:#f1f1f6; border-radius:4px; overflow:hidden; }
-.perf-bar-fill{ height:100%; background:var(--blue); border-radius:4px; }
+.perf-bar-fill{ height:100%; width:0; background:var(--blue); border-radius:4px; }
 .perf-bar-fill.cashier{ background:var(--green); }
 
 /* menu grid */
@@ -708,7 +708,7 @@ canvas{max-width:100%;}
                     <span class="perf-sales">${{ w.sales }}</span>
                     <span class="perf-pct">{{ w.percentage }}%</span>
                 </div>
-                <div class="perf-bar"><div class="perf-bar-fill" style="width:{{ w.percentage }}%;"></div></div>
+                <div class="perf-bar"><div class="perf-bar-fill" data-pct="{{ w.percentage }}"></div></div>
             </div>
             {% else %}
             <p class="empty">No waiters registered yet</p>
@@ -728,7 +728,7 @@ canvas{max-width:100%;}
                     <span class="perf-sales">{{ c.orders_confirmed }} confirmed</span>
                     <span class="perf-pct">{{ c.percentage }}%</span>
                 </div>
-                <div class="perf-bar"><div class="perf-bar-fill cashier" style="width:{{ c.percentage }}%;"></div></div>
+                <div class="perf-bar"><div class="perf-bar-fill cashier" data-pct="{{ c.percentage }}"></div></div>
             </div>
             {% else %}
             <p class="empty">No cashiers registered yet</p>
@@ -792,6 +792,14 @@ function showPage(id, el){
 
     document.querySelector(".main").scrollTo({top:0, behavior:"smooth"});
 }
+
+// Percentage bars (waiter/cashier performance) get their width set
+// here from data-pct, instead of Jinja inline in style="" — Jinja
+// syntax inside a style attribute isn't valid CSS and trips linters
+// (and is fragile in general).
+document.querySelectorAll(".perf-bar-fill[data-pct]").forEach(el => {
+    el.style.width = el.dataset.pct + "%";
+});
 
 // ---- Chart data injected from Flask (real Firestore-derived data) ----
 const overviewLabels = {{ chart_labels|tojson }};

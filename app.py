@@ -2109,13 +2109,19 @@ def restaurant_admin(rid):
             agg["orders_confirmed"] = today_payments_count.get(cid, 0)
             agg["percentage"] = round((agg["orders_confirmed"] / total_confirmed_today) * 100, 1) if total_confirmed_today > 0 else 0.0
 
-            # Most recent shift today for this cashier
+            # Most recent shift today for this cashier — sorted in
+            # Python rather than via Firestore .order_by(), since
+            # combining an equality filter with order_by on a
+            # different field needs a composite index that doesn't
+            # exist by default (this was the exact 400 error).
             shift_docs = list(restaurant_ref.collection("cashier_shifts")
                                .where("cashier_employee_id", "==", cid)
-                               .order_by("opened_at", direction=firestore.Query.DESCENDING)
-                               .limit(1).stream())
+                               .stream())
             if shift_docs:
-                shift = shift_docs[0].to_dict()
+                shift = max(
+                    (d.to_dict() for d in shift_docs),
+                    key=lambda s: s.get("opened_at", "")
+                )
                 opened_at = shift.get("opened_at", "")
                 try:
                     opened_dt = datetime.strptime(opened_at[:19], "%Y-%m-%dT%H:%M:%S") if "T" in opened_at else datetime.strptime(opened_at, "%Y-%m-%d %H:%M:%S")
@@ -3691,15 +3697,17 @@ def order_status(rid):
     try:
         table = request.args.get("table")
 
-        docs = db.collection("orders") \
+        # Two equality filters + order_by on a third field needs a
+        # composite index Firestore doesn't have by default — sort in
+        # Python instead (same fix as the cashier-shift 400 error).
+        docs = list(db.collection("orders") \
             .where("restaurant_id", "==", rid) \
             .where("table_no", "==", table) \
-            .order_by("created_at", direction=firestore.Query.DESCENDING) \
-            .limit(1) \
-            .stream()
+            .stream())
 
-        for doc in docs:
-            return doc.to_dict().get("status", "pending")
+        if docs:
+            latest = max(docs, key=lambda d: d.to_dict().get("created_at") or "")
+            return latest.to_dict().get("status", "pending")
 
         return "waiting"
 
