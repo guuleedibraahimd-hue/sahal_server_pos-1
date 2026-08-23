@@ -189,6 +189,11 @@ table.orders-tbl td{ padding:10px 6px; border-bottom:1px solid #f4f4f4; vertical
 .file-label{ position:relative; }
 #am_preview{ vertical-align:middle; margin-right:4px; }
 .date-search-row{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+.cat-chip-row{ display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px; }
+.cat-chip{ display:inline-flex; align-items:center; gap:6px; background:#f1f3f6; border-radius:20px; padding:7px 8px 7px 14px; font-size:12.5px; font-weight:700; }
+.cat-chip button{ background:#dc3545; color:#fff; border:none; border-radius:50%; width:18px; height:18px; font-size:10px; cursor:pointer; display:flex; align-items:center; justify-content:center; line-height:1; }
+.cat-add-row{ display:flex; gap:10px; flex-wrap:wrap; }
+.cat-add-row input{ flex:1; min-width:180px; padding:11px 14px; border-radius:10px; border:1px solid #ddd; font-size:13px; font-family:inherit; }
 .date-search-row input[type="date"]{ padding:10px 14px; border-radius:10px; border:1px solid #ddd; font-size:13px; font-family:inherit; }
 
 @media(max-width:800px){
@@ -444,12 +449,9 @@ table.orders-tbl td{ padding:10px 6px; border-bottom:1px solid #f4f4f4; vertical
                     <input type="text" id="am_name" placeholder="Food Name" required>
                     <input type="text" id="am_price" placeholder="Price" required>
                     <select id="am_category" required>
-                        <option value="quraac">🌅 Quraac</option>
-                        <option value="qado">☀️ Qado</option>
-                        <option value="casariyo">🌤️ Casariyo</option>
-                        <option value="casho">🌙 Casho</option>
-                        <option value="cold_drink">🥤 Cold Drink</option>
-                        <option value="hot_drink">☕ Hot Drink</option>
+                        {% for c in categories %}
+                        <option value="{{ c.key }}">{{ c.label }}</option>
+                        {% endfor %}
                     </select>
                     <label class="file-label" id="am_fileLabel">
                         <img id="am_preview" style="display:none;width:26px;height:26px;border-radius:6px;object-fit:cover;">
@@ -459,6 +461,26 @@ table.orders-tbl td{ padding:10px 6px; border-bottom:1px solid #f4f4f4; vertical
                     <button type="submit" class="qr-btn" id="am_submitBtn" style="margin-bottom:0;">✅ Add Item</button>
                 </form>
                 <div class="msg" id="addMenuMsg"></div>
+            </div>
+
+            <div class="section">
+                <div class="section-head"><h2>🏷️ Manage Categories</h2></div>
+                <p style="font-size:12.5px;color:var(--muted);margin:-6px 0 12px;">
+                    Quraac, Qado, Casariyo and Casho come pre-loaded — add your own or remove any you don't need.
+                </p>
+                <div class="cat-chip-row" id="categoryChipRow">
+                    {% for c in categories %}
+                    <span class="cat-chip" id="catchip-{{ c.id }}">
+                        {{ c.label }}
+                        <button type="button" onclick="deleteCategory('{{ c.id }}', '{{ c.label|e }}')">✕</button>
+                    </span>
+                    {% endfor %}
+                </div>
+                <div class="cat-add-row">
+                    <input type="text" id="newCategoryInput" placeholder="e.g. Desserts, Snacks…">
+                    <button class="qr-btn" style="margin-bottom:0;width:auto;padding:11px 20px;" onclick="addCategory()">➕ Add Category</button>
+                </div>
+                <div class="msg" id="categoryMsg"></div>
             </div>
 
             <div class="section">
@@ -596,12 +618,9 @@ table.orders-tbl td{ padding:10px 6px; border-bottom:1px solid #f4f4f4; vertical
         <input type="text" id="em_name" placeholder="Food Name" style="margin-bottom:10px;">
         <input type="text" id="em_price" placeholder="Price" style="margin-bottom:10px;">
         <select id="em_category" style="width:100%;padding:12px;border-radius:10px;border:1px solid #ddd;font-size:14px;margin-bottom:10px;">
-            <option value="quraac">🌅 Quraac</option>
-            <option value="qado">☀️ Qado</option>
-            <option value="casariyo">🌤️ Casariyo</option>
-            <option value="casho">🌙 Casho</option>
-            <option value="cold_drink">🥤 Cold Drink</option>
-            <option value="hot_drink">☕ Hot Drink</option>
+            {% for c in categories %}
+            <option value="{{ c.key }}">{{ c.label }}</option>
+            {% endfor %}
         </select>
         <label class="file-label" style="margin-bottom:10px;">
             📷 Change Image (optional)
@@ -783,20 +802,33 @@ function printQR(format){
             </html>
         `);
     } else {
+        // A4 / A5 / A6 / A7 — same card design, proportionally scaled
+        // down for each paper size.
+        const sizes = {
+            a4: { page: "A4",  box: 420, pad: "32px 28px", nameSize: 26, tagSize: 14, tagline: true, tableLabel: 14, tableNum: 46, qr: 300, hintSize: 15, hint2: 12, gap: 18 },
+            a5: { page: "A5",  box: 300, pad: "22px 18px", nameSize: 19, tagSize: 12, tagline: true, tableLabel: 12, tableNum: 32, qr: 190, hintSize: 12, hint2: 10, gap: 12 },
+            a6: { page: "A6",  box: 200, pad: "14px 12px", nameSize: 14, tagSize: 10, tagline: false, tableLabel: 10, tableNum: 22, qr: 120, hintSize: 10, hint2: 9,  gap: 8  },
+            a7: { page: "A7",  box: 135, pad: "9px 8px",   nameSize: 10, tagSize: 8,  tagline: false, tableLabel: 8,  tableNum: 15, qr: 78,  hintSize: 8,  hint2: 7,  gap: 5  }
+        };
+        const s = sizes[format] || sizes.a4;
+
         w.document.write(`
             <html>
-            <head><title>Table QR</title></head>
-            <body style="font-family:Arial;text-align:center;margin:0;padding:60px 20px;">
-                <div style="max-width:420px;margin:0 auto;border:1.5px solid #dbe4ff;border-radius:20px;padding:32px 28px;box-shadow:0 8px 24px rgba(0,0,0,0.08);">
-                    <div style="font-weight:900;font-size:26px;color:#1e3a8a;">${restaurantName}</div>
-                    <div style="font-size:14px;color:#555;font-style:italic;margin:6px 0 18px;">— Delicious food, great experience —</div>
-                    <div style="border-top:1px dashed #bbb;margin:14px 0;"></div>
-                    <div style="font-size:14px;font-weight:700;color:#2563eb;">TABLE</div>
-                    <div style="font-size:46px;font-weight:900;color:#1e3a8a;margin:2px 0 18px;">${tableNo}</div>
-                    <div style="border-top:1px dashed #bbb;margin:14px 0;"></div>
-                    <img src="${img}" style="width:300px;height:300px;">
-                    <div style="font-size:15px;font-weight:700;margin-top:18px;">📱 Scan to view our menu</div>
-                    <div style="font-size:12px;color:#888;margin-top:4px;">Thank you for dining with us! ♥</div>
+            <head>
+                <title>Table QR</title>
+                <style>@page { size: ${s.page}; margin: 8mm; }</style>
+            </head>
+            <body style="font-family:Arial;text-align:center;margin:0;padding:${format==='a4'?'60px 20px':'10px'};">
+                <div style="max-width:${s.box}px;margin:0 auto;border:1.5px solid #dbe4ff;border-radius:${Math.round(s.box/21)}px;padding:${s.pad};box-shadow:0 8px 24px rgba(0,0,0,0.08);">
+                    <div style="font-weight:900;font-size:${s.nameSize}px;color:#1e3a8a;">${restaurantName}</div>
+                    ${s.tagline ? `<div style="font-size:${s.tagSize}px;color:#555;font-style:italic;margin:6px 0 ${s.gap}px;">— Delicious food, great experience —</div>` : `<div style="margin-bottom:${s.gap}px;"></div>`}
+                    <div style="border-top:1px dashed #bbb;margin:${s.gap}px 0;"></div>
+                    <div style="font-size:${s.tableLabel}px;font-weight:700;color:#2563eb;">TABLE</div>
+                    <div style="font-size:${s.tableNum}px;font-weight:900;color:#1e3a8a;margin:2px 0 ${s.gap}px;">${tableNo}</div>
+                    <div style="border-top:1px dashed #bbb;margin:${s.gap}px 0;"></div>
+                    <img src="${img}" style="width:${s.qr}px;height:${s.qr}px;">
+                    <div style="font-size:${s.hintSize}px;font-weight:700;margin-top:${s.gap}px;">📱 Scan to view our menu</div>
+                    ${format !== 'a7' ? `<div style="font-size:${s.hint2}px;color:#888;margin-top:4px;">Thank you for dining with us! ♥</div>` : ''}
                 </div>
                 <script>
                     window.onload=function(){
@@ -827,6 +859,74 @@ function generateQR(){
         // a stale QR from an earlier table.
         document.getElementById("qrResult").innerHTML = data;
     });
+}
+
+/* ================================
+   🏷️ MANAGE CATEGORIES
+   ================================ */
+async function addCategory(){
+    const input = document.getElementById("newCategoryInput");
+    const label = input.value.trim();
+    const msg = document.getElementById("categoryMsg");
+    msg.className = "msg";
+
+    if(!label){
+        msg.classList.add("show","err");
+        msg.textContent = "❌ Enter a category name";
+        return;
+    }
+
+    try{
+        const res = await fetch(`/menu_categories/${RID}/add`, {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({ label })
+        });
+        const data = await res.json();
+        if(data.success){
+            const chipRow = document.getElementById("categoryChipRow");
+            const chip = document.createElement("span");
+            chip.className = "cat-chip";
+            chip.id = "catchip-" + data.category.id;
+            chip.innerHTML = `${data.category.label} <button type="button" onclick="deleteCategory('${data.category.id}','${data.category.label.replace(/'/g,"\\'")}')">✕</button>`;
+            chipRow.appendChild(chip);
+
+            const opt1 = document.createElement("option");
+            opt1.value = data.category.key; opt1.textContent = data.category.label;
+            document.getElementById("am_category").appendChild(opt1.cloneNode(true));
+            document.getElementById("em_category").appendChild(opt1);
+
+            input.value = "";
+            msg.classList.add("show","ok");
+            msg.textContent = `✅ "${data.category.label}" added`;
+        } else {
+            msg.classList.add("show","err");
+            msg.textContent = "❌ " + (data.error || "Failed to add");
+        }
+    } catch(e){
+        msg.classList.add("show","err");
+        msg.textContent = "❌ Server error";
+    }
+}
+
+async function deleteCategory(id, label){
+    if(!confirm(`Remove category "${label}"? Existing menu items keep their category, but it won't be selectable for new/edited items.`)) return;
+
+    try{
+        const res = await fetch(`/menu_categories/${RID}/delete/${id}`, { method: "DELETE" });
+        const data = await res.json();
+        if(data.success){
+            const chip = document.getElementById("catchip-" + id);
+            if(chip) chip.remove();
+            document.querySelectorAll(`#am_category option, #em_category option`).forEach(opt => {
+                if(opt.textContent === label) opt.remove();
+            });
+        } else {
+            alert("❌ " + (data.error || "Failed to delete"));
+        }
+    } catch(e){
+        alert("❌ Server error");
+    }
 }
 
 /* ================================

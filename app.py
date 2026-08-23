@@ -3324,6 +3324,8 @@ def cashier_dashboard(rid):
         m["id"] = mdoc.id
         menu_items.append(m)
 
+    categories = _get_or_seed_categories(rid)
+
     pending_orders = []
     todays_paid_orders = []
     for doc in restaurant_ref.collection("orders") \
@@ -3515,7 +3517,8 @@ def cashier_dashboard(rid):
         shift_orders_count=len(shift_transactions),
         shift_method_totals={k: round(v, 2) for k, v in shift_method_totals.items()},
         shift_transactions=shift_transactions[:30],
-        menu_items=menu_items
+        menu_items=menu_items,
+        categories=categories
     )
 
 
@@ -3750,6 +3753,85 @@ def get_calls(rid):
 
     except Exception as e:
         return jsonify({"error": str(e)})
+
+
+# =====================================
+# 🏷️ MENU CATEGORIES — cashier-managed, not hardcoded. Seeded once
+# with the 4 defaults (plus the 2 already in use by existing menu
+# items), then the cashier can add or delete freely from there.
+# =====================================
+DEFAULT_MENU_CATEGORIES = [
+    {"key": "quraac", "label": "🌅 Quraac"},
+    {"key": "qado", "label": "☀️ Qado"},
+    {"key": "casariyo", "label": "🌤️ Casariyo"},
+    {"key": "casho", "label": "🌙 Casho"},
+    {"key": "cold_drink", "label": "🥤 Cold Drink"},
+    {"key": "hot_drink", "label": "☕ Hot Drink"},
+]
+
+
+def _get_or_seed_categories(rid):
+    cats_ref = db.collection("restaurants").document(rid).collection("categories")
+    docs = list(cats_ref.stream())
+    if not docs:
+        for c in DEFAULT_MENU_CATEGORIES:
+            cats_ref.add(c)
+        docs = list(cats_ref.stream())
+    categories = []
+    for d in docs:
+        c = d.to_dict()
+        c["id"] = d.id
+        categories.append(c)
+    categories.sort(key=lambda x: x.get("label", ""))
+    return categories
+
+
+@app.route("/menu_categories/<rid>")
+def menu_categories_list(rid):
+    if not session.get("staff_ok") or session.get("staff_role") != "cashier" or session.get("staff_rid") != rid:
+        return jsonify({"success": False, "error": "Unauthorized"}), 401
+    try:
+        return jsonify({"success": True, "categories": _get_or_seed_categories(rid)})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+
+@app.route("/menu_categories/<rid>/add", methods=["POST"])
+def menu_categories_add(rid):
+    if not session.get("staff_ok") or session.get("staff_role") != "cashier" or session.get("staff_rid") != rid:
+        return jsonify({"success": False, "error": "Unauthorized"}), 401
+    try:
+        data = request.get_json() or {}
+        label = data.get("label", "").strip()
+        if not label:
+            return jsonify({"success": False, "error": "Category name is required"})
+
+        key = re.sub(r'[^a-z0-9]+', '_', label.lower()).strip('_')
+        if not key:
+            return jsonify({"success": False, "error": "Category name must include letters or numbers"})
+
+        cats_ref = db.collection("restaurants").document(rid).collection("categories")
+        existing = list(cats_ref.where("key", "==", key).limit(1).stream())
+        if existing:
+            return jsonify({"success": False, "error": f"'{label}' already exists"})
+
+        new_cat = {"key": key, "label": label}
+        doc_ref = cats_ref.add(new_cat)
+        new_cat["id"] = doc_ref[1].id
+        return jsonify({"success": True, "category": new_cat})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+
+@app.route("/menu_categories/<rid>/delete/<category_id>", methods=["DELETE"])
+def menu_categories_delete(rid, category_id):
+    if not session.get("staff_ok") or session.get("staff_role") != "cashier" or session.get("staff_rid") != rid:
+        return jsonify({"success": False, "error": "Unauthorized"}), 401
+    try:
+        db.collection("restaurants").document(rid).collection("categories").document(category_id).delete()
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
 
 
 # =====================================

@@ -904,20 +904,33 @@ function printQR(format){
             </html>
         `);
     } else {
+        // A4 / A5 / A6 / A7 — same card design, proportionally scaled
+        // down for each paper size.
+        const sizes = {
+            a4: { page: "A4",  box: 420, pad: "32px 28px", nameSize: 26, tagSize: 14, tagline: true, tableLabel: 14, tableNum: 46, qr: 300, hintSize: 15, hint2: 12, gap: 18 },
+            a5: { page: "A5",  box: 300, pad: "22px 18px", nameSize: 19, tagSize: 12, tagline: true, tableLabel: 12, tableNum: 32, qr: 190, hintSize: 12, hint2: 10, gap: 12 },
+            a6: { page: "A6",  box: 200, pad: "14px 12px", nameSize: 14, tagSize: 10, tagline: false, tableLabel: 10, tableNum: 22, qr: 120, hintSize: 10, hint2: 9,  gap: 8  },
+            a7: { page: "A7",  box: 135, pad: "9px 8px",   nameSize: 10, tagSize: 8,  tagline: false, tableLabel: 8,  tableNum: 15, qr: 78,  hintSize: 8,  hint2: 7,  gap: 5  }
+        };
+        const s = sizes[format] || sizes.a4;
+
         w.document.write(`
             <html>
-            <head><title>Table QR</title></head>
-            <body style="font-family:Arial;text-align:center;margin:0;padding:60px 20px;">
-                <div style="max-width:420px;margin:0 auto;border:1.5px solid #dbe4ff;border-radius:20px;padding:32px 28px;box-shadow:0 8px 24px rgba(0,0,0,0.08);">
-                    <div style="font-weight:900;font-size:26px;color:#1e3a8a;">${restaurantName}</div>
-                    <div style="font-size:14px;color:#555;font-style:italic;margin:6px 0 18px;">— Delicious food, great experience —</div>
-                    <div style="border-top:1px dashed #bbb;margin:14px 0;"></div>
-                    <div style="font-size:14px;font-weight:700;color:#2563eb;">TABLE</div>
-                    <div style="font-size:46px;font-weight:900;color:#1e3a8a;margin:2px 0 18px;">${tableNo}</div>
-                    <div style="border-top:1px dashed #bbb;margin:14px 0;"></div>
-                    <img src="${img}" style="width:300px;height:300px;">
-                    <div style="font-size:15px;font-weight:700;margin-top:18px;">📱 Scan to view our menu</div>
-                    <div style="font-size:12px;color:#888;margin-top:4px;">Thank you for dining with us! ♥</div>
+            <head>
+                <title>Table QR</title>
+                <style>@page { size: ${s.page}; margin: 8mm; }</style>
+            </head>
+            <body style="font-family:Arial;text-align:center;margin:0;padding:${format==='a4'?'60px 20px':'10px'};">
+                <div style="max-width:${s.box}px;margin:0 auto;border:1.5px solid #dbe4ff;border-radius:${Math.round(s.box/21)}px;padding:${s.pad};box-shadow:0 8px 24px rgba(0,0,0,0.08);">
+                    <div style="font-weight:900;font-size:${s.nameSize}px;color:#1e3a8a;">${restaurantName}</div>
+                    ${s.tagline ? `<div style="font-size:${s.tagSize}px;color:#555;font-style:italic;margin:6px 0 ${s.gap}px;">— Delicious food, great experience —</div>` : `<div style="margin-bottom:${s.gap}px;"></div>`}
+                    <div style="border-top:1px dashed #bbb;margin:${s.gap}px 0;"></div>
+                    <div style="font-size:${s.tableLabel}px;font-weight:700;color:#2563eb;">TABLE</div>
+                    <div style="font-size:${s.tableNum}px;font-weight:900;color:#1e3a8a;margin:2px 0 ${s.gap}px;">${tableNo}</div>
+                    <div style="border-top:1px dashed #bbb;margin:${s.gap}px 0;"></div>
+                    <img src="${img}" style="width:${s.qr}px;height:${s.qr}px;">
+                    <div style="font-size:${s.hintSize}px;font-weight:700;margin-top:${s.gap}px;">📱 Scan to view our menu</div>
+                    ${format !== 'a7' ? `<div style="font-size:${s.hint2}px;color:#888;margin-top:4px;">Thank you for dining with us! ♥</div>` : ''}
                 </div>
                 <script>
                     window.onload=function(){
