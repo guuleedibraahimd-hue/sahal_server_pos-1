@@ -3200,7 +3200,8 @@ def waiter_dashboard(rid):
         method_totals={k: round(v, 2) for k, v in method_totals.items()},
         donut_gradient=donut_gradient,
         prefill_table=request.args.get("table", ""),
-        open_view=request.args.get("view", "")
+        open_view=request.args.get("view", ""),
+        categories=_get_or_seed_categories(rid)
     )
 
 

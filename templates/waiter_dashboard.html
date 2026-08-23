@@ -75,31 +75,21 @@ a{ color:inherit; }
 .table-input{ margin-bottom:14px; }
 .table-input input{ width:100%; max-width:260px; padding:11px 14px; border-radius:10px; border:1px solid #ddd; font-size:14px; }
 
-.menu-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(110px,1fr)); gap:10px; }
-.menu-item{ border:1px solid #eee; border-radius:12px; overflow:hidden; cursor:pointer; transition:0.15s; background:#fff; }
+.menu-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:14px; }
+.menu-item{ border:1px solid #eee; border-radius:14px; overflow:hidden; cursor:pointer; transition:0.15s; background:#fff; }
 .menu-item:hover{ border-color:var(--orange); box-shadow:0 6px 18px rgba(255,87,34,0.15); transform:translateY(-2px); }
-.menu-item .img-wrap{ width:100%; height:64px; background:#f1f3f6; overflow:hidden; display:flex; align-items:center; justify-content:center; }
+.menu-item .img-wrap{ width:100%; height:110px; background:#f1f3f6; overflow:hidden; display:flex; align-items:center; justify-content:center; }
 .menu-item img{ width:100%; height:100%; object-fit:cover; display:block; }
-.menu-item .body{ padding:7px 9px; position:relative; }
-.menu-item .name{ font-size:11.5px; font-weight:800; padding-right:22px; }
-.menu-item .price{ font-size:11px; color:var(--orange); font-weight:800; margin-top:2px; }
-.menu-item .add-fab{ position:absolute; right:7px; bottom:7px; width:20px; height:20px; border-radius:50%; background:var(--orange); color:#fff; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:900; }
+.menu-item .body{ padding:10px 12px; position:relative; }
+.menu-item .name{ font-size:13px; font-weight:800; }
+.menu-item .price{ font-size:12.5px; color:var(--orange); font-weight:800; margin-top:2px; }
+.menu-item .add-fab{ position:absolute; right:10px; bottom:10px; width:26px; height:26px; border-radius:50%; background:var(--orange); color:#fff; display:flex; align-items:center; justify-content:center; font-size:16px; font-weight:900; }
 
 .cart-bar{ display:flex; align-items:center; justify-content:space-between; background:var(--orange); color:#fff; border-radius:12px; padding:14px 18px; margin-top:16px; cursor:pointer; font-weight:800; font-size:14px; }
 .cart-panel{ display:none; margin-top:12px; }
 .cart-panel.show{ display:block; }
-.cart-row{ display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid #f0f0f0; font-size:13px; }
-.cart-row .cr-img{ width:40px; height:40px; border-radius:8px; object-fit:cover; flex-shrink:0; background:#f1f3f6; }
-.cart-row .cr-info{ flex:1; min-width:0; }
-.cart-row .cr-name{ font-weight:800; font-size:12.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.cart-row .cr-price{ color:var(--muted); font-size:11.5px; margin-top:1px; }
-.cart-row .qty-controls{ display:flex; align-items:center; gap:6px; flex-shrink:0; }
-.cart-row .qty-btn{ width:24px; height:24px; border-radius:7px; border:none; cursor:pointer; font-weight:900; font-size:14px; display:flex; align-items:center; justify-content:center; color:#fff; }
-.cart-row .qty-btn.minus{ background:#dc3545; }
-.cart-row .qty-btn.plus{ background:var(--green); }
-.cart-row .qty-val{ min-width:20px; text-align:center; font-weight:800; }
-.cart-row .cr-total{ min-width:52px; text-align:right; font-weight:800; flex-shrink:0; }
-.cart-row button.cr-remove{ background:#dc3545; color:#fff; border:none; border-radius:6px; padding:4px 8px; cursor:pointer; font-size:11px; flex-shrink:0; }
+.cart-row{ display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid #f0f0f0; font-size:13px; }
+.cart-row button{ background:#dc3545; color:#fff; border:none; border-radius:6px; padding:4px 8px; cursor:pointer; font-size:11px; }
 .send-btn{ width:100%; margin-top:14px; padding:14px; background:var(--green); color:#fff; border:none; border-radius:12px; font-weight:800; cursor:pointer; font-size:14px; }
 
 .waiting-bar{ display:flex; align-items:center; justify-content:space-between; background:#fff3cd; color:#856404; border:1.5px solid #ffe08a; border-radius:12px; padding:14px 18px; margin-top:16px; cursor:pointer; font-weight:800; font-size:14px; }
@@ -288,7 +278,7 @@ table.tx-tbl td{ padding:9px 6px; border-bottom:1px solid #f4f4f4; }
 
                 <div class="menu-grid" id="menuGrid">
                     {% for item in menu %}
-                    <div class="menu-item" data-id="{{ item.id }}" data-name="{{ item.name|lower }}" data-display-name="{{ item.name }}" data-price="{{ item.price|default(0) }}" data-category="{{ item.category|default('') }}" data-image="{{ item.image or '' }}" onclick="addToCart(this)">
+                    <div class="menu-item" data-id="{{ item.id }}" data-name="{{ item.name|lower }}" data-display-name="{{ item.name }}" data-price="{{ item.price|default(0) }}" data-category="{{ item.category|default('') }}" onclick="addToCart(this)">
                         <div class="img-wrap">
                             {% if item.image %}<img src="{{ item.image }}" alt="{{ item.name }}" loading="lazy" onerror="this.parentNode.innerHTML='🍽️'">{% else %}<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:34px;">🍽️</div>{% endif %}
                         </div>
@@ -507,22 +497,8 @@ function addToCart(el){
     const id    = el.dataset.id;
     const name  = el.dataset.displayName;
     const price = parseFloat(el.dataset.price) || 0;
-    const image = el.dataset.image || "";
     const existing = cart.find(c => c.id === id);
-    if(existing){ existing.qty += 1; } else { cart.push({id, name, price, image, qty:1}); }
-    renderCart();
-}
-
-/* ── + / - ee gudaha View Order: kordhi ama dhimi tirada alaabta.
-   Marka tirada ay gaarto 0, alaabta si otomaatig ah ayaa looga saaraa
-   cart-ka (isla wax ay ✕ badhanka sameeyo). ── */
-function changeQty(idx, delta){
-    const c = cart[idx];
-    if(!c) return;
-    c.qty += delta;
-    if(c.qty <= 0){
-        cart.splice(idx, 1);
-    }
+    if(existing){ existing.qty += 1; } else { cart.push({id, name, price, qty:1}); }
     renderCart();
 }
 
@@ -572,10 +548,6 @@ function clearEdit(){
     document.getElementById("tableNo").value = "";
 }
 
-/* ── View Order (cart) ee cusub: sawir + magac + qiime, kaddibna
-   badhamada − iyo + oo tirada wax ka badali kara, dhinaca midig
-   waxaa taagan wadarta alaabtaas iyo ✕ haddii loo baahdo in dhamaan
-   la saaro hal mar. ── */
 function renderCart(){
     const box = document.getElementById("cartBox");
     let total = 0;
@@ -583,22 +555,9 @@ function renderCart(){
     box.innerHTML = cart.map((c, i) => {
         total += c.price * c.qty;
         count += c.qty;
-        const imgHtml = c.image
-            ? `<img class="cr-img" src="${c.image}" alt="${c.name}" onerror="this.style.display='none'">`
-            : `<div class="cr-img" style="display:flex;align-items:center;justify-content:center;font-size:18px;">🍽️</div>`;
         return `<div class="cart-row">
-            ${imgHtml}
-            <div class="cr-info">
-                <div class="cr-name">${c.name}</div>
-                <div class="cr-price">$${c.price.toFixed(2)}</div>
-            </div>
-            <div class="qty-controls">
-                <button class="qty-btn minus" onclick="changeQty(${i},-1)">−</button>
-                <span class="qty-val">${c.qty}</span>
-                <button class="qty-btn plus" onclick="changeQty(${i},1)">+</button>
-            </div>
-            <span class="cr-total">$${(c.price*c.qty).toFixed(2)}</span>
-            <button class="cr-remove" onclick="removeFromCart(${i})">✕</button>
+            <span>${c.qty} × ${c.name}</span>
+            <span>$${(c.price*c.qty).toFixed(2)} <button onclick="removeFromCart(${i})">✕</button></span>
         </div>`;
     }).join("");
 
@@ -638,6 +597,12 @@ async function sendOrder(){
             lastOrderId = data.order_id || null;
 
             if(cameViaQR()){
+                // Arrived here via a table QR scan on a phone — there's
+                // no printer attached to this device, so skip the
+                // Print Now / Wait prompt entirely and go straight to
+                // "Waiting to Print" (unmarked, exactly like choosing
+                // "Wait / Print Later" would do) so the desktop/kitchen
+                // side can print it once it's actually near a printer.
                 setTimeout(() => location.reload(), 900);
             } else {
                 document.getElementById("printModalTitle").textContent = data.merged ? "Order Updated!" : "Order Sent!";
@@ -676,6 +641,8 @@ function markPrinted(el){
     if(orderId){
         fetch(`/mark_receipt_printed/${RID}/${orderId}`, { method: "POST" }).catch(() => {});
     }
+    // Let the receipt tab open normally (target="_blank"); reload this
+    // page shortly after so the order drops out of "Waiting to Print".
     setTimeout(() => location.reload(), 600);
 }
 </script>
