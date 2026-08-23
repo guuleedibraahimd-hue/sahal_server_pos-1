@@ -47,6 +47,8 @@ a{ color:inherit; }
 .topbar{ background:#fff; border-bottom:1px solid var(--border); padding:14px 26px; display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap; }
 .tb-restaurant{ display:flex; align-items:center; gap:8px; font-weight:800; font-size:15px; }
 .tb-right{ display:flex; align-items:center; gap:16px; font-size:13px; color:var(--muted); }
+.tb-logout{ display:flex; align-items:center; gap:6px; padding:8px 14px; background:var(--orange); color:#fff; text-decoration:none; font-size:12.5px; font-weight:700; border-radius:10px; }
+.tb-logout:hover{ opacity:0.9; }
 
 .content{ padding:22px 26px 60px; }
 .page{ display:none; }
@@ -183,17 +185,16 @@ table.tx-tbl td{ padding:9px 6px; border-bottom:1px solid #f4f4f4; }
             <li><button class="sb-link" data-page="transactions" onclick="showPage('transactions',this)">💳 My Transactions</button></li>
             <li><a class="sb-link" href="/kitchen/{{ rid }}" target="_blank">🍳 Kitchen Orders</a></li>
         </ul>
-
-        <div class="sb-bottom">
-            <a class="sb-logout" href="/waiter_logout">🚪 Logout</a>
-        </div>
     </aside>
 
     <!-- ================= MAIN ================= -->
     <div class="main">
         <div class="topbar">
             <div class="tb-restaurant">🏪 {{ restaurant_name }}</div>
-            <div class="tb-right">{{ staff_name }} · Waiter</div>
+            <div class="tb-right">
+                <span>{{ staff_name }} · Waiter</span>
+                <a class="tb-logout" href="/waiter_logout">🚪 Logout</a>
+            </div>
         </div>
 
         <div class="content">
@@ -268,12 +269,9 @@ table.tx-tbl td{ padding:9px 6px; border-bottom:1px solid #f4f4f4; }
 
                 <div class="cat-tabs">
                     <button class="cat-tab active" data-cat="all" onclick="filterCategory(this)">All Items</button>
-                    <button class="cat-tab" data-cat="quraac" onclick="filterCategory(this)">🌅 Quraac</button>
-                    <button class="cat-tab" data-cat="qado" onclick="filterCategory(this)">☀️ Qado</button>
-                    <button class="cat-tab" data-cat="casariyo" onclick="filterCategory(this)">🌤️ Casariyo</button>
-                    <button class="cat-tab" data-cat="casho" onclick="filterCategory(this)">🌙 Casho</button>
-                    <button class="cat-tab" data-cat="cold_drink" onclick="filterCategory(this)">🥤 Cold Drink</button>
-                    <button class="cat-tab" data-cat="hot_drink" onclick="filterCategory(this)">☕ Hot Drink</button>
+                    {% for c in categories %}
+                    <button class="cat-tab" data-cat="{{ c.key }}" onclick="filterCategory(this)">{{ c.label }}</button>
+                    {% endfor %}
                 </div>
 
                 <div class="menu-grid" id="menuGrid">

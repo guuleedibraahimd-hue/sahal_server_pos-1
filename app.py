@@ -8,7 +8,8 @@ from flask import (
     url_for,
     flash,
     send_from_directory,
-    Response
+    Response,
+    make_response
 )
 
 from flask_socketio import (
@@ -3182,7 +3183,7 @@ def waiter_dashboard(rid):
     else:
         donut_gradient = "conic-gradient(#e8ecf4 0% 100%)"
 
-    return render_template(
+    resp = make_response(render_template(
         "waiter_dashboard.html",
         rid=rid,
         restaurant_name=restaurant.get("name", "Restaurant"),
@@ -3202,8 +3203,12 @@ def waiter_dashboard(rid):
         prefill_table=request.args.get("table", ""),
         open_view=request.args.get("view", ""),
         categories=_get_or_seed_categories(rid)
-    )
-
+    ))
+    # Categories (and other data here) can change on the cashier's side
+    # between page loads — force the browser to always fetch a fresh
+    # copy instead of quietly serving a stale one from its cache.
+    resp.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    return resp
 
 @app.route("/mark_receipt_printed/<rid>/<order_id>", methods=["POST"])
 def mark_receipt_printed(rid, order_id):
