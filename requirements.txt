@@ -6,3 +6,4 @@ Pillow
 gunicorn
 reportlab
 openpyxl
+requests

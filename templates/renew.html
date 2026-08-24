@@ -102,26 +102,29 @@ body{
 
 <p>
 The <b>{{ entity_label }}</b> account "<span class="biz-name">{{ business_name }}</span>" has been temporarily suspended by admin.<br>
-Fadlan lacagta u dir lambarka hoose, kadibna buuxi foomka si loo dib-u-daayo (renew) system-ka.
+Fadlan doorto immisa bilood, geli lambarkaaga EVC Plus, kadibna waxaad ka heli doontaa codsi PIN ah taleefankaaga si aad lacagta ugu xaqiijiso.
 </p>
 
-<div class="code">
-📲 Send payment to: {{ payment_number }}
+{% if monthly_fee and monthly_fee > 0 %}
+<div class="code" id="priceBox">
+    💰 ${{ "%.2f"|format(monthly_fee) }} / bil — Wadarta: <span id="totalPriceText">${{ "%.2f"|format(monthly_fee) }}</span>
 </div>
+{% endif %}
 
-<button class="btn pay" id="showFormBtn" onclick="showRenewForm()">
-💳 I've Paid — Confirm Renewal
-</button>
+<form class="renew-form show" id="renewForm" onsubmit="return false;">
+    <label>Immisa bilood ayaad rabtaa? *</label>
+    <select id="months_select" onchange="updateTotal()">
+        <option value="1">1 Bil</option>
+        <option value="3" selected>3 Bilood</option>
+        <option value="6">6 Bilood</option>
+        <option value="12">12 Bilood (1 Sano)</option>
+    </select>
 
-<form class="renew-form" id="renewForm" onsubmit="return false;">
-    <label>Your Name *</label>
-    <input type="text" id="sender_name" placeholder="Full name on the sending account" autocomplete="off">
+    <label>Lambarka EVC Plus aad ka bixinayso *</label>
+    <input type="text" id="pay_phone" placeholder="e.g. 61XXXXXXX ama 77XXXXXXX" autocomplete="off">
 
-    <label>Number You Paid From *</label>
-    <input type="text" id="paid_from_number" placeholder="e.g. 0612345678" autocomplete="off">
-
-    <button class="btn check" onclick="checkRenew()">
-        ✅ Submit Renewal Request
+    <button class="btn pay" id="payBtn" onclick="startPushPayment()">
+        📲 Dir Codsiga Lacag-bixinta
     </button>
 </form>
 
@@ -136,46 +139,65 @@ Logout
 </div>
 
 <script>
-const ENTITY_TYPE    = "{{ entity_type }}";
-const ENTITY_ID      = "{{ entity_id }}";
-const LOGOUT_URL     = "{{ logout_url }}";
+const ENTITY_TYPE   = "{{ entity_type }}";
+const ENTITY_ID     = "{{ entity_id }}";
+const LOGOUT_URL    = "{{ logout_url }}";
+const MONTHLY_FEE   = {{ monthly_fee|default(0)|tojson }};
 
-function showRenewForm(){
-    document.getElementById("renewForm").classList.add("show");
-    document.getElementById("showFormBtn").style.display = "none";
+function updateTotal(){
+    const months = parseInt(document.getElementById("months_select").value) || 1;
+    const totalEl = document.getElementById("totalPriceText");
+    if(totalEl && MONTHLY_FEE > 0){
+        totalEl.textContent = "$" + (MONTHLY_FEE * months).toFixed(2);
+    }
 }
+updateTotal();
 
-async function checkRenew(){
-    const sender_name      = document.getElementById("sender_name").value.trim();
-    const paid_from_number = document.getElementById("paid_from_number").value.trim();
-    const msg = document.getElementById("statusMsg");
+async function startPushPayment(){
+    const months = parseInt(document.getElementById("months_select").value) || 0;
+    const phone  = document.getElementById("pay_phone").value.trim();
+    const msg    = document.getElementById("statusMsg");
+    const btn    = document.getElementById("payBtn");
     msg.className = "status-msg";
 
-    if(!sender_name || !paid_from_number){
+    if(!phone || months < 1){
         msg.classList.add("error");
-        msg.textContent = "❌ Please fill in both fields";
+        msg.textContent = "❌ Fadlan geli lambarkaaga oo doorto bilaha";
         return;
     }
 
+    btn.disabled = true;
+    btn.textContent = "⏳ Sug…";
+    msg.classList.add("success");
+    msg.textContent = "📲 Codsigii waa la diray — fadlan hubi taleefankaaga oo geli PIN-kaaga si aad u xaqiijiso.";
+
     try{
-        let res = await fetch(`/submit_renewal/${ENTITY_TYPE}/${ENTITY_ID}`, {
+        let res = await fetch(`/renew_push_payment/${ENTITY_TYPE}/${ENTITY_ID}`, {
             method: "POST",
             headers: {"Content-Type": "application/json"},
-            body: JSON.stringify({ sender_name, paid_from_number })
+            body: JSON.stringify({ phone, months })
         });
         let data = await res.json();
 
         if(data.success){
+            msg.classList.remove("error");
             msg.classList.add("success");
-            msg.textContent = "✅ Renewal request sent! Admin will review and reactivate your account shortly.";
-            document.getElementById("renewForm").classList.remove("show");
+            msg.textContent = `✅ Lacag-bixintu waa guulaysatay! Account-kaaga waa la dib-u-daayay ilaa ${data.expiry_date}. Bogga waa la soo shubi doonaa...`;
+            btn.style.display = "none";
+            setTimeout(() => location.reload(), 2500);
         } else {
+            msg.classList.remove("success");
             msg.classList.add("error");
-            msg.textContent = "❌ " + (data.error || "Something went wrong");
+            msg.textContent = "❌ " + (data.error || "Lacag-bixintu ma guulaysan — isku day mar kale");
+            btn.disabled = false;
+            btn.textContent = "📲 Dir Codsiga Lacag-bixinta";
         }
     }catch(e){
+        msg.classList.remove("success");
         msg.classList.add("error");
-        msg.textContent = "❌ Server error, please try again";
+        msg.textContent = "❌ Khalad server ah — isku day mar kale";
+        btn.disabled = false;
+        btn.textContent = "📲 Dir Codsiga Lacag-bixinta";
     }
 }
 

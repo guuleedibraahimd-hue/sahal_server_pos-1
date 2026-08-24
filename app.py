@@ -51,6 +51,7 @@ from reportlab.lib.enums import TA_CENTER
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment
 from openpyxl.utils import get_column_letter
+import requests
 
 app = Flask(__name__)
 
@@ -508,6 +509,139 @@ def submit_renewal(entity_type, entity_id):
             "status":           "pending"
         })
         return jsonify({"success": True, "message": "Renewal request sent"})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+
+# ==========================================
+# 💳 PUSH-PAYMENT RENEWAL (Hormuud EVC Plus via Waafi)
+# The owner enters their phone number and picks how many months; this
+# calls Waafi's MWALLET_ACCOUNT push flow with the account's real
+# merchant credentials. Waafi/Hormuud then send the PIN prompt
+# straight to the OWNER'S OWN PHONE via their own system — this app
+# never sees, asks for, or handles the PIN at any point. The
+# subscription is only extended and reactivated once Waafi confirms
+# the payment actually succeeded.
+# ==========================================
+WAAFI_MERCHANT_UID = "M0914174"
+WAAFI_API_USER_ID  = "1008694"
+WAAFI_API_KEY       = "API-QMfqbsf1V6qFSxyQgQ2Nbq3DjHoF"
+WAAFI_URL           = "https://api.waafipay.net/asm"
+
+
+def _monthly_fee_for(entity_type, entity_data):
+    if entity_type == "pharmacy":
+        return float(entity_data.get("monthly_fee", 0) or 0)
+    try:
+        return float(entity_data.get("monthly_fee") or entity_data.get("price") or entity_data.get("fee") or 0)
+    except (TypeError, ValueError):
+        return 0.0
+
+
+@app.route("/renew_push_payment/<entity_type>/<entity_id>", methods=["POST"])
+def renew_push_payment(entity_type, entity_id):
+    try:
+        if entity_type not in RENEWAL_COLLECTION_MAP:
+            return jsonify({"success": False, "error": "Invalid account type"}), 400
+
+        data   = request.get_json() or {}
+        phone  = data.get("phone", "").strip()
+        months = int(data.get("months", 0) or 0)
+
+        if not phone or months < 1:
+            return jsonify({"success": False, "error": "Enter a phone number and choose at least 1 month"})
+
+        clean_phone = re.sub(r'\D', '', phone)
+        if clean_phone.startswith("252"):
+            clean_phone = clean_phone[3:]
+        elif clean_phone.startswith("0"):
+            clean_phone = clean_phone[1:]
+        if len(clean_phone) != 9:
+            return jsonify({"success": False, "error": "Phone number must be 9 digits (e.g. 61XXXXXXX)"})
+
+        collection = RENEWAL_COLLECTION_MAP[entity_type]
+        entity_ref = db.collection(collection).document(entity_id)
+        entity_doc = entity_ref.get()
+        if not entity_doc.exists:
+            return jsonify({"success": False, "error": "Account not found"})
+
+        entity_data   = entity_doc.to_dict()
+        business_name = entity_data.get(RENEWAL_NAME_FIELD_MAP[entity_type], entity_id)
+        monthly_fee   = _monthly_fee_for(entity_type, entity_data)
+        if monthly_fee <= 0:
+            return jsonify({"success": False, "error": "This account has no subscription price set — contact support"})
+
+        total_amount = round(monthly_fee * months, 2)
+        reference_id = f"renew_{entity_id}_{int(datetime.now().timestamp())}"
+
+        payload = {
+            "schemaVersion": "1.0",
+            "requestId": str(int(datetime.now().timestamp() * 1000)),
+            "timestamp": datetime.now().isoformat(),
+            "channelName": "WEB",
+            "serviceName": "API_PURCHASE",
+            "serviceParams": {
+                "merchantUid": WAAFI_MERCHANT_UID,
+                "apiUserId": WAAFI_API_USER_ID,
+                "apiKey": WAAFI_API_KEY,
+                "paymentMethod": "MWALLET_ACCOUNT",
+                "payerInfo": {"accountNo": clean_phone},
+                "transactionInfo": {
+                    "referenceId": reference_id,
+                    "invoiceId": reference_id,
+                    "amount": f"{total_amount:.2f}",
+                    "currency": "USD",
+                    "description": f"Sahal Server subscription — {business_name} ({months} mo)"
+                }
+            }
+        }
+
+        try:
+            waafi_res = requests.post(WAAFI_URL, json=payload, timeout=45)
+            waafi_data = waafi_res.json()
+        except Exception as e:
+            return jsonify({"success": False, "error": f"Payment gateway error: {str(e)}"})
+
+        response_code = str(waafi_data.get("responseCode", ""))
+        succeeded = response_code in ("0", "2001")
+
+        # Log every attempt (success or fail) for a real audit trail —
+        # replaces the old "trust me, I paid" renewal_requests flow.
+        db.collection("subscription_payments").add({
+            "entity_type": entity_type, "entity_id": entity_id, "business_name": business_name,
+            "phone": clean_phone, "months": months, "amount": total_amount,
+            "reference_id": reference_id, "response_code": response_code,
+            "waafi_response": waafi_data,
+            "status": "SUCCESS" if succeeded else "FAILED",
+            "created_at": datetime.now().isoformat()
+        })
+
+        if not succeeded:
+            return jsonify({"success": False, "error": waafi_data.get("responseMsg", "Payment was declined or cancelled")})
+
+        # Extend from whichever is later — today, or the current expiry
+        # (if it's still in the future) — so renewing early never loses
+        # already-paid time.
+        current_expiry_str = entity_data.get("expiry_date") or entity_data.get("expiry")
+        base_date = datetime.now()
+        if current_expiry_str:
+            try:
+                current_expiry = datetime.strptime(current_expiry_str, "%Y-%m-%d")
+                if current_expiry > base_date:
+                    base_date = current_expiry
+            except Exception:
+                pass
+        new_expiry = (base_date + timedelta(days=months * 30)).strftime("%Y-%m-%d")
+
+        entity_ref.update({
+            "active": True,
+            "status": "active",
+            "expiry_date": new_expiry,
+            "expiry": new_expiry
+        })
+
+        return jsonify({"success": True, "expiry_date": new_expiry, "amount": total_amount})
+
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
 
@@ -1173,6 +1307,7 @@ def supermarket_dashboard():
                     entity_label   = "Supermarket",
                     entity_id      = mid,
                     business_name  = market.get("name", session.get("market_name", "Supermarket")),
+                    monthly_fee    = _monthly_fee_for("supermarket", market),
                     payment_number = ADMIN_PAYMENT_NUMBER,
                     logout_url     = "/logout"
                 )
@@ -1681,6 +1816,7 @@ def dashboard(rid):
                 entity_label   = "Restaurant",
                 entity_id      = rid,
                 business_name  = restaurant.get("name", "Restaurant"),
+                monthly_fee    = _monthly_fee_for("restaurant", restaurant),
                 payment_number = ADMIN_PAYMENT_NUMBER,
                 logout_url     = "/logout"
             )
@@ -5775,12 +5911,19 @@ def pharmacy():
     if not session.get("pharmacy_ok"):
         return redirect("/pharmacy_login")
     if session.get("pharmacy_suspended"):
+        pharmacy_id = session.get("pharmacy_id", "")
+        pharmacy_fee = 0.0
+        if pharmacy_id:
+            ph_doc = db.collection("pharmacies").document(pharmacy_id).get()
+            if ph_doc.exists:
+                pharmacy_fee = _monthly_fee_for("pharmacy", ph_doc.to_dict())
         return render_template(
             "renew.html",
             entity_type    = "pharmacy",
             entity_label   = "Pharmacy",
-            entity_id      = session.get("pharmacy_id", ""),
+            entity_id      = pharmacy_id,
             business_name  = session.get("pharmacy_name", ""),
+            monthly_fee    = pharmacy_fee,
             payment_number = ADMIN_PAYMENT_NUMBER,
             logout_url     = "/pharmacy/logout"
         )
