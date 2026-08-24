@@ -100,8 +100,6 @@ body{ font-family:'Segoe UI',Arial,sans-serif; background:var(--bg); margin:0; c
 .stat-label{ font-size:12px; opacity:0.9; font-weight:700; }
 .stat-value{ font-size:30px; font-weight:900; margin-top:6px; }
 
-/* ---- PANEL CARDS removed from dashboard (kept selectors would be dead code) ---- */
-
 /* ---- SECTION (data pages) ---- */
 .section{ background:var(--card); padding:22px; border-radius:18px; margin-bottom:25px; box-shadow:0 4px 12px rgba(0,0,0,0.06); border:1px solid var(--border); }
 .sectionTitle{ display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:20px; }
@@ -115,7 +113,7 @@ td{ padding:15px; border-bottom:1px solid #eee; vertical-align:top; font-size:13
 .pass{ font-size:17px; font-weight:bold; color:#000; margin-top:4px; }
 .status-active{ color:#28a745; font-weight:bold; font-size:15px; }
 .status-disabled{ color:#dc3545; font-weight:bold; font-size:15px; }
-.btn{ display:inline-block; padding:8px 14px; border-radius:8px; text-decoration:none; color:white; font-weight:bold; margin:3px; font-size:13px; }
+.btn{ display:inline-block; padding:8px 14px; border-radius:8px; text-decoration:none; color:white; font-weight:bold; margin:3px; font-size:13px; border:none; cursor:pointer; font-family:inherit; }
 .activate{ background:#28a745; } .disable{ background:#dc3545; } .delete{ background:#111; } .renew{ background:#ff9800; }
 .info-section{ background:var(--card); padding:22px; border-radius:18px; margin-top:0; box-shadow:0 4px 12px rgba(0,0,0,0.06); border:1px solid var(--border); }
 textarea,input,select{ width:100%; padding:12px; border-radius:10px; border:1px solid #ccc; margin-top:10px; box-sizing:border-box; font-family:inherit; }
@@ -297,8 +295,7 @@ textarea,input,select{ width:100%; padding:12px; border-radius:10px; border:1px 
                 <div class="section">
                     <div class="sectionTitle"><h2>🔔 Renewal Requests ({{ renewal_requests|length }})</h2></div>
                     <p style="color:#6b7688;font-size:13px;margin-top:-8px;margin-bottom:18px;">
-                        Payment claims submitted from suspended dashboards. Verify the payment was received on
-                        <b>618276993</b>, then renew the account from its own section (Restaurants / Supermarkets / Pharmacy Management) and dismiss the request.
+                        These are the old manual "I've paid" claims (kept for any account still on that flow). Most renewals now go through the push-payment button in each account's own section (Restaurants / Supermarkets) — enter months there and it charges + reactivates automatically.
                     </p>
                     <div style="overflow-x:auto;">
                         <table>
@@ -317,9 +314,9 @@ textarea,input,select{ width:100%; padding:12px; border-radius:10px; border:1px 
                                 <td style="color:#888;font-size:12px;">{{ req.submitted_at[:16] if req.submitted_at else '—' }}</td>
                                 <td>
                                     {% if req.entity_type == 'restaurant' %}
-                                        <a href="/renew/restaurant/{{ req.entity_id }}" class="btn renew">🔄 Renew</a>
+                                        <button onclick="renewEntity('restaurant','{{ req.entity_id }}','{{ req.business_name|e }}')" class="btn renew">🔄 Renew</button>
                                     {% elif req.entity_type == 'supermarket' %}
-                                        <a href="/renew/supermarket/{{ req.entity_id }}" class="btn renew">🔄 Renew</a>
+                                        <button onclick="renewEntity('supermarket','{{ req.entity_id }}','{{ req.business_name|e }}')" class="btn renew">🔄 Renew</button>
                                     {% elif req.entity_type == 'pharmacy' %}
                                         <button onclick="showPage('pharmacy')" class="btn renew">💊 Go to Pharmacy tab</button>
                                     {% endif %}
@@ -396,14 +393,14 @@ textarea,input,select{ width:100%; padding:12px; border-radius:10px; border:1px 
                             <tr>
                                 <td><div class="card"><div class="big">{{ r.name }}</div><br>📞 {{ r.phone }}<br><br>👤 Username: <b>{{ r.username }}</b><br><br>👨‍💼 Admin: <b>{{ r.admin_name }}</b><br><br>📧 {{ r.admin_email }}</div></td>
                                 <td><div class="card"><div class="label">🔐 Login Password</div><div class="pass">{{ r.password }}</div><hr><div class="label">👨‍💼 Admin Password</div><div class="pass">{{ r.restaurant_admin_password or r["resturen_admin password"] }}</div><hr><div class="label">👨‍🍳 Kitchen Password</div><div class="pass">{{ r.kitchen_password }}</div></div></td>
-                                <td><div class="card">💰 Fee: <b>${{ r.monthly_fee or r.price or r.fee }}</b><br><br>💳 Payment:<br><b>{{ r.payment }}</b></div></td>
+                                <td><div class="card">💰 Fee: <b>${{ r.monthly_fee or r.price or r.fee }}</b>/mo<br><br>💳 Payment:<br><b>{{ r.payment }}</b></div></td>
                                 <td><div class="card">📅 Expiry Date<br><br><b style="color:#ff9800;">{{ r.expiry_date or r.expiry }}</b></div></td>
                                 <td>{% if r.status == 'active' or r.active == true %}<span class="status-active">✅ Active</span>{% else %}<span class="status-disabled">❌ Disabled</span>{% endif %}</td>
                                 <td>
                                     <a href="/activate/restaurant/{{ r.id }}" class="btn activate">Activate</a>
                                     <a href="/disable/restaurant/{{ r.id }}" class="btn disable">Disable</a>
                                     <a href="/delete/restaurant/{{ r.id }}" class="btn delete">Delete</a>
-                                    <a href="/renew/restaurant/{{ r.id }}" class="btn renew">Renew</a>
+                                    <button onclick="renewEntity('restaurant','{{ r.id }}','{{ r.name|e }}')" class="btn renew">Renew</button>
                                 </td>
                             </tr>
                             {% endfor %}
@@ -423,14 +420,14 @@ textarea,input,select{ width:100%; padding:12px; border-radius:10px; border:1px 
                             <tr>
                                 <td><div class="card"><div class="big">{{ s.name }}</div><br>👤 Username: <b>{{ s.username }}</b></div></td>
                                 <td><div class="card"><div class="label">🔐 Password</div><div class="pass">{{ s.password }}</div></div></td>
-                                <td><div class="card">💰 Fee: <b>${{ s.monthly_fee or s.price or s.fee }}</b><br><br>💳 Payment:<br><b>{{ s.payment }}</b></div></td>
+                                <td><div class="card">💰 Fee: <b>${{ s.monthly_fee or s.price or s.fee }}</b>/mo<br><br>💳 Payment:<br><b>{{ s.payment }}</b></div></td>
                                 <td><div class="card">📅 {{ s.expiry_date or s.expiry }}</div></td>
                                 <td>{% if s.status == 'active' or s.status == true %}<span class="status-active">✅ Active</span>{% else %}<span class="status-disabled">❌ Disabled</span>{% endif %}</td>
                                 <td>
                                     <a href="/activate/supermarket/{{ s.id }}" class="btn activate">Activate</a>
                                     <a href="/disable/supermarket/{{ s.id }}" class="btn disable">Disable</a>
                                     <a href="/delete/supermarket/{{ s.id }}" class="btn delete">Delete</a>
-                                    <a href="/renew/supermarket/{{ s.id }}" class="btn renew">Renew</a>
+                                    <button onclick="renewEntity('supermarket','{{ s.id }}','{{ s.name|e }}')" class="btn renew">Renew</button>
                                 </td>
                             </tr>
                             {% endfor %}
@@ -763,6 +760,35 @@ async function renewPharmacy(btn){ const id = btn.dataset.id;
         location.reload();
     } else {
         alert("❌ " + (data.error||"Failed"));
+    }
+}
+
+/* ================================
+   🔄 RENEW RESTAURANT / SUPERMARKET
+   Every renewal resets the expiry from TODAY for however many months
+   are chosen (no carry-over of unused time from before), and charges
+   months × the account's own registered monthly fee — so the amount
+   shown always matches what that specific business signed up at.
+   ================================ */
+async function renewEntity(entityType, entityId, businessName){
+    const months = prompt(`Renew "${businessName}" — how many months?`, "3");
+    if(!months || isNaN(months) || parseInt(months) < 1) return;
+
+    try{
+        let res = await fetch(`/renew/${entityType}/${entityId}`, {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({ months: parseInt(months) })
+        });
+        let data = await res.json();
+        if(data.success){
+            alert(`✅ Renewed ${data.months} month(s) — $${data.amount.toFixed(2)} charged. New expiry: ${data.expiry_date}`);
+            location.reload();
+        } else {
+            alert("❌ " + (data.error || "Failed"));
+        }
+    } catch(e){
+        alert("❌ Server error");
     }
 }
 

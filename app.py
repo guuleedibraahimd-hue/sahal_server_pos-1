@@ -930,9 +930,15 @@ def disable_restaurant(rid):
         if not restaurant_doc.exists:
             return f"Restaurant not found ❌ ID: {rid}"
 
+        # Disabling also marks the subscription as expired as of today —
+        # so re-activating later can't accidentally inherit leftover
+        # "paid" days from before the disable.
+        today_str = datetime.now().strftime("%Y-%m-%d")
         restaurant_ref.update({
             "active":      False,
             "status":      "disabled",
+            "expiry_date": today_str,
+            "expiry":      today_str,
             "disabled_at": datetime.now()
         })
 
@@ -986,7 +992,13 @@ def disable_market(mid):
     try:
         if not session.get("admin_ok"):
             return redirect("/admin")
-        db.collection("supermarkets").document(mid).update({"active": False})
+        today_str = datetime.now().strftime("%Y-%m-%d")
+        db.collection("supermarkets").document(mid).update({
+            "active": False,
+            "status": "disabled",
+            "expiry_date": today_str,
+            "expiry": today_str
+        })
         return redirect("/admin")
     except Exception as e:
         return f"Disable market error ❌ {e}"
@@ -1010,24 +1022,47 @@ def delete_market(mid):
 # =========================
 # 🔄 RENEW SUPERMARKET
 # =========================
-@app.route("/renew/supermarket/<string:mid>")
+@app.route("/renew/supermarket/<string:mid>", methods=["POST"])
 def renew_market(mid):
+    if not session.get("admin_ok"):
+        return jsonify({"success": False, "error": "Unauthorized"}), 401
     try:
-        if not session.get("admin_ok"):
-            return redirect("/admin")
         market_ref = db.collection("supermarkets").document(mid)
-        if not market_ref.get().exists:
-            return f"Supermarket not found ❌ ID: {mid}"
-        new_expiry = (datetime.now() + timedelta(days=90)).strftime("%Y-%m-%d")
+        market_doc = market_ref.get()
+        if not market_doc.exists:
+            return jsonify({"success": False, "error": f"Supermarket not found — ID: {mid}"})
+
+        market_data = market_doc.to_dict()
+        months = int((request.get_json() or {}).get("months", 3) or 3)
+        if months < 1:
+            return jsonify({"success": False, "error": "Months must be at least 1"})
+
+        monthly_fee  = _monthly_fee_for("supermarket", market_data)
+        total_amount = round(monthly_fee * months, 2)
+
+        # Always resets from TODAY — any leftover time from before this
+        # renewal is not carried over, matching a fresh subscription
+        # purchase rather than an extension.
+        new_expiry = (datetime.now() + timedelta(days=months * 30)).strftime("%Y-%m-%d")
         market_ref.update({
             "active": True,
             "status": "active",
             "expiry_date": new_expiry,
+            "expiry": new_expiry,
             "renewed_at": datetime.now().isoformat()
         })
-        return redirect("/admin")
+
+        db.collection("subscription_payments").add({
+            "entity_type": "supermarket", "entity_id": mid,
+            "business_name": market_data.get("name", mid),
+            "months": months, "amount": total_amount,
+            "payment_method": "admin_manual", "status": "SUCCESS",
+            "created_at": datetime.now().isoformat()
+        })
+
+        return jsonify({"success": True, "expiry_date": new_expiry, "amount": total_amount, "months": months})
     except Exception as e:
-        return f"Renew market error ❌ {e}"
+        return jsonify({"success": False, "error": str(e)})
 
 
 # =========================
@@ -1070,32 +1105,47 @@ def delete_menu(mid, rid):
 # =========================
 # 🔄 ADMIN RENEW RESTAURANT
 # =========================
-@app.route("/renew/restaurant/<string:rid>")
+@app.route("/renew/restaurant/<string:rid>", methods=["POST"])
 def renew_restaurant(rid):
+    if not session.get("admin_ok"):
+        return jsonify({"success": False, "error": "Unauthorized"}), 401
     try:
-        if not session.get("admin_ok"):
-            return redirect("/admin")
-
         restaurant_ref = db.collection("restaurants").document(rid)
         restaurant_doc = restaurant_ref.get()
-
         if not restaurant_doc.exists:
-            return f"Restaurant not found ❌ ID: {rid}"
+            return jsonify({"success": False, "error": f"Restaurant not found — ID: {rid}"})
 
-        new_expiry = datetime.now() + timedelta(days=90)
+        restaurant_data = restaurant_doc.to_dict()
+        months = int((request.get_json() or {}).get("months", 3) or 3)
+        if months < 1:
+            return jsonify({"success": False, "error": "Months must be at least 1"})
 
+        monthly_fee  = _monthly_fee_for("restaurant", restaurant_data)
+        total_amount = round(monthly_fee * months, 2)
+
+        # Always resets from TODAY — see renew_market for why.
+        new_expiry = (datetime.now() + timedelta(days=months * 30)).strftime("%Y-%m-%d")
         restaurant_ref.update({
             "active": True,
             "status": "active",
-            "expiry_date": new_expiry.isoformat(),
+            "expiry_date": new_expiry,
+            "expiry": new_expiry,
             "renewed_at": datetime.now().isoformat()
         })
 
-        return redirect("/admin")
+        db.collection("subscription_payments").add({
+            "entity_type": "restaurant", "entity_id": rid,
+            "business_name": restaurant_data.get("name", rid),
+            "months": months, "amount": total_amount,
+            "payment_method": "admin_manual", "status": "SUCCESS",
+            "created_at": datetime.now().isoformat()
+        })
+
+        return jsonify({"success": True, "expiry_date": new_expiry, "amount": total_amount, "months": months})
 
     except Exception as e:
         print("RENEW RESTAURANT ERROR:", e)
-        return f"Renew error ❌ {e}"
+        return jsonify({"success": False, "error": str(e)})
 
 
 # =========================
