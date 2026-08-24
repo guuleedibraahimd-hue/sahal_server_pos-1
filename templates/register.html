@@ -67,6 +67,9 @@ button:hover{
     flex:1;
     margin:0;
 }
+.pm-row input.pm-type{
+    flex:0 0 150px;
+}
 .pm-row .pm-remove{
     flex:0 0 auto;
     width:auto;
@@ -123,17 +126,17 @@ button:hover{
     </select>
 
     <h3>📲 Payment Methods</h3>
+    <datalist id="pmTypeOptions">
+        <option value="EVC Plus">
+        <option value="eDahab">
+        <option value="Sahal">
+        <option value="Golis">
+        <option value="Premier Bank">
+        <option value="Cash">
+    </datalist>
     <div id="pmList">
         <div class="pm-row">
-            <select class="pm-type">
-                <option value="EVC Plus">EVC Plus</option>
-                <option value="eDahab">eDahab</option>
-                <option value="Sahal">Sahal</option>
-                <option value="Golis">Golis</option>
-                <option value="Premier Bank">Premier Bank</option>
-                <option value="Cash">Cash</option>
-                <option value="Other">Other</option>
-            </select>
+            <input class="pm-type" list="pmTypeOptions" value="EVC Plus" placeholder="e.g. EVC Plus">
             <input class="pm-code" placeholder="Example: *789*657090*$#" required>
             <button type="button" class="pm-remove" onclick="removePaymentRow(this)" style="display:none;">✕</button>
         </div>
@@ -153,15 +156,7 @@ function addPaymentRow(){
     const row = document.createElement("div");
     row.className = "pm-row";
     row.innerHTML = `
-        <select class="pm-type">
-            <option value="EVC Plus">EVC Plus</option>
-            <option value="eDahab">eDahab</option>
-            <option value="Sahal">Sahal</option>
-            <option value="Golis">Golis</option>
-            <option value="Premier Bank">Premier Bank</option>
-            <option value="Cash">Cash</option>
-            <option value="Other">Other</option>
-        </select>
+        <input class="pm-type" list="pmTypeOptions" placeholder="e.g. EVC Plus">
         <input class="pm-code" placeholder="Example: *789*657090*$#" required>
         <button type="button" class="pm-remove" onclick="removePaymentRow(this)">✕</button>
     `;
