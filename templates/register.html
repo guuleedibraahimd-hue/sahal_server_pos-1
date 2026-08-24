@@ -53,6 +53,37 @@ button{
 button:hover{
     background: #095fcc;
 }
+
+.pm-row{
+    display:flex;
+    gap:8px;
+    margin:8px 0;
+}
+.pm-row select{
+    flex:0 0 130px;
+    margin:0;
+}
+.pm-row input{
+    flex:1;
+    margin:0;
+}
+.pm-row .pm-remove{
+    flex:0 0 auto;
+    width:auto;
+    padding:10px 14px;
+    background:#dc3545;
+    font-size:14px;
+}
+.pm-row .pm-remove:hover{
+    background:#c82333;
+}
+.pm-add-btn{
+    background:#28a745;
+    margin-top:4px;
+}
+.pm-add-btn:hover{
+    background:#218838;
+}
 </style>
 </head>
 
@@ -62,7 +93,7 @@ button:hover{
 
 <h2>🍽 Register Restaurant</h2>
 
-<form method="POST">
+<form method="POST" onsubmit="return preparePaymentMethods()">
 
     <input name="name" placeholder="Restaurant Name" required>
     <input name="phone" placeholder="Phone Number">
@@ -91,14 +122,82 @@ button:hover{
         <option value="12">1 Year</option>
     </select>
 
-    <h3>📲 Payment USSD Code</h3>
-    <input name="payment" placeholder="Example: *789*657090*$#" required>
+    <h3>📲 Payment Methods</h3>
+    <div id="pmList">
+        <div class="pm-row">
+            <select class="pm-type">
+                <option value="EVC Plus">EVC Plus</option>
+                <option value="eDahab">eDahab</option>
+                <option value="Sahal">Sahal</option>
+                <option value="Golis">Golis</option>
+                <option value="Premier Bank">Premier Bank</option>
+                <option value="Cash">Cash</option>
+                <option value="Other">Other</option>
+            </select>
+            <input class="pm-code" placeholder="Example: *789*657090*$#" required>
+            <button type="button" class="pm-remove" onclick="removePaymentRow(this)" style="display:none;">✕</button>
+        </div>
+    </div>
+    <button type="button" class="pm-add-btn" onclick="addPaymentRow()">➕ Add Another Payment Method</button>
+    <input type="hidden" name="payment_methods_json" id="payment_methods_json">
 
     <button type="submit">Create Restaurant</button>
 
 </form>
 
 </div>
+
+<script>
+function addPaymentRow(){
+    const list = document.getElementById("pmList");
+    const row = document.createElement("div");
+    row.className = "pm-row";
+    row.innerHTML = `
+        <select class="pm-type">
+            <option value="EVC Plus">EVC Plus</option>
+            <option value="eDahab">eDahab</option>
+            <option value="Sahal">Sahal</option>
+            <option value="Golis">Golis</option>
+            <option value="Premier Bank">Premier Bank</option>
+            <option value="Cash">Cash</option>
+            <option value="Other">Other</option>
+        </select>
+        <input class="pm-code" placeholder="Example: *789*657090*$#" required>
+        <button type="button" class="pm-remove" onclick="removePaymentRow(this)">✕</button>
+    `;
+    list.appendChild(row);
+    updateRemoveButtons();
+}
+
+function removePaymentRow(btn){
+    btn.closest(".pm-row").remove();
+    updateRemoveButtons();
+}
+
+function updateRemoveButtons(){
+    const rows = document.querySelectorAll("#pmList .pm-row");
+    rows.forEach(row => {
+        const removeBtn = row.querySelector(".pm-remove");
+        removeBtn.style.display = rows.length > 1 ? "inline-block" : "none";
+    });
+}
+
+function preparePaymentMethods(){
+    const rows = document.querySelectorAll("#pmList .pm-row");
+    const methods = [];
+    rows.forEach(row => {
+        const type = row.querySelector(".pm-type").value;
+        const code = row.querySelector(".pm-code").value.trim();
+        if(code) methods.push({ type, code });
+    });
+    if(methods.length === 0){
+        alert("Please add at least one payment method");
+        return false;
+    }
+    document.getElementById("payment_methods_json").value = JSON.stringify(methods);
+    return true;
+}
+</script>
 
 </body>
 </html>

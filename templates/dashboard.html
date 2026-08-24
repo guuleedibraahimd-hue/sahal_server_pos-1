@@ -880,7 +880,20 @@ function printQR(format){
     const tableNo = tableEl ? tableEl.textContent.trim() : "";
     const w = window.open("", "_blank");
 
+    const paymentMethods = (() => {
+        try{
+            const el = document.querySelector("#qrResult #paymentMethodsData");
+            return el ? JSON.parse(el.textContent) : [];
+        }catch(e){ return []; }
+    })();
+
     if(format === "receipt"){
+        const pmHtml = paymentMethods.length ? `
+                <div style="border-top:1px dashed #999;margin:8px 0;"></div>
+                <div style="font-size:11px;font-weight:700;margin-bottom:4px;">💳 WE ACCEPT</div>
+                ${paymentMethods.map(m => `<div style="font-size:11px;display:flex;justify-content:space-between;padding:2px 0;"><span>${m.type}</span><span>${m.code}</span></div>`).join("")}
+        ` : "";
+
         w.document.write(`
             <html>
             <head><title>Table QR</title></head>
@@ -892,6 +905,7 @@ function printQR(format){
                 <div style="font-size:28px;font-weight:900;margin:2px 0 10px;">${tableNo}</div>
                 <img src="${img}" style="width:220px;height:220px;">
                 <div style="font-size:12px;font-weight:700;margin-top:10px;">Scan to view our menu</div>
+                ${pmHtml}
                 <div style="border-top:1px dashed #999;margin:10px 0;"></div>
                 <div style="font-size:10px;color:#888;">Powered by Sahal Server</div>
                 <script>
@@ -907,12 +921,18 @@ function printQR(format){
         // A4 / A5 / A6 / A7 — same card design, proportionally scaled
         // down for each paper size.
         const sizes = {
-            a4: { page: "A4",  box: 420, pad: "32px 28px", nameSize: 26, tagSize: 14, tagline: true, tableLabel: 14, tableNum: 46, qr: 300, hintSize: 15, hint2: 12, gap: 18 },
-            a5: { page: "A5",  box: 300, pad: "22px 18px", nameSize: 19, tagSize: 12, tagline: true, tableLabel: 12, tableNum: 32, qr: 190, hintSize: 12, hint2: 10, gap: 12 },
-            a6: { page: "A6",  box: 200, pad: "14px 12px", nameSize: 14, tagSize: 10, tagline: false, tableLabel: 10, tableNum: 22, qr: 120, hintSize: 10, hint2: 9,  gap: 8  },
-            a7: { page: "A7",  box: 135, pad: "9px 8px",   nameSize: 10, tagSize: 8,  tagline: false, tableLabel: 8,  tableNum: 15, qr: 78,  hintSize: 8,  hint2: 7,  gap: 5  }
+            a4: { page: "A4",  box: 420, pad: "32px 28px", nameSize: 26, tagSize: 14, tagline: true, tableLabel: 14, tableNum: 46, qr: 300, hintSize: 15, hint2: 12, gap: 18, pmSize: 12 },
+            a5: { page: "A5",  box: 300, pad: "22px 18px", nameSize: 19, tagSize: 12, tagline: true, tableLabel: 12, tableNum: 32, qr: 190, hintSize: 12, hint2: 10, gap: 12, pmSize: 11 },
+            a6: { page: "A6",  box: 200, pad: "14px 12px", nameSize: 14, tagSize: 10, tagline: false, tableLabel: 10, tableNum: 22, qr: 120, hintSize: 10, hint2: 9,  gap: 8,  pmSize: 9  },
+            a7: { page: "A7",  box: 135, pad: "9px 8px",   nameSize: 10, tagSize: 8,  tagline: false, tableLabel: 8,  tableNum: 15, qr: 78,  hintSize: 8,  hint2: 7,  gap: 5,  pmSize: 0  }
         };
         const s = sizes[format] || sizes.a4;
+
+        const pmHtml = (paymentMethods.length && s.pmSize) ? `
+                    <div style="border-top:1px dashed #bbb;margin:${s.gap}px 0;"></div>
+                    <div style="font-size:${s.pmSize}px;font-weight:800;color:#1e293b;margin-bottom:4px;">💳 WE ACCEPT</div>
+                    ${paymentMethods.map(m => `<div style="font-size:${s.pmSize}px;display:flex;justify-content:space-between;max-width:${s.box-40}px;margin:0 auto 2px;"><span style="font-weight:700;color:#2563eb;">${m.type}</span><span style="font-family:monospace;">${m.code}</span></div>`).join("")}
+        ` : "";
 
         w.document.write(`
             <html>
@@ -931,6 +951,7 @@ function printQR(format){
                     <img src="${img}" style="width:${s.qr}px;height:${s.qr}px;">
                     <div style="font-size:${s.hintSize}px;font-weight:700;margin-top:${s.gap}px;">📱 Scan to view our menu</div>
                     ${format !== 'a7' ? `<div style="font-size:${s.hint2}px;color:#888;margin-top:4px;">Thank you for dining with us! ♥</div>` : ''}
+                    ${pmHtml}
                 </div>
                 <script>
                     window.onload=function(){

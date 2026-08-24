@@ -991,6 +991,18 @@ def register():
                 datetime.now() + timedelta(days=months * 30)
             ).strftime("%Y-%m-%d")
 
+            try:
+                payment_methods = json.loads(request.form.get("payment_methods_json", "[]"))
+            except Exception:
+                payment_methods = []
+            payment_methods = [
+                {"type": m.get("type", "").strip(), "code": m.get("code", "").strip()}
+                for m in payment_methods if m.get("code", "").strip()
+            ]
+            # `payment` stays as a readable summary string for any
+            # older template/report that only ever displayed one line.
+            payment_summary = " | ".join(f"{m['type']}: {m['code']}" for m in payment_methods)
+
             data = {
                 "name": request.form["name"].strip(),
                 "phone": request.form.get("phone", "").strip(),
@@ -1001,7 +1013,8 @@ def register():
                 "admin_name": request.form.get("admin_name", "").strip(),
                 "admin_email": request.form.get("admin_email", "").strip(),
                 "price": request.form["price"].strip(),
-                "payment": request.form["payment"].strip(),
+                "payment": payment_summary,
+                "payment_methods": payment_methods,
                 "expiry": expiry_date,
                 "active": True,
                 "review_count": 0,
@@ -3991,7 +4004,8 @@ def generate_qr(rid):
             img=filename,
             url=url,
             table=table,
-            restaurant=restaurant_name
+            restaurant=restaurant_name,
+            payment_methods=restaurant.get("payment_methods", [])
         )
 
     except Exception as e:
