@@ -114,7 +114,7 @@ td{ padding:15px; border-bottom:1px solid #eee; vertical-align:top; font-size:13
 .status-active{ color:#28a745; font-weight:bold; font-size:15px; }
 .status-disabled{ color:#dc3545; font-weight:bold; font-size:15px; }
 .btn{ display:inline-block; padding:8px 14px; border-radius:8px; text-decoration:none; color:white; font-weight:bold; margin:3px; font-size:13px; border:none; cursor:pointer; font-family:inherit; }
-.activate{ background:#28a745; } .disable{ background:#dc3545; } .delete{ background:#111; } .renew{ background:#ff9800; }
+.activate{ background:#28a745; } .disable{ background:#dc3545; } .delete{ background:#111; } .renew{ background:#ff9800; } .edit{ background:#0a7cff; }
 .info-section{ background:var(--card); padding:22px; border-radius:18px; margin-top:0; box-shadow:0 4px 12px rgba(0,0,0,0.06); border:1px solid var(--border); }
 textarea,input,select{ width:100%; padding:12px; border-radius:10px; border:1px solid #ccc; margin-top:10px; box-sizing:border-box; font-family:inherit; }
 .saveBtn{ width:100%; background:#28a745; border:none; color:white; padding:14px; border-radius:10px; margin-top:15px; font-weight:bold; cursor:pointer; }
@@ -140,6 +140,21 @@ textarea,input,select{ width:100%; padding:12px; border-radius:10px; border:1px 
 .badge-warning{ background:#fff3cd; color:#856404; padding:4px 10px; border-radius:12px; font-size:12px; font-weight:bold; }
 .alert-banner{ background:#fff3cd; border:1px solid #ffc107; border-radius:10px; padding:14px 18px; margin-bottom:16px; display:none; }
 .alert-banner.show{ display:block; }
+
+/* Edit Entity modal */
+.modal-bg{ display:none; position:fixed; inset:0; background:rgba(0,0,0,0.55); align-items:center; justify-content:center; z-index:200; padding:16px; }
+.modal-bg.show{ display:flex; }
+.modal-box{ background:#fff; border-radius:16px; padding:26px; width:100%; max-width:480px; max-height:90vh; overflow-y:auto; }
+.modal-box h3{ margin:0 0 16px; font-size:17px; }
+.modal-box label{ font-size:12px; font-weight:bold; color:#666; display:block; margin-top:12px; margin-bottom:4px; }
+.modal-box input{ margin-top:0; }
+.modal-actions{ display:flex; gap:10px; margin-top:20px; }
+.modal-actions button{ flex:1; padding:12px; border:none; border-radius:10px; font-weight:800; cursor:pointer; font-size:14px; }
+.modal-cancel{ background:#f1f3f6; color:#333; }
+.modal-save{ background:#28a745; color:#fff; }
+.editEntityMsg{ margin-top:12px; padding:10px; border-radius:8px; font-weight:bold; font-size:13px; display:none; }
+.editEntityMsg.error{ background:#f8d7da; color:#721c24; display:block; }
+.editEntityMsg.success{ background:#d4edda; color:#155724; display:block; }
 
 /* ---- REGISTRATION PANEL (page) ---- */
 .registerBtns{ display:flex; flex-wrap:wrap; gap:12px; }
@@ -401,6 +416,7 @@ textarea,input,select{ width:100%; padding:12px; border-radius:10px; border:1px 
                                     <a href="/disable/restaurant/{{ r.id }}" class="btn disable">Disable</a>
                                     <a href="/delete/restaurant/{{ r.id }}" class="btn delete">Delete</a>
                                     <button onclick="renewEntity('restaurant','{{ r.id }}','{{ r.name|e }}')" class="btn renew">Renew</button>
+                                    <button onclick="openEditEntity('restaurant','{{ r.id }}')" class="btn edit">✏️ Edit</button>
                                 </td>
                             </tr>
                             {% endfor %}
@@ -428,6 +444,7 @@ textarea,input,select{ width:100%; padding:12px; border-radius:10px; border:1px 
                                     <a href="/disable/supermarket/{{ s.id }}" class="btn disable">Disable</a>
                                     <a href="/delete/supermarket/{{ s.id }}" class="btn delete">Delete</a>
                                     <button onclick="renewEntity('supermarket','{{ s.id }}','{{ s.name|e }}')" class="btn renew">Renew</button>
+                                    <button onclick="openEditEntity('supermarket','{{ s.id }}')" class="btn edit">✏️ Edit</button>
                                 </td>
                             </tr>
                             {% endfor %}
@@ -581,6 +598,54 @@ textarea,input,select{ width:100%; padding:12px; border-radius:10px; border:1px 
                 </div>
             </div>
 
+        </div>
+    </div>
+</div>
+
+<!-- EDIT ENTITY MODAL (Restaurant / Supermarket — name, all passwords, fee, admin info) -->
+<div class="modal-bg" id="editEntityModal">
+    <div class="modal-box">
+        <h3>✏️ Edit Account</h3>
+        <input type="hidden" id="ee_type">
+        <input type="hidden" id="ee_id">
+
+        <label>Business Name</label>
+        <input type="text" id="ee_name">
+
+        <label>Username</label>
+        <input type="text" id="ee_username">
+
+        <label>Login Password</label>
+        <input type="text" id="ee_password">
+
+        <div id="ee_restaurantOnly">
+            <label>Phone</label>
+            <input type="text" id="ee_phone">
+
+            <label>Admin Name</label>
+            <input type="text" id="ee_admin_name">
+
+            <label>Admin Email</label>
+            <input type="text" id="ee_admin_email">
+
+            <label>Admin Password</label>
+            <input type="text" id="ee_restaurant_admin_password">
+
+            <label>Kitchen Password</label>
+            <input type="text" id="ee_kitchen_password">
+        </div>
+
+        <label>Monthly Fee ($)</label>
+        <input type="number" id="ee_monthly_fee" min="0" step="0.01">
+
+        <label>Payment Method / Number</label>
+        <input type="text" id="ee_payment">
+
+        <div class="editEntityMsg" id="editEntityMsg"></div>
+
+        <div class="modal-actions">
+            <button class="modal-cancel" onclick="closeEditEntity()">Cancel</button>
+            <button class="modal-save" onclick="saveEditEntity()">💾 Save Changes</button>
         </div>
     </div>
 </div>
@@ -789,6 +854,96 @@ async function renewEntity(entityType, entityId, businessName){
         }
     } catch(e){
         alert("❌ Server error");
+    }
+}
+
+/* ================================
+   ✏️ EDIT ENTITY (Restaurant / Supermarket) — name, all passwords,
+   admin info, monthly fee, payment method. Loads current values via
+   GET, saves only the fields the admin actually changes.
+   ================================ */
+async function openEditEntity(entityType, entityId){
+    const modal = document.getElementById("editEntityModal");
+    const msg   = document.getElementById("editEntityMsg");
+    msg.className = "editEntityMsg";
+    msg.textContent = "";
+
+    document.getElementById("ee_type").value = entityType;
+    document.getElementById("ee_id").value = entityId;
+    document.getElementById("ee_restaurantOnly").style.display = (entityType === "restaurant") ? "block" : "none";
+
+    modal.classList.add("show");
+
+    try{
+        const res = await fetch(`/admin/edit_entity/${entityType}/${entityId}`);
+        const result = await res.json();
+        if(!result.success){
+            msg.classList.add("error");
+            msg.textContent = "❌ " + (result.error || "Failed to load account");
+            return;
+        }
+        const d = result.data;
+        document.getElementById("ee_name").value = d.name || "";
+        document.getElementById("ee_username").value = d.username || "";
+        document.getElementById("ee_password").value = d.password || "";
+        document.getElementById("ee_monthly_fee").value = d.monthly_fee || 0;
+        document.getElementById("ee_payment").value = d.payment || "";
+        if(entityType === "restaurant"){
+            document.getElementById("ee_phone").value = d.phone || "";
+            document.getElementById("ee_admin_name").value = d.admin_name || "";
+            document.getElementById("ee_admin_email").value = d.admin_email || "";
+            document.getElementById("ee_restaurant_admin_password").value = d.restaurant_admin_password || d["resturen_admin password"] || "";
+            document.getElementById("ee_kitchen_password").value = d.kitchen_password || "";
+        }
+    } catch(e){
+        msg.classList.add("error");
+        msg.textContent = "❌ Server error loading account";
+    }
+}
+
+function closeEditEntity(){
+    document.getElementById("editEntityModal").classList.remove("show");
+}
+
+async function saveEditEntity(){
+    const entityType = document.getElementById("ee_type").value;
+    const entityId   = document.getElementById("ee_id").value;
+    const msg = document.getElementById("editEntityMsg");
+    msg.className = "editEntityMsg";
+
+    const payload = {
+        name: document.getElementById("ee_name").value.trim(),
+        username: document.getElementById("ee_username").value.trim(),
+        password: document.getElementById("ee_password").value.trim(),
+        monthly_fee: document.getElementById("ee_monthly_fee").value,
+        payment: document.getElementById("ee_payment").value.trim()
+    };
+    if(entityType === "restaurant"){
+        payload.phone = document.getElementById("ee_phone").value.trim();
+        payload.admin_name = document.getElementById("ee_admin_name").value.trim();
+        payload.admin_email = document.getElementById("ee_admin_email").value.trim();
+        payload.restaurant_admin_password = document.getElementById("ee_restaurant_admin_password").value.trim();
+        payload.kitchen_password = document.getElementById("ee_kitchen_password").value.trim();
+    }
+
+    try{
+        const res = await fetch(`/admin/edit_entity/${entityType}/${entityId}`, {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if(data.success){
+            msg.classList.add("success");
+            msg.textContent = "✅ Saved — reloading…";
+            setTimeout(() => location.reload(), 900);
+        } else {
+            msg.classList.add("error");
+            msg.textContent = "❌ " + (data.error || "Failed to save");
+        }
+    } catch(e){
+        msg.classList.add("error");
+        msg.textContent = "❌ Server error";
     }
 }
 

@@ -538,6 +538,81 @@ def _monthly_fee_for(entity_type, entity_data):
         return 0.0
 
 
+# ==========================================
+# ✏️ ADMIN — EDIT RESTAURANT / SUPERMARKET
+# Full edit: name, username, all passwords, phone/admin info, and the
+# monthly fee (used everywhere renew/push-payment computes an amount —
+# changing it here is the one place that "free" account can be given
+# a real price, or an existing price corrected).
+# ==========================================
+EDITABLE_ENTITY_COLLECTIONS = {"restaurant": "restaurants", "supermarket": "supermarkets"}
+
+RESTAURANT_EDIT_FIELDS = [
+    "name", "phone", "username", "password",
+    "admin_name", "admin_email",
+    "restaurant_admin_password", "kitchen_password",
+    "monthly_fee", "payment"
+]
+SUPERMARKET_EDIT_FIELDS = [
+    "name", "username", "password", "monthly_fee", "payment"
+]
+
+
+@app.route("/admin/edit_entity/<entity_type>/<entity_id>", methods=["GET", "POST"])
+def admin_edit_entity(entity_type, entity_id):
+    if not session.get("admin_ok"):
+        return jsonify({"success": False, "error": "Unauthorized"}), 401
+    if entity_type not in EDITABLE_ENTITY_COLLECTIONS:
+        return jsonify({"success": False, "error": "Invalid account type"}), 400
+
+    collection = EDITABLE_ENTITY_COLLECTIONS[entity_type]
+    entity_ref = db.collection(collection).document(entity_id)
+    entity_doc = entity_ref.get()
+    if not entity_doc.exists:
+        return jsonify({"success": False, "error": "Account not found"}), 404
+
+    if request.method == "GET":
+        data = entity_doc.to_dict()
+        data["id"] = entity_id
+        data["monthly_fee"] = _monthly_fee_for(entity_type, data)
+        return jsonify({"success": True, "data": data})
+
+    try:
+        body = request.get_json() or {}
+        fields = RESTAURANT_EDIT_FIELDS if entity_type == "restaurant" else SUPERMARKET_EDIT_FIELDS
+        update_fields = {}
+
+        for field in fields:
+            if field not in body:
+                continue
+            value = body[field]
+            if isinstance(value, str):
+                value = value.strip()
+            if field == "monthly_fee":
+                try:
+                    update_fields["monthly_fee"] = float(value)
+                except (TypeError, ValueError):
+                    return jsonify({"success": False, "error": "Monthly fee must be a number"})
+            elif value != "":
+                update_fields[field] = value
+
+        if not update_fields:
+            return jsonify({"success": False, "error": "Nothing to update"})
+
+        # Legacy typo'd field some restaurants were created with — keep
+        # it in sync so old templates reading it still show the update.
+        if entity_type == "restaurant" and "restaurant_admin_password" in update_fields:
+            update_fields["resturen_admin password"] = update_fields["restaurant_admin_password"]
+
+        entity_ref.update(update_fields)
+        updated = entity_ref.get().to_dict()
+        updated["id"] = entity_id
+        updated["monthly_fee"] = _monthly_fee_for(entity_type, updated)
+        return jsonify({"success": True, "data": updated})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+
 @app.route("/renew_push_payment/<entity_type>/<entity_id>", methods=["POST"])
 def renew_push_payment(entity_type, entity_id):
     try:
