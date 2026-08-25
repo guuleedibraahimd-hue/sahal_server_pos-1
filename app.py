@@ -6922,6 +6922,106 @@ def payment_qr():
 
     return render_template("qr_payment.html", img=img_file, ussd=ussd_code)
 
+
+# ==========================================
+# 🕌 IMAM MEDIA — a role for Imam University's media team. Password
+# lives in Firestore ("imam-media" collection, "password" field on
+# any doc there — matches how it was already set up). Once logged in,
+# they get an upload area for images/videos/PDFs, all logged as a
+# transaction-style history.
+# ==========================================
+@app.route("/imam_media_login", methods=["GET", "POST"])
+def imam_media_login():
+    if request.method == "POST":
+        password = request.form.get("password", "").strip()
+        try:
+            for doc in db.collection("imam-media").stream():
+                stored_password = (doc.to_dict() or {}).get("password", "")
+                if stored_password and password == str(stored_password):
+                    session["imam_media_ok"] = True
+                    return redirect("/imam_media_dashboard")
+        except Exception as e:
+            print("Imam media login error:", e)
+        return render_template("imam_media_login.html", error="Wrong password")
+    return render_template("imam_media_login.html")
+
+
+@app.route("/imam_media_logout")
+def imam_media_logout():
+    session.pop("imam_media_ok", None)
+    return redirect("/imam_media_login")
+
+
+@app.route("/imam_media_dashboard")
+def imam_media_dashboard():
+    if not session.get("imam_media_ok"):
+        return redirect("/imam_media_login")
+    try:
+        uploads = []
+        for doc in db.collection("imam_media_uploads").order_by(
+                "uploaded_at", direction=firestore.Query.DESCENDING).stream():
+            u = doc.to_dict()
+            u["id"] = doc.id
+            uploads.append(u)
+        return render_template("imam_media_dashboard.html", uploads=uploads)
+    except Exception as e:
+        return f"Imam Media Dashboard Error ❌ {str(e)}"
+
+
+@app.route("/imam_media_dashboard/upload", methods=["POST"])
+def imam_media_upload():
+    if not session.get("imam_media_ok"):
+        return jsonify({"success": False, "error": "Unauthorized"}), 401
+    try:
+        file = request.files.get("file")
+        note = request.form.get("note", "").strip()
+        if not file or not file.filename:
+            return jsonify({"success": False, "error": "Choose a file first"})
+
+        ext = os.path.splitext(file.filename)[1].lower()
+        if ext in (".jpg", ".jpeg", ".png", ".gif", ".webp"):
+            file_type = "image"
+        elif ext in (".mp4", ".mov", ".avi", ".webm", ".mkv"):
+            file_type = "video"
+        elif ext == ".pdf":
+            file_type = "pdf"
+        else:
+            return jsonify({"success": False, "error": "Only images, videos, or PDF files are allowed"})
+
+        url = upload_to_firebase_storage(file, folder="imam_media")
+        if not url:
+            return jsonify({"success": False, "error": "Upload failed"})
+
+        record = {
+            "filename": secure_filename(file.filename),
+            "url": url,
+            "file_type": file_type,
+            "note": note,
+            "uploaded_at": datetime.now().isoformat()
+        }
+        doc_ref = db.collection("imam_media_uploads").add(record)
+        record["id"] = doc_ref[1].id
+        return jsonify({"success": True, "upload": record})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+
+@app.route("/imam_media_dashboard/delete/<upload_id>", methods=["DELETE"])
+def imam_media_delete(upload_id):
+    if not session.get("imam_media_ok"):
+        return jsonify({"success": False, "error": "Unauthorized"}), 401
+    try:
+        doc_ref = db.collection("imam_media_uploads").document(upload_id)
+        doc = doc_ref.get()
+        if doc.exists:
+            url = doc.to_dict().get("url", "")
+            delete_from_firebase_storage(url)
+            doc_ref.delete()
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8080))
 

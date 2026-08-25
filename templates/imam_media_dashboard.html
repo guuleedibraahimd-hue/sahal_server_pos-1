@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Imam Media — Dashboard</title>
+<style>
+:root{
+    --navy:#0f2027; --navy-2:#203a43; --blue:#00d4ff; --blue-2:#0984e3;
+    --bg:#f4f6fb; --card:#fff; --text:#1a1a2e; --muted:#8a93a8; --border:#e8ecf4;
+    --green:#1f9e57; --red:#dc3545; --orange:#e0651f;
+}
+*{ box-sizing:border-box; }
+body{ margin:0; font-family:'Segoe UI',Arial,sans-serif; background:var(--bg); color:var(--text); }
+
+.header{
+    background:linear-gradient(135deg,var(--navy),var(--navy-2));
+    padding:20px 28px; display:flex; align-items:center; justify-content:space-between;
+    flex-wrap:wrap; gap:14px;
+}
+.header-left{ display:flex; align-items:center; gap:14px; color:#fff; }
+.header-left .ic{ font-size:32px; }
+.header-left h1{ font-size:19px; margin:0; }
+.header-left p{ font-size:12px; color:rgba(255,255,255,0.6); margin:2px 0 0; }
+.logout-btn{ background:rgba(220,53,69,0.85); color:#fff; text-decoration:none; padding:10px 18px; border-radius:10px; font-weight:700; font-size:13px; }
+
+.content{ padding:26px 28px 60px; max-width:1100px; margin:0 auto; }
+
+.section{ background:var(--card); border-radius:16px; padding:22px; box-shadow:0 4px 12px rgba(0,0,0,0.06); border:1px solid var(--border); margin-bottom:22px; }
+.section h2{ margin:0 0 16px; font-size:16px; }
+
+.upload-row{ display:flex; gap:12px; flex-wrap:wrap; align-items:end; }
+.upload-row .field{ flex:1; min-width:200px; }
+.upload-row label{ display:block; font-size:12px; font-weight:700; color:var(--muted); margin-bottom:6px; }
+.upload-row input[type="text"]{ width:100%; padding:12px; border-radius:10px; border:1px solid #ddd; font-size:14px; box-sizing:border-box; }
+.file-label{ display:flex; align-items:center; gap:8px; padding:12px 16px; border-radius:10px; border:1.5px dashed #bbb; background:#fafafa; cursor:pointer; font-size:13px; font-weight:600; color:#555; white-space:nowrap; }
+.file-label input[type="file"]{ display:none; }
+.upload-btn{ padding:13px 26px; background:linear-gradient(135deg,var(--blue),var(--blue-2)); color:#fff; border:none; border-radius:10px; font-weight:800; cursor:pointer; font-size:14px; white-space:nowrap; }
+.upload-msg{ margin-top:14px; padding:12px; border-radius:8px; font-weight:700; font-size:13px; display:none; }
+.upload-msg.success{ background:#d4edda; color:#155724; display:block; }
+.upload-msg.error{ background:#f8d7da; color:#721c24; display:block; }
+
+.tx-search{ width:100%; max-width:340px; padding:11px 14px; border-radius:10px; border:1px solid #ddd; font-size:13px; margin-bottom:16px; }
+
+.tx-list{ display:flex; flex-direction:column; gap:12px; }
+.tx-row{ display:flex; align-items:center; gap:14px; padding:14px; border:1px solid var(--border); border-radius:12px; }
+.tx-thumb{ width:56px; height:56px; border-radius:10px; object-fit:cover; flex-shrink:0; background:#f1f3f6; display:flex; align-items:center; justify-content:center; font-size:24px; }
+.tx-info{ flex:1; min-width:0; }
+.tx-filename{ font-weight:700; font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.tx-note{ font-size:12.5px; color:var(--muted); margin-top:2px; }
+.tx-meta{ font-size:11.5px; color:var(--muted); margin-top:3px; }
+.tx-type-badge{ font-size:10.5px; font-weight:800; padding:3px 9px; border-radius:10px; text-transform:uppercase; flex-shrink:0; }
+.tx-type-badge.image{ background:#e8f2ff; color:var(--blue-2); }
+.tx-type-badge.video{ background:#ffe9ec; color:var(--red); }
+.tx-type-badge.pdf{ background:#fff3e2; color:var(--orange); }
+.tx-actions{ display:flex; gap:8px; flex-shrink:0; }
+.tx-actions a, .tx-actions button{ padding:8px 14px; border-radius:8px; border:none; font-weight:700; font-size:12px; cursor:pointer; text-decoration:none; }
+.tx-view{ background:var(--blue-2); color:#fff; }
+.tx-del{ background:var(--red); color:#fff; }
+.empty{ color:var(--muted); text-align:center; padding:30px; font-size:14px; }
+
+@media(max-width:700px){
+    .content{ padding:16px; }
+    .tx-row{ flex-wrap:wrap; }
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+    <div class="header-left">
+        <span class="ic">🕌</span>
+        <div>
+            <h1>Imam Media</h1>
+            <p>Imam University — Media Upload Portal</p>
+        </div>
+    </div>
+    <a href="/imam_media_logout" class="logout-btn">🚪 Logout</a>
+</div>
+
+<div class="content">
+
+    <div class="section">
+        <h2>⬆️ Upload New File</h2>
+        <form id="uploadForm" onsubmit="return submitUpload(event)">
+            <div class="upload-row">
+                <div class="field">
+                    <label>Note (optional)</label>
+                    <input type="text" id="um_note" placeholder="e.g. Graduation ceremony photos">
+                </div>
+                <label class="file-label" id="um_fileLabel">
+                    📎 <span id="um_fileText">Choose Image / Video / PDF</span>
+                    <input type="file" id="um_file" accept="image/*,video/*,.pdf" onchange="updateFileLabel(this)">
+                </label>
+                <button type="submit" class="upload-btn" id="um_submitBtn">✅ Upload</button>
+            </div>
+        </form>
+        <div class="upload-msg" id="uploadMsg"></div>
+    </div>
+
+    <div class="section">
+        <h2>📜 Upload History ({{ uploads|length }})</h2>
+        <input type="text" id="tx_search" class="tx-search" placeholder="🔍 Search by filename or note…" oninput="filterUploads()">
+
+        <div class="tx-list" id="tx_list">
+            {% for u in uploads %}
+            <div class="tx-row" id="txrow-{{ u.id }}" data-search="{{ (u.filename ~ ' ' ~ (u.note or ''))|lower }}">
+                {% if u.file_type == 'image' %}
+                    <img class="tx-thumb" src="{{ u.url }}" alt="{{ u.filename }}" onerror="this.outerHTML='<div class=&quot;tx-thumb&quot;>🖼️</div>'">
+                {% elif u.file_type == 'video' %}
+                    <div class="tx-thumb">🎬</div>
+                {% else %}
+                    <div class="tx-thumb">📄</div>
+                {% endif %}
+                <div class="tx-info">
+                    <div class="tx-filename">{{ u.filename }}</div>
+                    {% if u.note %}<div class="tx-note">{{ u.note }}</div>{% endif %}
+                    <div class="tx-meta">{{ u.uploaded_at[:16] if u.uploaded_at else '—' }}</div>
+                </div>
+                <span class="tx-type-badge {{ u.file_type }}">{{ u.file_type }}</span>
+                <div class="tx-actions">
+                    <a href="{{ u.url }}" target="_blank" class="tx-view">👁️ View</a>
+                    <button class="tx-del" onclick="deleteUpload('{{ u.id }}')">🗑</button>
+                </div>
+            </div>
+            {% else %}
+            <div class="empty" id="tx_empty">No files uploaded yet</div>
+            {% endfor %}
+        </div>
+        <div class="empty" id="tx_noresults" style="display:none;">No files match your search</div>
+    </div>
+
+</div>
+
+<script>
+function updateFileLabel(input){
+    const file = input.files[0];
+    document.getElementById("um_fileText").textContent = file ? file.name : "Choose Image / Video / PDF";
+}
+
+async function submitUpload(e){
+    e.preventDefault();
+    const fileInput = document.getElementById("um_file");
+    const note = document.getElementById("um_note").value.trim();
+    const msg = document.getElementById("uploadMsg");
+    const btn = document.getElementById("um_submitBtn");
+    msg.className = "upload-msg";
+
+    if(!fileInput.files[0]){
+        msg.classList.add("error");
+        msg.textContent = "❌ Choose a file first";
+        return false;
+    }
+
+    const fd = new FormData();
+    fd.append("file", fileInput.files[0]);
+    fd.append("note", note);
+
+    btn.disabled = true;
+    btn.textContent = "⏳ Uploading…";
+
+    try{
+        const res = await fetch("/imam_media_dashboard/upload", { method: "POST", body: fd });
+        const data = await res.json();
+        if(data.success){
+            msg.classList.add("success");
+            msg.textContent = "✅ Uploaded successfully";
+            setTimeout(() => location.reload(), 900);
+        } else {
+            msg.classList.add("error");
+            msg.textContent = "❌ " + (data.error || "Upload failed");
+        }
+    } catch(err){
+        msg.classList.add("error");
+        msg.textContent = "❌ Server error, please try again";
+    } finally {
+        btn.disabled = false;
+        btn.textContent = "✅ Upload";
+    }
+    return false;
+}
+
+async function deleteUpload(id){
+    if(!confirm("Delete this file? This cannot be undone.")) return;
+    try{
+        const res = await fetch("/imam_media_dashboard/delete/" + id, { method: "DELETE" });
+        const data = await res.json();
+        if(data.success){
+            const row = document.getElementById("txrow-" + id);
+            if(row) row.remove();
+        } else {
+            alert("❌ " + (data.error || "Failed to delete"));
+        }
+    } catch(e){
+        alert("❌ Server error");
+    }
+}
+
+function filterUploads(){
+    const q = document.getElementById("tx_search").value.trim().toLowerCase();
+    const rows = document.querySelectorAll("#tx_list .tx-row");
+    let visible = 0;
+    rows.forEach(row => {
+        const match = !q || row.dataset.search.includes(q);
+        row.style.display = match ? "" : "none";
+        if(match) visible++;
+    });
+    document.getElementById("tx_noresults").style.display = (visible === 0 && rows.length > 0) ? "block" : "none";
+}
+</script>
+
+</body>
+</html>

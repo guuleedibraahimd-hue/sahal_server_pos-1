@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Imam Media Login</title>
+<style>
+*{ margin:0; padding:0; box-sizing:border-box; }
+
+body{
+    font-family:'Segoe UI', sans-serif;
+    background:linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+}
+
+.login-box{
+    background:rgba(255,255,255,0.05);
+    backdrop-filter:blur(20px);
+    border:1px solid rgba(255,255,255,0.1);
+    border-radius:20px;
+    padding:40px;
+    width:90%;
+    max-width:400px;
+    box-shadow:0 20px 60px rgba(0,0,0,0.4);
+}
+
+.logo{
+    text-align:center;
+    margin-bottom:30px;
+}
+
+.logo-icon{
+    font-size:60px;
+    display:block;
+    margin-bottom:10px;
+}
+
+.logo h2{
+    color:#fff;
+    font-size:24px;
+    font-weight:700;
+}
+
+.logo p{
+    color:rgba(255,255,255,0.5);
+    font-size:13px;
+    margin-top:4px;
+}
+
+.form-group{
+    margin-bottom:18px;
+}
+
+.form-group label{
+    display:block;
+    color:rgba(255,255,255,0.7);
+    font-size:13px;
+    margin-bottom:6px;
+    font-weight:600;
+    letter-spacing:0.5px;
+}
+
+.form-group input{
+    width:100%;
+    padding:14px 16px;
+    background:rgba(255,255,255,0.08);
+    border:1px solid rgba(255,255,255,0.15);
+    border-radius:10px;
+    color:#fff;
+    font-size:15px;
+    outline:none;
+    transition:all 0.3s;
+}
+
+.form-group input:focus{
+    border-color:#00d4ff;
+    background:rgba(0,212,255,0.08);
+}
+
+.form-group input::placeholder{
+    color:rgba(255,255,255,0.35);
+}
+
+.login-btn{
+    width:100%;
+    padding:15px;
+    background:linear-gradient(135deg,#00d4ff,#0984e3);
+    border:none;
+    border-radius:10px;
+    color:#fff;
+    font-size:15px;
+    font-weight:700;
+    cursor:pointer;
+    margin-top:8px;
+    transition:transform 0.15s;
+}
+
+.login-btn:active{ transform:scale(0.98); }
+
+.error-msg{
+    background:rgba(220,53,69,0.15);
+    border:1px solid rgba(220,53,69,0.4);
+    color:#ff8a95;
+    padding:12px 14px;
+    border-radius:10px;
+    font-size:13px;
+    font-weight:600;
+    text-align:center;
+    margin-bottom:18px;
+}
+
+.back-link{
+    display:block;
+    text-align:center;
+    margin-top:20px;
+    color:rgba(255,255,255,0.4);
+    font-size:13px;
+    text-decoration:none;
+}
+.back-link:hover{ color:rgba(255,255,255,0.7); }
+</style>
+</head>
+<body>
+
+<div class="login-box">
+    <div class="logo">
+        <span class="logo-icon">🕌</span>
+        <h2>Imam Media</h2>
+        <p>Imam University — Media Upload Portal</p>
+    </div>
+
+    {% if error %}
+    <div class="error-msg">❌ {{ error }}</div>
+    {% endif %}
+
+    <form method="POST">
+        <div class="form-group">
+            <label>PASSWORD</label>
+            <input type="password" name="password" placeholder="Enter password" required autofocus>
+        </div>
+        <button type="submit" class="login-btn">🔓 Login</button>
+    </form>
+
+    <a href="/" class="back-link">← Back to Home</a>
+</div>
+
+</body>
+</html>
