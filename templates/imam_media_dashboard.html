@@ -56,6 +56,7 @@ body{ margin:0; font-family:'Segoe UI',Arial,sans-serif; background:var(--bg); c
 .tx-type-badge.video{ background:#ffe9ec; color:var(--red); }
 .tx-type-badge.pdf{ background:#fff3e2; color:var(--orange); }
 .tx-type-badge.document{ background:#fff3e2; color:var(--orange); }
+.tx-period-badge{ font-size:10.5px; font-weight:700; padding:3px 9px; border-radius:10px; background:#f1f3f6; color:var(--muted); flex-shrink:0; }
 .tx-actions{ display:flex; gap:8px; flex-shrink:0; }
 .tx-actions a, .tx-actions button{ padding:8px 14px; border-radius:8px; border:none; font-weight:700; font-size:12px; cursor:pointer; text-decoration:none; }
 .tx-view{ background:var(--blue-2); color:#fff; }
@@ -95,6 +96,15 @@ body{ margin:0; font-family:'Segoe UI',Arial,sans-serif; background:var(--bg); c
                     <label>Note (optional)</label>
                     <input type="text" id="um_note" placeholder="e.g. Graduation ceremony photos">
                 </div>
+                <div class="field" style="flex:0 0 150px;min-width:150px;">
+                    <label>Report Period</label>
+                    <select id="um_period" style="width:100%;padding:12px;border-radius:10px;border:1px solid #ddd;font-size:14px;box-sizing:border-box;">
+                        <option value="daily">📅 Daily</option>
+                        <option value="weekly">🗓️ Weekly</option>
+                        <option value="monthly">📆 Monthly</option>
+                        <option value="yearly">🗂️ Yearly</option>
+                    </select>
+                </div>
                 <label class="file-label" id="um_fileLabel">
                     📎 <span id="um_fileText">Choose Images / Videos / PDFs / PowerPoint / Word (multiple allowed)</span>
                     <input type="file" id="um_file" accept="image/*,video/*,.pdf,.ppt,.pptx,.doc,.docx" multiple onchange="updateFileLabel(this)">
@@ -125,6 +135,7 @@ body{ margin:0; font-family:'Segoe UI',Arial,sans-serif; background:var(--bg); c
                     <div class="tx-meta">{{ u.uploaded_at[:16] if u.uploaded_at else '—' }}</div>
                 </div>
                 <span class="tx-type-badge {{ u.file_type }}">{{ u.file_type }}</span>
+                <span class="tx-period-badge">{{ u.period|default('daily')|capitalize }}</span>
                 <div class="tx-actions">
                     <a href="{{ u.url }}" target="_blank" class="tx-view">👁️ View</a>
                     <button class="tx-del" onclick="deleteUpload('{{ u.id }}')">🗑</button>
@@ -168,6 +179,7 @@ async function submitUpload(e){
     const fd = new FormData();
     for(const f of fileInput.files){ fd.append("file", f); }
     fd.append("note", note);
+    fd.append("period", document.getElementById("um_period").value);
 
     btn.disabled = true;
     btn.textContent = "⏳ Uploading…";

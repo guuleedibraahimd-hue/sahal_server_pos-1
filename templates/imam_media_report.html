@@ -103,6 +103,40 @@ body{ margin:0; font-family:'Georgia','Segoe UI',serif; background:var(--navy); 
 
 .empty{ color:var(--muted); text-align:center; padding:40px; font-size:14px; }
 
+/* period report */
+.period-btn-row{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+.period-btn{ padding:11px 20px; border-radius:10px; border:1.5px solid var(--border); background:#fff; font-family:inherit; font-size:13.5px; font-weight:700; color:var(--muted); cursor:pointer; }
+.period-btn.active{ background:var(--navy); border-color:var(--navy); color:#fff; }
+.tool-btn{ padding:11px 18px; border-radius:10px; border:none; background:var(--blue); color:#fff; font-family:inherit; font-size:13px; font-weight:700; cursor:pointer; }
+.period-table{ width:100%; border-collapse:collapse; margin-top:4px; }
+.period-table th{ text-align:left; background:var(--navy); color:var(--gold); padding:12px 14px; font-size:12.5px; }
+.period-table td{ padding:12px 14px; border-bottom:1px solid var(--border); font-size:13.5px; }
+.period-table td a{ color:var(--blue); text-decoration:none; font-weight:700; }
+
+/* presentation / big-screen mode */
+#presentationOverlay{ display:none; position:fixed; inset:0; background:var(--navy); z-index:999; overflow-y:auto; }
+#presentationOverlay.show{ display:block; }
+.pres-header{ display:flex; align-items:center; gap:24px; padding:36px 48px; border-bottom:2px solid rgba(255,255,255,0.15); }
+.pres-logos{ display:flex; gap:14px; }
+.pres-logos img{ width:64px; height:64px; border-radius:50%; object-fit:cover; background:#fff; }
+.pres-header h1{ flex:1; color:#fff; font-size:38px; margin:0; }
+.pres-close{ background:rgba(220,53,69,0.85); color:#fff; border:none; padding:14px 26px; border-radius:12px; font-size:16px; font-weight:700; cursor:pointer; }
+.pres-body{ padding:40px 60px 80px; display:flex; flex-direction:column; gap:18px; }
+.pres-row{ display:flex; align-items:center; gap:24px; background:rgba(255,255,255,0.06); border-radius:16px; padding:24px 30px; }
+.pres-icon{ font-size:44px; flex-shrink:0; }
+.pres-info{ flex:1; }
+.pres-name{ color:#fff; font-size:26px; font-weight:700; }
+.pres-note{ color:rgba(255,255,255,0.6); font-size:17px; margin-top:6px; }
+.pres-date{ color:var(--gold); font-size:17px; font-weight:700; flex-shrink:0; }
+.pres-empty{ color:rgba(255,255,255,0.5); text-align:center; font-size:22px; padding:60px; }
+
+@media print{
+    body *{ visibility:hidden; }
+    #panel-periodreport, #panel-periodreport *{ visibility:visible; }
+    #panel-periodreport{ position:absolute; top:0; left:0; width:100%; display:block !important; }
+    .period-btn-row{ display:none; }
+}
+
 @media(max-width:700px){
     .booklet{ margin:-20px 14px 40px; }
     .tab-panel{ padding:20px; }
@@ -128,6 +162,7 @@ body{ margin:0; font-family:'Georgia','Segoe UI',serif; background:var(--navy); 
         <button class="tab-btn" data-tab="images" onclick="switchReportTab('images', this)">🖼️ Images ({{ images|length }})</button>
         <button class="tab-btn" data-tab="videos" onclick="switchReportTab('videos', this)">🎬 Videos ({{ videos|length }})</button>
         <button class="tab-btn" data-tab="documents" onclick="switchReportTab('documents', this)">📄 Documents ({{ documents|length }})</button>
+        <button class="tab-btn" data-tab="periodreport" onclick="switchReportTab('periodreport', this)">📊 Period Report</button>
     </div>
 
     <!-- ALL -->
@@ -236,7 +271,128 @@ body{ margin:0; font-family:'Georgia','Segoe UI',serif; background:var(--navy); 
         </div>
         {% else %}<p class="empty">No documents yet</p>{% endif %}
     </div>
+
+    <!-- PERIOD REPORT -->
+    <div class="tab-panel" id="panel-periodreport">
+        <div class="period-btn-row">
+            <button class="period-btn active" data-period="daily" onclick="setPeriod('daily', this)">📅 Daily</button>
+            <button class="period-btn" data-period="weekly" onclick="setPeriod('weekly', this)">🗓️ Weekly</button>
+            <button class="period-btn" data-period="monthly" onclick="setPeriod('monthly', this)">📆 Monthly</button>
+            <button class="period-btn" data-period="yearly" onclick="setPeriod('yearly', this)">🗂️ Yearly</button>
+            <div style="flex:1;"></div>
+            <button class="tool-btn" onclick="printPeriodReport()">🖨️ Print</button>
+            <button class="tool-btn" onclick="enterPresentationMode()">🖥️ Big Screen Mode</button>
+        </div>
+
+        <h3 id="periodReportTitle" style="margin:18px 0 14px;">📅 Daily Report</h3>
+
+        <table class="period-table" id="periodTable">
+            <thead>
+                <tr><th>File</th><th>Type</th><th>Note</th><th>Date</th></tr>
+            </thead>
+            <tbody id="periodTableBody"></tbody>
+        </table>
+        <p class="empty" id="periodEmpty" style="display:none;">No files tagged for this period yet</p>
+    </div>
 </div>
+
+<!-- BIG SCREEN / PROJECTOR PRESENTATION MODE -->
+<div id="presentationOverlay">
+    <div class="pres-header">
+        <div class="pres-logos">
+            <img src="/static/imam_media/imam_university_logo.jpg" alt="Imam University">
+            <img src="/static/imam_media/xaji_logo.jpeg" alt="XAJI">
+        </div>
+        <h1 id="presTitle">📅 Daily Report</h1>
+        <button class="pres-close" onclick="exitPresentationMode()">✕ Exit</button>
+    </div>
+    <div class="pres-body" id="presBody"></div>
+</div>
+
+<script>
+/* All uploads, flattened with their period, for client-side filtering
+   (report data is already rendered server-side into images/videos/
+   documents — this just re-combines it once here rather than adding
+   new backend routes for the same data). */
+const ALL_UPLOADS = [
+    {% for m in images %}{ filename: {{ m.filename|tojson }}, url: {{ m.url|tojson }}, file_type: "image", note: {{ (m.note or "")|tojson }}, period: {{ (m.period or "daily")|tojson }}, uploaded_at: {{ (m.uploaded_at or "")|tojson }} },{% endfor %}
+    {% for m in videos %}{ filename: {{ m.filename|tojson }}, url: {{ m.url|tojson }}, file_type: "video", note: {{ (m.note or "")|tojson }}, period: {{ (m.period or "daily")|tojson }}, uploaded_at: {{ (m.uploaded_at or "")|tojson }} },{% endfor %}
+    {% for m in documents %}{ filename: {{ m.filename|tojson }}, url: {{ m.url|tojson }}, file_type: "document", note: {{ (m.note or "")|tojson }}, period: {{ (m.period or "daily")|tojson }}, uploaded_at: {{ (m.uploaded_at or "")|tojson }} },{% endfor %}
+];
+
+let currentPeriod = "daily";
+const PERIOD_TITLES = { daily: "📅 Daily Report", weekly: "🗓️ Weekly Report", monthly: "📆 Monthly Report", yearly: "🗂️ Yearly Report" };
+
+function setPeriod(period, el){
+    currentPeriod = period;
+    document.querySelectorAll(".period-btn").forEach(b => b.classList.remove("active"));
+    el.classList.add("active");
+    document.getElementById("periodReportTitle").textContent = PERIOD_TITLES[period];
+    renderPeriodTable();
+}
+
+function renderPeriodTable(){
+    const items = ALL_UPLOADS.filter(u => u.period === currentPeriod);
+    const body = document.getElementById("periodTableBody");
+    const emptyMsg = document.getElementById("periodEmpty");
+    const table = document.getElementById("periodTable");
+
+    if(items.length === 0){
+        body.innerHTML = "";
+        table.style.display = "none";
+        emptyMsg.style.display = "block";
+        return;
+    }
+    table.style.display = "table";
+    emptyMsg.style.display = "none";
+    body.innerHTML = items.map(u => `
+        <tr>
+            <td><a href="${u.url}" target="_blank">${u.filename}</a></td>
+            <td style="text-transform:capitalize;">${u.file_type}</td>
+            <td>${u.note || "—"}</td>
+            <td>${u.uploaded_at ? u.uploaded_at.slice(0,10) : "—"}</td>
+        </tr>
+    `).join("");
+}
+renderPeriodTable();
+
+function printPeriodReport(){
+    window.print();
+}
+
+/* ── Big Screen / Projector mode: large-font, high-contrast fullscreen
+   view of the currently selected period's report — built for reading
+   from across a room, not a desk. ── */
+function enterPresentationMode(){
+    const items = ALL_UPLOADS.filter(u => u.period === currentPeriod);
+    document.getElementById("presTitle").textContent = PERIOD_TITLES[currentPeriod];
+
+    const body = document.getElementById("presBody");
+    if(items.length === 0){
+        body.innerHTML = `<p class="pres-empty">No files tagged for this period yet</p>`;
+    } else {
+        body.innerHTML = items.map(u => `
+            <div class="pres-row">
+                <span class="pres-icon">${u.file_type === 'image' ? '🖼️' : u.file_type === 'video' ? '🎬' : '📄'}</span>
+                <div class="pres-info">
+                    <div class="pres-name">${u.filename}</div>
+                    ${u.note ? `<div class="pres-note">${u.note}</div>` : ""}
+                </div>
+                <span class="pres-date">${u.uploaded_at ? u.uploaded_at.slice(0,10) : ""}</span>
+            </div>
+        `).join("");
+    }
+
+    const overlay = document.getElementById("presentationOverlay");
+    overlay.classList.add("show");
+    if(overlay.requestFullscreen) overlay.requestFullscreen().catch(() => {});
+}
+
+function exitPresentationMode(){
+    document.getElementById("presentationOverlay").classList.remove("show");
+    if(document.fullscreenElement) document.exitFullscreen().catch(() => {});
+}
+</script>
 
 <script>
 function switchReportTab(tab, el){

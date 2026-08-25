@@ -6998,8 +6998,11 @@ def imam_media_upload():
     if not session.get("imam_media_ok"):
         return jsonify({"success": False, "error": "Unauthorized"}), 401
     try:
-        files = request.files.getlist("file")
-        note = request.form.get("note", "").strip()
+        files  = request.files.getlist("file")
+        note   = request.form.get("note", "").strip()
+        period = request.form.get("period", "daily").strip().lower()
+        if period not in ("daily", "weekly", "monthly", "yearly"):
+            period = "daily"
         files = [f for f in files if f and f.filename]
         if not files:
             return jsonify({"success": False, "error": "Choose at least one file first"})
@@ -7028,6 +7031,7 @@ def imam_media_upload():
                 "url": url,
                 "file_type": file_type,
                 "note": note,
+                "period": period,
                 "uploaded_at": datetime.now().isoformat()
             }
             doc_ref = db.collection("imam_media_uploads").add(record)
