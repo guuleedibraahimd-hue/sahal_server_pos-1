@@ -6935,7 +6935,7 @@ def imam_media_login():
     if request.method == "POST":
         password = request.form.get("password", "").strip()
         try:
-            for doc in db.collection("imam-media1").stream():
+            for doc in db.collection("imam-media").stream():
                 stored_password = (doc.to_dict() or {}).get("password", "")
                 if stored_password and password == str(stored_password):
                     session["imam_media_ok"] = True
