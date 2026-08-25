@@ -32,6 +32,21 @@ body{
     margin-bottom:30px;
 }
 
+.logo-row{
+    display:flex;
+    justify-content:center;
+    gap:14px;
+    margin-bottom:12px;
+}
+
+.logo-row img{
+    width:56px;
+    height:56px;
+    border-radius:50%;
+    object-fit:cover;
+    background:#fff;
+}
+
 .logo-icon{
     font-size:60px;
     display:block;
@@ -127,7 +142,10 @@ body{
 
 <div class="login-box">
     <div class="logo">
-        <span class="logo-icon">🕌</span>
+        <div class="logo-row">
+            <img src="/static/imam_media/imam_university_logo.jpg" alt="Imam University">
+            <img src="/static/imam_media/xaji_logo.jpeg" alt="XAJI">
+        </div>
         <h2>Imam Media</h2>
         <p>Imam University — Media Upload Portal</p>
     </div>

@@ -20,8 +20,10 @@ body{ margin:0; font-family:'Segoe UI',Arial,sans-serif; background:var(--bg); c
 }
 .header-left{ display:flex; align-items:center; gap:14px; color:#fff; }
 .header-left .ic{ font-size:32px; }
+.header-logo{ width:44px; height:44px; border-radius:50%; object-fit:cover; background:#fff; flex-shrink:0; }
 .header-left h1{ font-size:19px; margin:0; }
 .header-left p{ font-size:12px; color:rgba(255,255,255,0.6); margin:2px 0 0; }
+.report-link-btn{ background:rgba(0,212,255,0.18); border:1px solid rgba(0,212,255,0.4); color:#fff; text-decoration:none; padding:10px 18px; border-radius:10px; font-weight:700; font-size:13px; }
 .logout-btn{ background:rgba(220,53,69,0.85); color:#fff; text-decoration:none; padding:10px 18px; border-radius:10px; font-weight:700; font-size:13px; }
 
 .content{ padding:26px 28px 60px; max-width:1100px; margin:0 auto; }
@@ -69,13 +71,17 @@ body{ margin:0; font-family:'Segoe UI',Arial,sans-serif; background:var(--bg); c
 
 <div class="header">
     <div class="header-left">
-        <span class="ic">🕌</span>
+        <img src="/static/imam_media/imam_university_logo.jpg" alt="Imam University" class="header-logo">
+        <img src="/static/imam_media/xaji_logo.jpeg" alt="XAJI" class="header-logo">
         <div>
             <h1>Imam Media</h1>
             <p>Imam University — Media Upload Portal</p>
         </div>
     </div>
-    <a href="/imam_media_logout" class="logout-btn">🚪 Logout</a>
+    <div style="display:flex;gap:10px;align-items:center;">
+        <a href="/imam_media_dashboard/report" class="report-link-btn">📖 View Report</a>
+        <a href="/imam_media_logout" class="logout-btn">🚪 Logout</a>
+    </div>
 </div>
 
 <div class="content">
@@ -89,8 +95,8 @@ body{ margin:0; font-family:'Segoe UI',Arial,sans-serif; background:var(--bg); c
                     <input type="text" id="um_note" placeholder="e.g. Graduation ceremony photos">
                 </div>
                 <label class="file-label" id="um_fileLabel">
-                    📎 <span id="um_fileText">Choose Image / Video / PDF</span>
-                    <input type="file" id="um_file" accept="image/*,video/*,.pdf" onchange="updateFileLabel(this)">
+                    📎 <span id="um_fileText">Choose Images / Videos / PDFs (multiple allowed)</span>
+                    <input type="file" id="um_file" accept="image/*,video/*,.pdf" multiple onchange="updateFileLabel(this)">
                 </label>
                 <button type="submit" class="upload-btn" id="um_submitBtn">✅ Upload</button>
             </div>
@@ -134,8 +140,14 @@ body{ margin:0; font-family:'Segoe UI',Arial,sans-serif; background:var(--bg); c
 
 <script>
 function updateFileLabel(input){
-    const file = input.files[0];
-    document.getElementById("um_fileText").textContent = file ? file.name : "Choose Image / Video / PDF";
+    const files = input.files;
+    if(!files.length){
+        document.getElementById("um_fileText").textContent = "Choose Images / Videos / PDFs (multiple allowed)";
+    } else if(files.length === 1){
+        document.getElementById("um_fileText").textContent = files[0].name;
+    } else {
+        document.getElementById("um_fileText").textContent = `${files.length} files selected`;
+    }
 }
 
 async function submitUpload(e){
@@ -146,14 +158,14 @@ async function submitUpload(e){
     const btn = document.getElementById("um_submitBtn");
     msg.className = "upload-msg";
 
-    if(!fileInput.files[0]){
+    if(!fileInput.files.length){
         msg.classList.add("error");
-        msg.textContent = "❌ Choose a file first";
+        msg.textContent = "❌ Choose at least one file first";
         return false;
     }
 
     const fd = new FormData();
-    fd.append("file", fileInput.files[0]);
+    for(const f of fileInput.files){ fd.append("file", f); }
     fd.append("note", note);
 
     btn.disabled = true;
@@ -164,8 +176,8 @@ async function submitUpload(e){
         const data = await res.json();
         if(data.success){
             msg.classList.add("success");
-            msg.textContent = "✅ Uploaded successfully";
-            setTimeout(() => location.reload(), 900);
+            msg.textContent = `✅ Uploaded ${data.count} file(s)` + (data.skipped && data.skipped.length ? ` — skipped: ${data.skipped.join(", ")}` : "");
+            setTimeout(() => location.reload(), 1200);
         } else {
             msg.classList.add("error");
             msg.textContent = "❌ " + (data.error || "Upload failed");

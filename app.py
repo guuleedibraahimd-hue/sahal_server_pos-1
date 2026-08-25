@@ -6968,40 +6968,76 @@ def imam_media_dashboard():
         return f"Imam Media Dashboard Error ❌ {str(e)}"
 
 
+@app.route("/imam_media_dashboard/report")
+def imam_media_report():
+    if not session.get("imam_media_ok"):
+        return redirect("/imam_media_login")
+    try:
+        images, videos, documents = [], [], []
+        for doc in db.collection("imam_media_uploads").order_by(
+                "uploaded_at", direction=firestore.Query.DESCENDING).stream():
+            u = doc.to_dict()
+            u["id"] = doc.id
+            if u.get("file_type") == "image":
+                images.append(u)
+            elif u.get("file_type") == "video":
+                videos.append(u)
+            elif u.get("file_type") == "pdf":
+                documents.append(u)
+        return render_template(
+            "imam_media_report.html",
+            images=images, videos=videos, documents=documents,
+            total=len(images) + len(videos) + len(documents)
+        )
+    except Exception as e:
+        return f"Imam Media Report Error ❌ {str(e)}"
+
+
 @app.route("/imam_media_dashboard/upload", methods=["POST"])
 def imam_media_upload():
     if not session.get("imam_media_ok"):
         return jsonify({"success": False, "error": "Unauthorized"}), 401
     try:
-        file = request.files.get("file")
+        files = request.files.getlist("file")
         note = request.form.get("note", "").strip()
-        if not file or not file.filename:
-            return jsonify({"success": False, "error": "Choose a file first"})
+        files = [f for f in files if f and f.filename]
+        if not files:
+            return jsonify({"success": False, "error": "Choose at least one file first"})
 
-        ext = os.path.splitext(file.filename)[1].lower()
-        if ext in (".jpg", ".jpeg", ".png", ".gif", ".webp"):
-            file_type = "image"
-        elif ext in (".mp4", ".mov", ".avi", ".webm", ".mkv"):
-            file_type = "video"
-        elif ext == ".pdf":
-            file_type = "pdf"
-        else:
-            return jsonify({"success": False, "error": "Only images, videos, or PDF files are allowed"})
+        uploaded = []
+        skipped = []
+        for file in files:
+            ext = os.path.splitext(file.filename)[1].lower()
+            if ext in (".jpg", ".jpeg", ".png", ".gif", ".webp"):
+                file_type = "image"
+            elif ext in (".mp4", ".mov", ".avi", ".webm", ".mkv"):
+                file_type = "video"
+            elif ext == ".pdf":
+                file_type = "pdf"
+            else:
+                skipped.append(file.filename)
+                continue
 
-        url = upload_to_firebase_storage(file, folder="imam_media")
-        if not url:
-            return jsonify({"success": False, "error": "Upload failed"})
+            url = upload_to_firebase_storage(file, folder="imam_media")
+            if not url:
+                skipped.append(file.filename)
+                continue
 
-        record = {
-            "filename": secure_filename(file.filename),
-            "url": url,
-            "file_type": file_type,
-            "note": note,
-            "uploaded_at": datetime.now().isoformat()
-        }
-        doc_ref = db.collection("imam_media_uploads").add(record)
-        record["id"] = doc_ref[1].id
-        return jsonify({"success": True, "upload": record})
+            record = {
+                "filename": secure_filename(file.filename),
+                "url": url,
+                "file_type": file_type,
+                "note": note,
+                "uploaded_at": datetime.now().isoformat()
+            }
+            doc_ref = db.collection("imam_media_uploads").add(record)
+            record["id"] = doc_ref[1].id
+            uploaded.append(record)
+
+        if not uploaded:
+            return jsonify({"success": False, "error": "None of the selected files could be uploaded (images, videos, and PDFs only)"})
+
+        return jsonify({"success": True, "uploaded": uploaded, "skipped": skipped, "count": len(uploaded)})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
 

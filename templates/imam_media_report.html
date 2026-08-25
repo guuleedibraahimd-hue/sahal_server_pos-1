@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Imam Media — Report</title>
+<style>
+:root{
+    --navy:#0f2027; --navy-2:#203a43; --gold:#c9a227; --paper:#faf6ec;
+    --text:#2b2419; --muted:#8a7f68; --border:#e6ddc4;
+    --blue:#0984e3; --red:#dc3545; --orange:#e0651f;
+}
+*{ box-sizing:border-box; }
+body{ margin:0; font-family:'Georgia','Segoe UI',serif; background:var(--navy); color:var(--text); }
+
+/* ---- COVER ---- */
+.cover{
+    background:linear-gradient(160deg,var(--navy),var(--navy-2));
+    padding:50px 24px 60px;
+    text-align:center;
+    color:#fff;
+}
+.cover-logos{ display:flex; justify-content:center; gap:20px; margin-bottom:20px; }
+.cover-logos img{ width:78px; height:78px; border-radius:50%; object-fit:cover; background:#fff; box-shadow:0 6px 18px rgba(0,0,0,0.3); }
+.cover h1{ font-size:28px; margin:0 0 6px; letter-spacing:0.5px; }
+.cover p{ font-size:13px; color:rgba(255,255,255,0.65); margin:0; }
+.cover .stats-line{ margin-top:18px; font-size:13px; color:var(--gold); font-weight:700; }
+.back-link{ position:absolute; top:20px; left:24px; color:rgba(255,255,255,0.7); text-decoration:none; font-size:13px; font-weight:700; }
+
+/* ---- BOOKLET BODY ---- */
+.booklet{
+    max-width:960px;
+    margin:-30px auto 60px;
+    background:var(--paper);
+    border-radius:18px;
+    box-shadow:0 20px 50px rgba(0,0,0,0.35);
+    padding:0 0 40px;
+    position:relative;
+}
+
+.tabs{
+    display:flex;
+    gap:6px;
+    padding:24px 28px 0;
+    flex-wrap:wrap;
+    border-bottom:1px solid var(--border);
+}
+.tab-btn{
+    padding:12px 20px;
+    border:none;
+    background:none;
+    font-family:inherit;
+    font-size:14px;
+    font-weight:700;
+    color:var(--muted);
+    cursor:pointer;
+    border-bottom:3px solid transparent;
+    margin-bottom:-1px;
+}
+.tab-btn.active{ color:var(--navy); border-bottom-color:var(--gold); }
+
+.tab-panel{ display:none; padding:28px; }
+.tab-panel.active{ display:block; }
+
+.section-heading{
+    font-size:18px;
+    font-weight:700;
+    margin:0 0 18px;
+    padding-bottom:10px;
+    border-bottom:2px solid var(--border);
+    display:flex;
+    align-items:center;
+    gap:10px;
+}
+
+/* image gallery */
+.gallery-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:16px; }
+.gallery-card{ background:#fff; border-radius:12px; overflow:hidden; box-shadow:0 3px 10px rgba(0,0,0,0.08); border:1px solid var(--border); }
+.gallery-card img{ width:100%; height:150px; object-fit:cover; display:block; }
+.gallery-card .gc-body{ padding:10px 12px; }
+.gallery-card .gc-name{ font-size:12.5px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.gallery-card .gc-note{ font-size:11px; color:var(--muted); margin-top:2px; }
+.gallery-card .gc-date{ font-size:10.5px; color:var(--muted); margin-top:4px; }
+
+/* video cards */
+.video-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:18px; }
+.video-card{ background:#fff; border-radius:12px; overflow:hidden; box-shadow:0 3px 10px rgba(0,0,0,0.08); border:1px solid var(--border); }
+.video-card video{ width:100%; height:160px; object-fit:cover; background:#000; display:block; }
+.video-card .gc-body{ padding:12px 14px; }
+.video-card .gc-name{ font-size:13px; font-weight:700; }
+.video-card .gc-note{ font-size:11.5px; color:var(--muted); margin-top:3px; }
+.video-card .gc-date{ font-size:10.5px; color:var(--muted); margin-top:5px; }
+
+/* documents */
+.doc-list{ display:flex; flex-direction:column; gap:10px; }
+.doc-row{ display:flex; align-items:center; gap:14px; background:#fff; border:1px solid var(--border); border-radius:12px; padding:14px 16px; }
+.doc-icon{ font-size:26px; flex-shrink:0; }
+.doc-info{ flex:1; min-width:0; }
+.doc-name{ font-weight:700; font-size:13.5px; }
+.doc-note{ font-size:12px; color:var(--muted); margin-top:2px; }
+.doc-date{ font-size:11px; color:var(--muted); margin-top:3px; }
+.doc-view{ background:var(--blue); color:#fff; text-decoration:none; padding:9px 16px; border-radius:8px; font-weight:700; font-size:12.5px; flex-shrink:0; }
+
+.empty{ color:var(--muted); text-align:center; padding:40px; font-size:14px; }
+
+@media(max-width:700px){
+    .booklet{ margin:-20px 14px 40px; }
+    .tab-panel{ padding:20px; }
+}
+</style>
+</head>
+<body>
+
+<div class="cover">
+    <a href="/imam_media_dashboard" class="back-link">← Back to Dashboard</a>
+    <div class="cover-logos">
+        <img src="/static/imam_media/imam_university_logo.jpg" alt="Imam University">
+        <img src="/static/imam_media/xaji_logo.jpeg" alt="XAJI">
+    </div>
+    <h1>Imam Media — Report</h1>
+    <p>Imam University · Media Archive</p>
+    <div class="stats-line">{{ images|length }} Images · {{ videos|length }} Videos · {{ documents|length }} Documents · {{ total }} Total</div>
+</div>
+
+<div class="booklet">
+    <div class="tabs">
+        <button class="tab-btn active" data-tab="all" onclick="switchReportTab('all', this)">📚 All</button>
+        <button class="tab-btn" data-tab="images" onclick="switchReportTab('images', this)">🖼️ Images ({{ images|length }})</button>
+        <button class="tab-btn" data-tab="videos" onclick="switchReportTab('videos', this)">🎬 Videos ({{ videos|length }})</button>
+        <button class="tab-btn" data-tab="documents" onclick="switchReportTab('documents', this)">📄 Documents ({{ documents|length }})</button>
+    </div>
+
+    <!-- ALL -->
+    <div class="tab-panel active" id="panel-all">
+        <div class="section-heading">🖼️ Images</div>
+        {% if images %}
+        <div class="gallery-grid" style="margin-bottom:32px;">
+            {% for m in images %}
+            <div class="gallery-card">
+                <img src="{{ m.url }}" alt="{{ m.filename }}" onerror="this.style.display='none'">
+                <div class="gc-body">
+                    <div class="gc-name">{{ m.filename }}</div>
+                    {% if m.note %}<div class="gc-note">{{ m.note }}</div>{% endif %}
+                    <div class="gc-date">{{ m.uploaded_at[:10] if m.uploaded_at else '' }}</div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}<p class="empty">No images yet</p>{% endif %}
+
+        <div class="section-heading">🎬 Videos</div>
+        {% if videos %}
+        <div class="video-grid" style="margin-bottom:32px;">
+            {% for m in videos %}
+            <div class="video-card">
+                <video src="{{ m.url }}" controls preload="metadata"></video>
+                <div class="gc-body">
+                    <div class="gc-name">{{ m.filename }}</div>
+                    {% if m.note %}<div class="gc-note">{{ m.note }}</div>{% endif %}
+                    <div class="gc-date">{{ m.uploaded_at[:10] if m.uploaded_at else '' }}</div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}<p class="empty">No videos yet</p>{% endif %}
+
+        <div class="section-heading">📄 Documents</div>
+        {% if documents %}
+        <div class="doc-list">
+            {% for m in documents %}
+            <div class="doc-row">
+                <span class="doc-icon">📄</span>
+                <div class="doc-info">
+                    <div class="doc-name">{{ m.filename }}</div>
+                    {% if m.note %}<div class="doc-note">{{ m.note }}</div>{% endif %}
+                    <div class="doc-date">{{ m.uploaded_at[:10] if m.uploaded_at else '' }}</div>
+                </div>
+                <a href="{{ m.url }}" target="_blank" class="doc-view">👁️ Open</a>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}<p class="empty">No documents yet</p>{% endif %}
+    </div>
+
+    <!-- IMAGES ONLY -->
+    <div class="tab-panel" id="panel-images">
+        {% if images %}
+        <div class="gallery-grid">
+            {% for m in images %}
+            <div class="gallery-card">
+                <img src="{{ m.url }}" alt="{{ m.filename }}" onerror="this.style.display='none'">
+                <div class="gc-body">
+                    <div class="gc-name">{{ m.filename }}</div>
+                    {% if m.note %}<div class="gc-note">{{ m.note }}</div>{% endif %}
+                    <div class="gc-date">{{ m.uploaded_at[:10] if m.uploaded_at else '' }}</div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}<p class="empty">No images yet</p>{% endif %}
+    </div>
+
+    <!-- VIDEOS ONLY -->
+    <div class="tab-panel" id="panel-videos">
+        {% if videos %}
+        <div class="video-grid">
+            {% for m in videos %}
+            <div class="video-card">
+                <video src="{{ m.url }}" controls preload="metadata"></video>
+                <div class="gc-body">
+                    <div class="gc-name">{{ m.filename }}</div>
+                    {% if m.note %}<div class="gc-note">{{ m.note }}</div>{% endif %}
+                    <div class="gc-date">{{ m.uploaded_at[:10] if m.uploaded_at else '' }}</div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}<p class="empty">No videos yet</p>{% endif %}
+    </div>
+
+    <!-- DOCUMENTS ONLY -->
+    <div class="tab-panel" id="panel-documents">
+        {% if documents %}
+        <div class="doc-list">
+            {% for m in documents %}
+            <div class="doc-row">
+                <span class="doc-icon">📄</span>
+                <div class="doc-info">
+                    <div class="doc-name">{{ m.filename }}</div>
+                    {% if m.note %}<div class="doc-note">{{ m.note }}</div>{% endif %}
+                    <div class="doc-date">{{ m.uploaded_at[:10] if m.uploaded_at else '' }}</div>
+                </div>
+                <a href="{{ m.url }}" target="_blank" class="doc-view">👁️ Open</a>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}<p class="empty">No documents yet</p>{% endif %}
+    </div>
+</div>
+
+<script>
+function switchReportTab(tab, el){
+    document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
+    document.getElementById("panel-" + tab).classList.add("active");
+    document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+    el.classList.add("active");
+}
+</script>
+
+</body>
+</html>
