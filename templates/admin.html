@@ -205,6 +205,7 @@ textarea,input,select{ width:100%; padding:12px; border-radius:10px; border:1px 
             <li><button class="sb-link active" data-page="dashboard" onclick="showPage('dashboard',this)"><span class="ic">🏠</span> Dashboard <span class="arrow">›</span></button></li>
             <li><button class="sb-link" data-page="registration" onclick="showPage('registration',this)"><span class="ic">👥</span> Registration Panel <span class="arrow">›</span></button></li>
             <li><button class="sb-link" data-page="renewals" onclick="showPage('renewals',this)"><span class="ic">🔔</span> Renewal Requests {% if renewal_requests %}<span class="nav-badge">{{ renewal_requests|length }}</span>{% endif %} <span class="arrow">›</span></button></li>
+            <li><button class="sb-link" data-page="notify" onclick="showPage('notify',this)"><span class="ic">📢</span> Send Notification <span class="arrow">›</span></button></li>
             <li><button class="sb-link" data-page="infoposts" onclick="showPage('infoposts',this)"><span class="ic">📋</span> All Information Posts <span class="arrow">›</span></button></li>
             <li><button class="sb-link" data-page="payments" onclick="showPage('payments',this)"><span class="ic">💳</span> Payment Dashboard <span class="arrow">›</span></button></li>
             <li><button class="sb-link" data-page="restaurants" onclick="showPage('restaurants',this)"><span class="ic">🍽️</span> Restaurants <span class="arrow">›</span></button></li>
@@ -340,6 +341,62 @@ textarea,input,select{ width:100%; padding:12px; border-radius:10px; border:1px 
                             </tr>
                             {% else %}
                             <tr><td colspan="6" style="text-align:center;color:#888;padding:20px;">No pending renewal requests</td></tr>
+                            {% endfor %}
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ============ SEND NOTIFICATION PAGE ============ -->
+            <div class="page" id="page-notify">
+                <div class="section">
+                    <div class="sectionTitle"><h2>📢 Send Notification</h2></div>
+                    <p style="color:#6b7688;font-size:13px;margin-top:-8px;margin-bottom:18px;">
+                        Message appears as a dismissable banner directly on the recipient's own dashboard (Restaurant Dashboard, Restaurant Admin Panel, Supermarket, or Pharmacy).
+                    </p>
+
+                    <label style="font-size:12px;font-weight:bold;color:#666;">Send To *</label>
+                    <select id="notify_target_type" onchange="onNotifyTargetChange()">
+                        <option value="everyone">🌐 Everyone (all restaurants, supermarkets, pharmacies)</option>
+                        <option value="restaurant">🍽️ All Restaurants</option>
+                        <option value="restaurant_specific">🍽️ One Specific Restaurant</option>
+                        <option value="pharmacy">💊 All Pharmacies</option>
+                        <option value="pharmacy_specific">💊 One Specific Pharmacy</option>
+                        <option value="supermarket">🛒 All Supermarkets</option>
+                        <option value="supermarket_specific">🛒 One Specific Supermarket</option>
+                    </select>
+
+                    <div id="notify_specific_box" style="display:none;">
+                        <label style="font-size:12px;font-weight:bold;color:#666;">Choose Account *</label>
+                        <select id="notify_target_id">
+                            <option value="">— Select —</option>
+                        </select>
+                    </div>
+
+                    <label style="font-size:12px;font-weight:bold;color:#666;">Message *</label>
+                    <textarea id="notify_message" rows="4" placeholder="Write your message here..."></textarea>
+
+                    <button class="pharmacy-create-btn" style="width:100%;margin-top:14px;" onclick="sendBroadcast()">📤 Send Notification</button>
+                    <div class="pharmacy-msg" id="notifyMsg"></div>
+
+                    <h3 style="margin-top:28px;margin-bottom:4px;color:#6f42c1;">📜 Sent History</h3>
+                    <div style="overflow-x:auto;">
+                        <table style="min-width:auto;">
+                            <tr><th>Message</th><th>Sent To</th><th>When</th><th>Actions</th></tr>
+                            {% for b in sent_broadcasts %}
+                            <tr>
+                                <td style="max-width:320px;">{{ b.message }}</td>
+                                <td>
+                                    {% if b.target_type == 'everyone' %}🌐 Everyone
+                                    {% elif b.target_id %}{{ b.target_type|capitalize }}: <b>{{ b.target_name }}</b>
+                                    {% else %}All {{ b.target_type|capitalize }}s
+                                    {% endif %}
+                                </td>
+                                <td style="color:#888;font-size:12px;">{{ b.created_at[:16] if b.created_at else '—' }}</td>
+                                <td><button onclick="deleteBroadcast(this)" data-id="{{ b.id }}" class="btn delete">🗑 Delete</button></td>
+                            </tr>
+                            {% else %}
+                            <tr><td colspan="4" style="text-align:center;color:#888;padding:20px;">No notifications sent yet</td></tr>
                             {% endfor %}
                         </table>
                     </div>
@@ -652,6 +709,95 @@ textarea,input,select{ width:100%; padding:12px; border-radius:10px; border:1px 
 
 <script>
 let infoData = [];
+
+/* ================================
+   📢 SEND NOTIFICATION
+   ================================ */
+const RESTAURANTS_LIST  = [{% for r in restaurants %}{ id: {{ r.id|tojson }}, name: {{ r.name|tojson }} }{% if not loop.last %},{% endif %}{% endfor %}];
+const PHARMACIES_LIST   = [{% for ph in pharmacies %}{ id: {{ ph.id|tojson }}, name: {{ ph.pharmacy_name|tojson }} }{% if not loop.last %},{% endif %}{% endfor %}];
+const SUPERMARKETS_LIST = [{% for s in supermarkets %}{ id: {{ s.id|tojson }}, name: {{ s.name|tojson }} }{% if not loop.last %},{% endif %}{% endfor %}];
+
+function onNotifyTargetChange(){
+    const type = document.getElementById("notify_target_type").value;
+    const box  = document.getElementById("notify_specific_box");
+    const sel  = document.getElementById("notify_target_id");
+
+    const specificMap = {
+        "restaurant_specific": RESTAURANTS_LIST,
+        "pharmacy_specific": PHARMACIES_LIST,
+        "supermarket_specific": SUPERMARKETS_LIST
+    };
+
+    if(specificMap[type]){
+        box.style.display = "block";
+        sel.innerHTML = '<option value="">— Select —</option>' +
+            specificMap[type].map(x => `<option value="${x.id}">${x.name}</option>`).join("");
+    } else {
+        box.style.display = "none";
+        sel.innerHTML = '<option value="">— Select —</option>';
+    }
+}
+
+async function sendBroadcast(){
+    const typeRaw = document.getElementById("notify_target_type").value;
+    const message = document.getElementById("notify_message").value.trim();
+    const msg = document.getElementById("notifyMsg");
+    msg.style.display = "none";
+    msg.className = "pharmacy-msg";
+
+    if(!message){
+        msg.classList.add("error"); msg.textContent = "❌ Write a message first"; msg.style.display = "block";
+        return;
+    }
+
+    let target_type = typeRaw.replace("_specific", "");
+    let target_id = "";
+    if(typeRaw.endsWith("_specific")){
+        target_id = document.getElementById("notify_target_id").value;
+        if(!target_id){
+            msg.classList.add("error"); msg.textContent = "❌ Choose which account to message"; msg.style.display = "block";
+            return;
+        }
+    }
+
+    try{
+        const res = await fetch("/admin/send_broadcast", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({ message, target_type, target_id })
+        });
+        const data = await res.json();
+        if(data.success){
+            msg.classList.add("success");
+            msg.textContent = "✅ Notification sent!";
+            msg.style.display = "block";
+            document.getElementById("notify_message").value = "";
+            setTimeout(() => location.reload(), 1200);
+        } else {
+            msg.classList.add("error");
+            msg.textContent = "❌ " + (data.error || "Failed");
+            msg.style.display = "block";
+        }
+    } catch(e){
+        msg.classList.add("error");
+        msg.textContent = "❌ Server error";
+        msg.style.display = "block";
+    }
+}
+
+async function deleteBroadcast(btn){
+    if(!confirm("Delete this notification from the log? (Already-delivered banners already shown won't be recalled.)")) return;
+    const id = btn.dataset.id;
+    try{
+        const res = await fetch("/admin/delete_broadcast/" + id, { method: "DELETE" });
+        const data = await res.json();
+        if(data.success){ location.reload(); }
+        else { alert("❌ " + (data.error || "Failed")); }
+    } catch(e){
+        alert("❌ Server error");
+    }
+}
+
 
 /* ================================
    PAGE NAVIGATION (sidebar)

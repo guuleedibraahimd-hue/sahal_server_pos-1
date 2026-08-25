@@ -8,6 +8,10 @@
 *{ margin:0; padding:0; box-sizing:border-box; }
 body{ font-family:'Segoe UI', sans-serif; background:#0d1117; color:#e6edf3; min-height:100vh; }
 .header{ background:linear-gradient(135deg,#161b22,#21262d); border-bottom:1px solid #30363d; padding:16px 24px; display:flex; justify-content:space-between; align-items:center; position:sticky; top:0; z-index:100; }
+.admin-broadcast-banner{ display:flex; align-items:center; gap:12px; background:#fff8e1; border:1.5px solid #ffca28; border-radius:12px; padding:14px 16px; margin-bottom:10px; font-size:13.5px; color:#5d4200; }
+.admin-broadcast-banner .ab-icon{ font-size:18px; flex-shrink:0; }
+.admin-broadcast-banner .ab-text{ flex:1; font-weight:600; line-height:1.4; }
+.admin-broadcast-banner .ab-dismiss{ background:none; border:none; font-size:16px; cursor:pointer; color:#8a6d00; flex-shrink:0; }
 .header-left{ display:flex; align-items:center; gap:12px; }
 .header h1{ font-size:20px; font-weight:700; color:#fff; }
 .header-right{ display:flex; align-items:center; gap:10px; }
@@ -232,6 +236,19 @@ tr:hover td{ background:#1a1f26; }
         <a href="/pharmacy/logout" class="logout-btn">Logout</a>
     </div>
 </div>
+
+<!-- ADMIN BROADCAST NOTIFICATIONS -->
+{% if broadcasts %}
+<div id="adminBroadcastBox" style="max-width:1200px;margin:14px auto 0;padding:0 16px;">
+    {% for b in broadcasts %}
+    <div class="admin-broadcast-banner" id="broadcast-{{ b.id }}">
+        <span class="ab-icon">📢</span>
+        <span class="ab-text">{{ b.message }}</span>
+        <button class="ab-dismiss" onclick="dismissBroadcast('{{ b.id }}')">✕</button>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
 
 <!-- TABS -->
 <div class="tabs">
@@ -697,6 +714,17 @@ tr:hover td{ background:#1a1f26; }
 <div class="toast" id="toast"></div>
 
 <script>
+const PHARMACY_ID_BROADCAST = "{{ pid }}";
+
+/* ── Admin broadcast notifications ── */
+async function dismissBroadcast(broadcastId){
+    const el = document.getElementById("broadcast-" + broadcastId);
+    if(el) el.remove();
+    try{
+        await fetch(`/dismiss_broadcast/pharmacy/${PHARMACY_ID_BROADCAST}/${broadcastId}`, { method: "POST" });
+    }catch(e){}
+}
+
 /* ==========================================
    STATE
    ========================================== */

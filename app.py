@@ -613,6 +613,228 @@ def admin_edit_entity(entity_type, entity_id):
         return jsonify({"success": False, "error": str(e)})
 
 
+# ==========================================
+# 📢 ADMIN BROADCAST NOTIFICATIONS
+# System admin can message: everyone, every account of one type, or
+# one specific account — shown as a dismissable banner directly on
+# that account's own dashboard (restaurant/restaurant-admin/supermarket/
+# pharmacy). Dismissal is per-recipient, stored on the entity's own doc.
+# ==========================================
+BROADCAST_ENTITY_COLLECTIONS = {"restaurant": "restaurants", "supermarket": "supermarkets", "pharmacy": "pharmacies"}
+
+
+@app.route("/admin/broadcasts")
+def admin_list_broadcasts():
+    if not session.get("admin_ok"):
+        return jsonify({"success": False, "error": "Unauthorized"}), 401
+    try:
+        broadcasts = []
+        for doc in db.collection("admin_broadcasts").order_by(
+                "created_at", direction=firestore.Query.DESCENDING).limit(100).stream():
+            b = doc.to_dict()
+            b["id"] = doc.id
+            broadcasts.append(b)
+        return jsonify({"success": True, "broadcasts": broadcasts})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+
+@app.route("/admin/send_broadcast", methods=["POST"])
+def admin_send_broadcast():
+    if not session.get("admin_ok"):
+        return jsonify({"success": False, "error": "Unauthorized"}), 401
+    try:
+        data        = request.get_json() or {}
+        message     = data.get("message", "").strip()
+        target_type = data.get("target_type", "").strip()
+        target_id   = data.get("target_id", "").strip()
+
+        if not message:
+            return jsonify({"success": False, "error": "Write a message first"})
+        if target_type not in ("everyone", "restaurant", "pharmacy", "supermarket"):
+            return jsonify({"success": False, "error": "Invalid target"})
+
+        target_name = ""
+        if target_type != "everyone" and target_id:
+            collection = BROADCAST_ENTITY_COLLECTIONS[target_type]
+            name_field = "pharmacy_name" if target_type == "pharmacy" else "name"
+            target_doc = db.collection(collection).document(target_id).get()
+            if not target_doc.exists:
+                return jsonify({"success": False, "error": "Selected account not found"})
+            target_name = target_doc.to_dict().get(name_field, target_id)
+
+        db.collection("admin_broadcasts").add({
+            "message": message,
+            "target_type": target_type,
+            "target_id": target_id or "",
+            "target_name": target_name,
+            "created_at": datetime.now().isoformat()
+        })
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+
+@app.route("/admin/delete_broadcast/<broadcast_id>", methods=["DELETE"])
+def admin_delete_broadcast(broadcast_id):
+    if not session.get("admin_ok"):
+        return jsonify({"success": False, "error": "Unauthorized"}), 401
+    try:
+        db.collection("admin_broadcasts").document(broadcast_id).delete()
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+
+def _get_active_broadcasts(entity_type, entity_id):
+    """Every broadcast aimed at this entity (targeted by name, targeted
+    at 'all of this type', or sent to everyone) that this entity hasn't
+    dismissed yet. Fetches the whole (small) broadcasts collection and
+    filters in Python — avoids the composite-index requirement that
+    mixing multiple equality/OR conditions in one Firestore query would
+    trigger."""
+    try:
+        collection = BROADCAST_ENTITY_COLLECTIONS.get(entity_type)
+        if not collection:
+            return []
+        entity_doc = db.collection(collection).document(entity_id).get()
+        dismissed = set((entity_doc.to_dict() or {}).get("dismissed_broadcasts", [])) if entity_doc.exists else set()
+
+        active = []
+        for doc in db.collection("admin_broadcasts").stream():
+            b = doc.to_dict()
+            bid = doc.id
+            if bid in dismissed:
+                continue
+            if b.get("target_type") == "everyone":
+                active.append({**b, "id": bid})
+            elif b.get("target_type") == entity_type and (not b.get("target_id") or b.get("target_id") == entity_id):
+                active.append({**b, "id": bid})
+        active.sort(key=lambda x: x.get("created_at", ""), reverse=True)
+        return active
+    except Exception:
+        return []
+
+
+@app.route("/dismiss_broadcast/<entity_type>/<entity_id>/<broadcast_id>", methods=["POST"])
+def dismiss_broadcast(entity_type, entity_id, broadcast_id):
+    collection = BROADCAST_ENTITY_COLLECTIONS.get(entity_type)
+    if not collection:
+        return jsonify({"success": False, "error": "Invalid account type"}), 400
+    try:
+        db.collection(collection).document(entity_id).update({
+            "dismissed_broadcasts": firestore.ArrayUnion([broadcast_id])
+        })
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+
+# ==========================================
+# 📢 ADMIN BROADCAST MESSAGES
+# Admin composes a message and targets it at: everyone, every account
+# of one type, or one specific account — it then shows as a dismissible
+# notification directly on that account's own dashboard(s). Restaurants
+# have two dashboards (the menu/ads one and the analytics/staff one) —
+# a message sent to a restaurant shows on both.
+# ==========================================
+BROADCAST_TARGET_TYPES = {"all", "restaurant", "supermarket", "pharmacy"}
+BROADCAST_NAME_FIELD = {"restaurant": "name", "supermarket": "name", "pharmacy": "pharmacy_name"}
+
+
+@app.route("/admin/send_message", methods=["POST"])
+def admin_send_message():
+    if not session.get("admin_ok"):
+        return jsonify({"success": False, "error": "Unauthorized"}), 401
+    try:
+        data = request.get_json() or {}
+        message     = data.get("message", "").strip()
+        target_type = data.get("target_type", "all")
+        target_id   = data.get("target_id", "").strip()
+
+        if not message:
+            return jsonify({"success": False, "error": "Message text is required"})
+        if target_type not in BROADCAST_TARGET_TYPES:
+            return jsonify({"success": False, "error": "Invalid target type"})
+
+        target_label = "Everyone"
+        if target_type != "all":
+            if target_id:
+                collection = RENEWAL_COLLECTION_MAP.get(target_type)
+                doc = db.collection(collection).document(target_id).get()
+                if not doc.exists:
+                    return jsonify({"success": False, "error": "That account was not found"})
+                target_label = doc.to_dict().get(BROADCAST_NAME_FIELD[target_type], target_id)
+            else:
+                target_label = f"All {target_type.capitalize()}s"
+
+        db.collection("admin_messages").add({
+            "message": message,
+            "target_type": target_type,
+            "target_id": target_id,
+            "target_label": target_label,
+            "created_at": datetime.now().isoformat()
+        })
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+
+@app.route("/admin/broadcast_messages")
+def admin_list_messages():
+    if not session.get("admin_ok"):
+        return jsonify({"success": False, "error": "Unauthorized"}), 401
+    try:
+        messages = []
+        for doc in db.collection("admin_messages").stream():
+            m = doc.to_dict()
+            m["id"] = doc.id
+            messages.append(m)
+        messages.sort(key=lambda x: x.get("created_at", ""), reverse=True)
+        return jsonify({"success": True, "messages": messages})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+
+@app.route("/admin/delete_message/<msg_id>", methods=["DELETE"])
+def admin_delete_message(msg_id):
+    if not session.get("admin_ok"):
+        return jsonify({"success": False, "error": "Unauthorized"}), 401
+    try:
+        db.collection("admin_messages").document(msg_id).delete()
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+
+def _messages_for_entity(entity_type, entity_id):
+    """Every broadcast that applies to this specific account — sent to
+    everyone, sent to all accounts of this type, or sent to this one
+    account by name. Filtered in Python (not a Firestore query) so no
+    composite index is ever needed here."""
+    relevant = []
+    for doc in db.collection("admin_messages").stream():
+        m = doc.to_dict()
+        if m.get("target_type") == "all":
+            relevant.append(m | {"id": doc.id})
+        elif m.get("target_type") == entity_type:
+            t_id = m.get("target_id", "")
+            if not t_id or t_id == entity_id:
+                relevant.append(m | {"id": doc.id})
+    relevant.sort(key=lambda x: x.get("created_at", ""), reverse=True)
+    return relevant[:20]
+
+
+@app.route("/dashboard_messages/<entity_type>/<entity_id>")
+def dashboard_messages(entity_type, entity_id):
+    if entity_type not in BROADCAST_TARGET_TYPES or entity_type == "all":
+        return jsonify({"success": False, "error": "Invalid type"}), 400
+    try:
+        return jsonify({"success": True, "messages": _messages_for_entity(entity_type, entity_id)})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+
 @app.route("/renew_push_payment/<entity_type>/<entity_id>", methods=["POST"])
 def renew_push_payment(entity_type, entity_id):
     try:
@@ -867,6 +1089,13 @@ def admin():
             reverse=True
         )[:3]
 
+        sent_broadcasts = []
+        for doc in db.collection("admin_broadcasts").order_by(
+                "created_at", direction=firestore.Query.DESCENDING).limit(50).stream():
+            b = doc.to_dict()
+            b["id"] = doc.id
+            sent_broadcasts.append(b)
+
         return render_template(
             "admin.html",
             restaurants=restaurants,
@@ -877,7 +1106,8 @@ def admin():
             orders=orders,
             total=total,
             top_reviews=top_reviews,
-            all_info=all_info
+            all_info=all_info,
+            sent_broadcasts=sent_broadcasts
         )
 
     except Exception as e:
@@ -1481,7 +1711,8 @@ def supermarket_dashboard():
             supermarket_orders= orders,
             market_name       = session.get("market_name", "Supermarket"),
             market_id         = mid,
-            today             = datetime.now().strftime("%Y-%m-%d")
+            today             = datetime.now().strftime("%Y-%m-%d"),
+            broadcasts        = _get_active_broadcasts("supermarket", mid)
         )
 
     except Exception as e:
@@ -2005,7 +2236,8 @@ def dashboard(rid):
             menu=menu,
             ads=ads,
             total_orders_today=total_orders_today,
-            total_sales_today=round(total_sales_today, 2)
+            total_sales_today=round(total_sales_today, 2),
+            broadcasts=_get_active_broadcasts("restaurant", rid)
         )
 
     except Exception as e:
@@ -2477,6 +2709,7 @@ def restaurant_admin(rid):
             staff_work_summary=staff_work_summary,
             paid_revenue_all_time=round(paid_revenue_all_time, 2),
             paid_orders_all_time=paid_orders_all_time,
+            broadcasts=_get_active_broadcasts("restaurant", rid),
             total=round(total, 2),
             profit=round(total, 2),
             loss=0,
@@ -6095,7 +6328,9 @@ def pharmacy():
             medicines=medicines, today_sales=today_sales, today_qty=today_qty,
             today_profit=today_profit, expiry_alerts=expiry_alerts, expired=expired,
             low_stock=low_stock, top_selling=top_selling, today=today,
-            now_date=today, expiry_warn=alert_date
+            now_date=today, expiry_warn=alert_date,
+            pid=pid,
+            broadcasts=_get_active_broadcasts("pharmacy", pid)
         )
     except Exception as e:
         return f"Pharmacy Error: {str(e)}"

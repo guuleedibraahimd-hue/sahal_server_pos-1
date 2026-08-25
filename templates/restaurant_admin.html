@@ -122,6 +122,11 @@ body{
     min-width:0;
 }
 
+.admin-broadcast-banner{ display:flex; align-items:center; gap:12px; background:#fff8e1; border:1.5px solid #ffca28; border-radius:12px; padding:14px 16px; margin-bottom:10px; font-size:13.5px; color:#5d4200; }
+.admin-broadcast-banner .ab-icon{ font-size:18px; flex-shrink:0; }
+.admin-broadcast-banner .ab-text{ flex:1; font-weight:600; line-height:1.4; }
+.admin-broadcast-banner .ab-dismiss{ background:none; border:none; font-size:16px; cursor:pointer; color:#8a6d00; flex-shrink:0; }
+
 .topbar{
     display:flex;
     justify-content:space-between;
@@ -524,6 +529,19 @@ canvas{max-width:100%;}
             <p id="pageTitleSub">Welcome back! Here's what's happening with {{ r.name }} today.</p>
         </div>
 
+        <!-- ADMIN BROADCAST NOTIFICATIONS -->
+        {% if broadcasts %}
+        <div id="adminBroadcastBox">
+            {% for b in broadcasts %}
+            <div class="admin-broadcast-banner" id="broadcast-{{ b.id }}">
+                <span class="ab-icon">📢</span>
+                <span class="ab-text">{{ b.message }}</span>
+                <button class="ab-dismiss" onclick="dismissBroadcast('{{ b.id }}')">✕</button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
         <!-- ============ DASHBOARD PAGE ============ -->
         <div class="page active" id="page-dashboard">
 
@@ -864,6 +882,17 @@ canvas{max-width:100%;}
 </div>
 
 <script>
+const RID_BROADCAST = "{{ rid }}";
+
+/* ── Admin broadcast notifications ── */
+async function dismissBroadcast(broadcastId){
+    const el = document.getElementById("broadcast-" + broadcastId);
+    if(el) el.remove();
+    try{
+        await fetch(`/dismiss_broadcast/restaurant/${RID_BROADCAST}/${broadcastId}`, { method: "POST" });
+    }catch(e){}
+}
+
 function changeRange(){
     let value = document.getElementById("rangeFilter").value;
     window.location.href = "?range=" + value;

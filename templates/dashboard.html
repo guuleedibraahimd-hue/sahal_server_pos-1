@@ -148,6 +148,11 @@ body{
 }
 
 /* ── TOPBAR ── */
+.admin-broadcast-banner{ display:flex; align-items:center; gap:12px; background:#fff8e1; border:1.5px solid #ffca28; border-radius:12px; padding:14px 16px; margin-bottom:10px; font-size:13.5px; color:#5d4200; }
+.admin-broadcast-banner .ab-icon{ font-size:18px; flex-shrink:0; }
+.admin-broadcast-banner .ab-text{ flex:1; font-weight:600; line-height:1.4; }
+.admin-broadcast-banner .ab-dismiss{ background:none; border:none; font-size:16px; cursor:pointer; color:#8a6d00; flex-shrink:0; }
+
 .topbar{
     display:flex;
     align-items:center;
@@ -680,6 +685,19 @@ hr{border:none;border-top:1px solid var(--border);margin:0;}
         </div>
     </div>
 
+    <!-- ADMIN BROADCAST NOTIFICATIONS -->
+    {% if broadcasts %}
+    <div id="adminBroadcastBox">
+        {% for b in broadcasts %}
+        <div class="admin-broadcast-banner" id="broadcast-{{ b.id }}">
+            <span class="ab-icon">📢</span>
+            <span class="ab-text">{{ b.message }}</span>
+            <button class="ab-dismiss" onclick="dismissBroadcast('{{ b.id }}')">✕</button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
     <!-- ACTION BUTTONS -->
     <div class="action-row">
         <button class="action-btn btn-green" onclick="document.getElementById('addAdSection').scrollIntoView({behavior:'smooth'})">
@@ -833,6 +851,16 @@ hr{border:none;border-top:1px solid var(--border);margin:0;}
 
 <script>
 const RID = "{{rid}}"
+
+/* ── Admin broadcast notifications — dismiss removes it from view and
+   marks it dismissed server-side so it won't reappear on reload. ── */
+async function dismissBroadcast(broadcastId){
+    const el = document.getElementById("broadcast-" + broadcastId);
+    if(el) el.remove();
+    try{
+        await fetch(`/dismiss_broadcast/restaurant/${RID}/${broadcastId}`, { method: "POST" });
+    }catch(e){}
+}
 
 /* ── Sidebar clock (live, real time — not a fixed placeholder) ── */
 function updateSidebarClock(){
