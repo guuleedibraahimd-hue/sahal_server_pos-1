@@ -6923,75 +6923,189 @@ def payment_qr():
     return render_template("qr_payment.html", img=img_file, ussd=ussd_code)
 
 
+
 # ==========================================
-# 🕌 IMAM MEDIA — a role for Imam University's media team. Password
-# lives in Firestore ("imam-media" collection, "password" field on
-# any doc there — matches how it was already set up). Once logged in,
-# they get an upload area for images/videos/PDFs, all logged as a
-# transaction-style history.
+# 🕌 IMAM MEDIA — LOGIN
 # ==========================================
+
 @app.route("/imam_media_login", methods=["GET", "POST"])
 def imam_media_login():
+
     if request.method == "POST":
+
         password = request.form.get("password", "").strip()
+
         try:
-            for doc in db.collection("imam-media").stream():
-                stored_password = (doc.to_dict() or {}).get("password", "")
-                if stored_password and password == str(stored_password):
-                    session["imam_media_ok"] = True
-                    return redirect("/imam_media_dashboard")
+            # Read the exact Firestore document
+            doc_ref = db.collection("imam-media").document("imam-media1")
+            doc = doc_ref.get()
+
+            # Check document exists
+            if not doc.exists:
+                print("❌ Imam Media document not found")
+                return render_template(
+                    "imam_media_login.html",
+                    error="Login configuration not found"
+                )
+
+            # Get document data
+            data = doc.to_dict() or {}
+
+            # Get stored password
+            stored_password = str(data.get("password", "")).strip()
+
+            print("Entered password:", password)
+            print("Stored password:", stored_password)
+
+            # Compare passwords
+            if password == stored_password:
+
+                # Login successful
+                session["imam_media_ok"] = True
+
+                return redirect("/imam_media_dashboard")
+
+            # Wrong password
+            return render_template(
+                "imam_media_login.html",
+                error="Wrong password"
+            )
+
         except Exception as e:
-            print("Imam media login error:", e)
-        return render_template("imam_media_login.html", error="Wrong password")
+
+            print("❌ Imam Media Login Error:", str(e))
+
+            return render_template(
+                "imam_media_login.html",
+                error="Login system error"
+            )
+
     return render_template("imam_media_login.html")
 
 
+# ==========================================
+# 🚪 IMAM MEDIA — LOGOUT
+# ==========================================
+
 @app.route("/imam_media_logout")
 def imam_media_logout():
+
     session.pop("imam_media_ok", None)
+
     return redirect("/imam_media_login")
 
 
+# ==========================================
+# 🕌 IMAM MEDIA — DASHBOARD
+# ==========================================
+
 @app.route("/imam_media_dashboard")
 def imam_media_dashboard():
+
+    # Protect dashboard
     if not session.get("imam_media_ok"):
         return redirect("/imam_media_login")
+
     try:
+
         uploads = []
-        for doc in db.collection("imam_media_uploads").order_by(
-                "uploaded_at", direction=firestore.Query.DESCENDING).stream():
-            u = doc.to_dict()
+
+        docs = (
+            db.collection("imam_media_uploads")
+            .order_by(
+                "uploaded_at",
+                direction=firestore.Query.DESCENDING
+            )
+            .stream()
+        )
+
+        for doc in docs:
+
+            u = doc.to_dict() or {}
+
             u["id"] = doc.id
+
             uploads.append(u)
-        return render_template("imam_media_dashboard.html", uploads=uploads)
+
+        return render_template(
+            "imam_media_dashboard.html",
+            uploads=uploads
+        )
+
     except Exception as e:
+
+        print("❌ Imam Media Dashboard Error:", str(e))
+
         return f"Imam Media Dashboard Error ❌ {str(e)}"
 
 
+# ==========================================
+# 📊 IMAM MEDIA — REPORT
+# ==========================================
+
 @app.route("/imam_media_dashboard/report")
 def imam_media_report():
+
+    # Protect report
     if not session.get("imam_media_ok"):
         return redirect("/imam_media_login")
+
     try:
-        images, videos, documents = [], [], []
-        for doc in db.collection("imam_media_uploads").order_by(
-                "uploaded_at", direction=firestore.Query.DESCENDING).stream():
-            u = doc.to_dict()
+
+        images = []
+        videos = []
+        documents = []
+
+        docs = (
+            db.collection("imam_media_uploads")
+            .order_by(
+                "uploaded_at",
+                direction=firestore.Query.DESCENDING
+            )
+            .stream()
+        )
+
+        for doc in docs:
+
+            u = doc.to_dict() or {}
+
             u["id"] = doc.id
-            if u.get("file_type") == "image":
+
+            file_type = str(
+                u.get("file_type", "")
+            ).lower().strip()
+
+            if file_type == "image":
+
                 images.append(u)
-            elif u.get("file_type") == "video":
+
+            elif file_type == "video":
+
                 videos.append(u)
-            elif u.get("file_type") in ("pdf", "document"):
+
+            elif file_type in ("pdf", "document"):
+
                 documents.append(u)
+
+        total = (
+            len(images)
+            + len(videos)
+            + len(documents)
+        )
+
         return render_template(
             "imam_media_report.html",
-            images=images, videos=videos, documents=documents,
-            total=len(images) + len(videos) + len(documents)
+            images=images,
+            videos=videos,
+            documents=documents,
+            total=total
         )
-    except Exception as e:
-        return f"Imam Media Report Error ❌ {str(e)}"
 
+    except Exception as e:
+
+        print("❌ Imam Media Report Error:", str(e))
+
+        return f"Imam Media Report Error ❌ {str(e)}"
 
 @app.route("/imam_media_dashboard/upload", methods=["POST"])
 def imam_media_upload():
