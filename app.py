@@ -6982,7 +6982,7 @@ def imam_media_report():
                 images.append(u)
             elif u.get("file_type") == "video":
                 videos.append(u)
-            elif u.get("file_type") == "pdf":
+            elif u.get("file_type") in ("pdf", "document"):
                 documents.append(u)
         return render_template(
             "imam_media_report.html",
@@ -7012,8 +7012,8 @@ def imam_media_upload():
                 file_type = "image"
             elif ext in (".mp4", ".mov", ".avi", ".webm", ".mkv"):
                 file_type = "video"
-            elif ext == ".pdf":
-                file_type = "pdf"
+            elif ext in (".pdf", ".ppt", ".pptx", ".doc", ".docx"):
+                file_type = "document"
             else:
                 skipped.append(file.filename)
                 continue
@@ -7035,7 +7035,7 @@ def imam_media_upload():
             uploaded.append(record)
 
         if not uploaded:
-            return jsonify({"success": False, "error": "None of the selected files could be uploaded (images, videos, and PDFs only)"})
+            return jsonify({"success": False, "error": "None of the selected files could be uploaded (images, videos, PDFs, Word, or PowerPoint files only)"})
 
         return jsonify({"success": True, "uploaded": uploaded, "skipped": skipped, "count": len(uploaded)})
     except Exception as e:

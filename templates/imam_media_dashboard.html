@@ -55,6 +55,7 @@ body{ margin:0; font-family:'Segoe UI',Arial,sans-serif; background:var(--bg); c
 .tx-type-badge.image{ background:#e8f2ff; color:var(--blue-2); }
 .tx-type-badge.video{ background:#ffe9ec; color:var(--red); }
 .tx-type-badge.pdf{ background:#fff3e2; color:var(--orange); }
+.tx-type-badge.document{ background:#fff3e2; color:var(--orange); }
 .tx-actions{ display:flex; gap:8px; flex-shrink:0; }
 .tx-actions a, .tx-actions button{ padding:8px 14px; border-radius:8px; border:none; font-weight:700; font-size:12px; cursor:pointer; text-decoration:none; }
 .tx-view{ background:var(--blue-2); color:#fff; }
@@ -95,8 +96,8 @@ body{ margin:0; font-family:'Segoe UI',Arial,sans-serif; background:var(--bg); c
                     <input type="text" id="um_note" placeholder="e.g. Graduation ceremony photos">
                 </div>
                 <label class="file-label" id="um_fileLabel">
-                    📎 <span id="um_fileText">Choose Images / Videos / PDFs (multiple allowed)</span>
-                    <input type="file" id="um_file" accept="image/*,video/*,.pdf" multiple onchange="updateFileLabel(this)">
+                    📎 <span id="um_fileText">Choose Images / Videos / PDFs / PowerPoint / Word (multiple allowed)</span>
+                    <input type="file" id="um_file" accept="image/*,video/*,.pdf,.ppt,.pptx,.doc,.docx" multiple onchange="updateFileLabel(this)">
                 </label>
                 <button type="submit" class="upload-btn" id="um_submitBtn">✅ Upload</button>
             </div>
@@ -142,7 +143,7 @@ body{ margin:0; font-family:'Segoe UI',Arial,sans-serif; background:var(--bg); c
 function updateFileLabel(input){
     const files = input.files;
     if(!files.length){
-        document.getElementById("um_fileText").textContent = "Choose Images / Videos / PDFs (multiple allowed)";
+        document.getElementById("um_fileText").textContent = "Choose Images / Videos / PDFs / PowerPoint / Word (multiple allowed)";
     } else if(files.length === 1){
         document.getElementById("um_fileText").textContent = files[0].name;
     } else {
