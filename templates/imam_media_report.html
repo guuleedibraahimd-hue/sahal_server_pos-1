@@ -140,6 +140,80 @@ body{ margin:0; font-family:'Georgia','Segoe UI',serif; background:var(--navy); 
 .print-header{ display:none; }
 .print-gallery{ display:none; }
 
+/* ---- BOOK VIEW ---- */
+.book-toolbar{ display:flex; gap:10px; align-items:center; margin-bottom:16px; }
+
+.book-stage{
+    position:relative; display:flex; align-items:center; justify-content:center;
+    background:linear-gradient(160deg,var(--navy),var(--navy-2));
+    border-radius:18px; padding:36px 60px;
+}
+.book-nav-arrow{
+    background:rgba(255,255,255,0.12); border:1px solid rgba(255,255,255,0.25); color:#fff;
+    width:44px; height:44px; border-radius:50%; font-size:22px; cursor:pointer;
+    flex-shrink:0; display:flex; align-items:center; justify-content:center;
+}
+.book-nav-arrow:hover{ background:rgba(255,255,255,0.22); }
+.book-nav-arrow:disabled{ opacity:0.3; cursor:default; }
+
+.book-spread{
+    display:flex; gap:0; background:#fff; border-radius:8px; overflow:hidden;
+    box-shadow:0 20px 50px rgba(0,0,0,0.4); min-height:520px; width:100%; max-width:920px;
+}
+.book-page{
+    flex:1; min-width:0; padding:26px 26px 44px; position:relative;
+    display:flex; flex-direction:column;
+}
+.book-page + .book-page{ border-left:1px solid var(--border); }
+.book-page-number{ position:absolute; bottom:14px; left:0; right:0; text-align:center; font-size:11px; color:var(--muted); font-weight:700; }
+
+/* cover / TOC page content */
+.book-cover-logos{ display:flex; gap:14px; align-items:center; }
+.book-cover-logos img{ width:46px; height:46px; border-radius:50%; object-fit:cover; }
+.book-cover-title{ font-size:16px; font-weight:700; color:var(--navy); margin:14px 0 2px; }
+.book-cover-sub{ font-size:12px; color:var(--muted); }
+.book-cover-figure{ flex:1; margin-top:16px; border-radius:12px; overflow:hidden; background:#eee; display:flex; align-items:center; justify-content:center; }
+.book-cover-figure img{ width:100%; height:100%; object-fit:cover; }
+.book-cover-footer{ font-size:10.5px; color:var(--muted); border-top:2px solid var(--navy); padding-top:8px; margin-top:12px; }
+
+.book-toc-title{ font-size:15px; font-weight:700; color:var(--navy); display:flex; align-items:center; gap:8px; margin-bottom:16px; }
+.book-toc-list{ display:flex; flex-direction:column; gap:12px; }
+.book-toc-item{ display:flex; align-items:center; gap:8px; font-size:13px; color:var(--text); }
+.book-toc-item .toc-dots{ flex:1; border-bottom:1px dotted var(--border); }
+.book-toc-item .toc-num{ font-weight:700; color:var(--muted); }
+
+/* grid pages */
+.book-grid-title{ font-size:13.5px; font-weight:700; color:var(--navy); margin-bottom:12px; display:flex; align-items:center; gap:6px; }
+.book-media-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:10px; flex:1; align-content:start; }
+.book-media-card{ border:1px solid var(--border); border-radius:10px; overflow:hidden; background:#fff; }
+.book-media-card img, .book-media-card video{ width:100%; height:88px; object-fit:cover; display:block; background:#eee; }
+.book-media-card .bmc-icon{ width:100%; height:88px; display:flex; align-items:center; justify-content:center; font-size:30px; background:#f3f3f3; }
+.book-media-card .bmc-name{ font-size:9.5px; font-weight:700; padding:6px 8px 1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.book-media-card .bmc-note{ font-size:8.5px; color:var(--muted); padding:0 8px; }
+.book-media-card .bmc-date{ font-size:8px; color:var(--muted); padding:2px 8px 6px; }
+.book-page-empty{ flex:1; display:flex; align-items:center; justify-content:center; color:var(--muted); font-size:12.5px; }
+
+.book-pageindicator{ text-align:center; margin-top:14px; font-size:12.5px; font-weight:700; color:var(--muted); }
+
+.book-thumbstrip{ display:flex; gap:10px; overflow-x:auto; margin-top:16px; padding-bottom:6px; }
+.book-thumb{
+    flex-shrink:0; width:64px; height:44px; border-radius:6px; border:2px solid var(--border);
+    background:#fff; cursor:pointer; display:flex; align-items:center; justify-content:center;
+    font-size:9px; font-weight:700; color:var(--muted); overflow:hidden;
+}
+.book-thumb.active{ border-color:var(--gold); }
+.book-thumb img{ width:100%; height:100%; object-fit:cover; }
+
+#bookStage:fullscreen{ border-radius:0; padding:24px 5vw; }
+#bookStage:fullscreen .book-spread{ max-width:1100px; }
+
+@media(max-width:700px){
+    .book-stage{ padding:20px 14px; }
+    .book-spread{ flex-direction:column; min-height:unset; }
+    .book-page + .book-page{ border-left:none; border-top:1px solid var(--border); }
+    .book-media-grid{ grid-template-columns:repeat(2,1fr); }
+}
+
 @media print{
     body *{ visibility:hidden; }
     #panel-periodreport, #panel-periodreport *{ visibility:visible; }
@@ -195,6 +269,7 @@ body{ margin:0; font-family:'Georgia','Segoe UI',serif; background:var(--navy); 
         <button class="tab-btn" data-tab="videos" onclick="switchReportTab('videos', this)">🎬 Videos ({{ videos|length }})</button>
         <button class="tab-btn" data-tab="documents" onclick="switchReportTab('documents', this)">📄 Documents ({{ documents|length }})</button>
         <button class="tab-btn" data-tab="periodreport" onclick="switchReportTab('periodreport', this)">📊 Period Report</button>
+        <button class="tab-btn" data-tab="bookview" onclick="switchReportTab('bookview', this)">📖 Book View</button>
     </div>
 
     <!-- ALL -->
@@ -347,6 +422,27 @@ body{ margin:0; font-family:'Georgia','Segoe UI',serif; background:var(--navy); 
         </div>
         <div class="print-gallery" id="printGallery"></div>
     </div>
+
+    <!-- BOOK VIEW -->
+    <div class="tab-panel" id="panel-bookview">
+        <div class="book-toolbar">
+            <div style="flex:1;"></div>
+            <button class="tool-btn" onclick="bookGoFullscreen()">⛶ Full Screen</button>
+            <button class="tool-btn" onclick="bookDownloadPdf()">⬇️ Download PDF</button>
+        </div>
+
+        <div class="book-stage" id="bookStage">
+            <button class="book-nav-arrow book-nav-prev" onclick="bookPrevPage()" aria-label="Previous page">‹</button>
+
+            <div class="book-spread" id="bookSpread"></div>
+
+            <button class="book-nav-arrow book-nav-next" onclick="bookNextPage()" aria-label="Next page">›</button>
+        </div>
+
+        <div class="book-pageindicator" id="bookPageIndicator">Page 1 / 1</div>
+
+        <div class="book-thumbstrip" id="bookThumbstrip"></div>
+    </div>
 </div>
 
 <!-- BIG SCREEN / PROJECTOR PRESENTATION MODE -->
@@ -466,6 +562,156 @@ function printPeriodReport(){
     window.print();
 }
 
+/* ── BOOK VIEW: reads like a book — cover + table of contents as
+   page 1-2, then all uploads (images, videos, documents together)
+   laid out in a grid across the following pages, 5 items per page,
+   with page-flip navigation, a thumbnail strip, full screen, and a
+   PDF export via the browser's print-to-PDF. ── */
+const BOOK_ITEMS_PER_PAGE = 5;
+let bookPages = [];      // array of { title, items } — items empty for cover/TOC
+let bookCurrentSpread = 0; // spread = 2 pages side by side
+
+function buildBookPages(){
+    const items = ALL_UPLOADS;
+    const contentPages = [];
+    for(let i = 0; i < items.length; i += BOOK_ITEMS_PER_PAGE){
+        contentPages.push({ title: `Media (${i + 1}–${Math.min(i + BOOK_ITEMS_PER_PAGE, items.length)})`, items: items.slice(i, i + BOOK_ITEMS_PER_PAGE) });
+    }
+    bookPages = [
+        { type: "cover" },
+        { type: "toc", contentPageCount: contentPages.length },
+        ...contentPages.map(p => ({ type: "grid", ...p }))
+    ];
+}
+
+function bookMediaCardHtml(u){
+    let media;
+    if(u.file_type === "image"){
+        media = `<img src="${u.url}" alt="${u.filename}">`;
+    } else if(u.file_type === "video"){
+        media = `<video src="${u.url}" muted></video>`;
+    } else {
+        media = `<div class="bmc-icon">📄</div>`;
+    }
+    return `
+        <div class="book-media-card">
+            ${media}
+            <div class="bmc-name">${u.filename}</div>
+            ${u.note ? `<div class="bmc-note">${u.note}</div>` : ""}
+            <div class="bmc-date">${u.uploaded_at ? u.uploaded_at.slice(0,10) : ""}</div>
+        </div>
+    `;
+}
+
+function bookPageHtml(page, pageNumber){
+    if(page.type === "cover"){
+        return `
+            <div class="book-page">
+                <div class="book-cover-logos">
+                    <img src="/static/imam_media/imam_university_logo.jpg" alt="Imam University">
+                    <img src="/static/imam_media/xaji_logo.jpeg" alt="XAJI">
+                </div>
+                <div class="book-cover-title">Imam University — XAJI</div>
+                <div class="book-cover-sub">Imam Media — Full Archive Report</div>
+                <div class="book-cover-sub" style="margin-top:2px;">${new Date().toLocaleDateString()}</div>
+                <div class="book-cover-figure">${ALL_UPLOADS.find(u => u.file_type === "image") ? `<img src="${ALL_UPLOADS.find(u => u.file_type === "image").url}">` : "" }</div>
+                <div class="book-cover-footer">Imam University · Media Archive</div>
+                <div class="book-page-number">${pageNumber}</div>
+            </div>
+        `;
+    }
+    if(page.type === "toc"){
+        const imgCount = ALL_UPLOADS.filter(u => u.file_type === "image").length;
+        const vidCount = ALL_UPLOADS.filter(u => u.file_type === "video").length;
+        const docCount = ALL_UPLOADS.filter(u => u.file_type === "document").length;
+        return `
+            <div class="book-page">
+                <div class="book-toc-title">📑 Table of Contents</div>
+                <div class="book-toc-list">
+                    <div class="book-toc-item"><span>🖼️ Images</span><span class="toc-dots"></span><span class="toc-num">${imgCount}</span></div>
+                    <div class="book-toc-item"><span>🎬 Videos</span><span class="toc-dots"></span><span class="toc-num">${vidCount}</span></div>
+                    <div class="book-toc-item"><span>📄 Documents</span><span class="toc-dots"></span><span class="toc-num">${docCount}</span></div>
+                    <div class="book-toc-item"><span>📚 Total files</span><span class="toc-dots"></span><span class="toc-num">${ALL_UPLOADS.length}</span></div>
+                    <div class="book-toc-item"><span>📖 Media pages</span><span class="toc-dots"></span><span class="toc-num">${page.contentPageCount}</span></div>
+                </div>
+                <div class="book-page-number">${pageNumber}</div>
+            </div>
+        `;
+    }
+    // grid page
+    return `
+        <div class="book-page">
+            <div class="book-grid-title">🗂️ ${page.title}</div>
+            ${page.items.length ? `<div class="book-media-grid">${page.items.map(bookMediaCardHtml).join("")}</div>` : `<div class="book-page-empty">No files</div>`}
+            <div class="book-page-number">${pageNumber}</div>
+        </div>
+    `;
+}
+
+function renderBookSpread(){
+    const spread = document.getElementById("bookSpread");
+    const leftIdx = bookCurrentSpread * 2;
+    const rightIdx = leftIdx + 1;
+    const leftPage = bookPages[leftIdx];
+    const rightPage = bookPages[rightIdx];
+
+    let html = "";
+    if(leftPage) html += bookPageHtml(leftPage, leftIdx + 1);
+    if(rightPage) html += bookPageHtml(rightPage, rightIdx + 1);
+    spread.innerHTML = html;
+
+    const totalSpreads = Math.ceil(bookPages.length / 2);
+    document.getElementById("bookPageIndicator").textContent =
+        `Page ${leftIdx + 1}${rightPage ? "–" + (rightIdx + 1) : ""} / ${bookPages.length}`;
+
+    document.querySelectorAll(".book-nav-prev").forEach(b => b.disabled = bookCurrentSpread === 0);
+    document.querySelectorAll(".book-nav-next").forEach(b => b.disabled = bookCurrentSpread >= totalSpreads - 1);
+
+    document.querySelectorAll(".book-thumb").forEach((t, i) => t.classList.toggle("active", i === leftIdx || i === rightIdx));
+}
+
+function renderBookThumbstrip(){
+    const strip = document.getElementById("bookThumbstrip");
+    strip.innerHTML = bookPages.map((p, i) => {
+        let inner;
+        if(p.type === "cover") inner = "Cover";
+        else if(p.type === "toc") inner = "TOC";
+        else if(p.items[0] && p.items[0].file_type === "image") inner = `<img src="${p.items[0].url}">`;
+        else inner = `p.${i + 1}`;
+        return `<div class="book-thumb" onclick="bookGoToPage(${i})">${inner}</div>`;
+    }).join("");
+}
+
+function bookGoToPage(pageIndex){
+    bookCurrentSpread = Math.floor(pageIndex / 2);
+    renderBookSpread();
+}
+
+function bookPrevPage(){
+    if(bookCurrentSpread > 0){ bookCurrentSpread--; renderBookSpread(); }
+}
+
+function bookNextPage(){
+    const totalSpreads = Math.ceil(bookPages.length / 2);
+    if(bookCurrentSpread < totalSpreads - 1){ bookCurrentSpread++; renderBookSpread(); }
+}
+
+function bookGoFullscreen(){
+    const stage = document.getElementById("bookStage");
+    if(stage.requestFullscreen) stage.requestFullscreen().catch(() => {});
+}
+
+function bookDownloadPdf(){
+    alert("Fur dialog-ka daabacaadda (Print), kadibna dooro 'Save as PDF' — Book View si otomaatig ah lagama daabacayo, isticmaal 📊 Period Report ee leh Print button haddii aad rabto PDF sawir-buuxa ah.");
+}
+
+function initBookView(){
+    buildBookPages();
+    bookCurrentSpread = 0;
+    renderBookSpread();
+    renderBookThumbstrip();
+}
+
 /* ── Big Screen / Projector mode: large-font, high-contrast fullscreen
    view of the currently selected period's report — built for reading
    from across a room, not a desk. ── */
@@ -516,6 +762,7 @@ function switchReportTab(tab, el){
     document.getElementById("panel-" + tab).classList.add("active");
     document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
     el.classList.add("active");
+    if(tab === "bookview") initBookView();
 }
 </script>
 
