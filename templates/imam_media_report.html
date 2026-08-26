@@ -122,19 +122,51 @@ body{ margin:0; font-family:'Georgia','Segoe UI',serif; background:var(--navy); 
 .pres-header h1{ flex:1; color:#fff; font-size:38px; margin:0; }
 .pres-close{ background:rgba(220,53,69,0.85); color:#fff; border:none; padding:14px 26px; border-radius:12px; font-size:16px; font-weight:700; cursor:pointer; }
 .pres-body{ padding:40px 60px 80px; display:flex; flex-direction:column; gap:18px; }
-.pres-row{ display:flex; align-items:center; gap:24px; background:rgba(255,255,255,0.06); border-radius:16px; padding:24px 30px; }
-.pres-icon{ font-size:44px; flex-shrink:0; }
+.pres-row{ display:flex; align-items:center; gap:24px; background:rgba(255,255,255,0.06); border-radius:16px; padding:20px 30px; }
+.pres-media{ width:230px; height:150px; border-radius:14px; overflow:hidden; background:#000; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.pres-media img, .pres-media video{ width:100%; height:100%; object-fit:contain; background:#000; }
+.pres-media.icon-only{ font-size:56px; background:rgba(255,255,255,0.08); }
 .pres-info{ flex:1; }
-.pres-name{ color:#fff; font-size:26px; font-weight:700; }
-.pres-note{ color:rgba(255,255,255,0.6); font-size:17px; margin-top:6px; }
-.pres-date{ color:var(--gold); font-size:17px; font-weight:700; flex-shrink:0; }
+.pres-name{ color:#fff; font-size:24px; font-weight:700; word-break:break-all; }
+.pres-note{ color:rgba(255,255,255,0.6); font-size:16px; margin-top:6px; }
+.pres-date{ color:var(--gold); font-size:16px; font-weight:700; flex-shrink:0; }
 .pres-empty{ color:rgba(255,255,255,0.5); text-align:center; font-size:22px; padding:60px; }
+
+/* paper-size selector (screen only) */
+.paper-select{ padding:10px 12px; border-radius:10px; border:1.5px solid var(--border); background:#fff; font-family:inherit; font-size:13px; font-weight:700; color:var(--navy); }
+.paper-label{ font-size:12.5px; font-weight:700; color:var(--muted); display:flex; align-items:center; gap:6px; }
+
+/* print-only header + gallery (hidden on screen) */
+.print-header{ display:none; }
+.print-gallery{ display:none; }
 
 @media print{
     body *{ visibility:hidden; }
     #panel-periodreport, #panel-periodreport *{ visibility:visible; }
     #panel-periodreport{ position:absolute; top:0; left:0; width:100%; display:block !important; }
     .period-btn-row{ display:none; }
+    .period-table{ display:none !important; }
+    #periodReportTitle{ display:none; }
+    #periodEmpty{ display:none !important; }
+
+    .print-header{
+        display:flex; align-items:center; gap:16px;
+        border-bottom:2px solid var(--navy); padding-bottom:12px; margin-bottom:18px;
+    }
+    .print-header-logos{ display:flex; gap:10px; flex-shrink:0; }
+    .print-header-logos img{ width:52px; height:52px; border-radius:50%; object-fit:cover; }
+    .print-header-text h1{ font-size:17px; margin:0; color:var(--navy); }
+    .print-header-text p{ font-size:11px; margin:3px 0 0; color:#333; }
+    .print-header-text .print-header-date{ color:#666; }
+
+    .print-gallery{ display:grid; grid-template-columns:repeat(2,1fr); gap:10px; }
+    .print-card{ border:1px solid #999; border-radius:8px; padding:8px; break-inside:avoid; page-break-inside:avoid; background:#fff; }
+    .print-card img, .print-card video{ width:100%; height:130px; object-fit:cover; border-radius:5px; display:block; margin-bottom:6px; background:#eee; }
+    .print-card .pc-icon{ width:100%; height:130px; display:flex; align-items:center; justify-content:center; font-size:42px; background:#f1f1f1; border-radius:5px; margin-bottom:6px; }
+    .print-card .pc-name{ font-size:10.5px; font-weight:700; word-break:break-all; color:#111; }
+    .print-card .pc-note{ font-size:9.5px; color:#444; margin-top:2px; }
+    .print-card .pc-path{ font-size:8px; color:#666; margin-top:4px; word-break:break-all; }
+    .print-card .pc-time{ font-size:9.5px; color:#000; font-weight:700; margin-top:4px; }
 }
 
 @media(max-width:700px){
@@ -280,6 +312,13 @@ body{ margin:0; font-family:'Georgia','Segoe UI',serif; background:var(--navy); 
             <button class="period-btn" data-period="monthly" onclick="setPeriod('monthly', this)">📆 Monthly</button>
             <button class="period-btn" data-period="yearly" onclick="setPeriod('yearly', this)">🗂️ Yearly</button>
             <div style="flex:1;"></div>
+            <label class="paper-label">📄 Paper:
+                <select id="printPaperSize" class="paper-select" onchange="updatePrintPaperSize()">
+                    <option value="A4" selected>A4</option>
+                    <option value="A6">A6</option>
+                    <option value="A7">A7</option>
+                </select>
+            </label>
             <button class="tool-btn" onclick="printPeriodReport()">🖨️ Print</button>
             <button class="tool-btn" onclick="enterPresentationMode()">🖥️ Big Screen Mode</button>
         </div>
@@ -293,6 +332,20 @@ body{ margin:0; font-family:'Georgia','Segoe UI',serif; background:var(--navy); 
             <tbody id="periodTableBody"></tbody>
         </table>
         <p class="empty" id="periodEmpty" style="display:none;">No files tagged for this period yet</p>
+
+        <!-- PRINT-ONLY: header with logos + gallery with full images/paths/time -->
+        <div class="print-header" id="printHeader">
+            <div class="print-header-logos">
+                <img src="/static/imam_media/imam_university_logo.jpg" alt="Imam University">
+                <img src="/static/imam_media/xaji_logo.jpeg" alt="XAJI">
+            </div>
+            <div class="print-header-text">
+                <h1>Imam University — XAJI</h1>
+                <p id="printHeaderSub">Imam Media Report</p>
+                <p class="print-header-date" id="printHeaderDate"></p>
+            </div>
+        </div>
+        <div class="print-gallery" id="printGallery"></div>
     </div>
 </div>
 
@@ -353,10 +406,63 @@ function renderPeriodTable(){
             <td>${u.uploaded_at ? u.uploaded_at.slice(0,10) : "—"}</td>
         </tr>
     `).join("");
+
+    renderPrintGallery(items);
 }
 renderPeriodTable();
 
+/* ── Print gallery: unlike the plain table above (used on screen),
+   this renders the actual images/videos full-size for print, plus
+   the full storage path (URL) and exact upload time for every item,
+   with a header carrying both logos + the institution name. ── */
+function renderPrintGallery(items){
+    document.getElementById("printHeaderSub").textContent = "Imam Media — " + PERIOD_TITLES[currentPeriod];
+    document.getElementById("printHeaderDate").textContent = "La daabacay: " + new Date().toLocaleString();
+
+    const gal = document.getElementById("printGallery");
+    if(items.length === 0){
+        gal.innerHTML = `<p style="grid-column:1/-1;text-align:center;color:#666;padding:30px;">No files tagged for this period yet</p>`;
+        return;
+    }
+    gal.innerHTML = items.map(u => {
+        let media;
+        if(u.file_type === "image"){
+            media = `<img src="${u.url}" alt="${u.filename}">`;
+        } else if(u.file_type === "video"){
+            media = `<video src="${u.url}" muted></video>`;
+        } else {
+            media = `<div class="pc-icon">📄</div>`;
+        }
+        const fullTime = u.uploaded_at ? u.uploaded_at.replace("T", " ").slice(0, 19) : "—";
+        return `
+            <div class="print-card">
+                ${media}
+                <div class="pc-name">${u.filename}</div>
+                ${u.note ? `<div class="pc-note">${u.note}</div>` : ""}
+                <div class="pc-path">${u.url}</div>
+                <div class="pc-time">🕒 ${fullTime}</div>
+            </div>
+        `;
+    }).join("");
+}
+
+/* ── Paper size for printing: A4 / A6 / A7, applied via a dynamic
+   @page rule since A6/A7 aren't standard CSS page-size keywords. ── */
+const PAPER_SIZES_MM = { A4: "210mm 297mm", A6: "105mm 148mm", A7: "74mm 105mm" };
+function updatePrintPaperSize(){
+    const val = document.getElementById("printPaperSize").value;
+    let styleTag = document.getElementById("dynamicPageSize");
+    if(!styleTag){
+        styleTag = document.createElement("style");
+        styleTag.id = "dynamicPageSize";
+        document.head.appendChild(styleTag);
+    }
+    styleTag.textContent = `@page{ size:${PAPER_SIZES_MM[val] || PAPER_SIZES_MM.A4}; margin:8mm; }`;
+}
+updatePrintPaperSize();
+
 function printPeriodReport(){
+    updatePrintPaperSize();
     window.print();
 }
 
@@ -371,16 +477,26 @@ function enterPresentationMode(){
     if(items.length === 0){
         body.innerHTML = `<p class="pres-empty">No files tagged for this period yet</p>`;
     } else {
-        body.innerHTML = items.map(u => `
+        body.innerHTML = items.map(u => {
+            let mediaHtml;
+            if(u.file_type === "image"){
+                mediaHtml = `<div class="pres-media"><img src="${u.url}" alt="${u.filename}"></div>`;
+            } else if(u.file_type === "video"){
+                mediaHtml = `<div class="pres-media"><video src="${u.url}" muted controls preload="metadata"></video></div>`;
+            } else {
+                mediaHtml = `<div class="pres-media icon-only">📄</div>`;
+            }
+            return `
             <div class="pres-row">
-                <span class="pres-icon">${u.file_type === 'image' ? '🖼️' : u.file_type === 'video' ? '🎬' : '📄'}</span>
+                ${mediaHtml}
                 <div class="pres-info">
                     <div class="pres-name">${u.filename}</div>
                     ${u.note ? `<div class="pres-note">${u.note}</div>` : ""}
                 </div>
                 <span class="pres-date">${u.uploaded_at ? u.uploaded_at.slice(0,10) : ""}</span>
             </div>
-        `).join("");
+        `;
+        }).join("");
     }
 
     const overlay = document.getElementById("presentationOverlay");
