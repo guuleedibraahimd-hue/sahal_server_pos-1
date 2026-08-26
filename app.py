@@ -128,6 +128,17 @@ sahal_app = firebase_admin.initialize_app(
 
 db = firestore.client(sahal_app)  # ✅ hal mar oo kaliya
 
+import os
+
+print("=== FIRESTORE NETWORK DEBUG ===")
+print("HTTP_PROXY:", os.getenv("HTTP_PROXY"))
+print("HTTPS_PROXY:", os.getenv("HTTPS_PROXY"))
+print("http_proxy:", os.getenv("http_proxy"))
+print("https_proxy:", os.getenv("https_proxy"))
+print("GRPC_PROXY:", os.getenv("GRPC_PROXY"))
+print("grpc_proxy:", os.getenv("grpc_proxy"))
+print("NO_PROXY:", os.getenv("NO_PROXY"))
+print("================================")
 # =========================
 # 💎 DHIBIC DAHAB FIREBASE
 # =========================
