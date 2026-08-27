@@ -870,7 +870,16 @@ function closeSidebar(){
 }
 
 function loadInfoAdmin(){
-    fetch("/get_all_info").then(res=>res.json()).then(data=>{ infoData=data; renderInfoAgain(); });
+    fetch("/get_all_info")
+        .then(res=>res.json())
+        .then(data=>{
+            /* FIX: /get_all_info returns {success, data:[...]}, not a bare array.
+               Reading data.data (with a safe [] fallback) is what was missing —
+               this is the actual source of "infoData.forEach is not a function". */
+            infoData = (data && Array.isArray(data.data)) ? data.data : [];
+            renderInfoAgain();
+        })
+        .catch(()=>{ infoData = []; renderInfoAgain(); });
 }
 
 function renderInfoAgain(){
@@ -1284,10 +1293,20 @@ async function startAIVideoClothes(){
             method: "POST",
             body: form
         });
-        const data = await response.json();
+
+        let data;
+        try{
+            data = await response.json();
+        }catch(parseErr){
+            /* Server/proxy returned something that wasn't JSON at all
+               (e.g. an HTTP2 protocol error page, a 502/504, or the
+               connection dropped mid-upload). Surface that clearly
+               instead of throwing a confusing "Unexpected token" error. */
+            throw new Error(`Server did not return a valid response (HTTP ${response.status}). This usually means the upload was rejected by the server/proxy before reaching the app — check upload size limits.`);
+        }
 
         if(!response.ok || !data.success){
-            throw new Error(data.error || "Could not start AI generation.");
+            throw new Error(data.error || `Could not start AI generation (HTTP ${response.status}).`);
         }
 
         status.textContent = "🧠 AI is creating the clothing preview...";
