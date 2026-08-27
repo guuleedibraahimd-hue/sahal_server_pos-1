@@ -173,10 +173,112 @@ os.makedirs(
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 
 # =========================
+# 🎬 AI VIDEO CLOTHES STUDIO
+# Uses Segmind's image try-on + Video Tryon V2 APIs.
+# Keep the API key on the server only (never in JavaScript).
+# =========================
+SEGMIND_API_KEY = os.environ.get("SEGMIND_API_KEY", "").strip()
+AI_VIDEO_MAX_SECONDS = int(os.environ.get("AI_VIDEO_MAX_SECONDS", "50"))
+AI_VIDEO_COLLECTION = "ai_video_jobs"
+
+
+# =========================
 # ☁️ FIREBASE STORAGE UPLOAD HELPER
 # Waxay bedeshaa kaydinta faylasha (disk-ka ephemeral-ka ah) una wareejisaa
 # Firebase Storage — sidaas faylashu marnaba kuma lumi doonaan deploy/restart.
 # =========================
+def _segmind_headers():
+    return {
+        "x-api-key": SEGMIND_API_KEY,
+        "Content-Type": "application/json",
+    }
+
+
+def _extract_output_url(payload):
+    """Extract a media URL from Segmind's result body across minor schema changes."""
+    if payload is None:
+        return ""
+    if isinstance(payload, str) and payload.startswith(("http://", "https://")):
+        return payload
+    if isinstance(payload, dict):
+        for key in ("output", "url", "video", "image", "media_url", "result"):
+            value = payload.get(key)
+            if isinstance(value, str) and value.startswith(("http://", "https://")):
+                return value
+            if isinstance(value, dict):
+                found = _extract_output_url(value)
+                if found:
+                    return found
+            if isinstance(value, list):
+                for item in value:
+                    found = _extract_output_url(item)
+                    if found:
+                        return found
+    if isinstance(payload, list):
+        for item in payload:
+            found = _extract_output_url(item)
+            if found:
+                return found
+    return ""
+
+
+def _segmind_submit(model_slug, payload):
+    if not SEGMIND_API_KEY:
+        raise RuntimeError("SEGMIND_API_KEY is not configured on the server.")
+    response = requests.post(
+        f"https://api.segmind.com/v2/{model_slug}",
+        headers=_segmind_headers(),
+        json=payload,
+        timeout=60,
+    )
+    if response.status_code >= 400:
+        raise RuntimeError(f"Segmind submit failed ({response.status_code}): {response.text[:800]}")
+    data = response.json()
+    request_id = data.get("request_id") or data.get("id")
+    if not request_id:
+        raise RuntimeError(f"Segmind did not return a request_id: {data}")
+    return {
+        "request_id": request_id,
+        "status_url": data.get("status_url") or f"https://api.segmind.com/v2/requests/{request_id}/status",
+        "response_url": data.get("response_url") or f"https://api.segmind.com/v2/requests/{request_id}",
+    }
+
+
+def _segmind_poll(status_url, response_url):
+    status_res = requests.get(status_url, headers={"x-api-key": SEGMIND_API_KEY}, timeout=45)
+    if status_res.status_code >= 400:
+        raise RuntimeError(f"Segmind status failed ({status_res.status_code}): {status_res.text[:800]}")
+    status_data = status_res.json()
+    status = str(status_data.get("status", "")).upper()
+    if status not in ("COMPLETED", "FAILED"):
+        return status or "PROCESSING", None, status_data
+
+    result_res = requests.get(response_url, headers={"x-api-key": SEGMIND_API_KEY}, timeout=60)
+    if result_res.status_code >= 400:
+        raise RuntimeError(f"Segmind result failed ({result_res.status_code}): {result_res.text[:800]}")
+    result_data = result_res.json()
+    if status == "FAILED":
+        detail = result_data.get("detail") or result_data.get("error") or result_data
+        return "FAILED", None, {"detail": str(detail)[:1200]}
+    return "COMPLETED", _extract_output_url(result_data), result_data
+
+
+def _persist_remote_media(url, folder="ai_video_results"):
+    """Download a completed Segmind media URL and persist it in Firebase Storage."""
+    if not url:
+        return ""
+    response = requests.get(url, timeout=180)
+    response.raise_for_status()
+    content_type = response.headers.get("Content-Type", "video/mp4")
+    ext = ".mp4" if "video" in content_type else ".jpg"
+    blob_path = f"{folder}/{int(time.time() * 1000)}{ext}"
+    bucket = storage.bucket(app=sahal_app)
+    blob = bucket.blob(blob_path)
+    blob.upload_from_string(response.content, content_type=content_type)
+    blob.make_public()
+    return blob.public_url
+
+
 def upload_to_firebase_storage(file_obj, folder="uploads"):
     """Upload a Flask FileStorage object to Firebase Storage and return its
     public URL. Returns "" if file_obj is empty/missing."""
@@ -1028,6 +1130,173 @@ def submit_order():
 # =========================
 # 🔐 ADMIN ROUTE
 # =========================
+# =========================
+# 🎬 AI VIDEO CLOTHES STUDIO API
+# =========================
+@app.route("/admin/ai-video/create", methods=["POST"])
+def ai_video_create():
+    if not session.get("admin_ok"):
+        return jsonify({"success": False, "error": "Unauthorized"}), 401
+
+    if not SEGMIND_API_KEY:
+        return jsonify({
+            "success": False,
+            "error": "SEGMIND_API_KEY is missing. Add it to your server environment variables."
+        }), 500
+
+    video = request.files.get("video")
+    garment = request.files.get("garment")
+    first_frame = request.files.get("first_frame")
+    duration_raw = request.form.get("duration", "0")
+
+    if not video or not video.filename:
+        return jsonify({"success": False, "error": "Upload a video first."}), 400
+    if not garment or not garment.filename:
+        return jsonify({"success": False, "error": "Upload the clothing image first."}), 400
+    if not first_frame or not first_frame.filename:
+        return jsonify({"success": False, "error": "The browser could not extract the video's first frame."}), 400
+
+    try:
+        duration = float(duration_raw or 0)
+    except ValueError:
+        duration = 0
+
+    if duration > AI_VIDEO_MAX_SECONDS + 0.5:
+        return jsonify({
+            "success": False,
+            "error": f"This AI video model currently accepts up to {AI_VIDEO_MAX_SECONDS} seconds per clip. Your video is {duration:.1f} seconds."
+        }), 400
+
+    try:
+        video_url = upload_to_firebase_storage(video, "ai_video_inputs")
+        garment_url = upload_to_firebase_storage(garment, "ai_video_inputs")
+        first_frame_url = upload_to_firebase_storage(first_frame, "ai_video_inputs")
+
+        image_job = _segmind_submit("try-on-diffusion", {
+            "model_image": first_frame_url,
+            "cloth_image": garment_url,
+            "category": "Upper body",
+            "num_inference_steps": 35,
+            "guidance_scale": 2,
+            "seed": -1,
+            "base64": False,
+        })
+
+        job_ref = db.collection(AI_VIDEO_COLLECTION).document()
+        job_ref.set({
+            "status": "QUEUED",
+            "stage": "image_try_on",
+            "image_request_id": image_job["request_id"],
+            "image_status_url": image_job["status_url"],
+            "image_response_url": image_job["response_url"],
+            "video_url": video_url,
+            "garment_url": garment_url,
+            "first_frame_url": first_frame_url,
+            "duration": duration,
+            "created_at": datetime.now(timezone.utc),
+            "updated_at": datetime.now(timezone.utc),
+        })
+
+        return jsonify({"success": True, "job_id": job_ref.id})
+    except Exception as e:
+        print("AI VIDEO CREATE ERROR:", e)
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/admin/ai-video/status/<job_id>")
+def ai_video_status(job_id):
+    if not session.get("admin_ok"):
+        return jsonify({"success": False, "error": "Unauthorized"}), 401
+
+    try:
+        ref = db.collection(AI_VIDEO_COLLECTION).document(job_id)
+        snap = ref.get()
+        if not snap.exists:
+            return jsonify({"success": False, "error": "Job not found"}), 404
+
+        job = snap.to_dict()
+        stage = job.get("stage")
+
+        if stage == "image_try_on" and job.get("image_status_url"):
+            status, output_url, detail = _segmind_poll(
+                job["image_status_url"], job["image_response_url"]
+            )
+            if status == "FAILED":
+                ref.update({
+                    "status": "FAILED",
+                    "stage": "image_try_on",
+                    "error": detail.get("detail", "Image try-on failed"),
+                    "updated_at": datetime.now(timezone.utc),
+                })
+            elif status == "COMPLETED":
+                if not output_url:
+                    ref.update({
+                        "status": "FAILED",
+                        "error": "Image try-on completed but returned no output URL.",
+                        "updated_at": datetime.now(timezone.utc),
+                    })
+                else:
+                    video_job = _segmind_submit("video-tryon-v2", {
+                        "input_video": job["video_url"],
+                        "prompt": "Replace only the person's upper clothing with the reference outfit. Preserve the person's face, identity, hands, body, pose, camera movement, background, lighting and lip sync. Keep the garment realistic and naturally fitted throughout the video.",
+                        "reference_img": output_url,
+                        "go_fast": True,
+                        "base_64": False,
+                    })
+                    ref.update({
+                        "status": "QUEUED",
+                        "stage": "video_try_on",
+                        "reference_img_url": output_url,
+                        "video_request_id": video_job["request_id"],
+                        "video_status_url": video_job["status_url"],
+                        "video_response_url": video_job["response_url"],
+                        "updated_at": datetime.now(timezone.utc),
+                    })
+
+        elif stage == "video_try_on" and job.get("video_status_url"):
+            status, output_url, detail = _segmind_poll(
+                job["video_status_url"], job["video_response_url"]
+            )
+            if status == "FAILED":
+                ref.update({
+                    "status": "FAILED",
+                    "error": detail.get("detail", "Video try-on failed"),
+                    "updated_at": datetime.now(timezone.utc),
+                })
+            elif status == "COMPLETED":
+                if not output_url:
+                    ref.update({
+                        "status": "FAILED",
+                        "error": "Video try-on completed but returned no output URL.",
+                        "updated_at": datetime.now(timezone.utc),
+                    })
+                else:
+                    try:
+                        persistent_url = _persist_remote_media(output_url)
+                    except Exception as persist_error:
+                        print("AI VIDEO PERSIST WARNING:", persist_error)
+                        persistent_url = output_url
+                    ref.update({
+                        "status": "COMPLETED",
+                        "stage": "done",
+                        "output_url": persistent_url,
+                        "updated_at": datetime.now(timezone.utc),
+                    })
+
+        snap = ref.get()
+        job = snap.to_dict()
+        return jsonify({
+            "success": True,
+            "status": job.get("status", "PROCESSING"),
+            "stage": job.get("stage", ""),
+            "output_url": job.get("output_url", ""),
+            "error": job.get("error", ""),
+        })
+    except Exception as e:
+        print("AI VIDEO STATUS ERROR:", e)
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
 @app.route("/admin", methods=["GET", "POST"])
 def admin():
 

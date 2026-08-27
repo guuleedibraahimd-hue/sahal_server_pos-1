@@ -212,6 +212,7 @@ textarea,input,select{ width:100%; padding:12px; border-radius:10px; border:1px 
             <li><button class="sb-link" data-page="supermarkets" onclick="showPage('supermarkets',this)"><span class="ic">🛒</span> Supermarkets <span class="arrow">›</span></button></li>
             <li><button class="sb-link" data-page="pharmacy" onclick="showPage('pharmacy',this)"><span class="ic">💊</span> Pharmacy Management <span class="arrow">›</span></button></li>
             <li><button class="sb-link" data-page="sysinfo" onclick="showPage('sysinfo',this)"><span class="ic">⚙️</span> System Information <span class="arrow">›</span></button></li>
+            <li><button class="sb-link" data-page="aivideo" onclick="showPage('aivideo',this)"><span class="ic">🎬</span> AI Video Studio <span class="arrow">›</span></button></li>
         </ul>
 
         <div class="sb-footer">
@@ -644,7 +645,51 @@ textarea,input,select{ width:100%; padding:12px; border-radius:10px; border:1px 
             </div>
 
             <!-- ============ SYSTEM INFORMATION PAGE ============ -->
-            <div class="page" id="page-sysinfo">
+            <!-- ============ AI VIDEO STUDIO PAGE ============ -->
+<div class="page" id="page-aivideo">
+    <div class="section">
+        <div class="sectionTitle">
+            <h2>🎬 AI Video Clothes Studio</h2>
+        </div>
+
+        <div style="background:#fff8e1;border:1px solid #f4b400;border-radius:14px;padding:14px 16px;margin-bottom:20px;color:#5b4700;">
+            <b>How it works:</b> Upload a short video and the clothing image.
+            The AI changes only the upper clothing and keeps the person's face, hands,
+            movement and background as close to the original as possible.
+            <br><small>Current model limit: up to 50 seconds per clip.</small>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;">
+            <div class="card" style="padding:18px;">
+                <h3 style="margin-top:0;">1️⃣ Upload Video</h3>
+                <input type="file" id="aiVideoInput" accept="video/mp4,video/webm,video/quicktime">
+                <div id="aiVideoInfo" style="margin-top:10px;color:#6b7688;font-size:13px;"></div>
+                <video id="aiVideoPreview" controls style="width:100%;max-height:340px;border-radius:12px;margin-top:12px;display:none;"></video>
+            </div>
+
+            <div class="card" style="padding:18px;">
+                <h3 style="margin-top:0;">2️⃣ Upload Clothing</h3>
+                <input type="file" id="aiGarmentInput" accept="image/png,image/jpeg,image/webp">
+                <div id="aiGarmentInfo" style="margin-top:10px;color:#6b7688;font-size:13px;"></div>
+                <img id="aiGarmentPreview" style="width:100%;max-height:340px;object-fit:contain;border-radius:12px;margin-top:12px;display:none;background:#f5f5f5;">
+            </div>
+        </div>
+
+        <div style="margin-top:18px;">
+            <button class="btn edit" id="aiGenerateBtn" onclick="startAIVideoClothes()">✨ Generate AI Clothes Video</button>
+            <span id="aiVideoStatus" style="margin-left:10px;font-weight:700;"></span>
+        </div>
+
+        <div id="aiResultBox" class="card" style="display:none;margin-top:20px;padding:18px;">
+            <h3>✅ Generated Video</h3>
+            <video id="aiResultVideo" controls style="width:100%;max-height:620px;border-radius:12px;background:#000;"></video>
+            <br>
+            <a id="aiResultDownload" class="btn activate" target="_blank" download>⬇️ Open / Download Result</a>
+        </div>
+    </div>
+</div>
+
+<div class="page" id="page-sysinfo">
                 <div class="info-section">
                     <h2>📢 System Information</h2>
                     <input type="text" id="info_title" placeholder="Title">
@@ -1124,6 +1169,183 @@ async function dismissRenewal(btn){ const id = btn.dataset.id;
     let data = await res.json();
     if(data.success){ location.reload(); }
     else { alert("❌ " + (data.error||"Failed")); }
+}
+
+// ================================
+/* 🎬 AI VIDEO CLOTHES STUDIO */
+let aiVideoObjectUrl = "";
+let aiGarmentObjectUrl = "";
+let aiPollTimer = null;
+
+document.getElementById("aiVideoInput")?.addEventListener("change", function(){
+    const file = this.files[0];
+    const preview = document.getElementById("aiVideoPreview");
+    const info = document.getElementById("aiVideoInfo");
+    if(!file) return;
+
+    if(aiVideoObjectUrl) URL.revokeObjectURL(aiVideoObjectUrl);
+    aiVideoObjectUrl = URL.createObjectURL(file);
+    preview.src = aiVideoObjectUrl;
+    preview.style.display = "block";
+    preview.onloadedmetadata = () => {
+        const seconds = preview.duration;
+        info.textContent = `Duration: ${seconds.toFixed(1)} seconds`;
+        info.style.color = seconds <= 50.5 ? "#198754" : "#dc3545";
+        if(seconds > 50.5){
+            info.textContent += " — too long for the current AI model (maximum 50 seconds).";
+        }
+    };
+});
+
+document.getElementById("aiGarmentInput")?.addEventListener("change", function(){
+    const file = this.files[0];
+    const preview = document.getElementById("aiGarmentPreview");
+    const info = document.getElementById("aiGarmentInfo");
+    if(!file) return;
+
+    if(aiGarmentObjectUrl) URL.revokeObjectURL(aiGarmentObjectUrl);
+    aiGarmentObjectUrl = URL.createObjectURL(file);
+    preview.src = aiGarmentObjectUrl;
+    preview.style.display = "block";
+    info.textContent = `Selected: ${file.name}`;
+});
+
+async function extractFirstFrame(videoFile){
+    return new Promise((resolve, reject) => {
+        const video = document.createElement("video");
+        const url = URL.createObjectURL(videoFile);
+        video.muted = true;
+        video.preload = "metadata";
+        video.src = url;
+        video.onloadeddata = () => {
+            video.currentTime = 0.05;
+        };
+        video.onseeked = () => {
+            try{
+                const canvas = document.createElement("canvas");
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                const ctx = canvas.getContext("2d");
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                canvas.toBlob(blob => {
+                    URL.revokeObjectURL(url);
+                    if(blob) resolve(blob);
+                    else reject(new Error("Could not create first frame."));
+                }, "image/jpeg", 0.92);
+            }catch(e){
+                URL.revokeObjectURL(url);
+                reject(e);
+            }
+        };
+        video.onerror = () => {
+            URL.revokeObjectURL(url);
+            reject(new Error("Could not read the video."));
+        };
+    });
+}
+
+async function startAIVideoClothes(){
+    const videoInput = document.getElementById("aiVideoInput");
+    const garmentInput = document.getElementById("aiGarmentInput");
+    const btn = document.getElementById("aiGenerateBtn");
+    const status = document.getElementById("aiVideoStatus");
+
+    if(!videoInput.files[0]){
+        alert("Please upload the video first.");
+        return;
+    }
+    if(!garmentInput.files[0]){
+        alert("Please upload the clothing image first.");
+        return;
+    }
+
+    const preview = document.getElementById("aiVideoPreview");
+    const duration = preview.duration || 0;
+    if(duration > 50.5){
+        alert("The current AI video model accepts a maximum of 50 seconds per clip.");
+        return;
+    }
+
+    btn.disabled = true;
+    btn.style.opacity = "0.6";
+    status.textContent = "⏳ Preparing video and first frame...";
+
+    try{
+        const firstFrameBlob = await extractFirstFrame(videoInput.files[0]);
+        const form = new FormData();
+        form.append("video", videoInput.files[0]);
+        form.append("garment", garmentInput.files[0]);
+        form.append("first_frame", firstFrameBlob, "first_frame.jpg");
+        form.append("duration", String(duration));
+
+        status.textContent = "⏳ Sending to AI...";
+
+        const response = await fetch("/admin/ai-video/create", {
+            method: "POST",
+            body: form
+        });
+        const data = await response.json();
+
+        if(!response.ok || !data.success){
+            throw new Error(data.error || "Could not start AI generation.");
+        }
+
+        status.textContent = "🧠 AI is creating the clothing preview...";
+        pollAIVideoJob(data.job_id);
+    }catch(e){
+        btn.disabled = false;
+        btn.style.opacity = "1";
+        status.textContent = "❌ " + e.message;
+    }
+}
+
+function pollAIVideoJob(jobId){
+    if(aiPollTimer) clearInterval(aiPollTimer);
+
+    const status = document.getElementById("aiVideoStatus");
+    const btn = document.getElementById("aiGenerateBtn");
+
+    const check = async () => {
+        try{
+            const response = await fetch("/admin/ai-video/status/" + encodeURIComponent(jobId));
+            const data = await response.json();
+
+            if(!response.ok || !data.success){
+                throw new Error(data.error || "Status check failed.");
+            }
+
+            if(data.status === "FAILED"){
+                clearInterval(aiPollTimer);
+                btn.disabled = false;
+                btn.style.opacity = "1";
+                status.textContent = "❌ " + (data.error || "AI generation failed.");
+                return;
+            }
+
+            if(data.status === "COMPLETED" && data.output_url){
+                clearInterval(aiPollTimer);
+                btn.disabled = false;
+                btn.style.opacity = "1";
+                status.textContent = "✅ Done!";
+                document.getElementById("aiResultBox").style.display = "block";
+                document.getElementById("aiResultVideo").src = data.output_url;
+                document.getElementById("aiResultDownload").href = data.output_url;
+                return;
+            }
+
+            status.textContent = data.stage === "video_try_on"
+                ? "🎬 AI is generating the final video..."
+                : "👕 AI is fitting the clothing to the first frame...";
+        }catch(e){
+            clearInterval(aiPollTimer);
+            btn.disabled = false;
+            btn.style.opacity = "1";
+            status.textContent = "❌ " + e.message;
+        }
+    };
+
+    check();
+    aiPollTimer = setInterval(check, 4000);
 }
 
 loadInfoAdmin();
