@@ -7342,6 +7342,83 @@ def imam_media_delete(upload_id):
         return jsonify({"success": False, "error": str(e)})
 
 
+# ==========================================
+# 🎥 TEAM MEDIA OF XAJI
+# Admin-ka ayaa diiwaan geliya shaqaalaha media-da: sawir (optional),
+# magac, nambar, title, iyo nooca (Full Time / Part Time).
+# Xogta waxay si toos ah ugu kaydsantaa Firestore collection-ka
+# "team_media"; sawirka wuxuu aadaa Firebase Storage (folder "team_media").
+# ==========================================
+TEAM_MEDIA_TYPES = {"full_time", "part_time"}
+
+
+@app.route("/admin/team_media", methods=["GET"])
+def admin_list_team_media():
+    if not session.get("admin_ok"):
+        return jsonify({"success": False, "error": "Unauthorized"}), 401
+    try:
+        members = []
+        for doc in db.collection("team_media").stream():
+            m = doc.to_dict() or {}
+            m["id"] = doc.id
+            members.append(m)
+        members.sort(key=lambda x: x.get("created_at", ""), reverse=True)
+        return jsonify({"success": True, "members": members})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+
+@app.route("/admin/team_media/add", methods=["POST"])
+def admin_add_team_media():
+    if not session.get("admin_ok"):
+        return jsonify({"success": False, "error": "Unauthorized"}), 401
+    try:
+        name        = (request.form.get("name") or "").strip()
+        phone       = (request.form.get("phone") or "").strip()
+        title       = (request.form.get("title") or "").strip()
+        member_type = (request.form.get("member_type") or "").strip()
+
+        if not name or not phone or not title:
+            return jsonify({"success": False, "error": "Fadlan buuxi Magaca, Nambarka iyo Title-ka"})
+        if member_type not in TEAM_MEDIA_TYPES:
+            return jsonify({"success": False, "error": "Dooro Full Time ama Part Time"})
+
+        photo_url = ""
+        photo = request.files.get("photo")
+        if photo and photo.filename:
+            if not (photo.mimetype or "").startswith("image/"):
+                return jsonify({"success": False, "error": "Sawirku waa inuu noqdaa image (jpg, png, webp)"})
+            photo_url = upload_to_firebase_storage(photo, folder="team_media")
+
+        doc_ref = db.collection("team_media").document()
+        doc_ref.set({
+            "name": name,
+            "phone": phone,
+            "title": title,
+            "member_type": member_type,
+            "photo": photo_url,
+            "created_at": datetime.now().isoformat()
+        })
+        return jsonify({"success": True, "id": doc_ref.id})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+
+@app.route("/admin/team_media/delete/<member_id>", methods=["DELETE"])
+def admin_delete_team_media(member_id):
+    if not session.get("admin_ok"):
+        return jsonify({"success": False, "error": "Unauthorized"}), 401
+    try:
+        doc_ref = db.collection("team_media").document(member_id)
+        doc = doc_ref.get()
+        if doc.exists:
+            delete_from_firebase_storage((doc.to_dict() or {}).get("photo", ""))
+            doc_ref.delete()
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8080))
 

@@ -160,6 +160,28 @@ textarea,input,select{ width:100%; padding:12px; border-radius:10px; border:1px 
 .registerBtns{ display:flex; flex-wrap:wrap; gap:12px; }
 .registerBtns a{ text-decoration:none; color:white; padding:14px 20px; border-radius:12px; font-weight:800; font-size:14px; }
 
+/* ---- TEAM MEDIA OF XAJI ---- */
+.tm-form{ display:grid; grid-template-columns:1fr 1fr; gap:12px 16px; }
+.tm-form label{ font-size:12px; font-weight:bold; color:#666; display:block; }
+.tm-form input,.tm-form select{ margin-top:6px; }
+.tm-photo-box{ grid-column:1/-1; display:flex; align-items:center; gap:16px; }
+.tm-photo-preview{ width:84px; height:84px; border-radius:50%; background:#f2f4f9; border:2px dashed #cfd5e0; display:flex; align-items:center; justify-content:center; font-size:30px; overflow:hidden; flex-shrink:0; }
+.tm-photo-preview img{ width:100%; height:100%; object-fit:cover; }
+.tm-type-group{ grid-column:1/-1; display:flex; gap:12px; flex-wrap:wrap; margin-top:6px; }
+.tm-type-opt{ flex:1; min-width:180px; display:flex; align-items:center; gap:10px; padding:14px; border:2px solid var(--border); border-radius:12px; cursor:pointer; font-weight:800; font-size:14px; }
+.tm-type-opt input{ width:auto; margin:0; }
+.tm-type-opt.selected{ border-color:var(--gold); background:#fff8e1; }
+.tm-col-title{ display:flex; align-items:center; gap:8px; font-size:16px; font-weight:800; margin:26px 0 10px; }
+.tm-count{ background:var(--navy-900); color:var(--gold); font-size:12px; padding:2px 10px; border-radius:10px; }
+.tm-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:14px; }
+.tm-card{ background:#f8f9fa; border:1px solid #e3e6ec; border-radius:14px; padding:16px; text-align:center; }
+.tm-avatar{ width:80px; height:80px; border-radius:50%; margin:0 auto 10px; background:linear-gradient(135deg,var(--gold),var(--gold-dark)); color:var(--navy-900); display:flex; align-items:center; justify-content:center; font-size:30px; font-weight:900; overflow:hidden; }
+.tm-avatar img{ width:100%; height:100%; object-fit:cover; }
+.tm-name{ font-size:15px; font-weight:800; color:#111; }
+.tm-title{ font-size:13px; color:var(--muted); font-weight:700; margin-top:3px; }
+.tm-phone{ font-size:14px; font-weight:700; margin-top:8px; }
+.tm-empty{ color:#888; padding:16px 4px; grid-column:1/-1; }
+
 /* overlay for mobile sidebar */
 .sb-overlay{ display:none; }
 
@@ -170,6 +192,7 @@ textarea,input,select{ width:100%; padding:12px; border-radius:10px; border:1px 
 @media(max-width:900px){
     .sectionTitle{ flex-direction:column; align-items:flex-start; }
     .pharmacy-form{ grid-template-columns:1fr; }
+    .tm-form{ grid-template-columns:1fr; }
     .sidebar{ position:fixed; left:-280px; z-index:50; transition:left 0.25s ease; box-shadow:0 0 30px rgba(0,0,0,0.3); }
     .sidebar.open{ left:0; }
     .tb-hamburger{ display:block; }
@@ -213,6 +236,7 @@ textarea,input,select{ width:100%; padding:12px; border-radius:10px; border:1px 
             <li><button class="sb-link" data-page="pharmacy" onclick="showPage('pharmacy',this)"><span class="ic">💊</span> Pharmacy Management <span class="arrow">›</span></button></li>
             <li><button class="sb-link" data-page="sysinfo" onclick="showPage('sysinfo',this)"><span class="ic">⚙️</span> System Information <span class="arrow">›</span></button></li>
             <li><button class="sb-link" data-page="aivideo" onclick="showPage('aivideo',this)"><span class="ic">🎬</span> AI Video Studio <span class="arrow">›</span></button></li>
+            <li><button class="sb-link" data-page="teammedia" onclick="showPage('teammedia',this)"><span class="ic">🎥</span> Team Media of Xaji <span class="arrow">›</span></button></li>
         </ul>
 
         <div class="sb-footer">
@@ -686,6 +710,55 @@ textarea,input,select{ width:100%; padding:12px; border-radius:10px; border:1px 
             <br>
             <a id="aiResultDownload" class="btn activate" target="_blank" download>⬇️ Open / Download Result</a>
         </div>
+    </div>
+</div>
+
+<!-- ============ TEAM MEDIA OF XAJI PAGE ============ -->
+<div class="page" id="page-teammedia">
+    <div class="section">
+        <div class="sectionTitle"><h2>🎥 Team Media of Xaji</h2></div>
+
+        <h3 style="margin-top:0;margin-bottom:14px;color:#6f42c1;">➕ Diiwaan Geli Xubin Cusub</h3>
+        <div class="tm-form">
+            <div class="tm-photo-box">
+                <div class="tm-photo-preview" id="tm_photo_preview">📷</div>
+                <div style="flex:1;">
+                    <label>Sawirka (Optional)</label>
+                    <input type="file" id="tm_photo" accept="image/png,image/jpeg,image/webp">
+                </div>
+            </div>
+            <div>
+                <label>Magaca *</label>
+                <input type="text" id="tm_name" placeholder="e.g. Axmed Cali" autocomplete="off">
+            </div>
+            <div>
+                <label>Nambarka *</label>
+                <input type="text" id="tm_phone" placeholder="e.g. 0612345678" autocomplete="off" inputmode="tel">
+            </div>
+            <div style="grid-column:1/-1;">
+                <label>Title *</label>
+                <input type="text" id="tm_title" placeholder="e.g. Camera Man, Video Editor, Photographer" autocomplete="off">
+            </div>
+            <div style="grid-column:1/-1;">
+                <label>Nooca Shaqada *</label>
+                <div class="tm-type-group">
+                    <label class="tm-type-opt selected" id="tm_opt_full">
+                        <input type="radio" name="tm_type" value="full_time" checked onchange="onTmTypeChange()"> 🟢 Media of Full Time
+                    </label>
+                    <label class="tm-type-opt" id="tm_opt_part">
+                        <input type="radio" name="tm_type" value="part_time" onchange="onTmTypeChange()"> 🟡 Media of Part Time
+                    </label>
+                </div>
+            </div>
+        </div>
+        <button class="pharmacy-create-btn" id="tm_save_btn" style="width:100%;margin-top:16px;" onclick="saveTeamMedia()">💾 Save Team Member</button>
+        <div class="pharmacy-msg" id="tmMsg"></div>
+
+        <div class="tm-col-title">🟢 Media of Full Time <span class="tm-count" id="tm_full_count">0</span></div>
+        <div class="tm-grid" id="tm_full_grid"><div class="tm-empty">Loading...</div></div>
+
+        <div class="tm-col-title">🟡 Media of Part Time <span class="tm-count" id="tm_part_count">0</span></div>
+        <div class="tm-grid" id="tm_part_grid"><div class="tm-empty">Loading...</div></div>
     </div>
 </div>
 
@@ -1367,7 +1440,131 @@ function pollAIVideoJob(jobId){
     aiPollTimer = setInterval(check, 4000);
 }
 
+/* ================================
+   🎥 TEAM MEDIA OF XAJI
+   ================================ */
+function tmEscape(v){
+    return String(v == null ? "" : v).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+
+function onTmTypeChange(){
+    const val = document.querySelector('input[name="tm_type"]:checked').value;
+    document.getElementById("tm_opt_full").classList.toggle("selected", val === "full_time");
+    document.getElementById("tm_opt_part").classList.toggle("selected", val === "part_time");
+}
+
+document.getElementById("tm_photo")?.addEventListener("change", function(){
+    const box = document.getElementById("tm_photo_preview");
+    const file = this.files[0];
+    if(!file){ box.innerHTML = "📷"; return; }
+    const url = URL.createObjectURL(file);
+    box.innerHTML = `<img src="${url}" alt="">`;
+});
+
+function tmCard(m){
+    const initial = tmEscape((m.name || "?").trim().charAt(0).toUpperCase());
+    const avatar = m.photo ? `<img src="${tmEscape(m.photo)}" alt="">` : initial;
+    return `
+    <div class="tm-card">
+        <div class="tm-avatar">${avatar}</div>
+        <div class="tm-name">${tmEscape(m.name)}</div>
+        <div class="tm-title">${tmEscape(m.title)}</div>
+        <div class="tm-phone">📞 ${tmEscape(m.phone)}</div>
+        <button class="btn delete" style="margin-top:12px;" data-id="${tmEscape(m.id)}" data-name="${tmEscape(m.name)}" onclick="deleteTeamMedia(this)">🗑 Delete</button>
+    </div>`;
+}
+
+async function loadTeamMedia(){
+    const fullGrid = document.getElementById("tm_full_grid");
+    const partGrid = document.getElementById("tm_part_grid");
+    try{
+        const res = await fetch("/admin/team_media");
+        const data = await res.json();
+        if(!data.success) throw new Error(data.error || "Failed");
+        const members = data.members || [];
+        const full = members.filter(m => m.member_type === "full_time");
+        const part = members.filter(m => m.member_type === "part_time");
+        document.getElementById("tm_full_count").textContent = full.length;
+        document.getElementById("tm_part_count").textContent = part.length;
+        fullGrid.innerHTML = full.length ? full.map(tmCard).join("") : '<div class="tm-empty">Weli lama diiwaan gelin Full Time</div>';
+        partGrid.innerHTML = part.length ? part.map(tmCard).join("") : '<div class="tm-empty">Weli lama diiwaan gelin Part Time</div>';
+    } catch(e){
+        fullGrid.innerHTML = partGrid.innerHTML = `<div class="tm-empty">❌ ${tmEscape(e.message)}</div>`;
+    }
+}
+
+async function saveTeamMedia(){
+    const name  = document.getElementById("tm_name").value.trim();
+    const phone = document.getElementById("tm_phone").value.trim();
+    const title = document.getElementById("tm_title").value.trim();
+    const type  = document.querySelector('input[name="tm_type"]:checked').value;
+    const photo = document.getElementById("tm_photo").files[0];
+    const msg   = document.getElementById("tmMsg");
+    const btn   = document.getElementById("tm_save_btn");
+
+    msg.style.display = "none";
+    msg.className = "pharmacy-msg";
+
+    if(!name || !phone || !title){
+        msg.classList.add("error");
+        msg.textContent = "❌ Fadlan buuxi Magaca, Nambarka iyo Title-ka";
+        msg.style.display = "block";
+        return;
+    }
+
+    const fd = new FormData();
+    fd.append("name", name);
+    fd.append("phone", phone);
+    fd.append("title", title);
+    fd.append("member_type", type);
+    if(photo) fd.append("photo", photo);
+
+    btn.disabled = true;
+    btn.style.opacity = "0.6";
+    btn.textContent = "⏳ Saving...";
+
+    try{
+        const res = await fetch("/admin/team_media/add", { method: "POST", body: fd });
+        const data = await res.json();
+        if(data.success){
+            msg.classList.add("success");
+            msg.textContent = `✅ "${name}" waa la diiwaan geliyay (${type === "full_time" ? "Full Time" : "Part Time"})`;
+            msg.style.display = "block";
+            ["tm_name","tm_phone","tm_title","tm_photo"].forEach(id => document.getElementById(id).value = "");
+            document.getElementById("tm_photo_preview").innerHTML = "📷";
+            loadTeamMedia();
+        } else {
+            msg.classList.add("error");
+            msg.textContent = "❌ " + (data.error || "Failed");
+            msg.style.display = "block";
+        }
+    } catch(e){
+        msg.classList.add("error");
+        msg.textContent = "❌ Server error";
+        msg.style.display = "block";
+    } finally {
+        btn.disabled = false;
+        btn.style.opacity = "1";
+        btn.textContent = "💾 Save Team Member";
+    }
+}
+
+async function deleteTeamMedia(btn){
+    const id = btn.dataset.id;
+    const name = btn.dataset.name;
+    if(!confirm(`Delete "${name}" from Team Media?`)) return;
+    try{
+        const res = await fetch("/admin/team_media/delete/" + encodeURIComponent(id), { method: "DELETE" });
+        const data = await res.json();
+        if(data.success){ loadTeamMedia(); }
+        else { alert("❌ " + (data.error || "Failed")); }
+    } catch(e){
+        alert("❌ Server error");
+    }
+}
+
 loadInfoAdmin();
+loadTeamMedia();
 </script>
 </body>
 </html>
