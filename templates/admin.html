@@ -161,16 +161,24 @@ textarea,input,select{ width:100%; padding:12px; border-radius:10px; border:1px 
 .registerBtns a{ text-decoration:none; color:white; padding:14px 20px; border-radius:12px; font-weight:800; font-size:14px; }
 
 /* ---- TEAM MEDIA OF XAJI ---- */
-.tm-form{ display:grid; grid-template-columns:1fr 1fr; gap:12px 16px; }
-.tm-form label{ font-size:12px; font-weight:bold; color:#666; display:block; }
-.tm-form input,.tm-form select{ margin-top:6px; }
-.tm-photo-box{ grid-column:1/-1; display:flex; align-items:center; gap:16px; }
-.tm-photo-preview{ width:84px; height:84px; border-radius:50%; background:#f2f4f9; border:2px dashed #cfd5e0; display:flex; align-items:center; justify-content:center; font-size:30px; overflow:hidden; flex-shrink:0; }
-.tm-photo-preview img{ width:100%; height:100%; object-fit:cover; }
-.tm-type-group{ grid-column:1/-1; display:flex; gap:12px; flex-wrap:wrap; margin-top:6px; }
-.tm-type-opt{ flex:1; min-width:180px; display:flex; align-items:center; gap:10px; padding:14px; border:2px solid var(--border); border-radius:12px; cursor:pointer; font-weight:800; font-size:14px; }
-.tm-type-opt input{ width:auto; margin:0; }
-.tm-type-opt.selected{ border-color:var(--gold); background:#fff8e1; }
+.tm-toolbar{ display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-bottom:12px; }
+.tm-toolbar select{ width:auto; margin-top:0; padding:9px 12px; }
+.tm-toolbar .btn{ margin:0; }
+.tm-hint{ font-size:12px; color:var(--muted); margin:0 0 12px; line-height:1.6; }
+.tm-bulk-wrap{ overflow-x:auto; border:1px solid var(--border); border-radius:12px; }
+table.tm-bulk{ min-width:820px; }
+.tm-bulk th{ padding:10px; font-size:12px; white-space:nowrap; }
+.tm-bulk td{ padding:6px; border-bottom:1px solid #eee; vertical-align:middle; }
+.tm-bulk input,.tm-bulk select{ margin-top:0; padding:9px 10px; border-radius:8px; font-size:13px; }
+.tm-bulk tr.tm-row-error td{ background:#fdecee; }
+.tm-bulk .tm-num{ width:34px; text-align:center; font-weight:800; color:var(--muted); }
+.tm-thumb{ width:44px; height:44px; border-radius:50%; background:#f2f4f9; border:2px dashed #cfd5e0; display:flex; align-items:center; justify-content:center; font-size:18px; overflow:hidden; cursor:pointer; margin:0 auto; }
+.tm-thumb img{ width:100%; height:100%; object-fit:cover; }
+.tm-row-del{ background:none; border:none; color:#dc3545; font-size:18px; cursor:pointer; padding:6px 10px; }
+.tm-edit-photo{ display:flex; align-items:center; gap:14px; }
+.tm-edit-photo .tm-avatar{ margin:0; flex-shrink:0; }
+.tm-remove-photo{ display:flex !important; align-items:center; gap:8px; font-weight:600 !important; color:#dc3545 !important; }
+.tm-remove-photo input{ width:auto; margin:0; }
 .tm-col-title{ display:flex; align-items:center; gap:8px; font-size:16px; font-weight:800; margin:26px 0 10px; }
 .tm-count{ background:var(--navy-900); color:var(--gold); font-size:12px; padding:2px 10px; border-radius:10px; }
 .tm-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:14px; }
@@ -192,7 +200,6 @@ textarea,input,select{ width:100%; padding:12px; border-radius:10px; border:1px 
 @media(max-width:900px){
     .sectionTitle{ flex-direction:column; align-items:flex-start; }
     .pharmacy-form{ grid-template-columns:1fr; }
-    .tm-form{ grid-template-columns:1fr; }
     .sidebar{ position:fixed; left:-280px; z-index:50; transition:left 0.25s ease; box-shadow:0 0 30px rgba(0,0,0,0.3); }
     .sidebar.open{ left:0; }
     .tb-hamburger{ display:block; }
@@ -719,39 +726,31 @@ textarea,input,select{ width:100%; padding:12px; border-radius:10px; border:1px 
         <div class="sectionTitle"><h2>🎥 Team Media of Xaji</h2></div>
 
         <h3 style="margin-top:0;margin-bottom:14px;color:#6f42c1;">➕ Diiwaan Geli Xubin Cusub</h3>
-        <div class="tm-form">
-            <div class="tm-photo-box">
-                <div class="tm-photo-preview" id="tm_photo_preview">📷</div>
-                <div style="flex:1;">
-                    <label>Sawirka (Optional)</label>
-                    <input type="file" id="tm_photo" accept="image/png,image/jpeg,image/webp">
-                </div>
-            </div>
-            <div>
-                <label>Magaca *</label>
-                <input type="text" id="tm_name" placeholder="e.g. Axmed Cali" autocomplete="off">
-            </div>
-            <div>
-                <label>Nambarka *</label>
-                <input type="text" id="tm_phone" placeholder="e.g. 0612345678" autocomplete="off" inputmode="tel">
-            </div>
-            <div style="grid-column:1/-1;">
-                <label>Title *</label>
-                <input type="text" id="tm_title" placeholder="e.g. Camera Man, Video Editor, Photographer" autocomplete="off">
-            </div>
-            <div style="grid-column:1/-1;">
-                <label>Nooca Shaqada *</label>
-                <div class="tm-type-group">
-                    <label class="tm-type-opt selected" id="tm_opt_full">
-                        <input type="radio" name="tm_type" value="full_time" checked onchange="onTmTypeChange()"> 🟢 Media of Full Time
-                    </label>
-                    <label class="tm-type-opt" id="tm_opt_part">
-                        <input type="radio" name="tm_type" value="part_time" onchange="onTmTypeChange()"> 🟡 Media of Part Time
-                    </label>
-                </div>
-            </div>
+        <div class="tm-toolbar">
+            <label style="font-size:12px;font-weight:bold;color:#666;">Nooca default:</label>
+            <select id="tm_default_type">
+                <option value="full_time">🟢 Media of Full Time</option>
+                <option value="part_time">🟡 Media of Part Time</option>
+            </select>
+            <button class="btn edit" onclick="tmApplyTypeToAll()">↕ Dhammaan u beddel</button>
+            <button class="btn activate" onclick="tmAddRows(1)">➕ Saf 1</button>
+            <button class="btn activate" onclick="tmAddRows(5)">➕ 5 Saf</button>
+            <button class="btn delete" onclick="tmResetRows()">🧹 Nadiifi</button>
         </div>
-        <button class="pharmacy-create-btn" id="tm_save_btn" style="width:100%;margin-top:16px;" onclick="saveTeamMedia()">💾 Save Team Member</button>
+        <p class="tm-hint">
+            • <b>Magaca</b> keliya ayaa qasab ah — sawirka, nambarka iyo title-ka waa optional.<br>
+            • Excel ka koobi garee (Magac | Nambar | Title | Full/Part) kadibna ku <b>paste</b> garee sanduuq kasta — safafka si toos ah ayay u buuxsamayaan.<br>
+            • <b>Enter</b> riix si aad u aado safka xiga. Sawir ku dar adigoo taabanaya 📷.
+        </p>
+        <div class="tm-bulk-wrap">
+            <table class="tm-bulk">
+                <thead>
+                    <tr><th>#</th><th>Sawir</th><th>Magaca *</th><th>Nambarka</th><th>Title</th><th>Nooca</th><th></th></tr>
+                </thead>
+                <tbody id="tm_rows"></tbody>
+            </table>
+        </div>
+        <button class="pharmacy-create-btn" id="tm_save_btn" style="width:100%;margin-top:16px;" onclick="saveTeamMedia()">💾 Save All</button>
         <div class="pharmacy-msg" id="tmMsg"></div>
 
         <div class="tm-col-title">🟢 Media of Full Time <span class="tm-count" id="tm_full_count">0</span></div>
@@ -821,6 +820,45 @@ textarea,input,select{ width:100%; padding:12px; border-radius:10px; border:1px 
         <div class="modal-actions">
             <button class="modal-cancel" onclick="closeEditEntity()">Cancel</button>
             <button class="modal-save" onclick="saveEditEntity()">💾 Save Changes</button>
+        </div>
+    </div>
+</div>
+
+<!-- EDIT TEAM MEDIA MODAL -->
+<div class="modal-bg" id="tmEditModal">
+    <div class="modal-box">
+        <h3>✏️ Edit Team Member</h3>
+        <input type="hidden" id="tme_id">
+
+        <div class="tm-edit-photo">
+            <div class="tm-avatar" id="tme_preview">?</div>
+            <div style="flex:1;">
+                <label style="margin-top:0;">Sawir cusub (Optional)</label>
+                <input type="file" id="tme_photo" accept="image/png,image/jpeg,image/webp">
+                <label class="tm-remove-photo" id="tme_remove_wrap"><input type="checkbox" id="tme_remove_photo"> Ka saar sawirka</label>
+            </div>
+        </div>
+
+        <label>Magaca *</label>
+        <input type="text" id="tme_name">
+
+        <label>Nambarka</label>
+        <input type="text" id="tme_phone" inputmode="tel">
+
+        <label>Title</label>
+        <input type="text" id="tme_title">
+
+        <label>Nooca</label>
+        <select id="tme_type">
+            <option value="full_time">🟢 Media of Full Time</option>
+            <option value="part_time">🟡 Media of Part Time</option>
+        </select>
+
+        <div class="editEntityMsg" id="tmeMsg"></div>
+
+        <div class="modal-actions">
+            <button class="modal-cancel" onclick="closeTmEdit()">Cancel</button>
+            <button class="modal-save" id="tme_save_btn" onclick="saveTmEdit()">💾 Save Changes</button>
         </div>
     </div>
 </div>
@@ -1447,20 +1485,113 @@ function tmEscape(v){
     return String(v == null ? "" : v).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 }
 
-function onTmTypeChange(){
-    const val = document.querySelector('input[name="tm_type"]:checked').value;
-    document.getElementById("tm_opt_full").classList.toggle("selected", val === "full_time");
-    document.getElementById("tm_opt_part").classList.toggle("selected", val === "part_time");
+let tmMembers = {};
+
+/* ---------- Excel-style bulk rows ---------- */
+function tmRowHtml(type){
+    return `
+    <tr class="tm-row">
+        <td class="tm-num"></td>
+        <td>
+            <label class="tm-thumb" title="Sawir ku dar"><span>📷</span>
+                <input type="file" class="tm-r-photo" accept="image/png,image/jpeg,image/webp" hidden>
+            </label>
+        </td>
+        <td><input type="text" class="tm-r-name tm-cell" data-col="0" placeholder="Magaca *" autocomplete="off"></td>
+        <td><input type="text" class="tm-r-phone tm-cell" data-col="1" placeholder="Optional" autocomplete="off" inputmode="tel"></td>
+        <td><input type="text" class="tm-r-title tm-cell" data-col="2" placeholder="Optional" autocomplete="off"></td>
+        <td>
+            <select class="tm-r-type">
+                <option value="full_time" ${type === "full_time" ? "selected" : ""}>🟢 Full Time</option>
+                <option value="part_time" ${type === "part_time" ? "selected" : ""}>🟡 Part Time</option>
+            </select>
+        </td>
+        <td><button type="button" class="tm-row-del" title="Tirtir safkan" onclick="tmRemoveRow(this)">✖</button></td>
+    </tr>`;
 }
 
-document.getElementById("tm_photo")?.addEventListener("change", function(){
-    const box = document.getElementById("tm_photo_preview");
-    const file = this.files[0];
-    if(!file){ box.innerHTML = "📷"; return; }
-    const url = URL.createObjectURL(file);
-    box.innerHTML = `<img src="${url}" alt="">`;
+function tmRenumber(){
+    document.querySelectorAll("#tm_rows .tm-row").forEach((tr, i) => tr.querySelector(".tm-num").textContent = i + 1);
+}
+
+function tmAddRows(n){
+    const tbody = document.getElementById("tm_rows");
+    const type = document.getElementById("tm_default_type").value;
+    for(let i = 0; i < n; i++) tbody.insertAdjacentHTML("beforeend", tmRowHtml(type));
+    tmRenumber();
+    return tbody.lastElementChild;
+}
+
+function tmRemoveRow(btn){
+    const tbody = document.getElementById("tm_rows");
+    btn.closest("tr").remove();
+    if(!tbody.children.length) tmAddRows(1);
+    tmRenumber();
+}
+
+function tmResetRows(){
+    document.getElementById("tm_rows").innerHTML = "";
+    tmAddRows(3);
+}
+
+function tmApplyTypeToAll(){
+    const type = document.getElementById("tm_default_type").value;
+    document.querySelectorAll("#tm_rows .tm-r-type").forEach(sel => sel.value = type);
+}
+
+function tmParseType(v){
+    v = String(v || "").toLowerCase();
+    if(v.includes("part")) return "part_time";
+    if(v.includes("full")) return "full_time";
+    return null;
+}
+
+/* Photo preview per row */
+document.getElementById("tm_rows").addEventListener("change", function(e){
+    if(!e.target.classList.contains("tm-r-photo")) return;
+    const thumb = e.target.closest(".tm-thumb");
+    const span = thumb.querySelector("span");
+    const file = e.target.files[0];
+    span.innerHTML = file ? `<img src="${URL.createObjectURL(file)}" alt="">` : "📷";
 });
 
+/* Enter → next row (adds a new row if on the last one) */
+document.getElementById("tm_rows").addEventListener("keydown", function(e){
+    if(e.key !== "Enter" || !e.target.classList.contains("tm-cell")) return;
+    e.preventDefault();
+    const tr = e.target.closest("tr");
+    const next = tr.nextElementSibling || tmAddRows(1);
+    next.querySelector(".tm-r-name").focus();
+});
+
+/* Paste from Excel (tab-separated columns, one person per line) */
+document.getElementById("tm_rows").addEventListener("paste", function(e){
+    if(!e.target.classList.contains("tm-cell")) return;
+    const text = (e.clipboardData || window.clipboardData).getData("text");
+    if(!text || (!text.includes("\t") && !text.includes("\n"))) return;
+    e.preventDefault();
+
+    const lines = text.replace(/\r/g, "").split("\n").filter(l => l.trim() !== "");
+    const startCol = parseInt(e.target.dataset.col, 10);
+    const fields = [".tm-r-name", ".tm-r-phone", ".tm-r-title"];
+    let tr = e.target.closest("tr");
+
+    lines.forEach((line, idx) => {
+        if(idx > 0) tr = tr.nextElementSibling || tmAddRows(1);
+        const cells = line.split("\t");
+        cells.forEach((val, c) => {
+            const col = startCol + c;
+            if(col < 3){
+                tr.querySelector(fields[col]).value = val.trim();
+            } else if(col === 3){
+                const t = tmParseType(val);
+                if(t) tr.querySelector(".tm-r-type").value = t;
+            }
+        });
+    });
+});
+
+/* ---------- List ---------- */
 function tmCard(m){
     const initial = tmEscape((m.name || "?").trim().charAt(0).toUpperCase());
     const avatar = m.photo ? `<img src="${tmEscape(m.photo)}" alt="">` : initial;
@@ -1468,9 +1599,12 @@ function tmCard(m){
     <div class="tm-card">
         <div class="tm-avatar">${avatar}</div>
         <div class="tm-name">${tmEscape(m.name)}</div>
-        <div class="tm-title">${tmEscape(m.title)}</div>
-        <div class="tm-phone">📞 ${tmEscape(m.phone)}</div>
-        <button class="btn delete" style="margin-top:12px;" data-id="${tmEscape(m.id)}" data-name="${tmEscape(m.name)}" onclick="deleteTeamMedia(this)">🗑 Delete</button>
+        ${m.title ? `<div class="tm-title">${tmEscape(m.title)}</div>` : ""}
+        ${m.phone ? `<div class="tm-phone">📞 ${tmEscape(m.phone)}</div>` : ""}
+        <div style="margin-top:12px;">
+            <button class="btn edit" data-id="${tmEscape(m.id)}" onclick="openTmEdit(this)">✏️ Edit</button>
+            <button class="btn delete" data-id="${tmEscape(m.id)}" data-name="${tmEscape(m.name)}" onclick="deleteTeamMedia(this)">🗑 Delete</button>
+        </div>
     </div>`;
 }
 
@@ -1482,6 +1616,8 @@ async function loadTeamMedia(){
         const data = await res.json();
         if(!data.success) throw new Error(data.error || "Failed");
         const members = data.members || [];
+        tmMembers = {};
+        members.forEach(m => tmMembers[m.id] = m);
         const full = members.filter(m => m.member_type === "full_time");
         const part = members.filter(m => m.member_type === "part_time");
         document.getElementById("tm_full_count").textContent = full.length;
@@ -1493,45 +1629,59 @@ async function loadTeamMedia(){
     }
 }
 
+/* ---------- Save all rows ---------- */
 async function saveTeamMedia(){
-    const name  = document.getElementById("tm_name").value.trim();
-    const phone = document.getElementById("tm_phone").value.trim();
-    const title = document.getElementById("tm_title").value.trim();
-    const type  = document.querySelector('input[name="tm_type"]:checked').value;
-    const photo = document.getElementById("tm_photo").files[0];
-    const msg   = document.getElementById("tmMsg");
-    const btn   = document.getElementById("tm_save_btn");
-
+    const msg = document.getElementById("tmMsg");
+    const btn = document.getElementById("tm_save_btn");
     msg.style.display = "none";
     msg.className = "pharmacy-msg";
 
-    if(!name || !phone || !title){
+    const rows = [];
+    const fd = new FormData();
+    let badRow = 0;
+
+    document.querySelectorAll("#tm_rows .tm-row").forEach((tr, i) => {
+        tr.classList.remove("tm-row-error");
+        const name  = tr.querySelector(".tm-r-name").value.trim();
+        const phone = tr.querySelector(".tm-r-phone").value.trim();
+        const title = tr.querySelector(".tm-r-title").value.trim();
+        const type  = tr.querySelector(".tm-r-type").value;
+        const photo = tr.querySelector(".tm-r-photo").files[0];
+
+        if(!name && !phone && !title && !photo) return;       // saf madhan → iska dhaaf
+        if(!name){ tr.classList.add("tm-row-error"); if(!badRow) badRow = i + 1; return; }
+
+        if(photo) fd.append("photo_" + rows.length, photo);
+        rows.push({ name, phone, title, member_type: type });
+    });
+
+    if(badRow){
         msg.classList.add("error");
-        msg.textContent = "❌ Fadlan buuxi Magaca, Nambarka iyo Title-ka";
+        msg.textContent = `❌ Safka ${badRow}: Magaca waa qasab`;
+        msg.style.display = "block";
+        return;
+    }
+    if(!rows.length){
+        msg.classList.add("error");
+        msg.textContent = "❌ Ugu yaraan hal qof magaciisa qor";
         msg.style.display = "block";
         return;
     }
 
-    const fd = new FormData();
-    fd.append("name", name);
-    fd.append("phone", phone);
-    fd.append("title", title);
-    fd.append("member_type", type);
-    if(photo) fd.append("photo", photo);
+    fd.append("rows", JSON.stringify(rows));
 
     btn.disabled = true;
     btn.style.opacity = "0.6";
-    btn.textContent = "⏳ Saving...";
+    btn.textContent = `⏳ Saving ${rows.length}...`;
 
     try{
-        const res = await fetch("/admin/team_media/add", { method: "POST", body: fd });
+        const res = await fetch("/admin/team_media/add_bulk", { method: "POST", body: fd });
         const data = await res.json();
         if(data.success){
             msg.classList.add("success");
-            msg.textContent = `✅ "${name}" waa la diiwaan geliyay (${type === "full_time" ? "Full Time" : "Part Time"})`;
+            msg.textContent = `✅ ${data.count} qof ayaa la diiwaan geliyay`;
             msg.style.display = "block";
-            ["tm_name","tm_phone","tm_title","tm_photo"].forEach(id => document.getElementById(id).value = "");
-            document.getElementById("tm_photo_preview").innerHTML = "📷";
+            tmResetRows();
             loadTeamMedia();
         } else {
             msg.classList.add("error");
@@ -1545,7 +1695,101 @@ async function saveTeamMedia(){
     } finally {
         btn.disabled = false;
         btn.style.opacity = "1";
-        btn.textContent = "💾 Save Team Member";
+        btn.textContent = "💾 Save All";
+    }
+}
+
+/* ---------- Edit one member ---------- */
+function tmSetEditPreview(src, name){
+    const box = document.getElementById("tme_preview");
+    box.innerHTML = src ? `<img src="${tmEscape(src)}" alt="">` : tmEscape((name || "?").trim().charAt(0).toUpperCase());
+}
+
+function openTmEdit(btn){
+    const m = tmMembers[btn.dataset.id];
+    if(!m) return;
+    document.getElementById("tme_id").value = m.id;
+    document.getElementById("tme_name").value = m.name || "";
+    document.getElementById("tme_phone").value = m.phone || "";
+    document.getElementById("tme_title").value = m.title || "";
+    document.getElementById("tme_type").value = m.member_type || "full_time";
+    document.getElementById("tme_photo").value = "";
+    document.getElementById("tme_remove_photo").checked = false;
+    document.getElementById("tme_remove_wrap").style.display = m.photo ? "flex" : "none";
+    tmSetEditPreview(m.photo, m.name);
+    const msg = document.getElementById("tmeMsg");
+    msg.className = "editEntityMsg";
+    msg.textContent = "";
+    document.getElementById("tmEditModal").classList.add("show");
+}
+
+function closeTmEdit(){
+    document.getElementById("tmEditModal").classList.remove("show");
+}
+
+document.getElementById("tme_photo").addEventListener("change", function(){
+    const file = this.files[0];
+    const m = tmMembers[document.getElementById("tme_id").value] || {};
+    if(file){
+        document.getElementById("tme_remove_photo").checked = false;
+        tmSetEditPreview(URL.createObjectURL(file), m.name);
+    } else {
+        tmSetEditPreview(m.photo, m.name);
+    }
+});
+
+document.getElementById("tme_remove_photo").addEventListener("change", function(){
+    const m = tmMembers[document.getElementById("tme_id").value] || {};
+    if(this.checked){
+        document.getElementById("tme_photo").value = "";
+        tmSetEditPreview("", m.name);
+    } else {
+        tmSetEditPreview(m.photo, m.name);
+    }
+});
+
+async function saveTmEdit(){
+    const id   = document.getElementById("tme_id").value;
+    const name = document.getElementById("tme_name").value.trim();
+    const msg  = document.getElementById("tmeMsg");
+    const btn  = document.getElementById("tme_save_btn");
+    msg.className = "editEntityMsg";
+
+    if(!name){
+        msg.classList.add("error");
+        msg.textContent = "❌ Magaca waa qasab";
+        return;
+    }
+
+    const fd = new FormData();
+    fd.append("name", name);
+    fd.append("phone", document.getElementById("tme_phone").value.trim());
+    fd.append("title", document.getElementById("tme_title").value.trim());
+    fd.append("member_type", document.getElementById("tme_type").value);
+    const photo = document.getElementById("tme_photo").files[0];
+    if(photo) fd.append("photo", photo);
+    if(document.getElementById("tme_remove_photo").checked) fd.append("remove_photo", "1");
+
+    btn.disabled = true;
+    btn.style.opacity = "0.6";
+    try{
+        const res = await fetch("/admin/team_media/update/" + encodeURIComponent(id), { method: "POST", body: fd });
+        const data = await res.json();
+        if(data.success){
+            msg.classList.add("success");
+            msg.textContent = "✅ Waa la keydiyay";
+            await loadTeamMedia();
+            setTimeout(closeTmEdit, 600);
+        } else {
+            msg.classList.add("error");
+            msg.textContent = "❌ " + (data.error || "Failed");
+        }
+    } catch(e){
+        msg.classList.add("error");
+        msg.textContent = "❌ Server error";
+    } finally {
+        btn.disabled = false;
+        btn.style.opacity = "1";
     }
 }
 
@@ -1564,6 +1808,7 @@ async function deleteTeamMedia(btn){
 }
 
 loadInfoAdmin();
+tmResetRows();
 loadTeamMedia();
 </script>
 </body>

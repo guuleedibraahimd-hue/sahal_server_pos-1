@@ -7378,8 +7378,8 @@ def admin_add_team_media():
         title       = (request.form.get("title") or "").strip()
         member_type = (request.form.get("member_type") or "").strip()
 
-        if not name or not phone or not title:
-            return jsonify({"success": False, "error": "Fadlan buuxi Magaca, Nambarka iyo Title-ka"})
+        if not name:
+            return jsonify({"success": False, "error": "Magaca waa qasab"})
         if member_type not in TEAM_MEDIA_TYPES:
             return jsonify({"success": False, "error": "Dooro Full Time ama Part Time"})
 
@@ -7400,6 +7400,105 @@ def admin_add_team_media():
             "created_at": datetime.now().isoformat()
         })
         return jsonify({"success": True, "id": doc_ref.id})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+
+@app.route("/admin/team_media/add_bulk", methods=["POST"])
+def admin_add_team_media_bulk():
+    """Hal mar dad badan ayaa la diiwaan geliyaa (sida Excel).
+    Form fields: rows = JSON list [{name, phone, title, member_type}],
+    photo_<index> = sawirka safkaas (optional)."""
+    if not session.get("admin_ok"):
+        return jsonify({"success": False, "error": "Unauthorized"}), 401
+    try:
+        try:
+            rows = json.loads(request.form.get("rows") or "[]")
+        except Exception:
+            return jsonify({"success": False, "error": "Xogta safafka ma saxna"})
+        if not isinstance(rows, list) or not rows:
+            return jsonify({"success": False, "error": "Ugu yaraan hal qof ku qor"})
+        if len(rows) > 200:
+            return jsonify({"success": False, "error": "Hal mar ugu badnaan 200 qof ayaa la diiwaan gelin karaa"})
+
+        # 1) Hubi dhammaan safafka ka hor inta aan waxba la kaydin
+        clean = []
+        for i, r in enumerate(rows):
+            r = r if isinstance(r, dict) else {}
+            name        = str(r.get("name") or "").strip()
+            phone       = str(r.get("phone") or "").strip()
+            title       = str(r.get("title") or "").strip()
+            member_type = str(r.get("member_type") or "").strip()
+            if not name:
+                return jsonify({"success": False, "error": f"Safka {i + 1}: Magaca waa qasab"})
+            if member_type not in TEAM_MEDIA_TYPES:
+                return jsonify({"success": False, "error": f"Safka {i + 1}: Dooro Full Time ama Part Time"})
+            photo = request.files.get(f"photo_{i}")
+            if photo and photo.filename and not (photo.mimetype or "").startswith("image/"):
+                return jsonify({"success": False, "error": f"Safka {i + 1}: Sawirku waa inuu noqdaa image"})
+            clean.append((name, phone, title, member_type, photo))
+
+        # 2) Sawirada upload garee, kadibna hal batch ku kaydi Firestore
+        now = datetime.now().isoformat()
+        batch = db.batch()
+        for name, phone, title, member_type, photo in clean:
+            photo_url = upload_to_firebase_storage(photo, folder="team_media") if (photo and photo.filename) else ""
+            batch.set(db.collection("team_media").document(), {
+                "name": name,
+                "phone": phone,
+                "title": title,
+                "member_type": member_type,
+                "photo": photo_url,
+                "created_at": now
+            })
+        batch.commit()
+        return jsonify({"success": True, "count": len(clean)})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+
+@app.route("/admin/team_media/update/<member_id>", methods=["POST"])
+def admin_update_team_media(member_id):
+    if not session.get("admin_ok"):
+        return jsonify({"success": False, "error": "Unauthorized"}), 401
+    try:
+        doc_ref = db.collection("team_media").document(member_id)
+        doc = doc_ref.get()
+        if not doc.exists:
+            return jsonify({"success": False, "error": "Qofkan lama helin"})
+        old = doc.to_dict() or {}
+
+        name        = (request.form.get("name") or "").strip()
+        phone       = (request.form.get("phone") or "").strip()
+        title       = (request.form.get("title") or "").strip()
+        member_type = (request.form.get("member_type") or "").strip()
+        remove_photo = request.form.get("remove_photo") == "1"
+
+        if not name:
+            return jsonify({"success": False, "error": "Magaca waa qasab"})
+        if member_type not in TEAM_MEDIA_TYPES:
+            return jsonify({"success": False, "error": "Dooro Full Time ama Part Time"})
+
+        updates = {
+            "name": name,
+            "phone": phone,
+            "title": title,
+            "member_type": member_type,
+            "updated_at": datetime.now().isoformat()
+        }
+
+        photo = request.files.get("photo")
+        if photo and photo.filename:
+            if not (photo.mimetype or "").startswith("image/"):
+                return jsonify({"success": False, "error": "Sawirku waa inuu noqdaa image (jpg, png, webp)"})
+            updates["photo"] = upload_to_firebase_storage(photo, folder="team_media")
+            delete_from_firebase_storage(old.get("photo", ""))
+        elif remove_photo:
+            updates["photo"] = ""
+            delete_from_firebase_storage(old.get("photo", ""))
+
+        doc_ref.update(updates)
+        return jsonify({"success": True})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
 
