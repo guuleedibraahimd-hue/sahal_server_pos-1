@@ -848,6 +848,9 @@ table.tm-bulk{ min-width:820px; }
         <label>Title</label>
         <input type="text" id="tme_title">
 
+        <label>Kuliyada</label>
+        <input type="text" id="tme_college">
+
         <label>Nooca</label>
         <select id="tme_type">
             <option value="full_time">🟢 Media of Full Time</option>
@@ -1600,6 +1603,8 @@ function tmCard(m){
         <div class="tm-avatar">${avatar}</div>
         <div class="tm-name">${tmEscape(m.name)}</div>
         ${m.title ? `<div class="tm-title">${tmEscape(m.title)}</div>` : ""}
+        ${m.college ? `<div class="tm-title">🎓 ${tmEscape(m.college)}</div>` : ""}
+        ${m.source === "self_register" ? `<div style="margin-top:6px;"><span class="badge-warning">📝 Is-diiwaan geliyay</span></div>` : ""}
         ${m.phone ? `<div class="tm-phone">📞 ${tmEscape(m.phone)}</div>` : ""}
         <div style="margin-top:12px;">
             <button class="btn edit" data-id="${tmEscape(m.id)}" onclick="openTmEdit(this)">✏️ Edit</button>
@@ -1712,6 +1717,7 @@ function openTmEdit(btn){
     document.getElementById("tme_name").value = m.name || "";
     document.getElementById("tme_phone").value = m.phone || "";
     document.getElementById("tme_title").value = m.title || "";
+    document.getElementById("tme_college").value = m.college || "";
     document.getElementById("tme_type").value = m.member_type || "full_time";
     document.getElementById("tme_photo").value = "";
     document.getElementById("tme_remove_photo").checked = false;
@@ -1765,6 +1771,7 @@ async function saveTmEdit(){
     fd.append("name", name);
     fd.append("phone", document.getElementById("tme_phone").value.trim());
     fd.append("title", document.getElementById("tme_title").value.trim());
+    fd.append("college", document.getElementById("tme_college").value.trim());
     fd.append("member_type", document.getElementById("tme_type").value);
     const photo = document.getElementById("tme_photo").files[0];
     if(photo) fd.append("photo", photo);

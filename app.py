@@ -1470,6 +1470,65 @@ def change_passwords():
 
     return redirect("/admin")
 
+# ==========================================
+# 🎥 BECOME MEDIA TEAM (PUBLIC SELF-REGISTRATION)
+# Qofku wuxuu ka buuxiyaa Home → Become Media Team.
+# Wuxuu toos u galaa "team_media" — sidaas darteed admin-ka
+# Team Media of Xaji ayuu isla markiiba ka muuqdaa (Full/Part Time).
+# ==========================================
+@app.route("/become_media_team", methods=["GET", "POST"])
+def become_media_team():
+    if request.method == "GET":
+        return render_template("become_media_team.html")
+
+    try:
+        name        = (request.form.get("name") or "").strip()
+        phone       = re.sub(r"[^\d+]", "", (request.form.get("phone") or ""))
+        college     = (request.form.get("college") or "").strip()
+        member_type = (request.form.get("member_type") or "").strip()
+        photo       = request.files.get("photo")
+
+        if not name or len(name) > 80:
+            return jsonify({"success": False, "error": "Magaca waa qasab"})
+        if len(phone) < 7 or len(phone) > 15:
+            return jsonify({"success": False, "error": "Nambarka taleefanka sax ma aha"})
+        if not college or len(college) > 100:
+            return jsonify({"success": False, "error": "Kuliyada waa qasab"})
+        if member_type not in TEAM_MEDIA_TYPES:
+            return jsonify({"success": False, "error": "Dooro Full Time ama Part Time"})
+        if not photo or not photo.filename:
+            return jsonify({"success": False, "error": "Fadlan sawirkaaga geli"})
+        if not (photo.mimetype or "").startswith("image/"):
+            return jsonify({"success": False, "error": "Sawirku waa inuu noqdaa image (jpg, png, webp)"})
+
+        # Xadka cabbirka sawirka: 5MB
+        photo.stream.seek(0, 2)
+        size = photo.stream.tell()
+        photo.stream.seek(0)
+        if size > 5 * 1024 * 1024:
+            return jsonify({"success": False, "error": "Sawirku waa inuu ka yaraadaa 5MB"})
+
+        # Hal nambar hal mar keliya ha is-diiwaan geliyo
+        existing = list(db.collection("team_media").where("phone", "==", phone).limit(1).stream())
+        if existing:
+            return jsonify({"success": False, "error": "Nambarkan horay ayaa loo diiwaan geliyay"})
+
+        photo_url = upload_to_firebase_storage(photo, folder="team_media")
+
+        db.collection("team_media").document().set({
+            "name": name,
+            "phone": phone,
+            "college": college,
+            "title": "",
+            "member_type": member_type,
+            "photo": photo_url,
+            "source": "self_register",
+            "created_at": datetime.now().isoformat()
+        })
+        return jsonify({"success": True})
+    except Exception as e:
+        print("BECOME MEDIA TEAM ERROR:", e)
+        return jsonify({"success": False, "error": "Server error — fadlan isku day mar kale"})
 
 # =========================
 # ✅ ACTIVATE RESTAURANT

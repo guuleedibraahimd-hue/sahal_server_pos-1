@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="so">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Become Media Team | Sahal Server</title>
+<meta name="theme-color" content="#0a1128">
+<link rel="icon" type="image/png" href="/static/logo.png">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{ --gold:#f5a623; --gold-2:#e0a800; --dark:#0a1128; --teal:#009688; }
+*{ margin:0; padding:0; box-sizing:border-box; }
+body{
+    font-family:'DM Sans',sans-serif; color:#fff; min-height:100vh;
+    background:
+        radial-gradient(circle at 92% 8%, rgba(47,111,237,0.22) 0%, transparent 45%),
+        radial-gradient(circle at 4% 4%, rgba(47,111,237,0.14) 0%, transparent 40%),
+        linear-gradient(180deg,#0a1128 0%,#0a1024 100%);
+    display:flex; flex-direction:column; align-items:center; padding:24px 16px 48px;
+}
+.top{ width:100%; max-width:560px; display:flex; align-items:center; justify-content:space-between; margin-bottom:22px; }
+.back{ color:rgba(255,255,255,0.75); text-decoration:none; font-weight:600; font-size:14px; }
+.back:hover{ color:#fff; }
+.brand{ font-family:'Syne',sans-serif; font-weight:800; font-size:17px; }
+.brand span{ color:var(--gold); }
+
+.card{ width:100%; max-width:560px; background:#fff; color:#111; border-radius:22px; padding:30px 26px; box-shadow:0 24px 60px rgba(0,0,0,0.45); }
+.head{ text-align:center; margin-bottom:22px; }
+.head .ic{ width:64px; height:64px; border-radius:18px; margin:0 auto 12px; background:linear-gradient(135deg,var(--gold),var(--gold-2)); display:flex; align-items:center; justify-content:center; font-size:30px; }
+.head h1{ font-family:'Syne',sans-serif; font-weight:800; font-size:24px; }
+.head p{ color:#666; font-size:14px; margin-top:6px; line-height:1.5; }
+
+.photo-pick{ display:flex; flex-direction:column; align-items:center; gap:8px; margin-bottom:18px; }
+.avatar{ width:110px; height:110px; border-radius:50%; background:#f2f4f9; border:3px dashed #cfd5e0; display:flex; align-items:center; justify-content:center; font-size:34px; overflow:hidden; cursor:pointer; transition:.2s; }
+.avatar:hover{ border-color:var(--gold); }
+.avatar img{ width:100%; height:100%; object-fit:cover; }
+.photo-pick small{ color:#888; font-size:12px; }
+
+label.lbl{ display:block; font-size:13px; font-weight:700; color:#444; margin:14px 0 6px; }
+input[type=text], input[type=tel]{
+    width:100%; padding:13px 15px; border:1.5px solid #e0e0e0; border-radius:12px;
+    font-size:15px; font-family:inherit; background:#fafafa; outline:none; transition:.2s;
+}
+input:focus{ border-color:var(--teal); background:#fff; box-shadow:0 0 0 3px rgba(0,150,136,0.1); }
+
+.types{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.type-opt{ position:relative; }
+.type-opt input{ position:absolute; opacity:0; pointer-events:none; }
+.type-opt label{
+    display:flex; flex-direction:column; align-items:center; gap:4px; padding:16px 10px;
+    border:2px solid #e3e6ec; border-radius:14px; cursor:pointer; text-align:center; transition:.15s; background:#fafafa;
+}
+.type-opt label b{ font-size:15px; }
+.type-opt label span{ font-size:12px; color:#777; }
+.type-opt input:checked + label{ border-color:var(--gold); background:#fff8e6; box-shadow:0 0 0 3px rgba(245,166,35,0.15); }
+
+.submit{
+    width:100%; margin-top:24px; padding:15px; border:none; border-radius:30px; cursor:pointer;
+    background:linear-gradient(135deg,#f5c842,var(--gold-2)); color:#1a1000; font-weight:800; font-size:16px; font-family:inherit;
+    box-shadow:0 8px 24px rgba(245,166,35,0.3); transition:.2s;
+}
+.submit:hover{ transform:translateY(-1px); }
+.submit:disabled{ opacity:.6; cursor:not-allowed; transform:none; }
+
+.msg{ display:none; margin-top:14px; padding:12px 14px; border-radius:10px; font-size:14px; font-weight:600; }
+.msg.error{ display:block; background:#fff0f0; color:#c62828; border-left:4px solid #c62828; }
+
+.success{ display:none; text-align:center; padding:10px 0; }
+.success .big{ font-size:56px; }
+.success h2{ font-family:'Syne',sans-serif; font-size:22px; margin:10px 0 8px; }
+.success p{ color:#555; font-size:14px; line-height:1.6; }
+.success a{ display:inline-block; margin-top:20px; padding:12px 24px; border-radius:24px; background:#0a1128; color:#fff; text-decoration:none; font-weight:700; }
+
+.spinner{ display:inline-block; width:16px; height:16px; border:2px solid rgba(0,0,0,0.2); border-top-color:#1a1000; border-radius:50%; animation:spin .7s linear infinite; vertical-align:middle; margin-right:6px; }
+@keyframes spin{ to{ transform:rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<div class="top">
+    <a href="/" class="back">← Home</a>
+    <div class="brand"><span>SAHAL</span> SERVER</div>
+</div>
+
+<div class="card">
+    <div id="formWrap">
+        <div class="head">
+            <div class="ic">🎥</div>
+            <h1>Become Media Team</h1>
+            <p>Ku biir kooxda Media-da. Buuxi xogtaada hoose kadibna riix <b>Register</b>.</p>
+        </div>
+
+        <form id="mtForm" novalidate>
+            <div class="photo-pick">
+                <label class="avatar" id="avatar" for="photo">📷</label>
+                <input type="file" id="photo" name="photo" accept="image/png,image/jpeg,image/webp" hidden>
+                <small>Taabo si aad sawirkaaga u geliso *</small>
+            </div>
+
+            <label class="lbl" for="name">Magaca oo Buuxa *</label>
+            <input type="text" id="name" name="name" placeholder="Tusaale: Mohamed Ali Hassan" maxlength="80" autocomplete="name">
+
+            <label class="lbl" for="phone">Nambarka Taleefanka *</label>
+            <input type="tel" id="phone" name="phone" placeholder="Tusaale: 0612345678" maxlength="20" inputmode="tel" autocomplete="tel">
+
+            <label class="lbl" for="college">Kuliyada aad Dhigato *</label>
+            <input type="text" id="college" name="college" placeholder="Tusaale: Kuliyada Injineeriyada" maxlength="100">
+
+            <label class="lbl">Nooca Shaqada *</label>
+            <div class="types">
+                <div class="type-opt">
+                    <input type="radio" name="member_type" id="t_full" value="full_time">
+                    <label for="t_full"><b>🟢 Full Time</b><span>Waqti buuxa</span></label>
+                </div>
+                <div class="type-opt">
+                    <input type="radio" name="member_type" id="t_part" value="part_time">
+                    <label for="t_part"><b>🟡 Part Time</b><span>Waqti qayb ah</span></label>
+                </div>
+            </div>
+
+            <button type="submit" class="submit" id="submitBtn">✅ Register</button>
+            <div class="msg" id="msg"></div>
+        </form>
+    </div>
+
+    <div class="success" id="successBox">
+        <div class="big">🎉</div>
+        <h2>Waad Is-diiwaan Gelisay!</h2>
+        <p id="successText">Codsigaaga waa la gudbiyay. Kooxda Media-da ayaa kula soo xiriiri doonta.</p>
+        <a href="/">← Ku laabo Home</a>
+    </div>
+</div>
+
+<script>
+const photoInput = document.getElementById("photo");
+const avatar = document.getElementById("avatar");
+const msg = document.getElementById("msg");
+
+photoInput.addEventListener("change", function(){
+    const file = this.files[0];
+    if(!file){ avatar.innerHTML = "📷"; return; }
+    if(!file.type.startsWith("image/")){
+        showError("Sawirku waa inuu noqdaa image (jpg, png, webp)");
+        this.value = ""; avatar.innerHTML = "📷"; return;
+    }
+    if(file.size > 5 * 1024 * 1024){
+        showError("Sawirku waa inuu ka yaraadaa 5MB");
+        this.value = ""; avatar.innerHTML = "📷"; return;
+    }
+    msg.className = "msg";
+    avatar.innerHTML = `<img src="${URL.createObjectURL(file)}" alt="">`;
+});
+
+function showError(text){
+    msg.className = "msg error";
+    msg.textContent = "❌ " + text;
+}
+
+document.getElementById("mtForm").addEventListener("submit", async function(e){
+    e.preventDefault();
+    msg.className = "msg";
+
+    const name    = document.getElementById("name").value.trim();
+    const phone   = document.getElementById("phone").value.trim();
+    const college = document.getElementById("college").value.trim();
+    const typeEl  = document.querySelector('input[name="member_type"]:checked');
+    const photo   = photoInput.files[0];
+
+    if(!photo)   return showError("Fadlan sawirkaaga geli");
+    if(!name)    return showError("Magaca waa qasab");
+    if(!phone)   return showError("Nambarka waa qasab");
+    if(!college) return showError("Kuliyada waa qasab");
+    if(!typeEl)  return showError("Dooro Full Time ama Part Time");
+
+    const fd = new FormData();
+    fd.append("name", name);
+    fd.append("phone", phone);
+    fd.append("college", college);
+    fd.append("member_type", typeEl.value);
+    fd.append("photo", photo);
+
+    const btn = document.getElementById("submitBtn");
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Registering...';
+
+    try{
+        const res = await fetch("/become_media_team", { method: "POST", body: fd });
+        const data = await res.json();
+        if(data.success){
+            const team = typeEl.value === "full_time" ? "Full Time" : "Part Time";
+            document.getElementById("successText").textContent =
+                `${name}, waxaa lagugu daray kooxda Media-da ee ${team}. Kooxda ayaa kula soo xiriiri doonta.`;
+            document.getElementById("formWrap").style.display = "none";
+            document.getElementById("successBox").style.display = "block";
+        } else {
+            showError(data.error || "Wax khalad ah ayaa dhacay");
+        }
+    } catch(err){
+        showError("Server error — fadlan isku day mar kale");
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = "✅ Register";
+    }
+});
+</script>
+</body>
+</html>
