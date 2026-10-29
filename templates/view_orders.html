@@ -73,7 +73,7 @@ body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--t
 .search input:focus{border-color:var(--gold)}
 .search svg{position:absolute;left:20px;top:50%;transform:translateY(-50%)}
 .sound-ctrl{display:flex;gap:8px;align-items:center}
-.pill-btn{display:inline-flex;align-items:center;gap:8px;height:38px;padding:0 14px;border-radius:12px;border:1.5px solid var(--line);background:#fff;font:600 13px 'Inter';color:var(--text);cursor:pointer;box-shadow:var(--shadow)}
+.pill-btn{display:inline-flex;align-items:center;gap:8px;height:38px;padding:0 14px;white-space:nowrap;flex-shrink:0;border-radius:12px;border:1.5px solid var(--line);background:#fff;font:600 13px 'Inter';color:var(--text);cursor:pointer;box-shadow:var(--shadow)}
 .pill-btn.on{border-color:#9fdcb3;background:#effbf3;color:var(--green)}
 .pill-btn.off{border-color:#f3c0c3;background:#fff4f4;color:var(--red)}
 .live-dot{width:8px;height:8px;border-radius:50%;background:#22c55e;box-shadow:0 0 0 0 rgba(34,197,94,.6);animation:pulse 1.6s infinite}
@@ -148,6 +148,38 @@ tbody tr.row-new td{animation:newrow 6s ease-out}
   background:linear-gradient(180deg,#ffe28a,#f0b93a);box-shadow:0 4px 12px rgba(232,181,58,.35);white-space:nowrap}
 .approve-btn:hover{filter:brightness(1.04)}
 .approve-btn:disabled{background:#eef1f7;color:#7b849e;box-shadow:none;cursor:default}
+.act{display:flex;gap:8px;align-items:center}
+.receipt-btn{height:34px;width:38px;border-radius:10px;border:1.5px solid #f2d68c;background:#fffaf0;cursor:pointer;font-size:16px}
+.receipt-btn:hover{background:#fff1cc}
+.pill-btn.printing{border-color:#f2d68c;background:#fff7dd;color:#8a5a00}
+
+/* ===== MODALS ===== */
+.modal{position:fixed;inset:0;z-index:1000;background:rgba(6,10,25,.62);display:none;align-items:center;justify-content:center;padding:18px}
+.modal.show{display:flex}
+.modal-card{background:#fff;border-radius:18px;box-shadow:0 30px 80px rgba(0,0,0,.35);display:flex;flex-direction:column;max-height:100%;overflow:hidden}
+.modal-head{display:flex;align-items:center;gap:10px;padding:14px 16px;background:linear-gradient(100deg,#0b0802,#3b2a0a);color:#fff;border-bottom:3px solid var(--gold)}
+.modal-head h3{font-size:16px;font-weight:800;flex:1;color:#f6d77a}
+.modal-head .pill-btn{height:34px;box-shadow:none}
+.modal-x{background:rgba(255,255,255,.12);color:#fff;border:0;width:34px;height:34px;border-radius:10px;font-size:16px;cursor:pointer}
+.receipt-card{width:min(640px,100%);height:min(900px,100%)}
+.receipt-card iframe{flex:1;width:100%;border:0;background:#e7e4dc}
+.settings-card{width:min(520px,100%)}
+.settings-body{padding:18px 20px;display:flex;flex-direction:column;gap:14px;overflow:auto}
+.set-row{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 14px;border:1px solid var(--line);border-radius:12px}
+.set-row b{display:block;font-size:14px}
+.set-row small{color:var(--muted);font-size:12.5px}
+.switch{position:relative;width:46px;height:26px;flex-shrink:0}
+.switch input{opacity:0;width:0;height:0}
+.switch span{position:absolute;inset:0;background:#d6dbe7;border-radius:20px;transition:.2s;cursor:pointer}
+.switch span::before{content:"";position:absolute;width:20px;height:20px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s;box-shadow:0 2px 4px rgba(0,0,0,.2)}
+.switch input:checked + span{background:linear-gradient(180deg,#f6d77a,#e8b53a)}
+.switch input:checked + span::before{transform:translateX(20px)}
+.chk{display:flex;gap:14px;flex-wrap:wrap;font-size:14px;font-weight:600}
+.chk label{display:flex;align-items:center;gap:6px;cursor:pointer}
+.set-row select{height:34px;border-radius:9px;border:1.5px solid var(--line);padding:0 10px;font:600 13px 'Inter'}
+.tip{background:#fff7dd;border:1px solid #f2d68c;border-radius:12px;padding:12px 14px;font-size:12.5px;line-height:1.55;color:#5a4100}
+.tip code{background:#fff;border:1px solid #f2d68c;border-radius:6px;padding:1px 5px;font-size:11.5px;word-break:break-all}
+.print-frame{position:fixed;left:-10000px;top:0;width:148mm;height:210mm;border:0}
 
 /* ===== EMPTY STATE ===== */
 .empty{text-align:center;padding:34px 10px 18px}
@@ -248,6 +280,7 @@ tbody tr.row-new td{animation:newrow 6s ease-out}
         <span class="pill-btn" title="Live: orders-ka cusub si toos ah ayaa loo hubiyaa"><span class="live-dot" id="liveDot"></span><span id="liveText">Live</span></span>
         <button class="pill-btn" id="testSoundBtn" title="Tijaabi dhawaaqa">🔊 Tijaabi</button>
         <button class="pill-btn on" id="soundToggle">🔔 Dhawaaqa: Shidan</button>
+        <button class="pill-btn" id="printPill" title="Auto-print settings">🖨️ Auto-print</button>
       </div>
     </div>
   </div>
@@ -273,6 +306,62 @@ tbody tr.row-new td{animation:newrow 6s ease-out}
     <div class="table-wrap" id="tableWrap"></div>
   </section>
 </main>
+
+<!-- RECEIPT MODAL -->
+<div class="modal" id="receiptModal">
+  <div class="modal-card receipt-card">
+    <div class="modal-head">
+      <h3 id="receiptTitle">🧾 Receipt</h3>
+      <button class="pill-btn" id="receiptPrintBtn">🖨️ Print A5</button>
+      <button class="pill-btn" id="receiptOpenBtn">↗ Fur</button>
+      <button class="modal-x" data-close="receiptModal">✕</button>
+    </div>
+    <iframe id="receiptFrame" title="Receipt"></iframe>
+  </div>
+</div>
+
+<!-- PRINT SETTINGS MODAL -->
+<div class="modal" id="settingsModal">
+  <div class="modal-card settings-card">
+    <div class="modal-head">
+      <h3>⚙️ Printer &amp; Receipt Settings</h3>
+      <button class="modal-x" data-close="settingsModal">✕</button>
+    </div>
+    <div class="settings-body">
+      <div class="set-row">
+        <div><b>🖨️ Auto-print order cusub</b><small>Order kasta oo yimaada si toos ah ayaa A5 loogu daabacayaa</small></div>
+        <label class="switch"><input type="checkbox" id="setAuto"><span></span></label>
+      </div>
+      <div class="set-row">
+        <div><b>✅ Daabac marka Approve la riixo</b><small>Receipt-ku wuu soo baxayaa oo isagoo kale ayuu daabacmayaa</small></div>
+        <label class="switch"><input type="checkbox" id="setOnApprove"><span></span></label>
+      </div>
+      <div class="set-row" style="flex-direction:column;align-items:flex-start">
+        <div><b>Collections-ka la daabacayo</b></div>
+        <div class="chk">
+          <label><input type="checkbox" data-coll="data_orders"> 📦 data_orders</label>
+          <label><input type="checkbox" data-coll="orders"> 🛒 orders</label>
+          <label><input type="checkbox" data-coll="exchange_orders"> 🔄 exchange_orders</label>
+        </div>
+      </div>
+      <div class="set-row">
+        <div><b>Tirada nuqulada (copies)</b><small>Hal order — imisa warqadood</small></div>
+        <select id="setCopies"><option value="1">1</option><option value="2">2</option><option value="3">3</option></select>
+      </div>
+      <div class="set-row">
+        <div><b>Tijaabi printer-ka</b><small>Waxay daabacaysaa order-ka ugu dambeeyay ee tab-kan</small></div>
+        <button class="pill-btn" id="testPrintBtn">🖨️ Test print</button>
+      </div>
+      <div class="tip">
+        <b>Si printer-ku u daabaco isagoo aan ku weydiin (dialog la'aan):</b><br>
+        1. Printer-ka ka dhig <b>Default printer</b>, warqaddana <b>A5</b>.<br>
+        2. Chrome dhammaan xir, kadib ku fur shortcut-kan:<br>
+        <code>chrome.exe --kiosk-printing https://sahalserver.com/view-orders</code><br>
+        Haddii aan sidaas la furin, Chrome wuxuu soo bixinayaa daaqadda Print — kaliya riix <b>Print</b>.
+      </div>
+    </div>
+  </div>
+</div>
 
 <div class="toasts" id="toasts"></div>
 
@@ -430,9 +519,10 @@ function renderTable(){
         <td><span class="status ${statusCls(o.status)}">${esc(norm(o.status))}</span></td>
         <td class="sub">${esc(o.createdAt)}</td>
         ${currentTab==='exchange_orders' ? `<td class="sub">${esc(o.approvedAt)}</td>` : ''}
-        <td>${approved
+        <td><div class="act">${approved
           ? '<button class="approve-btn" disabled>✓ Approved</button>'
-          : `<button class="approve-btn" data-approve="${esc(o.docId)}">✓ Approve</button>`}</td>
+          : `<button class="approve-btn" data-approve="${esc(o.docId)}">✓ Approve</button>`}
+          <button class="receipt-btn" data-receipt="${esc(o.docId)}" title="Receipt A5">🧾</button></div></td>
       </tr>`;
     }).join('');
   }
@@ -594,6 +684,7 @@ function announce(fresh){
   toast(title, body);
   desktopNotify(title, body);
   updateTitle();
+  fresh.forEach(([c,o]) => scheduleAutoPrint(c, o));
 }
 
 let polling = false, lastFull = Date.now();
@@ -640,7 +731,8 @@ async function approveOrder(docId, btn){
       const o = STATE[collection].find(x => x.docId === docId);
       if(o) o.status = collection === 'exchange_orders' ? 'approved' : 'APPROVED';
       render();
-      toast('✅ La ansixiyay', 'Order-ka waa la ansixiyay', 'ok');
+      toast('✅ La ansixiyay', 'Order-ka waa la ansixiyay — receipt-ka ayaa daabacmaya', 'ok');
+      if(printCfg.onApprove) enqueuePrint(collection, docId, {show:true, force:true});
     } else {
       btn.disabled = false; btn.textContent = '✓ Approve';
       toast('Khalad', data.error || 'Khalad ayaa dhacay.', 'err');
@@ -652,13 +744,210 @@ async function approveOrder(docId, btn){
 }
 
 /* =========================================================
+   🧾 A5 RECEIPT PRINTING
+   - Approve  -> receipt pops up and prints itself
+   - New order -> printed automatically (hidden), one after another
+   ========================================================= */
+const PRINT_KEY = 'dd_print_cfg', DONE_KEY = 'dd_print_done';
+const printCfg = Object.assign(
+  {auto:true, onApprove:true, copies:1, enabledAt:0,
+   colls:{data_orders:true, orders:true, exchange_orders:true}},
+  (() => { try { return JSON.parse(localStorage.getItem(PRINT_KEY) || '{}'); } catch(e){ return {}; } })()
+);
+if(!printCfg.enabledAt) printCfg.enabledAt = Date.now();   // first visit: don't print the old backlog
+function savePrintCfg(){ try{ localStorage.setItem(PRINT_KEY, JSON.stringify(printCfg)); }catch(e){} }
+savePrintCfg();
+
+const printDone = new Set((() => { try { return JSON.parse(localStorage.getItem(DONE_KEY) || '[]'); } catch(e){ return []; } })());
+function markPrinted(key){
+  printDone.add(key);
+  try{ localStorage.setItem(DONE_KEY, JSON.stringify([...printDone].slice(-500))); }catch(e){}
+}
+
+/* one store order can be several docs (one per product) -> same key, printed once */
+function printKeyFor(c, o){
+  return c === 'orders' && o.orderId ? `orders|${o.orderId}|${o.customerId || ''}` : `${c}|${o.docId}`;
+}
+const receiptUrl = (c, docId, copies) =>
+  `/dhibic-receipt/${c}/${encodeURIComponent(docId)}?embed=1&copies=${copies || 1}`;
+
+const printQueue = [];
+const queuedKeys = new Set();
+const printTimers = {};
+let printBusy = false;
+
+function updatePrintPill(){
+  const b = document.getElementById('printPill');
+  const n = printQueue.length + (printBusy ? 1 : 0);
+  b.classList.toggle('printing', n > 0);
+  b.classList.toggle('on', n === 0 && printCfg.auto);
+  b.classList.toggle('off', n === 0 && !printCfg.auto);
+  b.textContent = n > 0 ? `🖨️ Daabacaya (${n})` : (printCfg.auto ? '🖨️ Auto-print: Shidan' : '🖨️ Auto-print: Dansan');
+}
+
+function scheduleAutoPrint(c, o){
+  if(!printCfg.auto || !printCfg.colls[c]) return;
+  if((o.createdAtMs || 0) && o.createdAtMs < printCfg.enabledAt) return;
+  const key = printKeyFor(c, o);
+  if(printDone.has(key) || queuedKeys.has(key)) return;
+  // store orders: give the app a few seconds to write every product doc first
+  const delay = c === 'orders' ? 6000 : 300;
+  clearTimeout(printTimers[key]);
+  printTimers[key] = setTimeout(() => { delete printTimers[key]; enqueuePrint(c, o.docId, {key}); }, delay);
+}
+
+function enqueuePrint(c, docId, {key = null, show = false, force = false} = {}){
+  if(key && !force && (printDone.has(key) || queuedKeys.has(key))) return;
+  if(key) queuedKeys.add(key);
+  printQueue.push({c, docId, key, show});
+  updatePrintPill();
+  runPrintQueue();
+}
+
+async function runPrintQueue(){
+  if(printBusy) return;
+  printBusy = true;
+  while(printQueue.length){
+    const job = printQueue.shift();
+    updatePrintPill();
+    try{
+      await printReceipt(job);
+      if(job.key) markPrinted(job.key);
+    }catch(e){
+      toast('🖨️ Print khalad', `${job.c}: ${e.message || e}`, 'err');
+    }
+    if(job.key) queuedKeys.delete(job.key);
+  }
+  printBusy = false;
+  updatePrintPill();
+}
+
+function waitReceiptReady(frame){
+  return new Promise((resolve, reject) => {
+    const started = Date.now();
+    (function check(){
+      let doc = null;
+      try{ doc = frame.contentDocument; }catch(e){}
+      if(doc && doc.documentElement && doc.documentElement.getAttribute('data-ready')){
+        if(!doc.querySelector('.page')) return reject(new Error('Receipt lama helin'));
+        return setTimeout(resolve, 250);
+      }
+      if(doc && doc.readyState === 'complete' && !doc.querySelector('.page') && doc.body && doc.body.innerText.trim()){
+        return reject(new Error(doc.body.innerText.trim().slice(0, 120)));
+      }
+      if(Date.now() - started > 25000) return reject(new Error('Receipt-ku wuu daahay'));
+      setTimeout(check, 150);
+    })();
+  });
+}
+
+function loadFrame(frame, url){
+  return new Promise(resolve => {
+    frame.onload = () => resolve();
+    frame.src = url;
+  });
+}
+
+async function printReceipt({c, docId, show}){
+  const url = receiptUrl(c, docId, printCfg.copies);
+  let frame, temp = false;
+  if(show){
+    openReceiptModal(c, docId, {load:false});
+    frame = document.getElementById('receiptFrame');
+  } else {
+    frame = document.createElement('iframe');
+    frame.className = 'print-frame';
+    document.body.appendChild(frame);
+    temp = true;
+  }
+  try{
+    frame.dataset.url = url;
+    await loadFrame(frame, url);          // always a fresh load -> never prints the previous receipt
+    await waitReceiptReady(frame);
+    frame.contentWindow.focus();
+    frame.contentWindow.print();      // kiosk-printing: goes straight to the printer
+    await new Promise(r => setTimeout(r, 1500));
+  } finally {
+    if(temp) setTimeout(() => frame.remove(), 3000);
+  }
+}
+
+function openReceiptModal(c, docId, {load = true} = {}){
+  const url = receiptUrl(c, docId, printCfg.copies);
+  const frame = document.getElementById('receiptFrame');
+  document.getElementById('receiptTitle').textContent = `🧾 Receipt — ${c} · ${docId}`;
+  document.getElementById('receiptModal').classList.add('show');
+  document.getElementById('receiptModal').dataset.c = c;
+  document.getElementById('receiptModal').dataset.docId = docId;
+  if(load && frame.dataset.url !== url){ frame.dataset.url = url; frame.src = url; }
+}
+
+/* orders that arrived while the dashboard was closed */
+function catchUpMissedPrints(){
+  if(!printCfg.auto) return;
+  const missed = [];
+  COLLS.forEach(c => {
+    if(!printCfg.colls[c]) return;
+    STATE[c].forEach(o => {
+      if((o.createdAtMs || 0) >= printCfg.enabledAt && !printDone.has(printKeyFor(c, o))) missed.push([c, o]);
+    });
+  });
+  missed.sort((a, b) => (a[1].createdAtMs || 0) - (b[1].createdAtMs || 0));
+  const seen = new Set();
+  missed.slice(0, 25).forEach(([c, o]) => {
+    const k = printKeyFor(c, o);
+    if(seen.has(k)) return;
+    seen.add(k);
+    enqueuePrint(c, o.docId, {key:k});
+  });
+  if(missed.length) toast('🖨️ Auto-print', `${seen.size} order oo aan la daabicin ayaa hadda la daabacayaa`);
+}
+
+/* settings modal */
+function openSettings(){
+  document.getElementById('setAuto').checked = printCfg.auto;
+  document.getElementById('setOnApprove').checked = printCfg.onApprove;
+  document.getElementById('setCopies').value = String(printCfg.copies);
+  document.querySelectorAll('[data-coll]').forEach(i => i.checked = !!printCfg.colls[i.dataset.coll]);
+  document.getElementById('settingsModal').classList.add('show');
+}
+document.getElementById('setAuto').addEventListener('change', e => {
+  printCfg.auto = e.target.checked;
+  if(printCfg.auto) printCfg.enabledAt = Date.now();   // only print orders from now on
+  savePrintCfg(); updatePrintPill();
+});
+document.getElementById('setOnApprove').addEventListener('change', e => { printCfg.onApprove = e.target.checked; savePrintCfg(); });
+document.getElementById('setCopies').addEventListener('change', e => { printCfg.copies = +e.target.value || 1; savePrintCfg(); });
+document.querySelectorAll('[data-coll]').forEach(i => i.addEventListener('change', () => { printCfg.colls[i.dataset.coll] = i.checked; savePrintCfg(); }));
+document.getElementById('testPrintBtn').addEventListener('click', () => {
+  const o = STATE[currentTab][0];
+  if(!o) return toast('Test print', `${currentTab} wax order ah kuma jiraan`, 'err');
+  document.getElementById('settingsModal').classList.remove('show');
+  enqueuePrint(currentTab, o.docId, {show:true, force:true});
+});
+document.getElementById('printPill').addEventListener('click', openSettings);
+document.getElementById('receiptPrintBtn').addEventListener('click', () => {
+  const m = document.getElementById('receiptModal');
+  enqueuePrint(m.dataset.c, m.dataset.docId, {show:true, force:true});
+});
+document.getElementById('receiptOpenBtn').addEventListener('click', () => {
+  const m = document.getElementById('receiptModal');
+  window.open(`/dhibic-receipt/${m.dataset.c}/${encodeURIComponent(m.dataset.docId)}?copies=${printCfg.copies}`, '_blank');
+});
+document.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', () =>
+  document.getElementById(b.dataset.close).classList.remove('show')));
+document.querySelectorAll('.modal').forEach(m => m.addEventListener('click', e => { if(e.target === m) m.classList.remove('show'); }));
+
+/* =========================================================
    EVENTS
    ========================================================= */
 document.querySelectorAll('[data-tab]').forEach(b => b.addEventListener('click', () => switchTab(b.dataset.tab)));
 document.getElementById('searchInput').addEventListener('input', renderTable);
 document.getElementById('tableWrap').addEventListener('click', e => {
   const btn = e.target.closest('[data-approve]');
-  if(btn) approveOrder(btn.dataset.approve, btn);
+  if(btn) return approveOrder(btn.dataset.approve, btn);
+  const rb = e.target.closest('[data-receipt]');
+  if(rb) openReceiptModal(currentTab, rb.dataset.receipt);
 });
 document.getElementById('soundToggle').addEventListener('click', () => {
   soundOn = !soundOn;
@@ -672,9 +961,7 @@ document.getElementById('enableSoundBtn').addEventListener('click', () => {
 document.getElementById('testSoundBtn').addEventListener('click', () => {
   unlockAudio(); requestNotifyPermission(); playOrderSound(1);
 });
-document.getElementById('settingsBtn').addEventListener('click', () => {
-  toast('⚙️ Settings', 'Dhawaaqa iyo notification-ka waxaa laga maamulaa badhamada sare.');
-});
+document.getElementById('settingsBtn').addEventListener('click', openSettings);
 document.addEventListener('visibilitychange', () => {
   if(document.visibilityState === 'visible'){ UNSEEN[currentTab] = 0; renderBadges(); updateTitle(); poll(); }
 });
@@ -692,6 +979,8 @@ document.addEventListener('visibilitychange', () => {
    ========================================================= */
 render();
 updateSoundUI();
+updatePrintPill();
+setTimeout(catchUpMissedPrints, 2500);
 setInterval(poll, POLL_MS);
 setTimeout(poll, 1500);
 </script>

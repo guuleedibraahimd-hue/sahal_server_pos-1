@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Receipt {{ r.receipt_no }}</title>
+<style>
+/* ============ A5 PAGE ============ */
+@page { size: A5 portrait; margin: 0; }
+*{margin:0;padding:0;box-sizing:border-box}
+html{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+body{font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;color:#1a1405;background:#e7e4dc;font-size:7.6pt;line-height:1.3}
+
+:root{
+  --gold:#c9a227; --gold-txt:#8a6a12; --gold-light:#e8c25a; --gold-bg:#fdf6e1;
+  --card:#ecdcaa; --dark:#120d03; --dark-2:#3b2a0a;
+  --muted:#6b6250; --line:#ece4cc; --green:#17924a; --red:#c62828; --orange:#c76a0a;
+}
+
+.page{width:148mm;height:210mm;margin:8mm auto;background:#fff;display:flex;flex-direction:column;
+  box-shadow:0 6px 30px rgba(0,0,0,.18);overflow:hidden;position:relative;break-after:page;page-break-after:always}
+.page.flow{height:auto;min-height:210mm;overflow:visible}
+.page:last-of-type{break-after:auto;page-break-after:auto}
+.body{padding:4.2mm 5mm 0;display:flex;flex-direction:column;gap:2.6mm;flex:1}
+.grow{flex:1}
+
+/* ============ HEADER ============ */
+.hd{background:linear-gradient(100deg,#0b0802 0%,#1d1505 45%,#3b2a0a 100%);color:#fff;
+  padding:4.2mm 5mm 3.6mm;display:flex;justify-content:space-between;align-items:center;gap:3mm;
+  border-bottom:1.1mm solid var(--gold)}
+.hd-brand{display:flex;align-items:center;gap:3mm;min-width:0}
+.logo{width:14mm;height:14mm;flex-shrink:0;background:#fff;border:.5mm solid var(--gold);border-radius:2mm;
+  display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15pt;color:#8a6410;letter-spacing:-.5pt}
+.brand{font-weight:800;font-size:11.5pt;letter-spacing:1.6pt;color:var(--gold-light)}
+.brand-sub{font-size:6.4pt;color:#e9e3d2;margin-top:.6mm;line-height:1.35}
+.hd-right{text-align:right;flex-shrink:0}
+.doc-title{font-weight:800;font-size:11pt;letter-spacing:1.2pt}
+.doc-sub{font-size:6.6pt;color:var(--gold-light);margin:.5mm 0 1.4mm}
+.meta{font-size:6.2pt;color:#d9d2bf;line-height:1.55}
+.meta b{color:#fff;font-weight:700;margin-left:1mm}
+
+/* ============ AMOUNT BOX ============ */
+.amount-box{border:.45mm solid var(--gold);background:var(--gold-bg);border-radius:2.4mm;padding:3mm 4mm;
+  display:flex;justify-content:space-between;align-items:flex-start;gap:3mm}
+.amount-label{display:flex;align-items:center;gap:2mm;font-size:6.4pt;font-weight:800;letter-spacing:1.4pt;color:var(--gold-txt)}
+.chip{font-size:6pt;font-weight:800;letter-spacing:.3pt;padding:.4mm 2.4mm;border-radius:3mm;border:.35mm solid currentColor}
+.chip.paid{color:var(--green);background:#eaf8ef}
+.chip.pending{color:var(--orange);background:#fff3e2}
+.chip.failed{color:var(--red);background:#fdecec}
+.amount-big{font-size:17pt;font-weight:800;letter-spacing:-.2pt;margin-top:.6mm;color:#1a1405}
+.amount-words{font-size:6.4pt;font-style:italic;color:var(--muted);margin-top:.6mm}
+.amount-side{text-align:right;flex-shrink:0}
+.amount-side .k{font-size:6.2pt;color:var(--muted)}
+.amount-side .v{font-size:9pt;font-weight:800;margin-top:.4mm}
+.amount-side .via{font-size:6.6pt;font-weight:700;color:var(--gold-txt);margin-top:1mm}
+
+/* ============ CARDS ============ */
+.row{display:flex;gap:2.6mm}
+.row > *{flex:1;min-width:0}
+.card{border:.35mm solid var(--card);border-radius:2.2mm;padding:2.4mm 3mm}
+.card-title{display:flex;align-items:center;gap:1.6mm;font-size:6.2pt;font-weight:800;letter-spacing:1.2pt;color:var(--gold-txt);text-transform:uppercase;margin-bottom:1.6mm}
+.card-title::before{content:"";width:.8mm;height:3mm;background:var(--gold);border-radius:.3mm}
+.kv{display:grid;grid-template-columns:20mm 1fr;gap:.9mm 2mm;font-size:6.9pt}
+.kv .k{color:var(--muted)}
+.kv .v{font-weight:600;word-break:break-word}
+.kv .v.b{font-weight:800}
+.kv.wide{grid-template-columns:24mm 1fr}
+
+/* form fields (shipping page) */
+.field{display:flex;align-items:flex-end;gap:1.5mm;margin-bottom:1.2mm;font-size:6.8pt}
+.field .k{width:19mm;flex-shrink:0;color:var(--muted)}
+.field .v{flex:1;border-bottom:.25mm solid #d8cfb5;padding-bottom:.3mm;font-weight:700;min-height:3.4mm;word-break:break-word}
+
+/* checkboxes */
+.check{display:flex;align-items:center;gap:1.4mm;font-size:6.5pt;margin-bottom:.9mm}
+.box{width:2.8mm;height:2.8mm;border:.3mm solid var(--gold);border-radius:.4mm;flex-shrink:0;position:relative}
+.box.on::after{content:"";position:absolute;left:.75mm;top:.15mm;width:.8mm;height:1.6mm;border:solid var(--green);border-width:0 .45mm .45mm 0;transform:rotate(45deg)}
+
+/* ============ TABLES ============ */
+.tbl{width:100%;border-collapse:separate;border-spacing:0;border:.35mm solid var(--card);border-radius:2.2mm;overflow:hidden;font-size:6.8pt}
+.tbl th{background:var(--dark-2);color:#fff;font-size:6pt;font-weight:800;letter-spacing:1pt;text-transform:uppercase;padding:1.8mm 2.4mm;text-align:left}
+.tbl td{padding:1.6mm 2.4mm;border-top:.25mm solid var(--line)}
+.tbl tr:first-child td{border-top:0}
+.tbl .r{text-align:right}.tbl .c{text-align:center}
+.tbl .num{font-variant-numeric:tabular-nums}
+.tbl tr.hl td{background:var(--gold-bg);font-weight:800}
+.tbl tr.total td{background:var(--gold-bg);font-weight:800;font-size:7.6pt;border-top:.35mm solid var(--gold)}
+.store-bar{background:#f6efda;color:#3b2a0a;font-weight:800;font-size:6.8pt;padding:1.2mm 2.4mm;border-radius:1.4mm;display:flex;justify-content:space-between}
+
+/* ============ TIMELINE ============ */
+.tl{display:flex;flex-direction:column;gap:1.4mm}
+.tl-row{display:flex;align-items:center;gap:2mm;font-size:6.8pt}
+.tl-dot{width:3.6mm;height:3.6mm;border-radius:50%;color:#fff;font-size:5.4pt;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.tl-dot.g{background:var(--gold)}.tl-dot.gr{background:var(--green)}.tl-dot.o{background:#d9cfb2}
+.tl-row .when{margin-left:auto;font-weight:800;font-size:6.5pt}
+.tl-sep{border-top:.25mm solid var(--line);margin-top:.6mm;padding-top:1.2mm;display:flex;gap:4mm;font-size:6.8pt}
+.tl-sep .k{color:var(--muted)}
+
+/* ============ VERIFY / STAMP ============ */
+.verify{display:flex;align-items:center;gap:3.4mm}
+.qr{width:19mm;height:19mm;border:.35mm solid var(--card);border-radius:1.6mm;padding:1mm;flex-shrink:0;background:#fff}
+.qr img{width:100%;height:100%;display:block;image-rendering:pixelated}
+.verify-text{flex:1;font-size:6.4pt;color:var(--muted)}
+.verify-text b{display:block;color:#1a1405;font-size:7.4pt;margin-bottom:.6mm}
+.verify-text a{color:var(--gold-txt);font-weight:800;text-decoration:none}
+.stamp-wrap{text-align:center;flex-shrink:0;width:34mm}
+.stamp{display:inline-block;transform:rotate(-8deg);border:.7mm solid;border-radius:1.6mm;padding:1mm 3.4mm;font-weight:900;font-size:12pt;letter-spacing:2.2pt}
+.stamp.paid{color:var(--green)}.stamp.pending{color:var(--orange)}.stamp.failed{color:var(--red)}
+.stamp-line{border-top:.25mm solid #1a1405;margin-top:2.4mm;padding-top:.6mm;font-size:5.6pt;color:var(--muted)}
+
+/* signatures (shipping page) */
+.sign{border:.35mm solid var(--card);border-radius:2.2mm;padding:2.2mm 2.6mm}
+.sign .role{font-size:6pt;color:var(--muted)}
+.sign .name{font-size:7.4pt;font-weight:800}
+.sign .sig{border-bottom:.25mm solid #b9ae8e;height:7mm;margin:1mm 0 .8mm}
+.sign .date{font-size:6.2pt;color:var(--muted)}
+.qr-col{flex:0 0 22mm !important;text-align:center;font-size:5.4pt;color:var(--muted)}
+.qr-col .qr{margin:0 auto 1mm}
+
+/* ============ FOOTER ============ */
+.thanks{text-align:center;font-weight:800;color:var(--gold-txt);font-size:7.4pt;padding:2.4mm 0 2.2mm}
+.ft{background:var(--dark);border-top:.8mm solid var(--gold);color:#cfc8b6;padding:2.4mm 5mm;
+  display:flex;justify-content:space-between;align-items:center;gap:3mm;font-size:5.4pt}
+.ft .contact{color:var(--gold-light);white-space:nowrap;font-size:5.8pt}
+.copy-tag{position:absolute;top:1.4mm;left:50%;transform:translateX(-50%);font-size:5pt;letter-spacing:1pt;color:#d9cfb2}
+
+/* ============ SCREEN TOOLBAR ============ */
+.toolbar{position:sticky;top:0;z-index:5;display:flex;justify-content:center;gap:8px;padding:10px;background:#1d1505}
+.toolbar button{height:36px;padding:0 16px;border-radius:9px;border:0;font:700 13px Arial,sans-serif;cursor:pointer}
+.toolbar .p{background:linear-gradient(180deg,#ffe28a,#f0b93a);color:#3b2a00}
+.toolbar .x{background:#3b2a0a;color:#fff}
+
+@media print{
+  body{background:#fff}
+  .page{margin:0;box-shadow:none}
+  .toolbar{display:none !important}
+}
+</style>
+</head>
+<body>
+{% if not embed %}
+<nav class="toolbar">
+  <button class="p" onclick="window.print()">🖨️ Print A5</button>
+  <button class="x" onclick="window.close()">✕ Close</button>
+</nav>
+{% endif %}
+
+{# ================= MACROS ================= #}
+{% macro header(title, subtitle, show_time=False) %}
+<header class="hd">
+  <div class="hd-brand">
+    <div class="logo">DD</div>
+    <div>
+      <div class="brand">DHIBIC DAHAB</div>
+      <div class="brand-sub">Online Store &nbsp;|&nbsp; {{ store.website }}<br>{{ store.location }}</div>
+    </div>
+  </div>
+  <div class="hd-right">
+    <div class="doc-title">{{ title }}</div>
+    <div class="doc-sub">{{ subtitle }}</div>
+    <div class="meta">
+      Receipt No.<b>{{ r.receipt_no }}</b><br>
+      Issue Date<b>{{ r.created_date }}</b>{% if show_time and r.created_time %}&nbsp; Time<b>{{ r.created_time }}</b>{% endif %}<br>
+      Currency<b>USD</b>
+    </div>
+  </div>
+</header>
+{% endmacro %}
+
+{% macro amount_box(label, amount, words, side_label, side_value, via) %}
+<div class="amount-box">
+  <div>
+    <div class="amount-label">{{ label }} <span class="chip {{ r.stamp.cls }}">{{ r.stamp.label }}</span></div>
+    <div class="amount-big">USD {{ "%.2f"|format(amount) }}</div>
+    <div class="amount-words">{{ words }}</div>
+  </div>
+  <div class="amount-side">
+    <div class="k">{{ side_label }}</div>
+    <div class="v">{{ side_value }}</div>
+    <div class="via">via {{ via }}</div>
+  </div>
+</div>
+{% endmacro %}
+
+{% macro verify_block() %}
+<div class="verify">
+  <div class="qr"><img src="{{ r.qr }}" alt="QR"></div>
+  <div class="verify-text">
+    <b>Verification</b>
+    Scan the QR code to verify this receipt online, or visit:<br>
+    <a>{{ store.website }}/verify</a>
+  </div>
+  <div class="stamp-wrap">
+    <div class="stamp {{ r.stamp.cls }}">{{ r.stamp.label }}</div>
+    <div class="stamp-line">Authorized - Dhibic Dahab Finance</div>
+  </div>
+</div>
+{% endmacro %}
+
+{% macro footer(thanks) %}
+<div class="thanks">{{ thanks }}</div>
+<footer class="ft">
+  <span>This is a computer-generated document issued by Dhibic Dahab and does not require a physical signature. Printed {{ printed_at }}</span>
+  <span class="contact">{{ store.email }} &nbsp;|&nbsp; {{ store.phone }}</span>
+</footer>
+{% endmacro %}
+
+{% macro check(label, on) %}<div class="check"><span class="box{{ ' on' if on }}"></span>{{ label }}</div>{% endmacro %}
+{% macro field(label, value) %}<div class="field"><span class="k">{{ label }}:</span><span class="v">{{ value or '' }}</span></div>{% endmacro %}
+
+{# ================= COPIES ================= #}
+{% for copy_no in range(copies) %}
+{% set copy_tag = ('COPY ' ~ (copy_no + 1) ~ ' / ' ~ copies) if copies > 1 else '' %}
+
+{% if r.kind == 'orders' %}
+{% set a = r.address %}
+{% set long = r.lines|length > 7 %}
+
+{# ---------- PAGE 1 : SHIPPING & DELIVERY FORM ---------- #}
+<div class="page{{ ' flow' if long }}">
+  {% if copy_tag %}<div class="copy-tag">{{ copy_tag }}</div>{% endif %}
+  {{ header('SHIPPING & DELIVERY', 'Delivery Form · Order #' ~ r.order_id) }}
+  <div class="body">
+    <div class="row">
+      <div class="card">
+        <div class="card-title">1. Receiver Information</div>
+        {{ field('Full Name', a.fullName) }}
+        {{ field('Receiver Phone', a.receiverPhone) }}
+        {{ field('Contact Phone', a.contactPhone) }}
+        {{ field('Address', a.fullAddress) }}
+      </div>
+      <div class="card">
+        <div class="card-title">2. Destination</div>
+        {{ field('Country', a.country) }}
+        {{ field('Region/State', a.region) }}
+        {{ field('City', a.city) }}
+        {{ field('District', a.district) }}
+        {{ field('Landmark', a.landmark) }}
+      </div>
+    </div>
+
+    <div>
+      <div class="card-title" style="margin-bottom:1.4mm">3. Items Summary</div>
+      <table class="tbl">
+        <thead><tr><th class="c" style="width:7mm">#</th><th>Product</th><th>Store</th><th class="c" style="width:9mm">Qty</th><th class="r" style="width:16mm">Price</th><th class="r" style="width:17mm">Total</th></tr></thead>
+        <tbody>
+        {% for it in r.lines %}
+          <tr><td class="c">{{ loop.index }}</td><td><b>{{ it.name }}</b></td><td>{{ it.merchantName }}</td><td class="c">{{ it.qty }}</td><td class="r num">${{ "%.2f"|format(it.price) }}</td><td class="r num"><b>${{ "%.2f"|format(it.total) }}</b></td></tr>
+        {% endfor %}
+          <tr class="total"><td colspan="5">ORDER TOTAL (incl. delivery)</td><td class="r num">${{ "%.2f"|format(r.total) }}</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="row">
+      <div class="card">
+        <div class="card-title">4. Shipment</div>
+        {{ check('Domestic (Somalia)', a.isDomestic) }}
+        {{ check('International', not a.isDomestic) }}
+        {{ check('Standard Delivery', not r.express) }}
+        {{ check('Express Delivery', r.express) }}
+      </div>
+      <div class="card">
+        <div class="card-title">5. Payment</div>
+        {{ check('Waafi / EVC Plus', r.method in ('waafi', 'evc')) }}
+        {{ check('eDahab', r.method == 'edahab') }}
+        {{ check('Premier Bank', r.method == 'premier') }}
+        {{ check('Points', r.method in ('points', 'points_payment')) }}
+      </div>
+      <div class="card">
+        <div class="card-title">6. Order Status</div>
+        {{ check('Delivered to Receiver', False) }}
+        {{ check('Receiver Refused', False) }}
+        {{ check('Returned to Store', False) }}
+        {{ check('Rescheduled', False) }}
+      </div>
+    </div>
+
+    <div class="row" style="align-items:flex-end">
+      <div class="sign"><div class="role">Owner</div><div class="name">{{ store.owner }}</div><div class="sig"></div><div class="date">Signature · Date: {{ r.created_date }}</div></div>
+      <div class="qr-col"><div class="qr"><img src="{{ r.qr }}" alt="QR"></div>Scan for order details</div>
+      <div class="sign"><div class="role">Owner &amp; Admin</div><div class="name">{{ store.admin }}</div><div class="sig"></div><div class="date">Signature · Date: {{ r.created_date }}</div></div>
+    </div>
+    <div class="grow"></div>
+  </div>
+  {{ footer('Handle with care — Dhibic Dahab Online Store delivery.') }}
+</div>
+
+{# ---------- PAGE 2 : SALES RECEIPT ---------- #}
+<div class="page{{ ' flow' if long }}">
+  {% if copy_tag %}<div class="copy-tag">{{ copy_tag }}</div>{% endif %}
+  {{ header('SALES RECEIPT', 'Customer Copy · Order #' ~ r.order_id, True) }}
+  <div class="body">
+    {{ amount_box('AMOUNT PAID', r.total, r.total_words, 'Paid on', r.created_date, r.method_label) }}
+
+    <div class="row">
+      <div class="card">
+        <div class="card-title">Customer</div>
+        <div class="kv">
+          <span class="k">Name</span><span class="v b">{{ a.fullName or '—' }}</span>
+          <span class="k">Phone</span><span class="v">{{ a.contactPhone or a.receiverPhone or '—' }}</span>
+          <span class="k">Address</span><span class="v">{{ a.oneLine or '—' }}</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">{{ 'Stores' if r.groups|length > 1 else 'Store' }}</div>
+        <div class="kv">
+        {% for g in r.groups %}
+          <span class="k">Name</span><span class="v b">{{ g.merchantName }}</span>
+          {% if g.merchantPhone %}<span class="k">Phone</span><span class="v">{{ g.merchantPhone }}</span>{% endif %}
+        {% endfor %}
+          <span class="k">Delivery</span><span class="v">{{ (r.delivery_type or 'standard')|capitalize }}{{ ' · Express' if r.express }}</span>
+        </div>
+      </div>
+    </div>
+
+    {% for g in r.groups %}
+    <div>
+      {% if r.groups|length > 1 %}<div class="store-bar" style="margin-bottom:1mm"><span>Store: {{ g.merchantName }}</span><span>Subtotal ${{ "%.2f"|format(g.subtotal) }}</span></div>{% endif %}
+      <table class="tbl">
+        <thead><tr><th>Description</th><th class="c" style="width:9mm">Qty</th><th class="r" style="width:17mm">Price</th><th class="r" style="width:19mm">Amount (USD)</th></tr></thead>
+        <tbody>
+        {% for it in g.lines %}
+          <tr><td>{{ it.name }}{% if r.groups|length == 1 %} <span style="color:var(--muted)">· {{ g.merchantName }}</span>{% endif %}</td><td class="c">{{ it.qty }}</td><td class="r num">{{ "%.2f"|format(it.price) }}</td><td class="r num">{{ "%.2f"|format(it.total) }}</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endfor %}
+
+    <table class="tbl">
+      <tbody>
+        <tr><td>Subtotal</td><td class="r num">{{ "%.2f"|format(r.subtotal) }}</td></tr>
+        <tr><td>Delivery fee</td><td class="r num">{{ "%.2f"|format(r.delivery_fee) }}</td></tr>
+        <tr><td>Discount</td><td class="r num">- {{ "%.2f"|format(r.discount) }}</td></tr>
+        <tr class="total"><td>GRAND TOTAL</td><td class="r num">USD {{ "%.2f"|format(r.total) }}</td></tr>
+        <tr><td>Balance due</td><td class="r num">USD 0.00</td></tr>
+      </tbody>
+    </table>
+
+    {{ verify_block() }}
+    <div class="grow"></div>
+  </div>
+  {{ footer('Thank you for shopping at Dhibic Dahab Online Store.') }}
+</div>
+
+{% elif r.kind == 'data_orders' %}
+{# ---------- DATA PACKAGE RECEIPT ---------- #}
+<div class="page">
+  {% if copy_tag %}<div class="copy-tag">{{ copy_tag }}</div>{% endif %}
+  {{ header('PAYMENT RECEIPT', 'Data Package Purchase', True) }}
+  <div class="body">
+    {{ amount_box('AMOUNT PAID', r.amount, r.amount_words, 'Paid on', r.created_date, r.method_label) }}
+
+    <div class="row">
+      <div class="card">
+        <div class="card-title">Customer</div>
+        <div class="kv">
+          <span class="k">Sender Phone</span><span class="v b">{{ r.sender or '—' }}</span>
+          <span class="k">Receiver</span><span class="v b">{{ r.receiver or '—' }}</span>
+          <span class="k">Reference</span><span class="v">#{{ r.reference_id or '----' }}</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Payment Details</div>
+        <div class="kv">
+          <span class="k">Method</span><span class="v b">{{ r.method_label }}</span>
+          <span class="k">Account No.</span><span class="v b">{{ r.sender or '—' }}</span>
+          <span class="k">Currency</span><span class="v">USD (US Dollar)</span>
+          <span class="k">Transaction ID</span><span class="v">{{ r.doc_id }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Transaction Timeline</div>
+      <div class="tl">
+        <div class="tl-row"><span class="tl-dot g">1</span>Order placed by customer<span class="when">{{ r.created_full }}</span></div>
+        <div class="tl-row"><span class="tl-dot {{ 'gr' if r.approved_full else 'o' }}">2</span>{{ 'Approved by Dhibic Dahab' if r.approved_full else 'Status: ' ~ r.status }}<span class="when">{{ r.approved_full or '—' }}</span></div>
+        {% if r.processing %}<div class="tl-sep"><span class="k">Processing time</span><b>{{ r.processing }}</b></div>{% endif %}
+      </div>
+    </div>
+
+    <table class="tbl">
+      <thead><tr><th>Description</th><th class="r">Amount (USD)</th></tr></thead>
+      <tbody>
+        <tr><td><b>{{ r.package_name or 'Data package' }}</b>{% if r.package_data %} · {{ r.package_data }}{% endif %}{% if r.description %}<br><span style="color:var(--muted)">{{ r.description }}</span>{% endif %}</td><td class="r num">{{ "%.2f"|format(r.amount) }}</td></tr>
+        <tr><td>Processing fee</td><td class="r num">0.00</td></tr>
+        <tr class="total"><td>TOTAL PAID</td><td class="r num">USD {{ "%.2f"|format(r.amount) }}</td></tr>
+      </tbody>
+    </table>
+
+    {{ verify_block() }}
+    <div class="grow"></div>
+  </div>
+  {{ footer('Thank you for choosing Dhibic Dahab Online Store.') }}
+</div>
+
+{% else %}
+{# ---------- EXCHANGE RECEIPT ---------- #}
+<div class="page">
+  {% if copy_tag %}<div class="copy-tag">{{ copy_tag }}</div>{% endif %}
+  {{ header('EXCHANGE RECEIPT', 'Money Exchange', True) }}
+  <div class="body">
+    {{ amount_box('AMOUNT SENT', r.amount, r.amount_words, 'Receiver gets', 'USD ' ~ ("%.2f"|format(r.final_amount)), r.to_company or 'Mobile Money') }}
+
+    <div class="row">
+      <div class="card">
+        <div class="card-title">Sender</div>
+        <div class="kv">
+          <span class="k">Number</span><span class="v b">{{ r.sender or '—' }}</span>
+          <span class="k">Company</span><span class="v b">{{ r.from_company or '—' }}</span>
+          <span class="k">Email</span><span class="v">{{ r.email or '—' }}</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Receiver</div>
+        <div class="kv">
+          <span class="k">Number</span><span class="v b">{{ r.receiver or '—' }}</span>
+          <span class="k">Company</span><span class="v b">{{ r.to_company or '—' }}</span>
+          <span class="k">Transaction ID</span><span class="v">{{ r.doc_id }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Transaction Timeline</div>
+      <div class="tl">
+        <div class="tl-row"><span class="tl-dot g">1</span>Exchange requested by customer<span class="when">{{ r.created_full }}</span></div>
+        <div class="tl-row"><span class="tl-dot {{ 'gr' if r.approved_full else 'o' }}">2</span>{{ 'Approved & sent by Dhibic Dahab' if r.approved_full else 'Status: ' ~ r.status }}<span class="when">{{ r.approved_full or '—' }}</span></div>
+        {% if r.processing %}<div class="tl-sep"><span class="k">Processing time</span><b>{{ r.processing }}</b></div>{% endif %}
+      </div>
+    </div>
+
+    <table class="tbl">
+      <thead><tr><th>Description</th><th class="r">Amount (USD)</th></tr></thead>
+      <tbody>
+        <tr><td>Amount sent ({{ r.from_company or '—' }})</td><td class="r num">{{ "%.2f"|format(r.amount) }}</td></tr>
+        <tr><td>Exchange fee</td><td class="r num">{{ "%.2f"|format(r.fee) }}</td></tr>
+        <tr class="total"><td>RECEIVER GETS ({{ r.to_company or '—' }})</td><td class="r num">USD {{ "%.2f"|format(r.final_amount) }}</td></tr>
+      </tbody>
+    </table>
+
+    {{ verify_block() }}
+    <div class="grow"></div>
+  </div>
+  {{ footer('Thank you for exchanging with Dhibic Dahab Online Store.') }}
+</div>
+{% endif %}
+{% endfor %}
+<script>
+/* Auto-fit: if a page's content is taller than A5, shrink the body a little
+   (down to 78%) so header + footer stay on the same sheet. Very long orders
+   switch to flowing pages instead of being cut. Runs before printing. */
+(function(){
+  function fit(){
+    document.querySelectorAll('.page').forEach(function(pg){
+      var body = pg.querySelector('.body'); if(!body) return;
+      body.style.zoom = 1;
+      if (pg.classList.contains('flow')) return;
+      var z = 1;
+      while (pg.scrollHeight > pg.clientHeight + 1 && z > 0.78) {
+        z = Math.round((z - 0.02) * 100) / 100;
+        body.style.zoom = z;
+      }
+      if (pg.scrollHeight > pg.clientHeight + 1) { body.style.zoom = 1; pg.classList.add('flow'); }
+    });
+    document.documentElement.setAttribute('data-ready', '1');
+  }
+  if (document.readyState === 'complete') fit(); else window.addEventListener('load', fit);
+  window.addEventListener('beforeprint', fit);
+})();
+</script>
+</body>
+</html>

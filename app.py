@@ -6153,6 +6153,375 @@ def dhibic_orders_feed():
 
 
 # ==============================
+# 🧾 DHIBIC DAHAB — A5 RECEIPTS
+# Same content as the Flutter app's A5ReceiptPdf (Shipping & Delivery
+# Form + Sales Receipt), styled like the official DD payment receipt.
+#   GET /dhibic-receipt/<collection>/<doc_id>[?copies=N&embed=1]
+# ==============================
+DD_STORE = {
+    "name":     "Dhibic Dahab Online Store",
+    "phone":    "+252 61 775 3787",
+    "email":    "dhibicdahabstore@gmail.com",
+    "website":  "dhibicdahab.com",
+    "location": "Mogadishu, Somalia",
+    "owner":    "Abdi Ahmed Abshir",
+    "admin":    "Gulled Ibrahim Dahir",
+}
+
+_DD_ONES = ["Zero", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine",
+            "Ten", "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen",
+            "Seventeen", "Eighteen", "Nineteen"]
+_DD_TENS = ["", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"]
+
+
+def _dd_words_int(n):
+    n = int(n)
+    if n < 20:
+        return _DD_ONES[n]
+    if n < 100:
+        return _DD_TENS[n // 10] + ("-" + _DD_ONES[n % 10] if n % 10 else "")
+    if n < 1000:
+        rest = n % 100
+        return _DD_ONES[n // 100] + " Hundred" + (" and " + _dd_words_int(rest) if rest else "")
+    for div, name in ((10 ** 9, "Billion"), (10 ** 6, "Million"), (1000, "Thousand")):
+        if n >= div:
+            rest = n % div
+            s = _dd_words_int(n // div) + " " + name
+            if rest:
+                s += (" and " if rest < 100 else " ") + _dd_words_int(rest)
+            return s
+    return str(n)
+
+
+def _dd_amount_words(x):
+    cents_total = int(round(abs(x) * 100))
+    dollars, cents = divmod(cents_total, 100)
+    s = _dd_words_int(dollars) + (" US Dollar" if dollars == 1 else " US Dollars")
+    if cents:
+        s += " and " + _dd_words_int(cents) + (" Cent" if cents == 1 else " Cents")
+    return s
+
+
+def _dd_num(v):
+    try:
+        return float(str(v if v is not None else 0).replace("$", "").replace(",", "").strip() or 0)
+    except Exception:
+        return 0.0
+
+
+def _dd_str(v):
+    return "" if v is None else str(v).strip()
+
+
+def _dd_local(ts):
+    """Firestore timestamp / datetime / ISO string -> Mogadishu datetime (or None)."""
+    if ts is None or ts == "":
+        return None
+    try:
+        if isinstance(ts, datetime):
+            if ts.tzinfo is None:
+                ts = ts.replace(tzinfo=timezone.utc)
+            return ts.astimezone(DHIBIC_TZ)
+        if isinstance(ts, (int, float)):
+            return datetime.fromtimestamp(ts / 1000 if ts > 1e11 else ts, tz=timezone.utc).astimezone(DHIBIC_TZ)
+        if isinstance(ts, str):
+            return _dd_local(datetime.fromisoformat(ts.replace("Z", "+00:00")))
+        if hasattr(ts, "timestamp"):
+            return datetime.fromtimestamp(ts.timestamp(), tz=timezone.utc).astimezone(DHIBIC_TZ)
+    except Exception:
+        return None
+    return None
+
+
+def _dd_date(dt):
+    return dt.strftime("%d %b %Y") if dt else "—"
+
+
+def _dd_dt(dt):
+    return dt.strftime("%d %b %Y, %H:%M:%S") + " (UTC+03:00)" if dt else "—"
+
+
+def _dd_duration(a, b):
+    if not a or not b or b < a:
+        return ""
+    mins = int((b - a).total_seconds() // 60)
+    d, rem = divmod(mins, 1440)
+    h, m = divmod(rem, 60)
+    parts = []
+    if d:
+        parts.append(f"{d} day" + ("s" if d != 1 else ""))
+    if h:
+        parts.append(f"{h} hour" + ("s" if h != 1 else ""))
+    if not d and m:
+        parts.append(f"{m} minute" + ("s" if m != 1 else ""))
+    return " ".join(parts) or "Less than a minute"
+
+
+def _dd_method_label(m):
+    key = _dd_str(m).lower()
+    return {
+        "waafi": "Waafi / EVC Plus",
+        "evc": "Waafi / EVC Plus",
+        "edahab": "eDahab",
+        "premier": "Premier Bank",
+        "points": "Points",
+        "points_payment": "Points",
+    }.get(key, _dd_str(m) or "Mobile Money")
+
+
+def _dd_qr_data_uri(text):
+    import base64
+    qr = qrcode.QRCode(version=None, error_correction=qrcode.constants.ERROR_CORRECT_M,
+                       box_size=8, border=1)
+    qr.add_data(text)
+    qr.make(fit=True)
+    img = qr.make_image(fill_color="black", back_color="white")
+    buf = BytesIO()
+    img.save(buf)
+    return "data:image/png;base64," + base64.b64encode(buf.getvalue()).decode()
+
+
+def _dd_stamp(status, kind):
+    s = _dd_str(status).upper()
+    if s == "FAILED":
+        return {"label": "FAILED", "cls": "failed"}
+    if s in ("APPROVED", "SUCCESS", "PAID", "COMPLETED") or kind == "orders":
+        # Store orders are paid at checkout — the app prints them as PAID too.
+        return {"label": "PAID", "cls": "paid"}
+    return {"label": "PENDING", "cls": "pending"}
+
+
+def _dd_receipt_no(prefix, created, ident):
+    day = (created or datetime.now(DHIBIC_TZ)).strftime("%Y%m%d")
+    ident = re.sub(r"[^A-Za-z0-9]", "", _dd_str(ident)).upper() or "000000"
+    return f"DD-{prefix}-{day}-{ident}"
+
+
+def _dd_verify_url(ident, merchant_id=None):
+    url = f"https://{DD_STORE['website']}/verify?id={quote(_dd_str(ident))}"
+    return url + (f"&m={quote(merchant_id)}" if merchant_id else "")
+
+
+def _dd_ctx_orders(doc_id):
+    """Mirrors A5OrderLoader.fromDocs — one order = every doc that shares
+    orderId + customerId (one doc per product / store)."""
+    ref = dhibic_db.collection("orders")
+    snap = ref.document(doc_id).get()
+    if not snap.exists:
+        return None
+    first = snap.to_dict() or {}
+    raw_order_id = first.get("orderId")
+    order_id = _dd_str(raw_order_id)
+    customer_id = _dd_str(first.get("customerId"))
+
+    docs = [first]
+    if order_id:
+        try:
+            found = [d.to_dict() or {} for d in ref.where("orderId", "==", raw_order_id).get()]
+            if customer_id:
+                found = [d for d in found if _dd_str(d.get("customerId")) == customer_id]
+            if found:
+                docs = found
+        except Exception as e:
+            print("DD receipt group lookup error:", e)
+
+    created = None
+    for d in docs:
+        created = _dd_local(d.get("createdAt"))
+        if created:
+            break
+
+    # Address / payment info: use whichever doc of this order carries it
+    # (the clicked doc may be a 2nd product line without the address).
+    status_doc = first
+    first = next((d for d in docs if isinstance(d.get("shippingAddress"), dict) and d.get("shippingAddress")),
+                 next((d for d in docs if _dd_str(d.get("address")) or _dd_str(d.get("paymentMethod"))), first))
+
+    # Address — new orders (shippingAddress map) or older ones (address string)
+    sa = first.get("shippingAddress")
+    if isinstance(sa, dict) and sa:
+        address = {k: _dd_str(sa.get(k)) for k in
+                   ("fullName", "receiverPhone", "contactPhone", "fullAddress",
+                    "country", "region", "city", "district", "landmark")}
+    else:
+        sender = _dd_str(first.get("senderPhone"))
+        addr = _dd_str(first.get("address"))
+        address = {
+            "fullName": _dd_str(first.get("customerName")),
+            "receiverPhone": _dd_str(first.get("receiverPhone")),
+            "contactPhone": "" if sender == "points_payment" else sender,
+            "fullAddress": addr, "country": "Somalia", "region": "",
+            "city": "", "district": "", "landmark": addr,
+        }
+    country = address.get("country", "").lower()
+    address["isDomestic"] = country in ("somalia", "soomaaliya", "soomaaliland")
+    address["oneLine"] = ", ".join(p for p in (address.get("fullAddress"), address.get("district"),
+                                               address.get("city"), address.get("region"),
+                                               address.get("country")) if p)
+
+    items = []
+    for d in docs:
+        q = d.get("quantity")
+        try:
+            qty = int(float(q)) if q not in (None, "") else 1
+        except Exception:
+            qty = 1
+        qty = qty if qty > 0 else 1
+        price = _dd_num(d.get("price"))
+        m_name = _dd_str(d.get("merchantName")) or "Store"
+        items.append({
+            "name": _dd_str(d.get("productName")) or _dd_str(d.get("name")) or "Item",
+            "qty": qty,
+            "price": price,
+            "total": round(price * qty, 2),
+            "merchantId": _dd_str(d.get("merchantId")),
+            "merchantName": m_name,
+            "merchantPhone": _dd_str(d.get("merchantPhone")),
+        })
+
+    groups = []
+    index = {}
+    for it in items:
+        key = it["merchantId"] or it["merchantName"]
+        if key not in index:
+            index[key] = {"merchantName": it["merchantName"], "merchantPhone": it["merchantPhone"],
+                          "lines": [], "subtotal": 0.0}
+            groups.append(index[key])
+        index[key]["lines"].append(it)
+        index[key]["subtotal"] = round(index[key]["subtotal"] + it["total"], 2)
+
+    fee = first.get("deliveryFee")
+    if isinstance(fee, (int, float)):
+        delivery_fee = float(fee)
+    else:
+        delivery_fee = 1.0 if _dd_str(first.get("deliveryType")) == "delivery" else 0.0
+    discount = first.get("discount")
+    discount = float(discount) if isinstance(discount, (int, float)) else 0.0
+
+    subtotal = round(sum(i["total"] for i in items), 2)
+    total = round(subtotal + delivery_fee - discount, 2)
+    method = _dd_str(first.get("paymentMethod")).lower()
+    speed = (_dd_str(first.get("shippingSpeed")) or "standard").lower()
+    approved = _dd_local(status_doc.get("approvedAt") or first.get("approvedAt"))
+
+    return {
+        "kind": "orders",
+        "order_id": order_id or doc_id,
+        "receipt_no": _dd_receipt_no("ORD", created, order_id or doc_id[:6]),
+        "created": created, "created_date": _dd_date(created),
+        "created_time": created.strftime("%H:%M") if created else "—",
+        "created_full": _dd_dt(created),
+        "approved_full": _dd_dt(approved) if approved else "",
+        "status": _dd_str(status_doc.get("status")).upper() or "PENDING",
+        "stamp": _dd_stamp(status_doc.get("status"), "orders"),
+        "address": address,
+        "lines": items, "groups": groups,
+        "subtotal": subtotal, "delivery_fee": delivery_fee, "discount": discount,
+        "total": total, "total_words": _dd_amount_words(total),
+        "method": method, "method_label": _dd_method_label(method or "waafi"),
+        "express": speed == "express",
+        "delivery_type": _dd_str(first.get("deliveryType")),
+        "customer_id": customer_id,
+        "qr": _dd_qr_data_uri(_dd_verify_url(order_id or doc_id)),
+    }
+
+
+def _dd_ctx_data(doc_id):
+    snap = dhibic_db.collection("data_orders").document(doc_id).get()
+    if not snap.exists:
+        return None
+    d = snap.to_dict() or {}
+    created = _dd_local(d.get("createdAt"))
+    approved = _dd_local(d.get("approvedAt"))
+    amount = _dd_num(d.get("amount"))
+    status = _dd_str(d.get("status")).upper() or "PENDING"
+    return {
+        "kind": "data_orders",
+        "doc_id": doc_id,
+        "receipt_no": _dd_receipt_no("DAT", created, doc_id[:6]),
+        "created_date": _dd_date(created), "created_full": _dd_dt(created),
+        "created_time": created.strftime("%H:%M") if created else "",
+        "approved_full": _dd_dt(approved) if approved else "",
+        "processing": _dd_duration(created, approved),
+        "status": status, "stamp": _dd_stamp(status, "data_orders"),
+        "reference_id": _dd_str(d.get("referenceId")),
+        "sender": _dd_str(d.get("senderPhone")),
+        "receiver": _dd_str(d.get("receiverPhone")),
+        "package_name": _dd_str(d.get("packageName")),
+        "package_data": _dd_str(d.get("packageData")),
+        "description": _dd_str(d.get("description")),
+        "method_label": _dd_method_label(d.get("paymentMethod") or "Mobile Money"),
+        "amount": amount, "amount_words": _dd_amount_words(amount),
+        "qr": _dd_qr_data_uri(_dd_verify_url(doc_id)),
+    }
+
+
+def _dd_ctx_exchange(doc_id):
+    snap = dhibic_db.collection("exchange_orders").document(doc_id).get()
+    if not snap.exists:
+        return None
+    d = snap.to_dict() or {}
+    created = _dd_local(d.get("createdAt"))
+    approved = _dd_local(d.get("approvedAt"))
+    amount = _dd_num(d.get("amount"))
+    final = _dd_num(d.get("finalAmount"))
+    status = _dd_str(d.get("status")).upper() or "PENDING"
+    return {
+        "kind": "exchange_orders",
+        "doc_id": doc_id,
+        "receipt_no": _dd_receipt_no("EXC", created, doc_id[:6]),
+        "created_date": _dd_date(created), "created_full": _dd_dt(created),
+        "created_time": created.strftime("%H:%M") if created else "",
+        "approved_full": _dd_dt(approved) if approved else "",
+        "processing": _dd_duration(created, approved),
+        "status": status, "stamp": _dd_stamp(status, "exchange_orders"),
+        "sender": _dd_str(d.get("senderNumber")),
+        "receiver": _dd_str(d.get("receiverNumber")),
+        "from_company": _dd_str(d.get("fromCompany")),
+        "to_company": _dd_str(d.get("toCompany")),
+        "email": _dd_str(d.get("customerEmail")),
+        "amount": amount, "final_amount": final,
+        "fee": round(max(amount - final, 0), 2),
+        "amount_words": _dd_amount_words(amount),
+        "final_words": _dd_amount_words(final),
+        "qr": _dd_qr_data_uri(_dd_verify_url(doc_id)),
+    }
+
+
+_DD_RECEIPT_BUILDERS = {
+    "orders": _dd_ctx_orders,
+    "data_orders": _dd_ctx_data,
+    "exchange_orders": _dd_ctx_exchange,
+}
+
+
+@app.route("/dhibic-receipt/<collection>/<doc_id>")
+def dhibic_receipt(collection, doc_id):
+    if "dashboard_user" not in session:
+        return redirect("/")
+    if collection not in _DD_RECEIPT_BUILDERS:
+        return "Invalid collection ❌", 400
+    try:
+        r = _DD_RECEIPT_BUILDERS[collection](doc_id)
+        if not r:
+            return "<h2 style='font-family:Arial;text-align:center;margin-top:80px'>❌ Receipt not found</h2>", 404
+        copies = max(1, min(5, request.args.get("copies", default=1, type=int) or 1))
+        resp = make_response(render_template(
+            "dhibic_receipt.html",
+            r=r,
+            store=DD_STORE,
+            copies=copies,
+            embed=request.args.get("embed") == "1",
+            printed_at=_dd_dt(datetime.now(DHIBIC_TZ)),
+        ))
+        resp.headers["Cache-Control"] = "no-store"
+        return resp
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        return f"Receipt Error ❌ {str(e)}", 500
+
+
+# ==============================
 # APPROVE ORDER  (3 collection)
 # ==============================
 @app.route("/approve-order/<collection>/<doc_id>", methods=["POST"])
@@ -6167,7 +6536,8 @@ def approve_order(collection, doc_id):
     try:
         status_val = "approved" if collection == "exchange_orders" else "APPROVED"
         dhibic_db.collection(collection).document(doc_id).update({
-            "status": status_val
+            "status": status_val,
+            "approvedAt": firestore.SERVER_TIMESTAMP
         })
         return jsonify({"success": True})
 
