@@ -1,501 +1,699 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="so">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dhibic Dahab Orders Dashboard</title>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<title>Dhibic Dahab — Orders Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Cinzel:wght@700;800;900&display=swap" rel="stylesheet">
 <style>
-* { margin:0; padding:0; box-sizing:border-box; font-family:'Plus Jakarta Sans',Segoe UI,sans-serif; }
-:root {
-  --gold:#ffcc00; --navy:#001f4d; --navy-dark:#00122e;
-  --blue:#0d6efd; --blue-dark:#004fc7;
-  --bg:#f0f3fa; --white:#fff;
-  --text:#1a1d2e; --text-muted:#6b7280;
-  --border:#e8ecf4; --sidebar-w:260px;
-  --shadow:0 4px 24px rgba(0,31,77,0.08); --radius:18px;
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --gold:#e8b53a; --gold-2:#f6d77a; --gold-3:#b9831c; --gold-soft:#fdf1cc;
+  --navy:#0a1733; --navy-2:#06102a; --navy-3:#0f2148;
+  --bg:#f5f6fa; --white:#fff; --text:#0d1430; --muted:#5d6680; --line:#e7eaf2;
+  --blue:#1f63f0; --green:#17803d; --orange:#de6a12; --red:#d42a35;
+  --sidebar-w:282px; --radius:20px;
+  --shadow:0 10px 30px rgba(13,20,48,.07),0 2px 6px rgba(13,20,48,.04);
 }
-body { background:var(--bg); display:flex; min-height:100vh; color:var(--text); }
+html,body{height:100%}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);display:flex;min-height:100vh;overflow-x:hidden}
 
-/* SIDEBAR */
-.sidebar {
-  width:var(--sidebar-w); background:linear-gradient(160deg,var(--navy),var(--navy-dark));
-  color:white; padding:28px 18px; position:fixed; top:0; left:0; bottom:0;
-  overflow-y:auto; z-index:100; display:flex; flex-direction:column;
-  border-right:1px solid rgba(255,255,255,0.05);
-}
-.logo { display:flex; align-items:center; gap:12px; margin-bottom:36px; padding:0 6px; }
-.logo-icon { font-size:32px; }
-.logo-text strong { font-size:18px; font-weight:800; color:var(--gold); letter-spacing:.5px; display:block; }
-.logo-text small { font-size:11px; color:rgba(255,255,255,.55); font-weight:500; letter-spacing:1.5px; text-transform:uppercase; margin-top:2px; display:block; }
-.menu { flex:1; }
-.menu-label { font-size:10px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:rgba(255,255,255,.3); padding:0 12px; margin:14px 0 8px; }
-.menu a { display:flex; align-items:center; gap:13px; padding:13px 15px; margin-bottom:4px; border-radius:13px; text-decoration:none; color:rgba(255,255,255,.7); font-size:14px; font-weight:500; transition:all .22s; }
-.menu a .icon { width:34px; height:34px; display:flex; align-items:center; justify-content:center; border-radius:9px; font-size:16px; background:rgba(255,255,255,.06); flex-shrink:0; }
-.menu a:hover { background:rgba(255,255,255,.08); color:white; }
-.menu a.active { background:linear-gradient(135deg,var(--blue),#1a7ffd); color:white; box-shadow:0 4px 14px rgba(13,110,253,.4); }
-.menu a.active .icon { background:rgba(255,255,255,.2); }
-.sidebar-footer { padding-top:20px; border-top:1px solid rgba(255,255,255,.08); }
-.logout-btn { display:flex; align-items:center; gap:12px; width:100%; padding:13px 15px; background:rgba(220,53,69,.12); border:1px solid rgba(220,53,69,.2); border-radius:13px; color:#ff6b7a; font-size:14px; font-weight:600; cursor:pointer; text-decoration:none; transition:all .22s; }
-.logout-btn:hover { background:rgba(220,53,69,.22); color:#ff4757; }
+/* ===== BACKGROUND DECOR ===== */
+.bg-deco{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.bg-deco .wm{position:absolute;right:-30px;top:120px;font-family:'Cinzel',serif;font-weight:900;font-size:440px;line-height:1;letter-spacing:-30px;color:rgba(220,190,120,.08);user-select:none}
+.bg-deco svg{position:absolute;width:100%;height:100%}
 
-/* MAIN */
-.main { margin-left:var(--sidebar-w); padding:32px 30px; flex:1; min-width:0; }
+/* ===== SIDEBAR ===== */
+.sidebar{width:var(--sidebar-w);position:fixed;top:0;left:0;bottom:0;z-index:50;display:flex;flex-direction:column;
+  background:radial-gradient(120% 60% at 0% 0%,#14295a 0%,transparent 60%),linear-gradient(180deg,var(--navy) 0%,var(--navy-2) 100%);
+  color:#fff;padding:34px 16px 22px;overflow:hidden}
+.sidebar .curves{position:absolute;left:0;right:0;bottom:120px;height:260px;pointer-events:none;opacity:.9}
+.sidebar > *{position:relative;z-index:1}
+.brand{text-align:center;margin-bottom:34px}
+.brand-mark{display:inline-flex;align-items:center;justify-content:center;position:relative;height:110px}
+.brand-mark img{max-height:110px;max-width:200px;display:block}
+.brand-dd{font-family:'Cinzel',serif;font-weight:900;font-size:92px;line-height:1;letter-spacing:-14px;padding-right:14px;
+  background:linear-gradient(180deg,#fff2bf 0%,#f2c94c 35%,#c98b16 70%,#8a5a0b 100%);-webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 4px 10px rgba(0,0,0,.45))}
+.brand-drop{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%);width:22px;height:30px;
+  background:linear-gradient(180deg,#fff3c4,#e2a72c 60%,#9b6510);border-radius:50% 50% 50% 50%/60% 60% 40% 40%;clip-path:polygon(50% 0,100% 62%,92% 85%,70% 100%,30% 100%,8% 85%,0 62%)}
+.brand-name{font-family:'Cinzel',serif;font-weight:800;font-size:27px;letter-spacing:.5px;margin-top:8px;
+  background:linear-gradient(180deg,#ffe9a6,#e3ad35 60%,#b07a14);-webkit-background-clip:text;background-clip:text;color:transparent}
+.brand-sub{font-size:13px;letter-spacing:5px;color:#e9ecf5;margin-top:4px;font-weight:500}
+.brand-line{width:150px;height:2px;margin:14px auto 0;background:linear-gradient(90deg,transparent,var(--gold),transparent)}
 
-/* TOPBAR */
-.topbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:28px; gap:20px; flex-wrap:wrap; }
-.title h1 { font-size:30px; font-weight:800; }
-.title p { color:var(--text-muted); font-size:14px; margin-top:4px; }
-.search-box { position:relative; }
-.search-box input { width:300px; padding:12px 18px 12px 44px; border:1.5px solid var(--border); outline:none; border-radius:13px; background:var(--white); box-shadow:var(--shadow); font-size:14px; color:var(--text); transition:border .2s; }
-.search-box input:focus { border-color:var(--blue); }
-.search-icon { position:absolute; left:15px; top:50%; transform:translateY(-50%); color:var(--text-muted); font-size:16px; pointer-events:none; }
+.menu-label{font-size:12px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:#aeb6cc;padding:0 14px;margin:6px 0 12px}
+.nav-item{display:flex;align-items:center;gap:14px;padding:15px 16px;margin-bottom:8px;border-radius:14px;color:#fff;text-decoration:none;font-size:16px;font-weight:500;
+  border:1.5px solid transparent;transition:background .2s,border-color .2s;cursor:pointer;background:none;width:100%;text-align:left;font-family:inherit}
+.nav-item:hover{background:rgba(255,255,255,.05)}
+.nav-item .ni{width:30px;display:flex;justify-content:center;font-size:22px}
+.nav-item .chev{margin-left:auto;opacity:.75;font-size:18px}
+.nav-item.active{background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.02));border-color:var(--gold);box-shadow:0 0 0 1px rgba(232,181,58,.25),0 6px 20px rgba(232,181,58,.15)}
+.nav-badge{min-width:22px;height:22px;padding:0 7px;border-radius:11px;background:#e5484d;color:#fff;font-size:11px;font-weight:800;display:none;align-items:center;justify-content:center;margin-left:auto}
+.nav-badge.show{display:inline-flex}
+.nav-badge.show + .chev{margin-left:8px}
+.menu-sep{height:1px;background:rgba(255,255,255,.08);margin:22px 8px 22px}
+.nav-spacer{flex:1}
+.logout{display:flex;align-items:center;gap:14px;padding:16px 18px;border-radius:14px;text-decoration:none;color:#ff5a64;font-weight:600;font-size:16px;
+  background:rgba(120,15,30,.35);border:1px solid rgba(229,72,77,.25);margin:0 6px}
+.logout:hover{background:rgba(150,20,35,.45)}
+.logout .chev{margin-left:auto}
 
-/* TABS */
-.tabs { display:flex; gap:8px; margin-bottom:22px; flex-wrap:wrap; }
-.tab-btn { padding:11px 22px; border:2px solid var(--border); background:var(--white); border-radius:13px; font-size:14px; font-weight:700; color:var(--text-muted); cursor:pointer; transition:all .2s; box-shadow:var(--shadow); }
-.tab-btn:hover { border-color:var(--blue); color:var(--blue); }
-.tab-btn.active { background:linear-gradient(135deg,var(--blue),#1a7ffd); border-color:var(--blue); color:white; box-shadow:0 4px 14px rgba(13,110,253,.35); }
+/* ===== MAIN ===== */
+.main{position:relative;z-index:1;margin-left:var(--sidebar-w);flex:1;min-width:0;padding:46px 36px 40px}
+.topbar{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;flex-wrap:wrap;margin-bottom:26px}
+.title .accent{width:78px;height:4px;border-radius:2px;background:linear-gradient(90deg,var(--gold-3),var(--gold));margin-bottom:16px}
+.title h1{font-size:42px;font-weight:900;letter-spacing:-.5px;line-height:1.1}
+.title p{font-size:19px;color:#3d4766;margin-top:8px}
+.top-right{display:flex;flex-direction:column;align-items:flex-end;gap:12px;margin-top:16px}
+.search{position:relative;width:500px;max-width:100%}
+.search input{width:100%;height:54px;padding:0 20px 0 58px;border-radius:16px;border:2px solid var(--gold-2);background:#fff;font:500 16px 'Inter',sans-serif;color:var(--text);outline:none;
+  box-shadow:0 8px 24px rgba(232,181,58,.12)}
+.search input:focus{border-color:var(--gold)}
+.search svg{position:absolute;left:20px;top:50%;transform:translateY(-50%)}
+.sound-ctrl{display:flex;gap:8px;align-items:center}
+.pill-btn{display:inline-flex;align-items:center;gap:8px;height:38px;padding:0 14px;border-radius:12px;border:1.5px solid var(--line);background:#fff;font:600 13px 'Inter';color:var(--text);cursor:pointer;box-shadow:var(--shadow)}
+.pill-btn.on{border-color:#9fdcb3;background:#effbf3;color:var(--green)}
+.pill-btn.off{border-color:#f3c0c3;background:#fff4f4;color:var(--red)}
+.live-dot{width:8px;height:8px;border-radius:50%;background:#22c55e;box-shadow:0 0 0 0 rgba(34,197,94,.6);animation:pulse 1.6s infinite}
+.live-dot.err{background:#ef4444;animation:none}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(34,197,94,.6)}70%{box-shadow:0 0 0 8px rgba(34,197,94,0)}100%{box-shadow:0 0 0 0 rgba(34,197,94,0)}}
 
-/* STAT CARDS */
-.cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:18px; margin-bottom:26px; }
-.card { background:var(--white); padding:22px 24px; border-radius:var(--radius); box-shadow:var(--shadow); border:1px solid var(--border); position:relative; overflow:hidden; }
-.card-top { display:flex; justify-content:space-between; align-items:flex-start; }
-.card-label { font-size:12px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:.5px; }
-.card-badge { width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:17px; }
-.card.c-total .card-badge { background:rgba(13,110,253,.1); }
-.card.c-success .card-badge { background:rgba(25,135,84,.1); }
-.card.c-failed .card-badge { background:rgba(220,53,69,.1); }
-.card.c-pending .card-badge { background:rgba(255,152,0,.1); }
-.card.c-approved .card-badge { background:rgba(13,110,253,.08); }
-.card h2 { font-size:36px; font-weight:800; margin-top:10px; line-height:1; }
-.card.c-total h2 { color:var(--blue); }
-.card.c-success h2 { color:#198754; }
-.card.c-failed h2 { color:#dc3545; }
-.card.c-pending h2 { color:#ff9800; }
-.card.c-approved h2 { color:#0d6efd; }
-.card p { color:var(--text-muted); margin-top:5px; font-size:12px; }
+/* ===== TABS ===== */
+.tabs{display:flex;gap:18px;flex-wrap:wrap;margin-bottom:24px}
+.tab{display:inline-flex;align-items:center;gap:12px;height:50px;padding:0 26px;border-radius:14px;border:1.5px solid transparent;background:#fff;
+  font:700 16px 'Inter';color:var(--text);cursor:pointer;box-shadow:var(--shadow);transition:.2s}
+.tab .ti{font-size:20px}
+.tab:hover{border-color:var(--gold-2)}
+.tab.active{background:linear-gradient(180deg,#fff0c2,#f9db86);border-color:var(--gold);box-shadow:0 8px 20px rgba(232,181,58,.28)}
+.tab .tbadge{min-width:22px;height:22px;padding:0 7px;border-radius:11px;background:#e5484d;color:#fff;font-size:11px;font-weight:800;display:none;align-items:center;justify-content:center}
+.tab .tbadge.show{display:inline-flex}
 
-/* TABLE */
-.table-box { background:var(--white); padding:24px; border-radius:var(--radius); box-shadow:var(--shadow); border:1px solid var(--border); overflow:auto; }
-.table-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:12px; }
-.table-header h2 { font-size:20px; font-weight:800; }
-.table-count { font-size:13px; color:var(--text-muted); background:var(--bg); padding:6px 14px; border-radius:20px; font-weight:600; }
-table { width:100%; border-collapse:collapse; }
-thead tr { border-bottom:2px solid var(--border); }
-th { background:var(--bg); padding:12px 14px; text-align:left; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.6px; color:var(--text-muted); white-space:nowrap; }
-th:first-child { border-radius:10px 0 0 10px; }
-th:last-child { border-radius:0 10px 10px 0; }
-td { padding:13px 14px; border-bottom:1px solid var(--border); font-size:13px; vertical-align:middle; }
-tbody tr:last-child td { border-bottom:none; }
-tbody tr:hover { background:#f7f9ff; }
+/* ===== STAT CARDS ===== */
+.cards{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:22px;margin-bottom:28px}
+.card{position:relative;overflow:hidden;background:#fff;border-radius:var(--radius);padding:22px 22px 22px;box-shadow:var(--shadow);border:1px solid #eef0f6;display:flex;gap:18px;min-height:162px}
+.card::after{content:"";position:absolute;right:-40px;bottom:-60px;width:220px;height:160px;border-radius:50%;opacity:.55;transform:rotate(-20deg)}
+.card.c-total::after{background:radial-gradient(closest-side,#dbe7ff,transparent)}
+.card.c-success::after{background:radial-gradient(closest-side,#d9f5e2,transparent)}
+.card.c-approved::after{background:radial-gradient(closest-side,#dbe7ff,transparent)}
+.card.c-pending::after{background:radial-gradient(closest-side,#fde9c8,transparent)}
+.card.c-failed::after{background:radial-gradient(closest-side,#fddcdc,transparent)}
+.c-icon{width:58px;height:58px;border-radius:14px;flex-shrink:0;display:flex;align-items:center;justify-content:center;position:relative;z-index:1}
+.c-total .c-icon,.c-approved .c-icon{background:#e3ecff}
+.c-success .c-icon{background:#dcf5e4}
+.c-pending .c-icon{background:#fdeac4}
+.c-failed .c-icon{background:#fde0e0}
+.c-body{position:relative;z-index:1;padding-top:12px}
+.c-label{font-size:15px;font-weight:800;letter-spacing:.3px;text-transform:uppercase}
+.c-num{font-size:46px;font-weight:900;line-height:1;margin-top:16px;transition:transform .3s}
+.c-num.bump{transform:scale(1.18)}
+.c-total .c-num,.c-approved .c-num{color:var(--blue)}
+.c-success .c-num{color:var(--green)}
+.c-pending .c-num{color:var(--orange)}
+.c-failed .c-num{color:var(--red)}
+.c-sub{font-size:15px;color:var(--muted);margin-top:12px}
 
-/* STATUS */
-.status { padding:5px 12px; border-radius:30px; font-size:11px; font-weight:700; display:inline-flex; align-items:center; gap:5px; white-space:nowrap; }
-.status::before { content:''; width:6px; height:6px; border-radius:50%; display:inline-block; }
-.st-SUCCESS { background:#d4f8df; color:#198754; } .st-SUCCESS::before { background:#198754; }
-.st-FAILED  { background:#ffe0e0; color:#dc3545; } .st-FAILED::before  { background:#dc3545; }
-.st-PENDING { background:#fff2cc; color:#cc7a00; } .st-PENDING::before { background:#ff9800; }
-.st-APPROVED{ background:#d6ecff; color:#0d6efd; } .st-APPROVED::before{ background:#0d6efd; }
-.st-approved{ background:#d6ecff; color:#0d6efd; } .st-approved::before{ background:#0d6efd; }
+/* ===== TABLE BOX ===== */
+.table-box{background:#fff;border-radius:var(--radius);border:1.5px solid #f2d68c;box-shadow:var(--shadow);padding:24px 24px 30px}
+.tb-head{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:22px;padding:0 0 0 2px}
+.tb-title{display:flex;align-items:center;gap:16px}
+.tb-title .bar{width:5px;height:38px;border-radius:3px;background:linear-gradient(180deg,var(--gold-2),var(--gold-3))}
+.tb-title .ti{font-size:32px}
+.tb-title h2{font-size:27px;font-weight:800}
+.tb-count{height:40px;padding:0 18px;border-radius:20px;background:#eff2f8;display:inline-flex;align-items:center;font-size:16px;font-weight:600}
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:separate;border-spacing:0;min-width:1000px}
+thead th{background:#eef1f7;padding:16px 16px;text-align:left;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:#2c3555;white-space:nowrap}
+thead th:first-child{border-radius:12px 0 0 12px}
+thead th:last-child{border-radius:0 12px 12px 0}
+tbody td{padding:14px 16px;border-bottom:1px solid var(--line);font-size:13.5px;vertical-align:middle}
+tbody tr:hover td{background:#fbfaf4}
+tbody tr.row-new td{animation:newrow 6s ease-out}
+@keyframes newrow{0%,40%{background:#fff4cf}100%{background:transparent}}
+.new-tag{display:inline-block;margin-left:6px;padding:2px 7px;border-radius:6px;background:#e5484d;color:#fff;font-size:10px;font-weight:800;vertical-align:middle}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px;font-weight:700;color:var(--navy-3);background:#f2f4f9;padding:4px 9px;border-radius:8px;display:inline-block}
+.phone{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-weight:700;color:var(--navy-3)}
+.amount{font-weight:800;color:var(--green);font-size:14px}
+.sub{font-size:12px;color:var(--muted);margin-top:2px}
+.strong{font-weight:700}
+.status{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:30px;font-size:11.5px;font-weight:800;white-space:nowrap}
+.status::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.st-SUCCESS{background:#dcf5e4;color:var(--green)}
+.st-APPROVED{background:#e3ecff;color:var(--blue)}
+.st-PENDING{background:#fdf0cf;color:#b8620b}
+.st-FAILED{background:#fde0e0;color:var(--red)}
+.st-OTHER{background:#eef1f7;color:#4b5573}
+.approve-btn{height:34px;padding:0 16px;border-radius:10px;border:0;cursor:pointer;font:700 12.5px 'Inter';color:#3b2a00;
+  background:linear-gradient(180deg,#ffe28a,#f0b93a);box-shadow:0 4px 12px rgba(232,181,58,.35);white-space:nowrap}
+.approve-btn:hover{filter:brightness(1.04)}
+.approve-btn:disabled{background:#eef1f7;color:#7b849e;box-shadow:none;cursor:default}
 
-/* CELLS */
-.order-id { font-weight:700; color:var(--navy); font-size:12px; font-family:monospace; background:var(--bg); padding:4px 9px; border-radius:8px; display:inline-block; }
-.phone { font-family:monospace; font-size:13px; font-weight:600; color:var(--navy); }
-.amount { font-weight:800; font-size:14px; color:#198754; }
-.pkg-name { font-weight:700; font-size:13px; }
-.pkg-sub { font-size:11px; color:var(--text-muted); margin-top:2px; }
+/* ===== EMPTY STATE ===== */
+.empty{text-align:center;padding:34px 10px 18px}
+.empty svg{display:block;margin:0 auto 18px}
+.empty h3{font-size:21px;font-weight:800}
+.empty p{font-size:16px;color:var(--muted);margin-top:8px}
 
-/* APPROVE BTN */
-.approve-btn { padding:7px 15px; background:linear-gradient(135deg,var(--blue),#1a7ffd); border:none; color:white; border-radius:10px; cursor:pointer; font-weight:700; font-size:12px; transition:all .2s; box-shadow:0 3px 10px rgba(13,110,253,.3); white-space:nowrap; }
-.approve-btn:hover { transform:translateY(-1px); box-shadow:0 6px 18px rgba(13,110,253,.4); }
-.approve-btn:disabled { opacity:.5; cursor:not-allowed; transform:none; }
+/* ===== SOUND BANNER / TOASTS ===== */
+.sound-banner{display:none;position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:998;max-width:calc(100% - 32px);align-items:center;gap:14px;background:#fff7dd;border:1.5px solid var(--gold-2);color:#5a4100;border-radius:14px;padding:12px 16px;font-weight:600;font-size:14px;box-shadow:0 14px 40px rgba(0,0,0,.15)}
+.sound-banner.show{display:flex}
+.sound-banner button{margin-left:auto}
+.toasts{position:fixed;right:24px;bottom:24px;z-index:999;display:flex;flex-direction:column;gap:10px;align-items:flex-end}
+.toast{min-width:280px;max-width:380px;background:var(--navy);color:#fff;border-radius:14px;padding:14px 16px;box-shadow:0 14px 40px rgba(0,0,0,.25);border-left:4px solid var(--gold);
+  font-size:14px;animation:tin .3s ease-out}
+.toast.err{border-left-color:#ef4444}
+.toast.ok{border-left-color:#22c55e}
+.toast b{display:block;font-size:15px;margin-bottom:3px;color:var(--gold-2)}
+.toast.ok b{color:#86efac}.toast.err b{color:#fca5a5}
+@keyframes tin{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
 
-/* TAB PANELS */
-.tab-panel { display:none; }
-.tab-panel.active { display:block; }
-
-/* TOAST */
-#toast { position:fixed; bottom:30px; right:30px; background:#1a1d2e; color:white; padding:14px 22px; border-radius:14px; font-size:14px; font-weight:600; box-shadow:0 8px 30px rgba(0,0,0,.2); z-index:9999; opacity:0; transform:translateY(20px); transition:all .3s; }
-#toast.show { opacity:1; transform:translateY(0); }
-#toast.t-success { border-left:4px solid #198754; }
-#toast.t-error   { border-left:4px solid #dc3545; }
-
-@media(max-width:900px) {
-  .sidebar { display:none; }
-  .main { margin-left:0; padding:16px; }
-  .search-box input { width:100%; }
+.mobile-bar{display:none}
+@media(max-width:1300px){.cards{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:960px){
+  .sidebar{transform:translateX(-100%);transition:transform .25s}
+  .sidebar.open{transform:none}
+  .main{margin-left:0;padding:20px 16px}
+  .mobile-bar{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+  .mobile-bar button{height:42px;width:42px;border-radius:12px;border:1px solid var(--line);background:#fff;font-size:20px}
+  .title h1{font-size:30px}.title p{font-size:15px}
+  .top-right{align-items:stretch;width:100%}
+  .search{width:100%}
+  .cards{grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+  .c-num{font-size:36px}
+  .tabs{gap:10px}.tab{padding:0 16px;font-size:14px}
+  .tb-title h2{font-size:21px}
 }
 </style>
 </head>
 <body>
 
-<!-- SIDEBAR -->
-<div class="sidebar">
-  <div class="logo">
-    <div class="logo-icon">💎</div>
-    <div class="logo-text">
-      <strong>DHIBIC DAHAB</strong>
-      <small>Online Store</small>
-    </div>
-  </div>
-  <div class="menu">
-    <div class="menu-label">Main Menu</div>
-    <a href="#" class="active" onclick="switchTab('data_orders');return false;"><div class="icon">📦</div>data_orders</a>
-    <a href="#" onclick="switchTab('orders');return false;"><div class="icon">🛒</div>orders</a>
-    <a href="#" onclick="switchTab('exchange');return false;"><div class="icon">💱</div>exchange_orders</a>
-    <div class="menu-label" style="margin-top:20px">System</div>
-    <a href="#"><div class="icon">⚙️</div>Settings</a>
-  </div>
-  <div class="sidebar-footer">
-    <a href="/logout" class="logout-btn">🚪 Logout</a>
-  </div>
+<!-- background decoration -->
+<div class="bg-deco">
+  <div class="wm">DD</div>
+  <svg viewBox="0 0 1600 1000" preserveAspectRatio="none" aria-hidden="true">
+    <path d="M700 0 C 900 60, 1100 30, 1600 -20" stroke="rgba(232,181,58,.35)" stroke-width="2" fill="none"/>
+    <path d="M1000 1000 C 1250 900, 1400 880, 1600 780" stroke="rgba(232,181,58,.35)" stroke-width="2" fill="none"/>
+    <path d="M1100 1000 C 1300 930, 1450 900, 1600 840" stroke="rgba(232,181,58,.2)" stroke-width="1.5" fill="none"/>
+  </svg>
 </div>
 
-<!-- MAIN -->
-<div class="main">
+<!-- ===== SIDEBAR ===== -->
+<aside class="sidebar" id="sidebar">
+  <svg class="curves" viewBox="0 0 282 260" preserveAspectRatio="none" aria-hidden="true">
+    <path d="M0 150 C 90 220, 180 120, 282 40" stroke="rgba(232,181,58,.55)" stroke-width="1.5" fill="none"/>
+    <path d="M0 165 C 95 230, 185 135, 282 60" stroke="rgba(232,181,58,.35)" stroke-width="1" fill="none"/>
+    <path d="M0 180 C 100 240, 190 150, 282 80" stroke="rgba(232,181,58,.2)" stroke-width="1" fill="none"/>
+  </svg>
+
+  <div class="brand">
+    <div class="brand-mark" id="brandMark">
+      <!-- Haddii aad leedahay logo-gaaga, ku keydi: static/dd_logo.png -->
+      <img src="/static/dd_logo.png" alt="Dhibic Dahab" onerror="this.parentNode.classList.add('nologo');this.remove()">
+    </div>
+    <div class="brand-name">DHIBIC DAHAB</div>
+    <div class="brand-sub">ONLINE STORE</div>
+    <div class="brand-line"></div>
+  </div>
+
+  <div class="menu-label">Main Menu</div>
+  <button class="nav-item active" data-tab="data_orders"><span class="ni">📦</span>data_orders<span class="nav-badge" id="nb-data_orders"></span><span class="chev">›</span></button>
+  <button class="nav-item" data-tab="orders"><span class="ni">🛒</span>orders<span class="nav-badge" id="nb-orders"></span><span class="chev">›</span></button>
+  <button class="nav-item" data-tab="exchange_orders"><span class="ni">🔄</span>exchange_orders<span class="nav-badge" id="nb-exchange_orders"></span><span class="chev">›</span></button>
+
+  <div class="menu-sep"></div>
+  <div class="menu-label">System</div>
+  <button class="nav-item" id="settingsBtn"><span class="ni">⚙️</span>Settings<span class="chev">›</span></button>
+
+  <div class="nav-spacer"></div>
+  <a href="/logout" class="logout"><span>⏻</span>Logout<span class="chev">›</span></a>
+</aside>
+
+<!-- ===== MAIN ===== -->
+<main class="main">
+  <div class="mobile-bar"><button onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button><strong>Dhibic Dahab</strong></div>
 
   <div class="topbar">
     <div class="title">
+      <div class="accent"></div>
       <h1>Welcome Back 👋</h1>
       <p>Dhibic Dahab — Orders Dashboard</p>
     </div>
-    <div class="search-box">
-      <span class="search-icon">🔍</span>
-      <input type="text" id="searchInput" placeholder="Raadi 4ta digit ee ugu dambeeya sender..." onkeyup="searchTable()">
+    <div class="top-right">
+      <div class="search">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1a2240" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+        <input type="text" id="searchInput" placeholder="Raadi 4ta digit ee ugu dambeeya sender phone" autocomplete="off" inputmode="numeric">
+      </div>
+      <div class="sound-ctrl">
+        <span class="pill-btn" title="Live: orders-ka cusub si toos ah ayaa loo hubiyaa"><span class="live-dot" id="liveDot"></span><span id="liveText">Live</span></span>
+        <button class="pill-btn" id="testSoundBtn" title="Tijaabi dhawaaqa">🔊 Tijaabi</button>
+        <button class="pill-btn on" id="soundToggle">🔔 Dhawaaqa: Shidan</button>
+      </div>
     </div>
   </div>
 
-  <!-- TABS -->
+  <div class="sound-banner" id="soundBanner">
+    🔔 Si dhawaaqa order-ka cusub u shaqeeyo, browser-ku wuxuu u baahan yahay inaad hal mar riixdo.
+    <button class="pill-btn on" id="enableSoundBtn">Daar dhawaaqa</button>
+  </div>
+
   <div class="tabs">
-    <button class="tab-btn active" onclick="switchTab('data_orders')">📦 data_orders</button>
-    <button class="tab-btn" onclick="switchTab('orders')">🛒 orders</button>
-    <button class="tab-btn" onclick="switchTab('exchange')">💱 exchange_orders</button>
+    <button class="tab active" data-tab="data_orders"><span class="ti">📦</span>data_orders<span class="tbadge" id="tb-data_orders"></span></button>
+    <button class="tab" data-tab="orders"><span class="ti">🛒</span>orders<span class="tbadge" id="tb-orders"></span></button>
+    <button class="tab" data-tab="exchange_orders"><span class="ti">🔄</span>exchange_orders<span class="tbadge" id="tb-exchange_orders"></span></button>
   </div>
 
-  <!-- ═══════════════════════════════════ -->
-  <!-- TAB 1: data_orders                 -->
-  <!-- ═══════════════════════════════════ -->
-  <div class="tab-panel active" id="panel-data_orders">
+  <section class="cards" id="cards"></section>
 
-    <!-- CARDS -->
-    <div class="cards">
-      <div class="card c-total">
-        <div class="card-top"><div class="card-label">Total</div><div class="card-badge">📦</div></div>
-        <h2>{{ data_orders|length }}</h2><p>Dhammaan orders</p>
-      </div>
-      <div class="card c-success">
-        <div class="card-top"><div class="card-label">Success</div><div class="card-badge">✅</div></div>
-        <h2>{{ data_orders|selectattr("status","equalto","SUCCESS")|list|length }}</h2><p>Lacag la qaatay</p>
-      </div>
-      <div class="card c-approved">
-        <div class="card-top"><div class="card-label">Approved</div><div class="card-badge">🔵</div></div>
-        <h2>{{ data_orders|selectattr("status","equalto","APPROVED")|list|length }}</h2><p>La ansixiyay</p>
-      </div>
-      <div class="card c-pending">
-        <div class="card-top"><div class="card-label">Pending</div><div class="card-badge">⏳</div></div>
-        <h2>{{ data_orders|selectattr("status","equalto","PENDING")|list|length }}</h2><p>Sugaya</p>
-      </div>
-      <div class="card c-failed">
-        <div class="card-top"><div class="card-label">Failed</div><div class="card-badge">❌</div></div>
-        <h2>{{ data_orders|selectattr("status","equalto","FAILED")|list|length }}</h2><p>La diiday</p>
-      </div>
+  <section class="table-box">
+    <div class="tb-head">
+      <div class="tb-title"><span class="bar"></span><span class="ti" id="tbIcon">📦</span><h2 id="tbTitle">data_orders</h2></div>
+      <span class="tb-count" id="tbCount">0 orders</span>
     </div>
+    <div class="table-wrap" id="tableWrap"></div>
+  </section>
+</main>
 
-    <div class="table-box">
-      <div class="table-header">
-        <h2>data_orders</h2>
-        <span class="table-count" id="count-data_orders">{{ data_orders|length }} orders</span>
-      </div>
-      <table id="table-data_orders">
-        <thead><tr>
-          <th>Doc ID</th>
-          <th>Reference ID</th>
-          <th>Sender Phone</th>
-          <th>Receiver Phone</th>
-          <th>Package</th>
-          <th>Description</th>
-          <th>Amount</th>
-          <th>Status</th>
-          <th>Created At</th>
-          <th>Action</th>
-        </tr></thead>
-        <tbody>
-        {% for o in data_orders %}
-        <tr>
-          <td><span class="order-id">{{ o.docId }}</span></td>
-          <td><span class="order-id">#{{ o.referenceId if o.referenceId else '----' }}</span></td>
-          <td class="sender-cell"><span class="phone">{{ o.senderPhone }}</span></td>
-          <td><span class="phone">{{ o.receiverPhone }}</span></td>
-          <td>
-            <div class="pkg-name">{{ o.packageName }}</div>
-            <div class="pkg-sub">📶 {{ o.packageData }}</div>
-          </td>
-          <td><div class="pkg-sub">{{ o.description }}</div></td>
-          <td><span class="amount">${{ o.amount }}</span></td>
-          <td id="do-status-{{ o.docId }}">
-            <span class="status st-{{ o.status }}">{{ o.status }}</span>
-          </td>
-          <td class="pkg-sub">{{ o.createdAt }}</td>
-          <td>
-            {% if o.status == "APPROVED" %}
-            <button class="approve-btn" disabled>✓ Approved</button>
-            {% else %}
-            <button class="approve-btn" id="do-btn-{{ o.docId }}"
-              onclick="approveOrder('data_orders','{{ o.docId }}','do')">✓ Approve</button>
-            {% endif %}
-          </td>
-        </tr>
-        {% endfor %}
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- ═══════════════════════════════════ -->
-  <!-- TAB 2: orders                      -->
-  <!-- ═══════════════════════════════════ -->
-  <div class="tab-panel" id="panel-orders">
-
-    <div class="cards">
-      <div class="card c-total">
-        <div class="card-top"><div class="card-label">Total</div><div class="card-badge">🛒</div></div>
-        <h2>{{ orders|length }}</h2><p>Dhammaan orders</p>
-      </div>
-      <div class="card c-success">
-        <div class="card-top"><div class="card-label">Success</div><div class="card-badge">✅</div></div>
-        <h2>{{ orders|selectattr("status","equalto","SUCCESS")|list|length }}</h2><p>Lacag la qaatay</p>
-      </div>
-      <div class="card c-approved">
-        <div class="card-top"><div class="card-label">Approved</div><div class="card-badge">🔵</div></div>
-        <h2>{{ orders|selectattr("status","equalto","APPROVED")|list|length }}</h2><p>La ansixiyay</p>
-      </div>
-      <div class="card c-pending">
-        <div class="card-top"><div class="card-label">Pending</div><div class="card-badge">⏳</div></div>
-        <h2>{{ orders|selectattr("status","equalto","PENDING")|list|length }}</h2><p>Sugaya</p>
-      </div>
-      <div class="card c-failed">
-        <div class="card-top"><div class="card-label">Failed</div><div class="card-badge">❌</div></div>
-        <h2>{{ orders|selectattr("status","equalto","FAILED")|list|length }}</h2><p>La diiday</p>
-      </div>
-    </div>
-
-    <div class="table-box">
-      <div class="table-header">
-        <h2>orders</h2>
-        <span class="table-count" id="count-orders">{{ orders|length }} orders</span>
-      </div>
-      <table id="table-orders">
-        <thead><tr>
-          <th>Doc ID</th>
-          <th>Order ID</th>
-          <th>Sender (customerId)</th>
-          <th>Address</th>
-          <th>Merchant ID</th>
-          <th>Merchant Name</th>
-          <th>Merchant Phone</th>
-          <th>Delivery Type</th>
-          <th>Price</th>
-          <th>Status</th>
-          <th>Created At</th>
-          <th>Action</th>
-        </tr></thead>
-        <tbody>
-        {% for o in orders %}
-        <tr>
-          <td><span class="order-id">{{ o.docId }}</span></td>
-          <td><span class="order-id">#{{ o.orderId }}</span></td>
-          <td class="sender-cell"><span class="phone">{{ o.customerId }}</span></td>
-          <td>{{ o.address }}</td>
-          <td>{{ o.merchantId }}</td>
-          <td>{{ o.merchantName }}</td>
-          <td><span class="phone">{{ o.merchantPhone }}</span></td>
-          <td>{{ o.deliveryType }}</td>
-          <td><span class="amount">${{ o.price }}</span></td>
-          <td id="or-status-{{ o.docId }}">
-            <span class="status st-{{ o.status }}">{{ o.status }}</span>
-          </td>
-          <td class="pkg-sub">{{ o.createdAt }}</td>
-          <td>
-            {% if o.status == "APPROVED" %}
-            <button class="approve-btn" disabled>✓ Approved</button>
-            {% else %}
-            <button class="approve-btn" id="or-btn-{{ o.docId }}"
-              onclick="approveOrder('orders','{{ o.docId }}','or')">✓ Approve</button>
-            {% endif %}
-          </td>
-        </tr>
-        {% endfor %}
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- ═══════════════════════════════════ -->
-  <!-- TAB 3: exchange_orders             -->
-  <!-- ═══════════════════════════════════ -->
-  <div class="tab-panel" id="panel-exchange">
-
-    <div class="cards">
-      <div class="card c-total">
-        <div class="card-top"><div class="card-label">Total</div><div class="card-badge">💱</div></div>
-        <h2>{{ exchange_orders|length }}</h2><p>Dhammaan</p>
-      </div>
-      <div class="card c-approved">
-        <div class="card-top"><div class="card-label">Approved</div><div class="card-badge">✅</div></div>
-        <h2>{{ exchange_orders|selectattr("status","equalto","approved")|list|length }}</h2><p>La ansixiyay</p>
-      </div>
-      <div class="card c-pending">
-        <div class="card-top"><div class="card-label">Pending</div><div class="card-badge">⏳</div></div>
-        <h2>{{ exchange_orders|selectattr("status","equalto","PENDING")|list|length }}</h2><p>Sugaya</p>
-      </div>
-    </div>
-
-    <div class="table-box">
-      <div class="table-header">
-        <h2>exchange_orders</h2>
-        <span class="table-count" id="count-exchange">{{ exchange_orders|length }} orders</span>
-      </div>
-      <table id="table-exchange">
-        <thead><tr>
-          <th>Doc ID</th>
-          <th>Sender Number</th>
-          <th>Receiver Number</th>
-          <th>From Company</th>
-          <th>To Company</th>
-          <th>Amount</th>
-          <th>Final Amount</th>
-          <th>Customer Email</th>
-          <th>Status</th>
-          <th>Created At</th>
-          <th>Approved At</th>
-          <th>Action</th>
-        </tr></thead>
-        <tbody>
-        {% for o in exchange_orders %}
-        <tr>
-          <td><span class="order-id">{{ o.docId }}</span></td>
-          <td class="sender-cell"><span class="phone">{{ o.senderNumber }}</span></td>
-          <td><span class="phone">{{ o.receiverNumber }}</span></td>
-          <td>{{ o.fromCompany }}</td>
-          <td>{{ o.toCompany }}</td>
-          <td><span class="amount">${{ o.amount }}</span></td>
-          <td><span class="amount">${{ o.finalAmount }}</span></td>
-          <td>{{ o.customerEmail }}</td>
-          <td id="ex-status-{{ o.docId }}">
-            <span class="status st-{{ o.status }}">{{ o.status }}</span>
-          </td>
-          <td class="pkg-sub">{{ o.createdAt }}</td>
-          <td class="pkg-sub">{{ o.approvedAt }}</td>
-          <td>
-            {% if o.status == "approved" or o.status == "APPROVED" %}
-            <button class="approve-btn" disabled>✓ Approved</button>
-            {% else %}
-            <button class="approve-btn" id="ex-btn-{{ o.docId }}"
-              onclick="approveOrder('exchange_orders','{{ o.docId }}','ex')">✓ Approve</button>
-            {% endif %}
-          </td>
-        </tr>
-        {% endfor %}
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-</div><!-- /main -->
-
-<div id="toast"></div>
+<div class="toasts" id="toasts"></div>
 
 <script>
-/* ─── ACTIVE TAB ─── */
+/* =========================================================
+   INITIAL DATA (server-rendered)
+   ========================================================= */
+const STATE = {
+  data_orders:     {{ data_orders|tojson }},
+  orders:          {{ orders|tojson }},
+  exchange_orders: {{ exchange_orders|tojson }}
+};
+const COLLS = ['data_orders','orders','exchange_orders'];
+const POLL_MS = 5000;          // hubi orders cusub 5-tii ilbiriqsiba
+const FULL_SYNC_MS = 60000;    // 1 daqiiqo kasta: cusboonaysii status-yada
+
+/* known doc ids — anything not in here that shows up later is NEW */
+const KNOWN = {};
+COLLS.forEach(c => KNOWN[c] = new Set(STATE[c].map(o => o.docId)));
+const UNSEEN = {data_orders:0, orders:0, exchange_orders:0};
+const FRESH = new Set();       // ids to highlight in the table
+
 let currentTab = 'data_orders';
 
-function switchTab(tab) {
-  currentTab = tab;
+/* =========================================================
+   HELPERS
+   ========================================================= */
+const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const norm = s => String(s || 'PENDING').toUpperCase();
+const statusCls = s => ['SUCCESS','APPROVED','PENDING','FAILED'].includes(norm(s)) ? 'st-' + norm(s) : 'st-OTHER';
+const isApproved = s => norm(s) === 'APPROVED';
+const money = v => '$' + esc(v === '' || v == null ? '0' : v);
 
-  // panels
-  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-  const panelId = tab === 'exchange' ? 'panel-exchange' : 'panel-' + tab;
-  document.getElementById(panelId).classList.add('active');
+/* =========================================================
+   TAB CONFIG
+   ========================================================= */
+const TABS = {
+  data_orders: {
+    icon:'📦', sender:'senderPhone',
+    cols:['Doc ID','Reference ID','Sender Phone','Receiver Phone','Package','Description','Amount','Status','Created At','Action'],
+    row: o => `
+      <td><span class="mono">${esc(o.docId)}</span>${FRESH.has(o.docId)?'<span class="new-tag">NEW</span>':''}</td>
+      <td><span class="mono">#${esc(o.referenceId || '----')}</span></td>
+      <td><span class="phone">${esc(o.senderPhone)}</span></td>
+      <td><span class="phone">${esc(o.receiverPhone)}</span></td>
+      <td><div class="strong">${esc(o.packageName)}</div><div class="sub">📶 ${esc(o.packageData)}</div></td>
+      <td><div class="sub">${esc(o.description)}</div></td>
+      <td><span class="amount">${money(o.amount)}</span></td>`
+  },
+  orders: {
+    icon:'🛒', sender:'customerId',
+    cols:['Doc ID','Order ID','Sender (customerId)','Address','Merchant ID','Merchant Name','Merchant Phone','Delivery Type','Price','Status','Created At','Action'],
+    row: o => `
+      <td><span class="mono">${esc(o.docId)}</span>${FRESH.has(o.docId)?'<span class="new-tag">NEW</span>':''}</td>
+      <td><span class="mono">#${esc(o.orderId)}</span></td>
+      <td><span class="phone">${esc(o.customerId)}</span></td>
+      <td>${esc(o.address)}</td>
+      <td>${esc(o.merchantId)}</td>
+      <td class="strong">${esc(o.merchantName)}</td>
+      <td><span class="phone">${esc(o.merchantPhone)}</span></td>
+      <td>${esc(o.deliveryType)}</td>
+      <td><span class="amount">${money(o.price)}</span></td>`
+  },
+  exchange_orders: {
+    icon:'🔄', sender:'senderNumber',
+    cols:['Doc ID','Sender Number','Receiver Number','From Company','To Company','Amount','Final Amount','Customer Email','Status','Created At','Approved At','Action'],
+    row: o => `
+      <td><span class="mono">${esc(o.docId)}</span>${FRESH.has(o.docId)?'<span class="new-tag">NEW</span>':''}</td>
+      <td><span class="phone">${esc(o.senderNumber)}</span></td>
+      <td><span class="phone">${esc(o.receiverNumber)}</span></td>
+      <td>${esc(o.fromCompany)}</td>
+      <td>${esc(o.toCompany)}</td>
+      <td><span class="amount">${money(o.amount)}</span></td>
+      <td><span class="amount">${money(o.finalAmount)}</span></td>
+      <td>${esc(o.customerEmail)}</td>`
+  }
+};
 
-  // tab buttons
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  event.target.classList.add('active');
+/* =========================================================
+   ICONS (stat cards)
+   ========================================================= */
+const ICONS = {
+  total:`<svg width="32" height="32" viewBox="0 0 24 24"><path d="M12 2l9 5v10l-9 5-9-5V7z" fill="#2f6df5"/><path d="M12 12l9-5M12 12v10M12 12L3 7" stroke="#cfe0ff" stroke-width="1.2" fill="none"/><path d="M12 2l9 5-9 5-9-5z" fill="#6fa0ff"/></svg>`,
+  success:`<svg width="34" height="34" viewBox="0 0 24 24"><rect x="2.5" y="2.5" width="19" height="19" rx="5" fill="#19a14f"/><path d="M7 12.5l3.2 3.2L17 9" stroke="#fff" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  approved:`<svg width="32" height="34" viewBox="0 0 24 26"><path d="M12 1l9 3.5v7c0 6.2-4 10.8-9 13-5-2.2-9-6.8-9-13v-7z" fill="#2f6df5"/><path d="M12 7l1.6 3.4 3.7.4-2.8 2.5.8 3.7L12 15.1 8.7 17l.8-3.7-2.8-2.5 3.7-.4z" fill="#fff"/></svg>`,
+  pending:`<svg width="30" height="34" viewBox="0 0 20 26"><rect x="1" y="1" width="18" height="3" rx="1.5" fill="#b0700f"/><rect x="1" y="22" width="18" height="3" rx="1.5" fill="#b0700f"/><path d="M4 4h12c0 5-4 6.5-4 9s4 4 4 9H4c0-5 4-6.5 4-9S4 9 4 4z" fill="#ffe7a6" stroke="#c98415" stroke-width="1.2"/><path d="M6.5 20.5c1-2 2.2-3 3.5-3s2.5 1 3.5 3z" fill="#e6a23c"/></svg>`,
+  failed:`<svg width="34" height="34" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#e23b45"/><path d="M8.3 8.3l7.4 7.4M15.7 8.3l-7.4 7.4" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/></svg>`
+};
 
-  // sidebar links
-  document.querySelectorAll('.menu a').forEach(a => a.classList.remove('active'));
-  event.target.closest('.menu a') && event.target.closest('.menu a').classList.add('active');
-
-  // clear search
-  document.getElementById('searchInput').value = '';
-  searchTable();
+/* =========================================================
+   RENDER
+   ========================================================= */
+function filteredRows(){
+  const q = document.getElementById('searchInput').value.trim().toLowerCase();
+  const key = TABS[currentTab].sender;
+  const list = STATE[currentTab];
+  if(!q) return list;
+  return list.filter(o => String(o[key] || '').trim().slice(-4).toLowerCase().includes(q));
 }
 
-/* ─── SEARCH ─── */
-function searchTable() {
-  const val = document.getElementById('searchInput').value.toLowerCase().trim();
-
-  const tableMap = {
-    'data_orders': 'table-data_orders',
-    'orders':      'table-orders',
-    'exchange':    'table-exchange'
-  };
-  const countMap = {
-    'data_orders': 'count-data_orders',
-    'orders':      'count-orders',
-    'exchange':    'count-exchange'
-  };
-
-  const tableId = tableMap[currentTab];
-  const countId = countMap[currentTab];
-  if (!tableId) return;
-
-  const rows = document.querySelectorAll('#' + tableId + ' tbody tr');
-  let visible = 0;
-
-  rows.forEach(row => {
-    const senderEl = row.querySelector('.sender-cell');
-    const sender = senderEl ? senderEl.innerText.trim() : '';
-    const last4 = sender.slice(-4).toLowerCase();
-    const show = val === '' || last4.includes(val);
-    row.style.display = show ? '' : 'none';
-    if (show) visible++;
-  });
-
-  document.getElementById(countId).textContent = visible + ' orders';
-}
-
-/* ─── APPROVE ─── */
-async function approveOrder(collection, docId, prefix) {
-  const btn = document.getElementById(prefix + '-btn-' + docId);
-  if (btn) { btn.disabled = true; btn.textContent = '...'; }
-
-  try {
-    const res  = await fetch('/approve-order/' + collection + '/' + docId, { method: 'POST' });
-    const data = await res.json();
-
-    if (data.success) {
-      const statusEl = document.getElementById(prefix + '-status-' + docId);
-      if (statusEl) statusEl.innerHTML = '<span class="status st-APPROVED">APPROVED</span>';
-      if (btn) { btn.textContent = '✓ Approved'; btn.style.opacity = '.5'; }
-      showToast('Order la ansixiyay!', 'success');
-    } else {
-      if (btn) { btn.disabled = false; btn.textContent = '✓ Approve'; }
-      showToast(data.error || 'Khalad ayaa dhacay.', 'error');
+function renderCards(){
+  const list = STATE[currentTab];
+  const count = s => list.filter(o => norm(o.status) === s).length;
+  const defs = [
+    ['c-total','total','TOTAL',list.length,'Dhammaan orders'],
+    ['c-success','success','SUCCESS',count('SUCCESS'),'Lacag la qaatay'],
+    ['c-approved','approved','APPROVED',count('APPROVED'),'La ansixiyay'],
+    ['c-pending','pending','PENDING',count('PENDING'),'Sugaya'],
+    ['c-failed','failed','FAILED',count('FAILED'),'La diiday']
+  ];
+  const wrap = document.getElementById('cards');
+  const old = {};
+  wrap.querySelectorAll('.c-num').forEach(n => old[n.dataset.k] = n.textContent);
+  wrap.innerHTML = defs.map(([cls,ic,label,num,sub]) => `
+    <div class="card ${cls}">
+      <div class="c-icon">${ICONS[ic]}</div>
+      <div class="c-body"><div class="c-label">${label}</div><div class="c-num" data-k="${ic}">${num}</div><div class="c-sub">${sub}</div></div>
+    </div>`).join('');
+  wrap.querySelectorAll('.c-num').forEach(n => {
+    if(old[n.dataset.k] !== undefined && old[n.dataset.k] !== n.textContent){
+      n.classList.add('bump'); setTimeout(() => n.classList.remove('bump'), 350);
     }
-  } catch(e) {
-    if (btn) { btn.disabled = false; btn.textContent = '✓ Approve'; }
-    showToast('Server error.', 'error');
+  });
+}
+
+function renderTable(){
+  const cfg = TABS[currentTab];
+  const rows = filteredRows();
+  const q = document.getElementById('searchInput').value.trim();
+  document.getElementById('tbIcon').textContent = cfg.icon;
+  document.getElementById('tbTitle').textContent = currentTab;
+  document.getElementById('tbCount').textContent = rows.length + ' orders';
+
+  let body;
+  if(rows.length === 0){
+    body = `<tr><td colspan="${cfg.cols.length}" style="border:0">
+      <div class="empty">
+        <svg width="160" height="120" viewBox="0 0 160 120" aria-hidden="true">
+          <ellipse cx="80" cy="104" rx="62" ry="12" fill="#eef1f7"/>
+          <path d="M40 52l40-16 40 16v40l-40 16-40-16z" fill="#f2c56e"/>
+          <path d="M80 68v40l40-16V52z" fill="#e4a94a"/>
+          <path d="M40 52l40 16 40-16" fill="none" stroke="#c98a2c" stroke-width="1.5"/>
+          <path d="M40 52l-12 14 40 16 12-14z" fill="#f7d58e"/>
+          <path d="M120 52l12 14-40 16-12-14z" fill="#f1c272"/>
+          <path d="M80 10v14M64 16l6 10M96 16l-6 10" stroke="#e8b53a" stroke-width="3" stroke-linecap="round"/>
+        </svg>
+        <h3>${q ? 'Natiijo lama helin' : 'Wax amar ah lama helin'}</h3>
+        <p>${q ? 'Isku day 4 digit kale' : 'Orders will appear here when available'}</p>
+      </div></td></tr>`;
+  } else {
+    body = rows.map(o => {
+      const approved = isApproved(o.status);
+      return `<tr class="${FRESH.has(o.docId)?'row-new':''}">
+        ${cfg.row(o)}
+        <td><span class="status ${statusCls(o.status)}">${esc(norm(o.status))}</span></td>
+        <td class="sub">${esc(o.createdAt)}</td>
+        ${currentTab==='exchange_orders' ? `<td class="sub">${esc(o.approvedAt)}</td>` : ''}
+        <td>${approved
+          ? '<button class="approve-btn" disabled>✓ Approved</button>'
+          : `<button class="approve-btn" data-approve="${esc(o.docId)}">✓ Approve</button>`}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  document.getElementById('tableWrap').innerHTML = `
+    <table><thead><tr>${cfg.cols.map(c => `<th>${esc(c)}</th>`).join('')}</tr></thead>
+    <tbody>${body}</tbody></table>`;
+}
+
+function renderBadges(){
+  COLLS.forEach(c => {
+    const n = UNSEEN[c];
+    ['nb-','tb-'].forEach(p => {
+      const el = document.getElementById(p + c);
+      el.textContent = n;
+      el.classList.toggle('show', n > 0);
+    });
+  });
+}
+
+function render(){ renderCards(); renderTable(); renderBadges(); }
+
+function switchTab(tab){
+  currentTab = tab;
+  UNSEEN[tab] = 0;
+  document.querySelectorAll('[data-tab]').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  document.getElementById('searchInput').value = '';
+  document.getElementById('sidebar').classList.remove('open');
+  render();
+  updateTitle();
+}
+
+/* =========================================================
+   SOUND (Web Audio — no mp3 file needed)
+   ========================================================= */
+let audioCtx = null;
+let soundOn = (() => { try { return localStorage.getItem('dd_sound') !== 'off'; } catch(e){ return true; } })();
+
+function unlockAudio(){
+  try{
+    if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if(audioCtx.state === 'suspended') audioCtx.resume();
+  }catch(e){}
+  updateSoundUI();
+}
+
+function tone(freq, start, dur, vol){
+  const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+  o.type = 'sine'; o.frequency.value = freq;
+  g.gain.setValueAtTime(0.0001, start);
+  g.gain.exponentialRampToValueAtTime(vol, start + 0.02);
+  g.gain.exponentialRampToValueAtTime(0.0001, start + dur);
+  o.connect(g).connect(audioCtx.destination);
+  o.start(start); o.stop(start + dur + 0.05);
+}
+
+/* "ding-ding-DING" — 3 jeer ayuu ku celinayaa si aan loo seegin */
+function playOrderSound(times = 3){
+  if(!soundOn) return;
+  unlockAudio();
+  if(!audioCtx || audioCtx.state !== 'running') { showBanner(true); return; }
+  const t0 = audioCtx.currentTime + 0.05;
+  for(let i = 0; i < times; i++){
+    const t = t0 + i * 0.9;
+    tone(880,  t,        0.35, 0.5);
+    tone(1175, t + 0.16, 0.35, 0.5);
+    tone(1568, t + 0.32, 0.55, 0.55);
   }
 }
 
-/* ─── TOAST ─── */
-function showToast(msg, type) {
-  const t = document.getElementById('toast');
-  t.textContent = (type === 'success' ? '✅ ' : '❌ ') + msg;
-  t.className = 'show t-' + type;
-  setTimeout(() => { t.className = ''; }, 3000);
+function showBanner(show){ document.getElementById('soundBanner').classList.toggle('show', show && soundOn); }
+
+function updateSoundUI(){
+  const b = document.getElementById('soundToggle');
+  b.className = 'pill-btn ' + (soundOn ? 'on' : 'off');
+  b.textContent = soundOn ? '🔔 Dhawaaqa: Shidan' : '🔕 Dhawaaqa: Dansan';
+  const ready = audioCtx && audioCtx.state === 'running';
+  showBanner(!ready);
 }
+
+/* any click/key on the page unlocks audio (browser autoplay rule) */
+['pointerdown','keydown','touchstart'].forEach(ev =>
+  document.addEventListener(ev, unlockAudio, {passive:true}));
+
+/* =========================================================
+   DESKTOP NOTIFICATION + TAB TITLE
+   ========================================================= */
+const BASE_TITLE = document.title;
+function totalUnseen(){ return COLLS.reduce((a,c) => a + UNSEEN[c], 0); }
+function updateTitle(){
+  const n = totalUnseen();
+  document.title = n > 0 ? `(${n}) 🔔 Order cusub — Dhibic Dahab` : BASE_TITLE;
+}
+function requestNotifyPermission(){
+  if('Notification' in window && Notification.permission === 'default'){
+    try{ Notification.requestPermission(); }catch(e){}
+  }
+}
+function desktopNotify(title, body){
+  if(!('Notification' in window) || Notification.permission !== 'granted') return;
+  try{
+    const n = new Notification(title, {body, tag:'dd-order', renotify:true, requireInteraction:false});
+    n.onclick = () => { window.focus(); n.close(); };
+  }catch(e){}
+}
+
+/* =========================================================
+   TOASTS
+   ========================================================= */
+function toast(title, msg, type = ''){
+  const box = document.getElementById('toasts');
+  const el = document.createElement('div');
+  el.className = 'toast ' + type;
+  el.innerHTML = `<b>${esc(title)}</b>${esc(msg)}`;
+  box.appendChild(el);
+  setTimeout(() => el.remove(), 6000);
+}
+
+/* =========================================================
+   LIVE POLLING — new orders => sound + toast + notification
+   ========================================================= */
+function maxMs(c){ return STATE[c].reduce((m,o) => Math.max(m, o.createdAtMs || 0), 0); }
+
+function describe(c, o){
+  if(c === 'data_orders') return `${o.senderPhone || ''} • ${o.packageName || ''} • $${o.amount}`;
+  if(c === 'orders') return `${o.merchantName || o.customerId || ''} • $${o.price}`;
+  return `${o.fromCompany || ''} → ${o.toCompany || ''} • $${o.amount}`;
+}
+
+function mergeIncoming(data, isFull){
+  const fresh = [];
+  COLLS.forEach(c => {
+    const incoming = data[c] || [];
+    incoming.forEach(o => {
+      if(!KNOWN[c].has(o.docId)){ KNOWN[c].add(o.docId); fresh.push([c,o]); }
+    });
+    if(isFull){
+      STATE[c] = incoming;                    // full sync: replace (keeps statuses fresh)
+    } else if(incoming.length){
+      const map = new Map(STATE[c].map(o => [o.docId, o]));
+      incoming.forEach(o => map.set(o.docId, o));
+      STATE[c] = [...map.values()].sort((a,b) => (b.createdAtMs||0) - (a.createdAtMs||0));
+    }
+  });
+  return fresh;
+}
+
+function announce(fresh){
+  if(!fresh.length) return;
+  fresh.forEach(([c,o]) => {
+    FRESH.add(o.docId);
+    setTimeout(() => FRESH.delete(o.docId), 60000);
+    if(!(c === currentTab && document.visibilityState === 'visible')) UNSEEN[c]++;
+  });
+  playOrderSound(3);
+  const [c0, o0] = fresh[0];
+  const title = fresh.length === 1 ? `🔔 Order cusub — ${c0}` : `🔔 ${fresh.length} order cusub`;
+  const body  = fresh.length === 1 ? describe(c0, o0) : fresh.map(([c]) => c).join(', ');
+  toast(title, body);
+  desktopNotify(title, body);
+  updateTitle();
+}
+
+let polling = false, lastFull = Date.now();
+function setLive(ok){
+  document.getElementById('liveDot').classList.toggle('err', !ok);
+  document.getElementById('liveText').textContent = ok ? 'Live' : 'Offline';
+}
+
+async function poll(){
+  if(polling) return;
+  polling = true;
+  const isFull = Date.now() - lastFull >= FULL_SYNC_MS;
+  try{
+    const qs = new URLSearchParams();
+    if(isFull) qs.set('full','1');
+    else COLLS.forEach(c => qs.set(c, maxMs(c)));
+    const res = await fetch('/dhibic-orders-feed?' + qs.toString(), {cache:'no-store', credentials:'same-origin'});
+    if(res.status === 401){ location.href = '/'; return; }
+    const data = await res.json();
+    if(!data.success) throw new Error(data.error || 'feed error');
+    if(isFull) lastFull = Date.now();
+    const fresh = mergeIncoming(data, isFull);
+    announce(fresh);
+    if(fresh.length || isFull) render();
+    setLive(true);
+  }catch(e){
+    console.warn('poll failed:', e);
+    setLive(false);
+  }finally{
+    polling = false;
+  }
+}
+
+/* =========================================================
+   APPROVE
+   ========================================================= */
+async function approveOrder(docId, btn){
+  const collection = currentTab;
+  btn.disabled = true; btn.textContent = '...';
+  try{
+    const res = await fetch('/approve-order/' + collection + '/' + encodeURIComponent(docId), {method:'POST', credentials:'same-origin'});
+    const data = await res.json();
+    if(data.success){
+      const o = STATE[collection].find(x => x.docId === docId);
+      if(o) o.status = collection === 'exchange_orders' ? 'approved' : 'APPROVED';
+      render();
+      toast('✅ La ansixiyay', 'Order-ka waa la ansixiyay', 'ok');
+    } else {
+      btn.disabled = false; btn.textContent = '✓ Approve';
+      toast('Khalad', data.error || 'Khalad ayaa dhacay.', 'err');
+    }
+  }catch(e){
+    btn.disabled = false; btn.textContent = '✓ Approve';
+    toast('Khalad', 'Server error.', 'err');
+  }
+}
+
+/* =========================================================
+   EVENTS
+   ========================================================= */
+document.querySelectorAll('[data-tab]').forEach(b => b.addEventListener('click', () => switchTab(b.dataset.tab)));
+document.getElementById('searchInput').addEventListener('input', renderTable);
+document.getElementById('tableWrap').addEventListener('click', e => {
+  const btn = e.target.closest('[data-approve]');
+  if(btn) approveOrder(btn.dataset.approve, btn);
+});
+document.getElementById('soundToggle').addEventListener('click', () => {
+  soundOn = !soundOn;
+  try{ localStorage.setItem('dd_sound', soundOn ? 'on' : 'off'); }catch(e){}
+  unlockAudio();
+  if(soundOn) requestNotifyPermission();
+});
+document.getElementById('enableSoundBtn').addEventListener('click', () => {
+  unlockAudio(); requestNotifyPermission(); playOrderSound(1);
+});
+document.getElementById('testSoundBtn').addEventListener('click', () => {
+  unlockAudio(); requestNotifyPermission(); playOrderSound(1);
+});
+document.getElementById('settingsBtn').addEventListener('click', () => {
+  toast('⚙️ Settings', 'Dhawaaqa iyo notification-ka waxaa laga maamulaa badhamada sare.');
+});
+document.addEventListener('visibilitychange', () => {
+  if(document.visibilityState === 'visible'){ UNSEEN[currentTab] = 0; renderBadges(); updateTitle(); poll(); }
+});
+
+/* brand fallback: gold "DD" + drop when static/dd_logo.png doesn't exist */
+(function(){
+  const m = document.getElementById('brandMark');
+  const fallback = () => { if(!m.querySelector('.brand-dd')) m.innerHTML = '<span class="brand-dd">DD</span><span class="brand-drop"></span>'; };
+  if(m.classList.contains('nologo')) fallback();
+  new MutationObserver(() => { if(m.classList.contains('nologo')) fallback(); }).observe(m, {attributes:true});
+})();
+
+/* =========================================================
+   START
+   ========================================================= */
+render();
+updateSoundUI();
+setInterval(poll, POLL_MS);
+setTimeout(poll, 1500);
 </script>
 </body>
 </html>

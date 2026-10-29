@@ -6010,95 +6010,146 @@ def dashboard_login():
 
 
 # ==============================
+# 💎 DHIBIC DAHAB — ORDERS LOADER (shared by page + live feed)
+# ==============================
+DHIBIC_COLLECTIONS = ("data_orders", "orders", "exchange_orders")
+DHIBIC_TZ = ZoneInfo("Africa/Mogadishu")
+
+
+def _dhibic_fmt_ts(ts):
+    """Firestore timestamp -> 'YYYY-MM-DD HH:MM' Mogadishu time."""
+    if not ts:
+        return ""
+    try:
+        if hasattr(ts, "astimezone"):
+            ts = ts.astimezone(DHIBIC_TZ)
+        return ts.strftime("%Y-%m-%d %H:%M")
+    except Exception:
+        return str(ts)
+
+
+def _dhibic_ts_ms(ts):
+    try:
+        return int(ts.timestamp() * 1000) if ts and hasattr(ts, "timestamp") else 0
+    except Exception:
+        return 0
+
+
+def _dhibic_txt(v, default=""):
+    """Make any Firestore value JSON-safe (numbers stay numbers)."""
+    if v is None:
+        return default
+    if isinstance(v, (str, int, float, bool)):
+        return v
+    return str(v)
+
+
+def _dhibic_serialize(collection, doc):
+    d = doc.to_dict() or {}
+    created = d.get("createdAt")
+    base = {
+        "docId":       doc.id,
+        "status":      _dhibic_txt(d.get("status"), "PENDING"),
+        "createdAt":   _dhibic_fmt_ts(created),
+        "createdAtMs": _dhibic_ts_ms(created),
+    }
+    if collection == "data_orders":
+        base.update({
+            "referenceId":   _dhibic_txt(d.get("referenceId")),
+            "senderPhone":   _dhibic_txt(d.get("senderPhone")),
+            "receiverPhone": _dhibic_txt(d.get("receiverPhone")),
+            "packageName":   _dhibic_txt(d.get("packageName")),
+            "packageData":   _dhibic_txt(d.get("packageData")),
+            "description":   _dhibic_txt(d.get("description")),
+            "amount":        _dhibic_txt(d.get("amount"), "0"),
+        })
+    elif collection == "orders":
+        base.update({
+            "orderId":       _dhibic_txt(d.get("orderId")),
+            "customerId":    _dhibic_txt(d.get("customerId")),
+            "address":       _dhibic_txt(d.get("address")),
+            "merchantId":    _dhibic_txt(d.get("merchantId")),
+            "merchantName":  _dhibic_txt(d.get("merchantName")),
+            "merchantPhone": _dhibic_txt(d.get("merchantPhone")),
+            "deliveryType":  _dhibic_txt(d.get("deliveryType")),
+            "price":         _dhibic_txt(d.get("price", d.get("amount")), "0"),
+        })
+    else:  # exchange_orders
+        base.update({
+            "senderNumber":   _dhibic_txt(d.get("senderNumber")),
+            "receiverNumber": _dhibic_txt(d.get("receiverNumber")),
+            "fromCompany":    _dhibic_txt(d.get("fromCompany")),
+            "toCompany":      _dhibic_txt(d.get("toCompany")),
+            "amount":         _dhibic_txt(d.get("amount"), "0"),
+            "finalAmount":    _dhibic_txt(d.get("finalAmount"), "0"),
+            "customerEmail":  _dhibic_txt(d.get("customerEmail")),
+            "approvedAt":     _dhibic_fmt_ts(d.get("approvedAt")),
+        })
+    return base
+
+
+def _load_dhibic_collection(collection, since_ms=0, limit=200):
+    """since_ms > 0  -> only docs created AFTER that moment (cheap polling:
+    an empty result costs a single Firestore read).
+    since_ms == 0 -> the latest `limit` docs (full load)."""
+    ref = dhibic_db.collection(collection)
+    if since_ms and since_ms > 0:
+        since_dt = datetime.fromtimestamp(since_ms / 1000.0, tz=timezone.utc)
+        query = ref.where("createdAt", ">", since_dt) \
+                   .order_by("createdAt", direction=firestore.Query.ASCENDING) \
+                   .limit(50)
+    else:
+        query = ref.order_by("createdAt", direction=firestore.Query.DESCENDING) \
+                   .limit(limit)
+    items = [_dhibic_serialize(collection, doc) for doc in query.get()]
+    items.sort(key=lambda x: x.get("createdAtMs", 0), reverse=True)
+    return items
+
+
+# ==============================
 # VIEW ORDERS PAGE
 # ==============================
 @app.route("/view-orders")
 def view_orders():
     if "dashboard_user" not in session:
         return redirect("/")
-
-    def fmt_ts(ts):
-        try:
-            return ts.strftime("%Y-%m-%d %H:%M") if ts else ""
-        except:
-            return str(ts) if ts else ""
-
     try:
-        # ── data_orders ──
-        do_docs = dhibic_db.collection("data_orders") \
-            .order_by("createdAt", direction=firestore.Query.DESCENDING) \
-            .limit(200).get()
-
-        data_orders = []
-        for doc in do_docs:
-            d = doc.to_dict()
-            data_orders.append({
-                "docId":         doc.id,
-                "referenceId":   d.get("referenceId", ""),
-                "senderPhone":   d.get("senderPhone", ""),
-                "receiverPhone": d.get("receiverPhone", ""),
-                "packageName":   d.get("packageName", ""),
-                "packageData":   d.get("packageData", ""),
-                "description":   d.get("description", ""),
-                "amount":        d.get("amount", "0"),
-                "status":        d.get("status", "PENDING"),
-                "createdAt":     fmt_ts(d.get("createdAt")),
-            })
-
-        # ── orders ──
-        or_docs = dhibic_db.collection("orders") \
-            .order_by("createdAt", direction=firestore.Query.DESCENDING) \
-            .limit(200).get()
-
-        orders = []
-        for doc in or_docs:
-            d = doc.to_dict()
-            orders.append({
-                "docId":        doc.id,
-                "orderId":      d.get("orderId", ""),
-                "customerId":   d.get("customerId", ""),
-                "address":      d.get("address", ""),
-                "merchantId":   d.get("merchantId", ""),
-                "merchantName": d.get("merchantName", ""),
-                "merchantPhone":d.get("merchantPhone", ""),
-                "deliveryType": d.get("deliveryType", ""),
-                "price":        d.get("price", d.get("amount", "0")),
-                "status":       d.get("status", "PENDING"),
-                "createdAt":    fmt_ts(d.get("createdAt")),
-            })
-
-        # ── exchange_orders ──
-        ex_docs = dhibic_db.collection("exchange_orders") \
-            .order_by("createdAt", direction=firestore.Query.DESCENDING) \
-            .limit(200).get()
-
-        exchange_orders = []
-        for doc in ex_docs:
-            d = doc.to_dict()
-            exchange_orders.append({
-                "docId":         doc.id,
-                "senderNumber":  d.get("senderNumber", ""),
-                "receiverNumber":d.get("receiverNumber", ""),
-                "fromCompany":   d.get("fromCompany", ""),
-                "toCompany":     d.get("toCompany", ""),
-                "amount":        d.get("amount", "0"),
-                "finalAmount":   d.get("finalAmount", "0"),
-                "customerEmail": d.get("customerEmail", ""),
-                "status":        d.get("status", "PENDING"),
-                "createdAt":     fmt_ts(d.get("createdAt")),
-                "approvedAt":    fmt_ts(d.get("approvedAt")),
-            })
-
-        return render_template(
+        resp = make_response(render_template(
             "view_orders.html",
-            data_orders=data_orders,
-            orders=orders,
-            exchange_orders=exchange_orders,
-        )
-
+            data_orders=_load_dhibic_collection("data_orders"),
+            orders=_load_dhibic_collection("orders"),
+            exchange_orders=_load_dhibic_collection("exchange_orders"),
+        ))
+        resp.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+        return resp
     except Exception as e:
         import traceback; traceback.print_exc()
         return f"Error: {str(e)}", 500
+
+
+# ==============================
+# 🔔 LIVE ORDERS FEED (dashboard polls this every few seconds)
+#   GET /dhibic-orders-feed?data_orders=<ms>&orders=<ms>&exchange_orders=<ms>
+#       -> only orders newer than each timestamp
+#   GET /dhibic-orders-feed?full=1
+#       -> latest 200 of each (used to sync status changes)
+# ==============================
+@app.route("/dhibic-orders-feed")
+def dhibic_orders_feed():
+    if "dashboard_user" not in session:
+        return jsonify({"success": False, "error": "Not logged in"}), 401
+    try:
+        full = request.args.get("full") == "1"
+        result = {"success": True, "full": full}
+        for coll in DHIBIC_COLLECTIONS:
+            since_ms = 0 if full else request.args.get(coll, default=0, type=int)
+            result[coll] = _load_dhibic_collection(coll, since_ms=since_ms)
+        resp = jsonify(result)
+        resp.headers["Cache-Control"] = "no-store"
+        return resp
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
 # ==============================
