@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Kitchen #{{ ref }} · Table {{ table }}</title>
+<title>Kitchen #{{ ref }} · {{ 'Take Away' if order_type == 'takeaway' else 'Table ' ~ table }}</title>
 <style>
 /* 80mm thermal paper (works on 58mm too — content just narrows) */
 @page { size: 80mm auto; margin: 0; }
@@ -30,6 +30,9 @@ body{
 }
 .table-box .lbl{ font-size: 11px; font-weight: 700; letter-spacing: 2px; }
 .table-box .num{ font-size: 30px; font-weight: 900; line-height: 1.05; }
+.table-box .num.ta{ font-size: 24px; letter-spacing: 1px; padding: 4px 0; }
+.table-box.takeaway{ background:#000; color:#fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+{% if paper == 58 %}body{ width: 48mm; font-size: 12px; } .brand{ font-size: 16px; } td{ font-size: 13px; }{% endif %}
 .added{
     margin: 6px 0 2px; padding: 3px 0;
     background:#000; color:#fff; font-weight:900; font-size: 14px;
@@ -75,15 +78,21 @@ td{ padding: 3px 0; font-size: 15px; font-weight: 700; vertical-align: top; word
     <div class="sub">KITCHEN ORDER</div>
     <div class="ref">Ref:{{ ref }}</div>
 
+    {% if order_type == 'takeaway' %}
+    <div class="table-box takeaway">
+        <div class="num ta">TAKE AWAY</div>
+    </div>
+    {% else %}
     <div class="table-box">
         <div class="lbl">TABLE</div>
         <div class="num">{{ table }}</div>
     </div>
+    {% endif %}
 
     {% if is_addition %}<div class="added">*** KU DAR / ADDED ITEMS ***</div>{% endif %}
 
     <div class="meta">Date: {{ date_str }}</div>
-    {% if waiter %}<div class="meta">Waiter: {{ waiter }}</div>{% else %}<div class="meta">Customer QR Order</div>{% endif %}
+    <div class="meta">{{ staff_label or 'Customer QR Order' }}</div>
 </div>
 
 <div class="rule"></div>

@@ -188,6 +188,40 @@
         .new-flash{animation:newFlash 1.2s ease 3;}
         @keyframes newFlash{0%,100%{box-shadow:0 2px 12px rgba(0,0,0,0.05);}50%{box-shadow:0 0 0 4px rgba(245,158,11,0.55);}}
         .ticket-btn{background:#111827;text-decoration:none;}
+        .reprint-btn{background:#4f6ef5;}
+        .type-badge{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:20px;font-weight:800;font-size:13px;}
+        .type-badge.table{background:#eef0fe;color:#3346c4;}
+        .type-badge.takeaway{background:#fff1e0;color:#c45f00;}
+        .paid-badge{background:#e6f6ee;color:#1c8a54;padding:6px 12px;border-radius:20px;font-size:12px;font-weight:800;margin-left:6px;}
+        .top-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+        .printer-pill{display:inline-flex;align-items:center;gap:7px;padding:7px 14px;border-radius:20px;font-weight:700;font-size:13px;cursor:pointer;border:none;background:#eef0fe;color:#3346c4;font-family:inherit;}
+        .printer-pill.ok{background:#e6f6ee;color:#1c8a54;}
+        .printer-pill.bad{background:#fdecea;color:#c62828;}
+        .printer-pill.warn{background:#fff4de;color:#b86e00;}
+        /* printer settings */
+        .pset{display:none;background:var(--card);border-radius:18px;padding:22px;margin-bottom:22px;box-shadow:0 2px 12px rgba(0,0,0,0.05);border:1.5px solid #e3e7ff;}
+        .pset.open{display:block;}
+        .pset h3{font-family:'Poppins',sans-serif;font-size:18px;margin-bottom:4px;}
+        .pset .sub{color:var(--muted);font-size:13px;margin-bottom:16px;line-height:1.5;}
+        .pset-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;}
+        .pset label{display:block;font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px;}
+        .pset input,.pset select{width:100%;padding:12px 13px;border:1.5px solid #e3e6ec;border-radius:11px;font-size:15px;font-family:inherit;background:#fafbfc;}
+        .pset input:focus,.pset select:focus{outline:none;border-color:var(--blue);background:#fff;}
+        .seg{display:flex;gap:8px;}
+        .seg button{flex:1;padding:12px 10px;border-radius:11px;border:1.5px solid #e3e6ec;background:#fff;font-weight:700;font-size:13.5px;cursor:pointer;font-family:inherit;color:var(--text);}
+        .seg button.on{border-color:var(--blue);background:#eef0fe;color:#3346c4;}
+        .pset .full{grid-column:1/-1;}
+        .pset-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px;}
+        .pset-actions button,.pset-actions a{padding:12px 18px;border-radius:11px;border:none;font-weight:700;font-size:14px;cursor:pointer;text-decoration:none;color:#fff;font-family:inherit;display:inline-flex;align-items:center;gap:7px;}
+        .p-save{background:var(--green);} .p-test{background:var(--blue);} .p-dl{background:#111827;} .p-close{background:#e5e7eb;color:#111 !important;}
+        .p-msg{margin-top:12px;font-size:13.5px;font-weight:700;}
+        .p-status{margin-top:16px;padding:14px;border-radius:12px;background:#f7f8fb;font-size:13.5px;line-height:1.8;}
+        .p-steps{margin-top:14px;font-size:13px;color:#374151;line-height:1.7;padding-left:18px;}
+        .agent-only{display:none;} .pset.agent .agent-only{display:block;}
+        .pset .net-only,.pset .usb-only{display:none;}
+        .pset.agent.net .agent-only.net-only{display:block;} .pset.agent.usb .agent-only.usb-only{display:block;}
+        .pset.agent.net .agent-only.usb-only{display:none;} .pset.agent.usb .agent-only.net-only{display:none;}
+        @media (max-width:700px){ .pset-grid{grid-template-columns:1fr;} }
         @media (max-width:980px){
             .mobile-nav{display:flex;}
             .sidebar{display:none;}
@@ -240,7 +274,70 @@
                     <p>{{ restaurant_name }} — dalabaadka cusub si toos ah ayay u soo galayaan</p>
                 </div>
             </div>
-            <span class="live-pill" id="livePill"><span class="dot"></span> <span id="liveText">Live</span></span>
+            <div class="top-right">
+                <button class="printer-pill" id="printerPill" onclick="togglePrinterSettings()">🖨️ <span id="printerPillText">Printer</span></button>
+                <span class="live-pill" id="livePill"><span class="dot"></span> <span id="liveText">Live</span></span>
+            </div>
+        </div>
+
+        <!-- ============ PRINTER SETTINGS ============ -->
+        <div class="pset" id="printerSettings">
+            <h3>🖨️ Printer-ka Jikada</h3>
+            <p class="sub">Halkan ku qor printer-ka POS-ka iyo kombuyuutarka jikada. Marka la keydiyo, dalab kasta oo waiter-ka ama cashier-ka soo diro <b>isla markiiba</b> ayuu printer-kan ka soo baxayaa.</p>
+            <div class="pset-grid">
+                <div class="full">
+                    <label>Sida loo daabacayo</label>
+                    <div class="seg" id="segMethod">
+                        <button type="button" data-v="agent">⚡ Sahal Print Agent (ku-talin)</button>
+                        <button type="button" data-v="browser">🌐 Browser-ka (Chrome)</button>
+                    </div>
+                </div>
+                <div>
+                    <label>Printer Model</label>
+                    <input id="pModel" placeholder="tusaale: XPrinter XP-80C">
+                </div>
+                <div>
+                    <label>Warqadda (Paper)</label>
+                    <select id="pPaper"><option value="80">80mm</option><option value="58">58mm</option></select>
+                </div>
+                <div class="full agent-only">
+                    <label>Printer-ku sidee buu ugu xiran yahay?</label>
+                    <div class="seg" id="segConn">
+                        <button type="button" data-v="network">🌐 Network (IP / LAN / WiFi)</button>
+                        <button type="button" data-v="usb">🔌 USB (kombuyuutarka)</button>
+                    </div>
+                </div>
+                <div class="agent-only net-only">
+                    <label>Printer IP Address</label>
+                    <input id="pIp" placeholder="tusaale: 192.168.1.100" inputmode="decimal">
+                </div>
+                <div class="agent-only net-only">
+                    <label>Port</label>
+                    <input id="pPort" placeholder="9100" inputmode="numeric">
+                </div>
+                <div class="agent-only usb-only full">
+                    <label>Magaca printer-ka ee Windows</label>
+                    <input id="pName" placeholder="tusaale: XP-80C (sida ugu qoran Settings › Printers)">
+                </div>
+                <div class="agent-only">
+                    <label>Desktop IP (kombuyuutarka jikada)</label>
+                    <input id="pDesktop" placeholder="tusaale: 192.168.1.20" inputmode="decimal">
+                </div>
+            </div>
+            <div class="pset-actions">
+                <button class="p-save" onclick="savePrinter()">💾 Save</button>
+                <button class="p-test agent-only" onclick="testPrint()">🧪 Test Print</button>
+                <a class="p-dl agent-only" href="/kitchen_print_agent/{{ rid }}/Sahal_Print_Agent.bat">⬇️ Download Print Agent</a>
+                <button class="p-close" onclick="togglePrinterSettings(false)">Close</button>
+            </div>
+            <div class="p-msg" id="pMsg"></div>
+            <div class="p-status" id="pStatus"></div>
+            <ol class="p-steps agent-only">
+                <li>Printer-ka POS-ka shid oo ku xir network-ka (ama USB-ga kombuyuutarka jikada). IP-ga printer-ka waxaa ku qoran warqadda <i>self-test</i>-ka (qabo badhanka FEED marka aad shidayso).</li>
+                <li>Buuxi foomka kore, riix <b>Save</b>.</li>
+                <li>Kombuyuutarka jikada ku soo deji <b>Sahal_Print_Agent.bat</b>, laba jeer riix. Daaqadda madow ha xirin (ama ku dar <i>Startup</i> si uu mar walba u shaqeeyo).</li>
+                <li>Riix <b>Test Print</b> — warqad tijaabo ah ayaa ka soo baxaysa printer-ka. ✅</li>
+            </ol>
         </div>
 
         <div class="mobile-nav">
@@ -252,7 +349,7 @@
             <button class="clear-btn" id="clearOrdersBtn">🧹 Clear Kitchen Orders</button>
             <button class="clear-btn" id="autoPrintBtn">🖨 Auto-Print: OFF</button>
         </div>
-        <p class="print-help">🖨️ Dalab kasta oo waiter-ku soo diro <b>isla markiiba ayuu printer-ka POS-ka ka soo baxayaa</b>. Kombuyuutarka jikada ka fur jikada adigoo isticmaalaya faylka <b>Sahal_Kitchen.bat</b> (printer-ka POS-ka ka dhig <b>Default</b>) — markaas sanduuqa "Print" ma soo baxayo.<span class="print-queue" id="printQueueInfo"></span></p>
+        <p class="print-help" id="printHelp">🖨️ Dalab kasta oo waiter-ka ama cashier-ka soo diro <b>isla markiiba ayuu printer-ka ka soo baxayaa</b>. Printer-ka ka deji badhanka <b>🖨️ Printer</b> ee kore.<span class="print-queue" id="printQueueInfo"></span></p>
 
         <div class="stats" id="statsBox">
             <div class="stat s1"><div class="s-ic">📋</div><div><div class="s-num">{{ stats.total }}</div><div class="s-lbl">Total Orders</div></div></div>
@@ -268,10 +365,13 @@
 
         <div id="ordersContainer">
         {% for o in orders %}
-        <div class="order" id="order{{ o.id }}" data-status="{{ o.get('status', 'pending') }}" data-last-added="{{ o.last_added_marker }}" data-kitchen-printed="{{ '1' if o.get('kitchen_printed') else '0' }}" data-age-min="{{ o.age_min }}">
+        <div class="order" id="order{{ o.id }}" data-status="{{ o.kstatus }}" data-last-added="{{ o.last_added_marker }}" data-kitchen-printed="{{ '1' if o.get('kitchen_printed') else '0' }}" data-age-min="{{ o.age_min }}">
             <div class="order-top">
                 <div class="o-title">📋 Order #{{ orders|length - loop.index0 }} <span class="o-ref">Ref: {{ o.receipt_ref or o.id[:6] }}</span>{% if o.new_display_items %}<span class="updated-badge">🆕 Updated</span>{% endif %}</div>
-                <span class="status-pill">{{ o.get('status', 'pending') }}</span>
+                <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                    {% if o.otype == 'takeaway' %}<span class="type-badge takeaway">🥡 TAKE AWAY</span>{% else %}<span class="type-badge table">🪑 Table {{ o.get('table', '-') }}</span>{% endif %}
+                    <span class="status-pill">{{ o.kstatus }}</span>{% if o.is_paid %}<span class="paid-badge">💰 Paid</span>{% endif %}
+                </div>
             </div>
 
             <div class="order-body">
@@ -315,8 +415,12 @@
                         <div class="m-v time">{{ o.get('created_at', 'N/A') }}</div>
                     </div>
                     <div class="meta-row">
-                        <div class="m-l">🪑 Table</div>
-                        <div class="m-v">Table {{ o.get('table', '-') }}</div>
+                        <div class="m-l">{{ '🥡 Type' if o.otype == 'takeaway' else '🪑 Table' }}</div>
+                        <div class="m-v">{{ 'Take Away' if o.otype == 'takeaway' else 'Table ' ~ o.get('table', '-') }}</div>
+                    </div>
+                    <div class="meta-row">
+                        <div class="m-l">🧑‍🍳 Ordered by</div>
+                        <div class="m-v">{{ o.staff_label or 'Customer QR' }}</div>
                     </div>
                     <div class="meta-row">
                         <div class="m-l">💵 Price</div>
@@ -324,13 +428,14 @@
                     </div>
                     <div class="meta-row">
                         <div class="m-l">📍 Status</div>
-                        <div class="m-v pending"><span id="status{{ o.id }}">{{ o.get('status', 'pending') }}</span></div>
+                        <div class="m-v pending"><span id="status{{ o.id }}">{{ o.kstatus }}</span></div>
                     </div>
                 </div>
             </div>
 
             <div class="order-actions">
                 <a class="status-btn ticket-btn" href="/kitchen_ticket/{{ rid }}/{{ o.id }}?all=1" target="_blank">🍳 Ticket</a>
+                <button class="status-btn reprint-btn" type="button" data-reprint="{{ o.id }}">🖨️ Print</button>
                 <button class="preparing status-btn" data-id="{{ o.id }}" data-status="preparing">⏳ Preparing</button>
                 <button class="ready status-btn" data-id="{{ o.id }}" data-status="ready">✅ Ready</button>
             </div>
@@ -345,6 +450,7 @@
 
 <script>
 const RID = "{{ rid }}";
+let PRINTER = {{ printer|tojson }};
 
 document.addEventListener("DOMContentLoaded", function(){
 
@@ -426,6 +532,7 @@ document.addEventListener("DOMContentLoaded", function(){
         document.getElementById("printQueueInfo").textContent = n ? ` — ${n} ticket(s) printing…` : "";
     }
     function enqueuePrint(id){
+        if(PRINTER.method === "agent") return;          // the Print Agent prints instead
         if(!isAutoPrintOn() || queued.has(id) || !isRecent(id)) return;
         if(Object.prototype.hasOwnProperty.call(printedMarker, id) && printedMarker[id] === (getMarker(id) || "")) return;
         queued.add(id); queue.push(id); updateQueueInfo(); pump();
@@ -469,6 +576,27 @@ document.addEventListener("DOMContentLoaded", function(){
         if(!isAutoPrintOn()) return;
         // oldest first so the kitchen gets tickets in arrival order
         orderEls().map(idOf).reverse().forEach(id => { if(!isPrinted(id)) enqueuePrint(id); });
+    }
+
+    /* ---------- 🖨️ Print button on each order ---------- */
+    function forcePrint(id){
+        if(PRINTER.method === "agent"){
+            fetch(`/kitchen_reprint/${RID}/${id}`, { method:"POST" })
+                .then(r => r.json()).then(d => { if(!d.success) alert("❌ " + (d.error || "Failed")); else flashMsg("🖨️ Printer-ka ayaa loo diray"); })
+                .catch(() => alert("❌ Network error"));
+            return;
+        }
+        delete printedMarker[id];
+        if(queued.has(id)) return;
+        queued.add(id); queue.push(id); updateQueueInfo(); pump();
+    }
+    document.getElementById("ordersContainer").addEventListener("click", (e) => {
+        const b = e.target.closest("[data-reprint]");
+        if(b) forcePrint(b.dataset.reprint);
+    });
+    function flashMsg(t){
+        const el = document.getElementById("printQueueInfo");
+        el.textContent = " — " + t; setTimeout(() => { el.textContent = ""; updateQueueInfo(); }, 3000);
     }
 
     /* ---------- Status buttons ---------- */
@@ -556,12 +684,117 @@ document.addEventListener("DOMContentLoaded", function(){
     }
 
     attachStatusBtns();
+    applyPrinterUI();
     catchUpUnprinted();
+    refreshPrinterStatus();
+    setInterval(refreshPrinterStatus, 10000);
     checkVersion();
     setInterval(checkVersion, 3000);
     setInterval(() => refreshOrders(), 60000);   // safety net
     document.addEventListener("visibilitychange", () => { if(!document.hidden) refreshOrders(); });
 });
+
+/* =========================================================
+   🖨️ PRINTER SETTINGS (global — used by buttons above)
+   ========================================================= */
+function el(id){ return document.getElementById(id); }
+function segValue(id){ const b = document.querySelector(`#${id} button.on`); return b ? b.dataset.v : ""; }
+function setSeg(id, v){ document.querySelectorAll(`#${id} button`).forEach(b => b.classList.toggle("on", b.dataset.v === v)); syncPsetClasses(); }
+function syncPsetClasses(){
+    const box = el("printerSettings");
+    const m = segValue("segMethod"), c = segValue("segConn");
+    box.classList.toggle("agent", m === "agent");
+    box.classList.toggle("net", c !== "usb");
+    box.classList.toggle("usb", c === "usb");
+}
+document.querySelectorAll("#segMethod button, #segConn button").forEach(b => b.addEventListener("click", () => {
+    setSeg(b.parentNode.id, b.dataset.v);
+}));
+function fillPrinterForm(){
+    setSeg("segMethod", PRINTER.method || "browser");
+    setSeg("segConn", PRINTER.connection || "network");
+    el("pModel").value = PRINTER.model || "";
+    el("pPaper").value = String(PRINTER.paper || 80);
+    el("pIp").value = PRINTER.printer_ip || "";
+    el("pPort").value = PRINTER.printer_port || 9100;
+    el("pName").value = PRINTER.printer_name || "";
+    el("pDesktop").value = PRINTER.desktop_ip || "";
+}
+function togglePrinterSettings(force){
+    const box = el("printerSettings");
+    const open = typeof force === "boolean" ? force : !box.classList.contains("open");
+    if(open){ fillPrinterForm(); renderPrinterStatus(); }
+    box.classList.toggle("open", open);
+    if(open) box.scrollIntoView({ behavior:"smooth", block:"start" });
+}
+function renderPrinterStatus(){
+    const p = PRINTER, pill = el("printerPill"), txt = el("printerPillText"), st = el("pStatus");
+    pill.classList.remove("ok", "bad", "warn");
+    const model = p.model ? p.model : "Printer";
+    let lines = [];
+    if(p.method === "agent"){
+        const where = p.connection === "usb" ? `USB “${p.printer_name}”` : `${p.printer_ip}:${p.printer_port}`;
+        if(!p.agent_online){
+            pill.classList.add("bad"); txt.textContent = `${model} — Agent offline`;
+            lines.push("❌ <b>Print Agent-ku ma shidna.</b> Kombuyuutarka jikada ka fur <b>Sahal_Print_Agent.bat</b>." + (p.agent_last_seen ? ` (ugu dambeysay: ${p.agent_last_seen})` : ""));
+        } else if(p.printer_online === false){
+            pill.classList.add("bad"); txt.textContent = `${model} — Printer offline`;
+            lines.push(`✅ Agent: <b>${p.agent_host || "PC"}</b> online`);
+            lines.push(`❌ Printer <b>${where}</b> kama jawaabayo — hubi inuu shidan yahay, warqad leeyahay, oo uu isku network yahay.`);
+        } else {
+            pill.classList.add(p.desktop_match === false ? "warn" : "ok");
+            txt.textContent = `${model} — Ready`;
+            lines.push(`✅ Agent: <b>${p.agent_host || "PC"}</b> online · IP: ${(p.agent_ips || []).join(", ") || "—"}`);
+            lines.push(`✅ Printer: <b>${model}</b> @ ${where} · ${p.paper}mm`);
+        }
+        if(p.desktop_ip){
+            if(p.desktop_match === true) lines.push(`✅ Desktop IP <b>${p.desktop_ip}</b> waa la aqoonsaday (isku mid).`);
+            else if(p.desktop_match === false) lines.push(`⚠️ Desktop IP la keydiyay (<b>${p.desktop_ip}</b>) kuma jiro IP-yada kombuyuutarka agent-ka (${(p.agent_ips || []).join(", ")}). Hubi kombuyuutarka saxda ah ama cusbooneysii IP-ga.`);
+        }
+        if(p.last_printed) lines.push(`🧾 Daabacaaddii ugu dambeysay: ${p.last_printed}`);
+        if(p.last_error) lines.push(`⚠️ Qaladkii ugu dambeeyay: ${p.last_error}`);
+        el("autoPrintBtn").style.display = "none";
+    } else {
+        txt.textContent = (p.model ? p.model + " — " : "") + "Browser printing";
+        lines.push("🌐 Daabacaad browser-ka: kombuyuutarkan printer-kiisa <b>Default</b> ayuu u dirayaa. Si aanu sanduuqa Print u soo bixin, jikada ka fur <b>Sahal_Kitchen.bat</b> (Chrome --kiosk-printing).");
+        lines.push("💡 Printer network (IP) ah ama si buuxda u isku halleyn kara: dooro <b>Sahal Print Agent</b>.");
+        el("autoPrintBtn").style.display = "";
+    }
+    st.innerHTML = lines.join("<br>");
+}
+function applyPrinterUI(){ renderPrinterStatus(); }
+function refreshPrinterStatus(){
+    fetch(`/kitchen_printer/${RID}`, { cache:"no-store" }).then(r => r.json()).then(d => {
+        if(d && d.success){ PRINTER = d.printer; renderPrinterStatus(); }
+    }).catch(() => {});
+}
+function savePrinter(){
+    const msg = el("pMsg"); msg.style.color = ""; msg.textContent = "⏳ Saving...";
+    const body = {
+        method: segValue("segMethod"), connection: segValue("segConn"),
+        model: el("pModel").value.trim(), paper: el("pPaper").value,
+        printer_ip: el("pIp").value.trim(), printer_port: el("pPort").value.trim(),
+        printer_name: el("pName").value.trim(), desktop_ip: el("pDesktop").value.trim()
+    };
+    fetch(`/kitchen_printer/${RID}`, { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify(body) })
+        .then(r => r.json()).then(d => {
+            if(!d.success){ msg.style.color = "#c62828"; msg.textContent = "❌ " + (d.error || "Failed"); return; }
+            PRINTER = d.printer; renderPrinterStatus();
+            msg.style.color = "#1c8a54";
+            msg.textContent = PRINTER.method === "agent"
+                ? "✅ Waa la keydiyay. Hadda soo deji Print Agent-ka (haddii aadan horay u shidin) kadibna riix Test Print."
+                : "✅ Waa la keydiyay.";
+        }).catch(() => { msg.style.color = "#c62828"; msg.textContent = "❌ Network error"; });
+}
+function testPrint(){
+    const msg = el("pMsg"); msg.style.color = ""; msg.textContent = "⏳ Test page ayaa loo dirayaa...";
+    fetch(`/kitchen_print_test/${RID}`, { method:"POST" }).then(r => r.json()).then(d => {
+        msg.style.color = d.success ? "#1c8a54" : "#c62828";
+        msg.textContent = d.success
+            ? (PRINTER.agent_online ? "✅ La diray — warqadda tijaabada ah printer-ka ka eeg." : "⚠️ La diray, laakiin Print Agent-ku ma shidna — fur Sahal_Print_Agent.bat.")
+            : "❌ " + (d.error || "Failed");
+    });
+}
 </script>
 </body>
 </html>

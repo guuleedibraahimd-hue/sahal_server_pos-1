@@ -1,0 +1,201 @@
+<# : ---- Windows batch part (runs the PowerShell part below) ----
+@echo off
+title Sahal Print Agent
+echo Starting Sahal Print Agent...
+powershell -NoProfile -ExecutionPolicy Bypass -Command "iex ([IO.File]::ReadAllText('%~f0'))"
+echo.
+echo Sahal Print Agent stopped. Press any key to close.
+pause >nul
+exit /b
+#>
+# =====================================================================
+#  SAHAL SERVER - KITCHEN PRINT AGENT
+#  Keep this window open on the KITCHEN computer. Every order the
+#  waiter or cashier sends prints immediately on the POS printer.
+#  Uses only what is built into Windows (PowerShell) - nothing to install.
+# =====================================================================
+$ErrorActionPreference = 'Stop'
+$Server = '{{ server }}'
+$Rid    = '{{ rid }}'
+$Key    = '{{ key }}'
+$Restaurant = '{{ restaurant_name|replace("'", "''") }}'
+$PollSeconds = 2
+
+try { [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 } catch {}
+$Host.UI.RawUI.WindowTitle = "Sahal Print Agent - $Restaurant"
+
+Add-Type -TypeDefinition @"
+using System;
+using System.Runtime.InteropServices;
+public class SahalRawPrinter {
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    public class DOCINFO {
+        [MarshalAs(UnmanagedType.LPWStr)] public string pDocName;
+        [MarshalAs(UnmanagedType.LPWStr)] public string pOutputFile;
+        [MarshalAs(UnmanagedType.LPWStr)] public string pDataType;
+    }
+    [DllImport("winspool.drv", EntryPoint = "OpenPrinterW", SetLastError = true, CharSet = CharSet.Unicode)]
+    public static extern bool OpenPrinter(string name, out IntPtr h, IntPtr d);
+    [DllImport("winspool.drv", SetLastError = true)] public static extern bool ClosePrinter(IntPtr h);
+    [DllImport("winspool.drv", EntryPoint = "StartDocPrinterW", SetLastError = true, CharSet = CharSet.Unicode)]
+    public static extern int StartDocPrinter(IntPtr h, int level, [In, MarshalAs(UnmanagedType.LPStruct)] DOCINFO di);
+    [DllImport("winspool.drv", SetLastError = true)] public static extern bool EndDocPrinter(IntPtr h);
+    [DllImport("winspool.drv", SetLastError = true)] public static extern bool StartPagePrinter(IntPtr h);
+    [DllImport("winspool.drv", SetLastError = true)] public static extern bool EndPagePrinter(IntPtr h);
+    [DllImport("winspool.drv", SetLastError = true)] public static extern bool WritePrinter(IntPtr h, IntPtr p, int count, out int written);
+
+    public static void Send(string printerName, byte[] bytes) {
+        IntPtr h;
+        if (!OpenPrinter(printerName, out h, IntPtr.Zero))
+            throw new Exception("Printer '" + printerName + "' lama helin (Windows error " + Marshal.GetLastWin32Error() + ")");
+        try {
+            DOCINFO di = new DOCINFO();
+            di.pDocName = "Sahal Kitchen Ticket";
+            di.pDataType = "RAW";
+            if (StartDocPrinter(h, 1, di) == 0) throw new Exception("StartDocPrinter failed (" + Marshal.GetLastWin32Error() + ")");
+            try {
+                if (!StartPagePrinter(h)) throw new Exception("StartPagePrinter failed (" + Marshal.GetLastWin32Error() + ")");
+                IntPtr p = Marshal.AllocCoTaskMem(bytes.Length);
+                try {
+                    Marshal.Copy(bytes, 0, p, bytes.Length);
+                    int written;
+                    if (!WritePrinter(h, p, bytes.Length, out written) || written != bytes.Length)
+                        throw new Exception("WritePrinter failed (" + Marshal.GetLastWin32Error() + ")");
+                } finally { Marshal.FreeCoTaskMem(p); }
+                EndPagePrinter(h);
+            } finally { EndDocPrinter(h); }
+        } finally { ClosePrinter(h); }
+    }
+}
+"@
+
+function Write-Log($msg, $color = 'Gray') {
+    Write-Host ("[{0}] {1}" -f (Get-Date -Format 'HH:mm:ss'), $msg) -ForegroundColor $color
+}
+
+function Get-LocalIPs {
+    $ips = @()
+    try {
+        $ips = Get-NetIPAddress -AddressFamily IPv4 -ErrorAction Stop |
+            Where-Object { $_.IPAddress -notlike '127.*' -and $_.IPAddress -notlike '169.254.*' } |
+            ForEach-Object { $_.IPAddress }
+    } catch {
+        try {
+            $ips = [System.Net.Dns]::GetHostAddresses([System.Net.Dns]::GetHostName()) |
+                Where-Object { $_.AddressFamily -eq 'InterNetwork' -and $_.ToString() -notlike '127.*' } |
+                ForEach-Object { $_.ToString() }
+        } catch {}
+    }
+    return @($ips)
+}
+
+function Test-PrinterOnline($p) {
+    if (-not $p) { return $null }
+    if ($p.connection -eq 'usb') {
+        try {
+            $pr = Get-Printer -Name $p.name -ErrorAction Stop
+            return ($pr.PrinterStatus -notin @('Offline', 'Error', 'PaperOut', 'NotAvailable'))
+        } catch { return $false }
+    }
+    if (-not $p.ip) { return $false }
+    $c = New-Object System.Net.Sockets.TcpClient
+    try {
+        $ar = $c.BeginConnect($p.ip, [int]$p.port, $null, $null)
+        if (-not $ar.AsyncWaitHandle.WaitOne(1500)) { return $false }
+        $c.EndConnect($ar); return $true
+    } catch { return $false } finally { $c.Close() }
+}
+
+function Send-ToPrinter($p, [byte[]]$bytes) {
+    if ($p.connection -eq 'usb') {
+        [SahalRawPrinter]::Send($p.name, $bytes)
+        return
+    }
+    $c = New-Object System.Net.Sockets.TcpClient
+    try {
+        $ar = $c.BeginConnect($p.ip, [int]$p.port, $null, $null)
+        if (-not $ar.AsyncWaitHandle.WaitOne(4000)) { throw "Printer $($p.ip):$($p.port) kama jawaabin (ma shidan yahay? isku network ma yihiin?)" }
+        $c.EndConnect($ar)
+        $s = $c.GetStream()
+        $s.Write($bytes, 0, $bytes.Length)
+        $s.Flush()
+        Start-Sleep -Milliseconds 300
+    } finally { $c.Close() }
+}
+
+function Send-Ack($job, [bool]$ok, [string]$err) {
+    $body = @{ key = $Key; id = $job.id; kind = $job.kind; marker = $job.marker; ok = $ok; error = $err } | ConvertTo-Json -Compress
+    try {
+        Invoke-RestMethod -Uri "$Server/api/print_agent/$Rid/ack" -Method Post -ContentType 'application/json' -Body $body -TimeoutSec 15 | Out-Null
+    } catch { Write-Log ("Ack failed: " + $_.Exception.Message) 'Yellow' }
+}
+
+Write-Host ""
+Write-Host "  ============================================" -ForegroundColor Cyan
+Write-Host "    SAHAL SERVER - KITCHEN PRINT AGENT" -ForegroundColor Cyan
+Write-Host "    $Restaurant" -ForegroundColor Cyan
+Write-Host "  ============================================" -ForegroundColor Cyan
+Write-Host "  Daaqaddan ha xirin - dalab kasta si toos ah ayuu u daabacmayaa." -ForegroundColor White
+Write-Host ""
+
+$hostName = $env:COMPUTERNAME
+$printer = $null
+$printerOnline = $null
+$lastCheck = [DateTime]::MinValue
+$lastState = ''
+
+while ($true) {
+    try {
+        if (((Get-Date) - $lastCheck).TotalSeconds -ge 15) {
+            $printerOnline = Test-PrinterOnline $printer
+            $lastCheck = Get-Date
+        }
+        $ips = (Get-LocalIPs) -join ','
+        $po = if ($printerOnline -eq $null) { '' } elseif ($printerOnline) { '1' } else { '0' }
+        $url = "$Server/api/print_agent/$Rid/jobs?key=$([uri]::EscapeDataString($Key))&ips=$([uri]::EscapeDataString($ips))&host=$([uri]::EscapeDataString($hostName))&printer_online=$po"
+        $resp = Invoke-RestMethod -Uri $url -Method Get -TimeoutSec 20
+        $printer = $resp.printer
+
+        $where = if ($printer.connection -eq 'usb') { "USB '$($printer.name)'" } else { "$($printer.ip):$($printer.port)" }
+        $state = "$($printer.method)|$where|$printerOnline"
+        if ($state -ne $lastState) {
+            if ($printer.method -ne 'agent') {
+                Write-Log "Kitchen screen-ka 'Print method' kama dhigna 'Sahal Print Agent' - waan sugayaa..." 'Yellow'
+            } elseif ($printerOnline -eq $false) {
+                Write-Log "Connected to server. Printer $($printer.model) @ $where : OFFLINE" 'Red'
+            } else {
+                Write-Log "Connected to server. Printer $($printer.model) @ $where : ready" 'Green'
+            }
+            $lastState = $state
+        }
+
+        foreach ($job in @($resp.jobs)) {
+            if (-not $job) { continue }
+            try {
+                $bytes = [Convert]::FromBase64String($job.data)
+                Send-ToPrinter $printer $bytes
+                Send-Ack $job $true ''
+                $printerOnline = $true
+                Write-Log ("Printed " + $(if ($job.kind -eq 'test') { 'TEST PAGE' } else { "order $($job.id)" })) 'Green'
+            } catch {
+                $msg = $_.Exception.Message
+                Send-Ack $job $false $msg
+                $printerOnline = $false
+                Write-Log "PRINT FAILED: $msg" 'Red'
+                Start-Sleep -Seconds 3
+            }
+        }
+    } catch {
+        $code = $null
+        try { $code = [int]$_.Exception.Response.StatusCode } catch {}
+        if ($code -eq 401) {
+            Write-Log "Furaha (key) agent-kan waa la beddelay. Ka soo deji Sahal_Print_Agent.bat cusub Kitchen screen-ka." 'Red'
+            Start-Sleep -Seconds 30
+        } else {
+            Write-Log ("Server lama gaari karo (internet?): " + $_.Exception.Message) 'Yellow'
+            Start-Sleep -Seconds 5
+        }
+        $lastState = ''
+    }
+    Start-Sleep -Seconds $PollSeconds
+}

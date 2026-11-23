@@ -830,6 +830,8 @@ hr{border:none;border-top:1px solid var(--border);margin:0;}
             <span class="live-chip">👨‍🍳 Preparing: <b id="lcPreparing">0</b></span>
             <span class="live-chip">✅ Ready: <b id="lcReady">0</b></span>
             <span class="live-chip">💳 Unpaid: <b id="lcUnpaid">$0.00</b></span>
+            <span class="live-chip">🪑 Table maanta: <b id="lcTable">0</b></span>
+            <span class="live-chip">🥡 Take Away maanta: <b id="lcTa">0</b></span>
         </div>
         <div class="live-list" id="liveList"><div class="live-empty">Loading…</div></div>
     </div>
@@ -1125,6 +1127,8 @@ async function loadLive(){
         document.getElementById("lcReady").textContent = s.ready || 0;
         document.getElementById("lcUnpaid").textContent = "$" + (s.active_amount || 0).toFixed(2);
         document.getElementById("openOrders").textContent = d.active.length;
+        document.getElementById("lcTable").textContent = `${s.table_today || 0} · $${(s.table_today_amount || 0).toFixed(2)}`;
+        document.getElementById("lcTa").textContent = `${s.takeaway_today || 0} · $${(s.takeaway_today_amount || 0).toFixed(2)}`;
         document.getElementById("totalOrders").textContent = s.orders_today || 0;
         document.getElementById("totalSalesCard").textContent = "$" + (s.paid_today_amount || 0).toFixed(2);
 
@@ -1138,9 +1142,9 @@ async function loadLive(){
         } else {
             list.innerHTML = d.active.slice(0, 8).map(o => `
                 <div class="live-row${fresh.includes(o.id) ? " flash" : ""}">
-                    <div class="t">${escHtml(o.table)}</div>
+                    <div class="t"${o.order_type === "takeaway" ? ' style="background:#c45f00;font-size:18px;"' : ""}>${o.order_type === "takeaway" ? "🥡" : escHtml(o.table)}</div>
                     <div class="info">
-                        <div class="r1">#${escHtml(o.ref)} · ${escHtml(o.waiter || "Customer QR")} · ${escHtml(o.time)}</div>
+                        <div class="r1">#${escHtml(o.ref)}${o.order_type === "takeaway" ? " · Take Away" : ""} · ${escHtml(o.waiter ? (o.staff_role === "cashier" ? "Cashier " : "") + o.waiter : "Customer QR")} · ${escHtml(o.time)}</div>
                         <div class="r2">${escHtml(o.items.map(i => i.qty + "× " + i.name).join(", ") || o.items_text)}</div>
                     </div>
                     <span class="lst lst-${escHtml(o.status)}">${escHtml(o.status)}</span>

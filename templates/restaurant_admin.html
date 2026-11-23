@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <title>{{ r.name }} - Admin Panel</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
 :root{
@@ -247,8 +247,25 @@ body{
 
 @media (max-width:900px){
     .grid-2, .grid-3{grid-template-columns:1fr;}
-    .sidebar{position:relative;height:auto;}
+    .grid-3 .panel[style*="span 2"]{grid-column:auto !important;}
+    .layout{flex-direction:column;}
+    .sidebar{width:100%;height:auto;position:sticky;top:0;z-index:50;display:flex;align-items:center;overflow-x:auto;padding:8px;-webkit-overflow-scrolling:touch;}
+    .sidebar .brand{display:none;}
+    .sidebar .nav-item{flex-shrink:0;margin:2px;padding:10px 12px;white-space:nowrap;}
+    .sidebar > div[style]{margin:0 !important;padding:0 !important;border:none !important;}
+    .main{padding:16px 12px;}
+    .page-title h2{font-size:21px;}
+    .topbar .search{display:none;}
 }
+/* order type */
+.type-split{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.type-box{border-radius:14px;padding:18px;}
+.type-box.tb{background:var(--blue-light);} .type-box.ta{background:#fff1e0;}
+.type-box .tl{font-size:13px;font-weight:800;}
+.type-box .tv{font-size:26px;font-weight:900;margin-top:4px;}
+.type-box .ts{font-size:12.5px;color:var(--text-muted);margin-top:4px;line-height:1.5;}
+.otype{display:inline-block;padding:2px 9px;border-radius:12px;font-size:11.5px;font-weight:800;margin-right:4px;}
+.otype.ta{background:#fff1e0;color:#c45f00;} .otype.tb{background:var(--blue-light);color:var(--blue);}
 
 .panel{
     background:white;
@@ -491,6 +508,9 @@ canvas{max-width:100%;}
         <a class="nav-item" data-page="orders" onclick="showPage('orders', this); return false;" href="#">
             <span class="icon">📦</span> Orders
         </a>
+        <a class="nav-item" href="/live_orders/{{ rid }}">
+            <span class="icon">📡</span> Live Orders
+        </a>
         <a class="nav-item" data-page="menu" onclick="showPage('menu', this); return false;" href="#">
             <span class="icon">🍽</span> Menu Items
         </a>
@@ -583,6 +603,26 @@ canvas{max-width:100%;}
             <b style="color:var(--text-dark);">Comparison:</b> {{ compare_text }}
         </p>
 
+        <!-- TABLE vs TAKE AWAY (per day) -->
+        <div class="panel" style="margin-bottom:16px;">
+            <div class="panel-head" style="flex-wrap:wrap;gap:10px;">
+                <h3 style="margin:0;">🪑 Table vs 🥡 Take Away</h3>
+                <input type="date" id="typeDate" class="range-select" onchange="loadTypeSplit()">
+            </div>
+            <div class="type-split">
+                <div class="type-box tb">
+                    <div class="tl">🪑 Table</div>
+                    <div class="tv" id="tsTableAmt">$0.00</div>
+                    <div class="ts"><b id="tsTableN">0</b> orders · <b id="tsTableItems">0</b> items<br>Paid: $<span id="tsTablePaid">0.00</span> (<span id="tsTablePaidN">0</span>)</div>
+                </div>
+                <div class="type-box ta">
+                    <div class="tl">🥡 Take Away</div>
+                    <div class="tv" id="tsTaAmt">$0.00</div>
+                    <div class="ts"><b id="tsTaN">0</b> orders · <b id="tsTaItems">0</b> items<br>Paid: $<span id="tsTaPaid">0.00</span> (<span id="tsTaPaidN">0</span>)</div>
+                </div>
+            </div>
+        </div>
+
         <!-- OVERVIEW + TOP SELLING + QUICK ACTIONS -->
         <div class="grid-3">
             <div class="panel" style="grid-column:span 2;">
@@ -654,7 +694,7 @@ canvas{max-width:100%;}
                     {% for o in orders %}
                     <div class="list-row">
                         <div>
-                            <div class="list-name">Table {{ o.table or "-" }} — {{ o.items_text }}</div>
+                            <div class="list-name">{% if o.order_type == 'takeaway' %}<span class="otype ta">🥡 Take Away</span>{% else %}<span class="otype tb">🪑 Table {{ o.table or "-" }}</span>{% endif %} {{ o.items_text or o['items'] }}{% if o.employee_name %} <span class="list-sub">· {{ 'Cashier' if o.employee_role == 'cashier' else 'Waiter' }}: {{ o.employee_name }}</span>{% endif %}</div>
                             <div class="list-sub">{{ o.created_at }}</div>
                         </div>
                         <div style="text-align:right;">
@@ -892,6 +932,23 @@ async function dismissBroadcast(broadcastId){
         await fetch(`/dismiss_broadcast/restaurant/${RID_BROADCAST}/${broadcastId}`, { method: "POST" });
     }catch(e){}
 }
+
+/* ── Table vs Take Away per day ── */
+function loadTypeSplit(){
+    const inp = document.getElementById("typeDate");
+    const q = inp.value ? `?date=${inp.value}` : "";
+    fetch(`/api/order_type_summary/${RID_BROADCAST}${q}`, { cache:"no-store" }).then(r => r.json()).then(d => {
+        if(!d.success) return;
+        if(!inp.value) inp.value = d.date;
+        const set = (id, v) => { const el = document.getElementById(id); if(el) el.textContent = v; };
+        set("tsTableAmt", "$" + d.table.amount.toFixed(2)); set("tsTableN", d.table.orders); set("tsTableItems", d.table.items);
+        set("tsTablePaid", d.table.paid_amount.toFixed(2)); set("tsTablePaidN", d.table.paid_orders);
+        set("tsTaAmt", "$" + d.takeaway.amount.toFixed(2)); set("tsTaN", d.takeaway.orders); set("tsTaItems", d.takeaway.items);
+        set("tsTaPaid", d.takeaway.paid_amount.toFixed(2)); set("tsTaPaidN", d.takeaway.paid_orders);
+    }).catch(() => {});
+}
+loadTypeSplit();
+setInterval(loadTypeSplit, 30000);
 
 function changeRange(){
     let value = document.getElementById("rangeFilter").value;

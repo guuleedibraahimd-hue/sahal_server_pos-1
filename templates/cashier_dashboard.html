@@ -213,6 +213,40 @@ table.tx-tbl td{ padding:9px 6px; border-bottom:1px solid #f4f4f4; }
 .row-new{ animation:rowNew 1.2s ease 3; }
 @keyframes rowNew{ 50%{ background:#fff7e0; } }
 
+/* ---- order type ---- */
+.otype-badge{ display:inline-block; padding:3px 10px; border-radius:20px; font-size:11.5px; font-weight:800; white-space:nowrap; }
+.otype-badge.ta{ background:#fff1e0; color:#c45f00; }
+.otype-badge.tb{ background:#eef0fe; color:#3346c4; }
+.type-split{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+.type-box{ border-radius:14px; padding:16px; }
+.type-box.tb{ background:#eef0fe; } .type-box.ta{ background:#fff1e0; }
+.type-box .tl{ font-size:13px; font-weight:800; }
+.type-box .tv{ font-size:22px; font-weight:900; margin-top:4px; }
+.type-box .ts{ font-size:12px; color:var(--muted); margin-top:2px; }
+
+/* ---- cashier new order ---- */
+.otype-seg{ display:flex; gap:8px; margin-bottom:14px; max-width:420px; }
+.otype-seg button{ flex:1; padding:13px 10px; border-radius:12px; border:2px solid #eee; background:#fff; font-weight:800; font-size:14px; cursor:pointer; color:var(--text); }
+.otype-seg button.on{ border-color:var(--green); background:#eafaf1; color:var(--green); }
+.no-input{ width:100%; max-width:320px; padding:12px 14px; border-radius:10px; border:1px solid #ddd; font-size:15px; margin-bottom:12px; display:block; }
+.no-cats{ display:flex; gap:8px; overflow-x:auto; margin-bottom:14px; padding-bottom:4px; }
+.no-cat{ flex-shrink:0; padding:9px 15px; border-radius:20px; border:1.5px solid #eee; background:#fff; font-weight:700; font-size:13px; cursor:pointer; }
+.no-cat.active{ background:var(--green); border-color:var(--green); color:#fff; }
+.no-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:12px; }
+.no-item{ border:1px solid #eee; border-radius:14px; overflow:hidden; cursor:pointer; background:#fff; transition:.15s; user-select:none; }
+.no-item:hover{ border-color:var(--green); transform:translateY(-2px); }
+.no-item .im{ height:96px; background:#f1f3f6; display:flex; align-items:center; justify-content:center; font-size:30px; overflow:hidden; }
+.no-item .im img{ width:100%; height:100%; object-fit:cover; }
+.no-item .nm{ font-size:13px; font-weight:800; padding:8px 10px 0; }
+.no-item .pr{ font-size:12.5px; font-weight:800; color:var(--green); padding:2px 10px 10px; }
+.no-cart{ position:sticky; bottom:10px; z-index:40; margin-top:16px; background:#fff; border:2px solid var(--green); border-radius:14px; padding:14px; box-shadow:0 8px 24px rgba(0,0,0,.08); }
+.no-cart-row{ display:flex; justify-content:space-between; align-items:center; gap:8px; padding:6px 0; border-bottom:1px solid #f2f2f2; font-size:13.5px; }
+.no-cart-row .q{ display:flex; align-items:center; gap:6px; }
+.no-cart-row .q button{ width:26px; height:26px; border-radius:8px; border:none; cursor:pointer; font-weight:900; }
+.no-total{ display:flex; justify-content:space-between; font-weight:900; font-size:16px; margin:10px 0; }
+.no-send{ width:100%; padding:14px; border:none; border-radius:12px; background:var(--green); color:#fff; font-weight:800; font-size:15px; cursor:pointer; }
+.no-send:disabled{ opacity:.6; }
+
 /* ---- mobile drawer ---- */
 .menu-toggle{ display:none; width:40px; height:40px; border-radius:10px; border:1px solid var(--border); background:#fff; font-size:20px; cursor:pointer; align-items:center; justify-content:center; }
 .nav-overlay{ display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:250; }
@@ -265,6 +299,7 @@ table.tx-tbl td{ padding:9px 6px; border-bottom:1px solid #f4f4f4; }
         <ul class="sb-nav">
             <li><button class="sb-link active" data-page="dashboard" onclick="showPage('dashboard',this)">📊 Dashboard</button></li>
             {% if has_shift %}
+            <li><button class="sb-link" data-page="neworder" onclick="showPage('neworder',this)">🍔 New Order</button></li>
             <li><button class="sb-link" id="sbOrdersLink" data-page="orders" onclick="showPage('orders',this)">🧾 Orders {% if pending_count %}<span class="badge">{{ pending_count }}</span>{% endif %}</button></li>
             <li><button class="sb-link" data-page="payments" onclick="showPage('payments',this)">💳 Payments</button></li>
             <li><button class="sb-link" data-page="receipts" onclick="showPage('receipts',this)">📄 Receipt History</button></li>
@@ -334,15 +369,62 @@ table.tx-tbl td{ padding:9px 6px; border-bottom:1px solid #f4f4f4; }
                 <div class="stat-card"><div class="stat-ic si-teal">👥</div><div class="stat-info"><div class="label">Pending Orders</div><div class="value">{{ pending_count }}</div></div></div>
             </div>
 
+            <div class="section" id="typeSplitSection">
+                <div class="section-head">
+                    <h2>🪑 Table vs 🥡 Take Away — Maanta</h2>
+                    <input type="date" id="typeDate" onchange="loadTypeSplit()" style="padding:8px 10px;border-radius:8px;border:1px solid #ddd;">
+                </div>
+                <div class="type-split">
+                    <div class="type-box tb"><div class="tl">🪑 Table</div><div class="tv" id="tsTableAmt">$0.00</div><div class="ts"><span id="tsTableN">0</span> orders · paid $<span id="tsTablePaid">0.00</span></div></div>
+                    <div class="type-box ta"><div class="tl">🥡 Take Away</div><div class="tv" id="tsTaAmt">$0.00</div><div class="ts"><span id="tsTaN">0</span> orders · paid $<span id="tsTaPaid">0.00</span></div></div>
+                </div>
+            </div>
+
             <div class="section">
                 <div class="section-head"><h2>⚡ Quick Actions</h2></div>
                 <div class="qa-row">
+                    <button class="qa-btn" style="background:var(--green);" onclick="showPage('neworder')">🍔 New Order → Kitchen</button>
                     <button class="qa-btn" style="background:var(--blue);" onclick="showPage('orders')">🧾 Orders Awaiting Payment</button>
                     <button class="qa-btn" style="background:var(--purple);" onclick="showPage('waiters')">👥 View Waiters</button>
                     <a class="qa-btn" style="background:var(--orange);" href="/kitchen/{{ rid }}" target="_blank">🍳 Kitchen Orders</a>
                     <button class="qa-btn" style="background:var(--teal);" onclick="showPage('payments')">💰 Payment Summary</button>
                     <button class="qa-btn" style="background:#6f42c1;" onclick="openQRModal()">📷 Generate Table QR</button>
                 </div>
+            </div>
+        </div>
+
+        <!-- ============ NEW ORDER PAGE (cashier → kitchen) ============ -->
+        <div class="page" id="page-neworder">
+            <div class="section">
+                <div class="section-head"><h2>🍔 New Order → Kitchen</h2></div>
+                <div class="otype-seg" id="noTypeSeg">
+                    <button type="button" class="on" data-v="table" onclick="noSetType('table')">🪑 Table</button>
+                    <button type="button" data-v="takeaway" onclick="noSetType('takeaway')">🥡 Take Away</button>
+                </div>
+                <input class="no-input" id="noTable" placeholder="Table number" inputmode="numeric">
+                <input class="no-input" id="noPhone" placeholder="Customer phone (optional)" inputmode="tel">
+                <input class="no-input" id="noSearch" placeholder="🔍 Search items..." oninput="noFilter()">
+                <div class="no-cats" id="noCats">
+                    <button type="button" class="no-cat active" data-cat="all" onclick="noCat(this)">All</button>
+                    {% for c in categories %}<button type="button" class="no-cat" data-cat="{{ c.key }}" onclick="noCat(this)">{{ c.label }}</button>{% endfor %}
+                </div>
+                <div class="no-grid" id="noGrid">
+                    {% for m in menu_items %}
+                    <div class="no-item" data-id="{{ m.id }}" data-name="{{ m.name }}" data-lname="{{ m.name|lower }}" data-price="{{ m.price|default(0) }}" data-cat="{{ m.category|default('') }}" onclick="noAdd(this)">
+                        <div class="im">{% if m.image %}<img src="{{ m.image }}" alt="" loading="lazy" onerror="this.parentNode.innerHTML='🍽️'">{% else %}🍽️{% endif %}</div>
+                        <div class="nm">{{ m.name }}</div>
+                        <div class="pr">${{ m.price }}</div>
+                    </div>
+                    {% else %}
+                    <div style="color:var(--muted);padding:14px;">No menu items yet — add them in 🍽️ Add Menu.</div>
+                    {% endfor %}
+                </div>
+                <div class="no-cart" id="noCart" style="display:none;">
+                    <div id="noCartRows"></div>
+                    <div class="no-total"><span>Total</span><span id="noTotal">$0.00</span></div>
+                    <button class="no-send" id="noSendBtn" onclick="noSend()">📨 Send to Kitchen</button>
+                </div>
+                <div class="msg" id="noMsg"></div>
             </div>
         </div>
 
@@ -361,11 +443,11 @@ table.tx-tbl td{ padding:9px 6px; border-bottom:1px solid #f4f4f4; }
                 <div id="ordersViewAll">
                     <div style="overflow-x:auto;">
                     <table class="orders-tbl">
-                        <tr><th>Order</th><th>Table</th><th>Waiter</th><th>Items</th><th>Amount</th><th>Status</th><th>Action</th></tr>
+                        <tr><th>Order</th><th>Type / Table</th><th>Ordered by</th><th>Items</th><th>Amount</th><th>Status</th><th>Action</th></tr>
                         {% for o in pending_orders %}
                         <tr data-oid="{{ o.id }}">
                             <td>#{{ o.receipt_ref or o.id[:6] }}</td>
-                            <td>{{ o.table }}</td>
+                            <td>{% if o.order_type == 'takeaway' %}<span class="otype-badge ta">🥡 Take Away</span>{% else %}<span class="otype-badge tb">🪑 {{ o.table }}</span>{% endif %}</td>
                             <td>
                                 <div class="waiter-cell">
                                     <div class="w-avatar">{{ (o.employee_name or '—')[:1]|upper }}</div>
@@ -417,11 +499,11 @@ table.tx-tbl td{ padding:9px 6px; border-bottom:1px solid #f4f4f4; }
 
                         <div class="waiter-orders-detail" id="detail-{{ w.employee_id }}">
                             <table class="orders-tbl" style="margin-top:10px;">
-                                <tr><th>Order</th><th>Table</th><th>Items</th><th>Amount</th><th>Status</th><th>Action</th></tr>
+                                <tr><th>Order</th><th>Type / Table</th><th>Items</th><th>Amount</th><th>Status</th><th>Action</th></tr>
                                 {% for o in w.orders %}
                                 <tr>
                                     <td>#{{ o.receipt_ref or o.id[:6] }}</td>
-                                    <td>{{ o.table }}</td>
+                                    <td>{% if o.order_type == 'takeaway' %}<span class="otype-badge ta">🥡 Take Away</span>{% else %}<span class="otype-badge tb">🪑 {{ o.table }}</span>{% endif %}</td>
                                     <td>{{ o['items'] }}</td>
                                     <td><b>${{ "%.2f"|format(o.price or 0) }}</b></td>
                                     <td><span class="status-pill status-{{ (o.status or 'pending')|lower }}">{{ o.status }}</span></td>
@@ -1260,6 +1342,7 @@ async function liveRefresh(force){
             ding();
             showToast(`🔔 ${newCount} dalab cusub ayaa yimid`);
         }
+        loadTypeSplit();
         setLive(true);
     }catch(e){
         setLive(false);
@@ -1282,6 +1365,88 @@ async function liveCheck(){
 liveCheck();
 setInterval(liveCheck, 3000);
 document.addEventListener("visibilitychange", () => { if(!document.hidden) liveRefresh(); });
+
+/* ================================
+   🍔 CASHIER NEW ORDER → KITCHEN
+   The kitchen ticket shows "Cashier: <name>".
+   ================================ */
+let noCart = [], noType = "table", noActiveCat = "all", noSending = false;
+function noSetType(t){
+    noType = t === "takeaway" ? "takeaway" : "table";
+    document.querySelectorAll("#noTypeSeg button").forEach(b => b.classList.toggle("on", b.dataset.v === noType));
+    const ti = document.getElementById("noTable"); if(ti) ti.style.display = noType === "takeaway" ? "none" : "";
+}
+function noCat(btn){
+    document.querySelectorAll(".no-cat").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active"); noActiveCat = btn.dataset.cat; noFilter();
+}
+function noFilter(){
+    const q = (document.getElementById("noSearch").value || "").trim().toLowerCase();
+    document.querySelectorAll("#noGrid .no-item").forEach(el => {
+        const ok = (!q || el.dataset.lname.includes(q)) && (noActiveCat === "all" || el.dataset.cat === noActiveCat);
+        el.style.display = ok ? "" : "none";
+    });
+}
+function noEsc(s){ return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+function noAdd(el){
+    const id = el.dataset.id, ex = noCart.find(c => c.id === id);
+    if(ex) ex.qty++; else noCart.push({ id, name: el.dataset.name, price: parseFloat(el.dataset.price) || 0, qty: 1 });
+    noRender();
+}
+function noQty(i, d){ noCart[i].qty += d; if(noCart[i].qty <= 0) noCart.splice(i, 1); noRender(); }
+function noRender(){
+    const box = document.getElementById("noCart");
+    if(!noCart.length){ box.style.display = "none"; return; }
+    box.style.display = "block";
+    let total = 0;
+    document.getElementById("noCartRows").innerHTML = noCart.map((c, i) => {
+        total += c.price * c.qty;
+        return `<div class="no-cart-row"><span>${noEsc(c.name)}</span><span class="q">
+            <button onclick="noQty(${i},-1)" style="background:#fdecea;color:#c62828;">−</button><b>${c.qty}</b>
+            <button onclick="noQty(${i},1)" style="background:#eafaf1;color:#1f9e57;">+</button>
+            <b style="min-width:62px;text-align:right;">$${(c.price * c.qty).toFixed(2)}</b></span></div>`;
+    }).join("");
+    document.getElementById("noTotal").textContent = "$" + total.toFixed(2);
+}
+async function noSend(){
+    const msg = document.getElementById("noMsg"); msg.className = "msg";
+    const table = noType === "takeaway" ? "" : document.getElementById("noTable").value.trim();
+    if(noType === "table" && !table){ msg.classList.add("show","err"); msg.textContent = "❌ Qor lambarka miiska (ama dooro Take Away)"; return; }
+    if(!noCart.length){ msg.classList.add("show","err"); msg.textContent = "❌ Cart is empty"; return; }
+    if(noSending) return; noSending = true;
+    const btn = document.getElementById("noSendBtn"); btn.disabled = true; btn.textContent = "⏳ Sending...";
+    try{
+        const r = await fetch("/order/" + RID, { method:"POST", headers:{ "Content-Type":"application/json" },
+            body: JSON.stringify({ order_type: noType, table, customer_phone: document.getElementById("noPhone").value.trim(),
+                cart: noCart.map(c => ({ name: c.name, price: c.price, qty: c.qty })) }) });
+        const d = await r.json();
+        if(d.success){
+            noCart = []; noRender();
+            document.getElementById("noTable").value = ""; document.getElementById("noPhone").value = "";
+            showToast(d.merged ? "✅ Dalabka miiska waa lagu daray — jikada ayaa loo diray" : `✅ ${noType === "takeaway" ? "Take Away" : "Table " + table} — jikada ayaa loo diray`);
+            noSetType("table");
+            liveRefresh(true); loadTypeSplit();
+        } else { msg.classList.add("show","err"); msg.textContent = "❌ " + (d.error || "Failed"); }
+    }catch(e){ msg.classList.add("show","err"); msg.textContent = "❌ Network error"; }
+    finally{ noSending = false; btn.disabled = false; btn.textContent = "📨 Send to Kitchen"; }
+}
+
+/* ===== Table vs Take Away (today, or a picked date) ===== */
+function loadTypeSplit(){
+    const inp = document.getElementById("typeDate"); if(!inp) return;
+    const q = inp.value ? `?date=${inp.value}` : "";
+    fetch(`/api/order_type_summary/${RID}${q}`, { cache:"no-store" }).then(r => r.json()).then(d => {
+        if(!d.success) return;
+        if(!inp.value) inp.value = d.date;
+        document.getElementById("tsTableAmt").textContent = "$" + d.table.amount.toFixed(2);
+        document.getElementById("tsTableN").textContent = d.table.orders;
+        document.getElementById("tsTablePaid").textContent = d.table.paid_amount.toFixed(2);
+        document.getElementById("tsTaAmt").textContent = "$" + d.takeaway.amount.toFixed(2);
+        document.getElementById("tsTaN").textContent = d.takeaway.orders;
+        document.getElementById("tsTaPaid").textContent = d.takeaway.paid_amount.toFixed(2);
+    }).catch(() => {});
+}
+loadTypeSplit();
 </script>
 
 </body>

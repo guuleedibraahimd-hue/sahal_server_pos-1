@@ -87,6 +87,9 @@ a{ color:inherit; }
 .menu-item .price{ font-size:12.5px; color:var(--orange); font-weight:800; margin-top:2px; }
 .menu-item .add-fab{ position:absolute; right:10px; bottom:10px; width:26px; height:26px; border-radius:50%; background:var(--orange); color:#fff; display:flex; align-items:center; justify-content:center; font-size:16px; font-weight:900; }
 
+.otype-seg{ display:flex; gap:8px; margin-bottom:14px; max-width:420px; }
+.otype-seg button{ flex:1; padding:13px 10px; border-radius:12px; border:2px solid #eee; background:#fff; font-weight:800; font-size:14px; cursor:pointer; color:var(--text); }
+.otype-seg button.on{ border-color:var(--orange); background:#fff3ec; color:var(--orange); }
 .cart-bar{ display:flex; align-items:center; justify-content:space-between; background:var(--orange); color:#fff; border-radius:12px; padding:14px 18px; margin-top:16px; cursor:pointer; font-weight:800; font-size:14px; }
 .cart-panel{ display:none; margin-top:12px; }
 .cart-panel.show{ display:block; }
@@ -262,7 +265,7 @@ table.tx-tbl td{ padding:9px 6px; border-bottom:1px solid #f4f4f4; }
                 <div class="section-head"><h2>📋 Recent Orders</h2></div>
                 {% for o in my_orders[:5] %}
                 <div class="order-row">
-                    <div>#{{ o.receipt_ref or o.id[:6] }} · Table {{ o.table }} — {{ o['items'] }}</div>
+                    <div>#{{ o.receipt_ref or o.id[:6] }} · {{ '🥡 Take Away' if o.order_type == 'takeaway' else 'Table ' ~ o.table }} — {{ o['items'] }}</div>
                     <div style="display:flex;align-items:center;gap:8px;">
                         <span class="status-pill status-{{ (o.status or 'pending')|lower }}">{{ o.status }}</span>
                         <a href="/receipt/{{ rid }}/{{ o.id }}" target="_blank" class="receipt-link">🧾</a>
@@ -285,8 +288,13 @@ table.tx-tbl td{ padding:9px 6px; border-bottom:1px solid #f4f4f4; }
                     <button type="button" onclick="clearEdit()">✕ New Order Instead</button>
                 </div>
 
-                <div class="table-input">
-                    <input type="text" id="tableNo" placeholder="Table number">
+                <div class="otype-seg" id="otypeSeg">
+                    <button type="button" class="on" data-v="table" onclick="setOrderType('table')">🪑 Table</button>
+                    <button type="button" data-v="takeaway" onclick="setOrderType('takeaway')">🥡 Take Away</button>
+                </div>
+
+                <div class="table-input" id="tableNoWrap">
+                    <input type="text" id="tableNo" placeholder="Table number" inputmode="numeric">
                 </div>
 
                 <div class="table-input">
@@ -345,10 +353,10 @@ table.tx-tbl td{ padding:9px 6px; border-bottom:1px solid #f4f4f4; }
             <div class="waiting-panel" id="waitingPanel">
                 {% for o in waiting_orders %}
                 <div class="order-row">
-                    <div>#{{ o.receipt_ref or o.id[:6] }} · Table {{ o.table }} — {{ o['items'] }}</div>
+                    <div>#{{ o.receipt_ref or o.id[:6] }} · {{ '🥡 Take Away' if o.order_type == 'takeaway' else 'Table ' ~ o.table }} — {{ o['items'] }}</div>
                     <div style="display:flex;align-items:center;gap:8px;">
                         <span class="status-pill status-{{ (o.status or 'pending')|lower }}">{{ o.status }}</span>
-                        <button class="edit-order-btn" data-table="{{ o.table }}" data-items="{{ o['items'] }}" onclick="editOrder(this)">✏️ Edit</button>
+                        {% if o.order_type != 'takeaway' %}<button class="edit-order-btn" data-table="{{ o.table }}" data-items="{{ o['items'] }}" onclick="editOrder(this)">✏️ Edit</button>{% endif %}
                         <a href="/receipt/{{ rid }}/{{ o.id }}" target="_blank" class="receipt-link" data-order-id="{{ o.id }}" onclick="markPrinted(this)">🖨️</a>
                     </div>
                 </div>
@@ -363,10 +371,10 @@ table.tx-tbl td{ padding:9px 6px; border-bottom:1px solid #f4f4f4; }
                 <div class="section-head"><h2>⏳ Waiting to Print ({{ waiting_orders|length }})</h2></div>
                 {% for o in waiting_orders %}
                 <div class="order-row">
-                    <div>#{{ o.receipt_ref or o.id[:6] }} · Table {{ o.table }} — {{ o['items'] }}</div>
+                    <div>#{{ o.receipt_ref or o.id[:6] }} · {{ '🥡 Take Away' if o.order_type == 'takeaway' else 'Table ' ~ o.table }} — {{ o['items'] }}</div>
                     <div style="display:flex;align-items:center;gap:8px;">
                         <span class="status-pill status-{{ (o.status or 'pending')|lower }}">{{ o.status }}</span>
-                        <button class="edit-order-btn" data-table="{{ o.table }}" data-items="{{ o['items'] }}" onclick="editOrder(this)">✏️ Edit</button>
+                        {% if o.order_type != 'takeaway' %}<button class="edit-order-btn" data-table="{{ o.table }}" data-items="{{ o['items'] }}" onclick="editOrder(this)">✏️ Edit</button>{% endif %}
                         <a href="/receipt/{{ rid }}/{{ o.id }}" target="_blank" class="receipt-link" data-order-id="{{ o.id }}" onclick="markPrinted(this)">🖨️</a>
                     </div>
                 </div>
@@ -382,7 +390,7 @@ table.tx-tbl td{ padding:9px 6px; border-bottom:1px solid #f4f4f4; }
                 <div class="section-head"><h2>📋 My Orders</h2></div>
                 {% for o in my_orders %}
                 <div class="order-row" data-oid="{{ o.id }}" data-status="{{ (o.status or 'pending')|lower }}" data-table="{{ o.table }}">
-                    <div>#{{ o.receipt_ref or o.id[:6] }} · Table {{ o.table }} — {{ o['items'] }}</div>
+                    <div>#{{ o.receipt_ref or o.id[:6] }} · {{ '🥡 Take Away' if o.order_type == 'takeaway' else 'Table ' ~ o.table }} — {{ o['items'] }}</div>
                     <div style="display:flex;align-items:center;gap:8px;">
                         <span class="status-pill status-{{ (o.status or 'pending')|lower }}">{{ o.status }}</span>
                         <a href="/receipt/{{ rid }}/{{ o.id }}" target="_blank" class="receipt-link">🧾</a>
@@ -572,6 +580,7 @@ function editOrder(btn){
     const table = btn.dataset.table;
     const items = btn.dataset.items;
 
+    setOrderType("table");
     document.getElementById("tableNo").value = table;
     document.getElementById("existingOrderItemsText").textContent = items;
     document.getElementById("existingOrderBanner").style.display = "flex";
@@ -607,13 +616,23 @@ function renderCart(){
     document.getElementById("cartBarTotal").textContent = "Total: $" + total.toFixed(2);
 }
 
+let orderType = "table";
+function setOrderType(t){
+    orderType = t === "takeaway" ? "takeaway" : "table";
+    document.querySelectorAll("#otypeSeg button").forEach(b => b.classList.toggle("on", b.dataset.v === orderType));
+    document.getElementById("tableNoWrap").style.display = orderType === "takeaway" ? "none" : "";
+    if(orderType === "takeaway"){
+        document.getElementById("existingOrderBanner").style.display = "none";
+    }
+}
+
 async function sendOrder(){
-    const table = document.getElementById("tableNo").value.trim();
+    const table = orderType === "takeaway" ? "" : document.getElementById("tableNo").value.trim();
     const customer_phone = document.getElementById("customerPhone").value.trim();
     const msg = document.getElementById("orderMsg");
     msg.className = "msg";
 
-    if(!table){ msg.classList.add("show","err"); msg.textContent = "❌ Enter a table number"; return; }
+    if(orderType === "table" && !table){ msg.classList.add("show","err"); msg.textContent = "❌ Enter a table number (ama dooro Take Away)"; return; }
     if(!cart.length){ msg.classList.add("show","err"); msg.textContent = "❌ Cart is empty"; return; }
     if(sending) return;
     sending = true;
@@ -625,6 +644,7 @@ async function sendOrder(){
             method: "POST",
             headers: {"Content-Type": "application/json"},
             body: JSON.stringify({
+                order_type: orderType,
                 table,
                 customer_phone,
                 cart: cart.map(c => ({ name: c.name, price: c.price, qty: c.qty }))
@@ -638,6 +658,7 @@ async function sendOrder(){
             renderCart();
             document.getElementById("tableNo").value = "";
             document.getElementById("customerPhone").value = "";
+            setOrderType("table");
             document.getElementById("existingOrderBanner").style.display = "none";
             lastReceiptUrl = data.receipt_url || null;
             lastOrderId = data.order_id || null;

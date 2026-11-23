@@ -29,6 +29,8 @@ import sqlite3
 import os
 import qrcode
 import socket
+import secrets as _secrets
+import base64 as _b64
 import random
 import json
 import re
@@ -4034,6 +4036,7 @@ def mark_kitchen_printed(rid, order_id):
         if not order_ref.get().exists:
             return jsonify({"success": False, "error": "Order not found"})
         order_ref.update({"kitchen_printed": True, "kitchen_printed_once": True,
+                          "reprint_requested": False, "reprint_all": False,
                           "kitchen_printed_at": datetime.now(timezone.utc)})
         _bump_orders_version(rid)
         return jsonify({"success": True})
@@ -4905,6 +4908,29 @@ def _to_mogadishu(dt):
         return None
 
 
+def _order_type(o):
+    return "takeaway" if str((o or {}).get("order_type", "")).lower() == "takeaway" else "table"
+
+
+def _kitchen_status(o):
+    """What the kitchen is doing with this order. Kept separate from the
+    payment status, so an order paid up-front still goes pending ->
+    preparing -> ready in the kitchen."""
+    ks = str((o or {}).get("kitchen_status") or "").lower()
+    if ks in LIVE_ORDER_STATUSES:
+        return ks
+    st = str((o or {}).get("status") or "pending").lower()
+    return st if st in LIVE_ORDER_STATUSES else "pending"
+
+
+def _staff_label(o):
+    name = (o or {}).get("employee_name") or ""
+    if not name:
+        return ""
+    role = "Cashier" if (o or {}).get("employee_role") == "cashier" else "Waiter"
+    return f"{role}: {name}"
+
+
 def _order_cart_lines(o, cart_override=None):
     cart = cart_override if cart_override is not None else o.get("cart")
     lines = []
@@ -4954,7 +4980,10 @@ def _order_public(doc_id, o):
         "new_items":       _order_cart_lines(o, o.get("last_added_cart")) if o.get("last_added_cart") else [],
         "total":           total,
         "status":          str(o.get("status", "pending")).lower(),
+        "kitchen_status":  _kitchen_status(o),
+        "order_type":      _order_type(o),
         "waiter":          o.get("employee_name") or "",
+        "staff_role":      o.get("employee_role") or ("waiter" if o.get("employee_name") else ""),
         "customer_phone":  o.get("customer_phone") or "",
         "payment_method":  o.get("payment_method") or "",
         "receipt_printed": bool(o.get("receipt_printed")),
@@ -4988,7 +5017,9 @@ def api_live_orders(rid):
         restaurant_ref = db.collection("restaurants").document(rid)
         active, paid_today = [], []
         stats = {"pending": 0, "preparing": 0, "ready": 0, "active_amount": 0.0,
-                 "paid_today_count": 0, "paid_today_amount": 0.0, "orders_today": 0}
+                 "paid_today_count": 0, "paid_today_amount": 0.0, "orders_today": 0,
+                 "table_today": 0, "takeaway_today": 0,
+                 "table_today_amount": 0.0, "takeaway_today_amount": 0.0}
         for doc in restaurant_ref.collection("orders") \
                 .order_by("created_at", direction=firestore.Query.DESCENDING).limit(250).stream():
             if doc.id == "init":
@@ -4996,6 +5027,8 @@ def api_live_orders(rid):
             o = _order_public(doc.id, doc.to_dict() or {})
             if o["is_today"]:
                 stats["orders_today"] += 1
+                stats[o["order_type"] + "_today"] += 1
+                stats[o["order_type"] + "_today_amount"] += o["total"]
             if o["status"] == "paid":
                 if o["is_today"]:
                     stats["paid_today_count"] += 1
@@ -5006,8 +5039,8 @@ def api_live_orders(rid):
                 stats[o["status"]] += 1
                 stats["active_amount"] += o["total"]
                 active.append(o)
-        stats["active_amount"] = round(stats["active_amount"], 2)
-        stats["paid_today_amount"] = round(stats["paid_today_amount"], 2)
+        for k in ("active_amount", "paid_today_amount", "table_today_amount", "takeaway_today_amount"):
+            stats[k] = round(stats[k], 2)
         snap = restaurant_ref.collection("meta").document("orders_version").get()
         v = (snap.to_dict() or {}).get("v", 0) if snap.exists else 0
         resp = jsonify({"success": True, "v": v, "active": active, "paid_today": paid_today, "stats": stats,
@@ -5016,6 +5049,52 @@ def api_live_orders(rid):
         return resp
     except Exception as e:
         print("LIVE ORDERS ERROR:", e)
+        return jsonify({"success": False, "error": str(e)})
+
+
+@app.route("/api/order_type_summary/<rid>")
+def api_order_type_summary(rid):
+    """Table vs Take-Away for one day (Mogadishu time): how many orders,
+    how much money, how much of it is already paid."""
+    if not _can_view_restaurant_orders(rid):
+        return jsonify({"success": False, "error": "Unauthorized"}), 401
+    try:
+        day_str = (request.args.get("date") or "").strip()
+        try:
+            day = datetime.strptime(day_str, "%Y-%m-%d").date() if day_str else datetime.now(MOGADISHU_TZ).date()
+        except ValueError:
+            return jsonify({"success": False, "error": "Invalid date"})
+        start_local = datetime(day.year, day.month, day.day, tzinfo=MOGADISHU_TZ)
+        start_utc = start_local.astimezone(timezone.utc)
+        end_utc = (start_local + timedelta(days=1)).astimezone(timezone.utc)
+
+        out = {t: {"orders": 0, "amount": 0.0, "paid_orders": 0, "paid_amount": 0.0, "items": 0}
+               for t in ("table", "takeaway")}
+        for doc in db.collection("restaurants").document(rid).collection("orders") \
+                .where("created_at", ">=", start_utc).where("created_at", "<", end_utc).stream():
+            if doc.id == "init":
+                continue
+            o = doc.to_dict() or {}
+            t = _order_type(o)
+            try:
+                amt = float(o.get("price", 0) or 0)
+            except Exception:
+                amt = 0.0
+            out[t]["orders"] += 1
+            out[t]["amount"] += amt
+            out[t]["items"] += sum(l["qty"] for l in _order_cart_lines(o))
+            if str(o.get("status", "")).lower() == "paid":
+                out[t]["paid_orders"] += 1
+                out[t]["paid_amount"] += amt
+        for t in out:
+            out[t]["amount"] = round(out[t]["amount"], 2)
+            out[t]["paid_amount"] = round(out[t]["paid_amount"], 2)
+        total_orders = out["table"]["orders"] + out["takeaway"]["orders"]
+        return jsonify({"success": True, "date": day.isoformat(), "table": out["table"], "takeaway": out["takeaway"],
+                        "total_orders": total_orders,
+                        "total_amount": round(out["table"]["amount"] + out["takeaway"]["amount"], 2)})
+    except Exception as e:
+        print("ORDER TYPE SUMMARY ERROR:", e)
         return jsonify({"success": False, "error": str(e)})
 
 
@@ -5043,6 +5122,335 @@ def live_orders_page(rid):
 # ?all=1 forces the full order; ?autoprint=1 opens the print dialog
 # (or prints silently when Chrome runs with --kiosk-printing).
 # =====================================
+def _kitchen_ticket_data(o, restaurant_name, show_all=False, paper=80):
+    """Everything a kitchen slip needs — used by the on-screen/browser
+    ticket AND the ESC/POS bytes the Print Agent sends to the printer,
+    so both always print exactly the same thing."""
+    show_all = show_all or bool(o.get("reprint_all"))
+    is_addition = bool(o.get("last_added_cart")) and bool(o.get("kitchen_printed_once")) and not show_all
+    lines = _order_cart_lines(o, o.get("last_added_cart")) if is_addition else _order_cart_lines(o)
+    created = _to_mogadishu(o.get("last_added_at") if is_addition else o.get("created_at")) \
+              or datetime.now(MOGADISHU_TZ)
+    otype = _order_type(o)
+    return {
+        "restaurant_name": restaurant_name,
+        "ref": o.get("receipt_ref") or "",
+        "order_type": otype,
+        "table": "" if otype == "takeaway" else str(o.get("table", "")),
+        "staff_label": _staff_label(o),
+        "customer_phone": o.get("customer_phone") or "",
+        "lines": lines,
+        "total_qty": sum(l["qty"] for l in lines),
+        "is_addition": is_addition,
+        "date_str": created.strftime("%d/%m/%Y %H:%M"),
+        "paper": paper,
+    }
+
+
+def _escpos_kitchen_ticket(t):
+    """Raw ESC/POS bytes for a thermal POS printer (80mm = 48 cols, 58mm = 32)."""
+    cols = 32 if int(t.get("paper") or 80) == 58 else 48
+    ESC, GS = b"\x1b", b"\x1d"
+    def enc(txt):
+        return str(txt).encode("ascii", "replace")
+    out = bytearray()
+    out += ESC + b"@"                              # init
+    out += ESC + b"t\x00"                          # code page 437
+    out += ESC + b"a\x01"                          # center
+    out += ESC + b"E\x01" + GS + b"!\x11" + enc(t["restaurant_name"][:cols // 2]) + b"\n"
+    out += GS + b"!\x00" + ESC + b"E\x00" + enc("KITCHEN ORDER") + b"\n"
+    out += ESC + b"E\x01" + GS + b"!\x01" + enc(f"Ref:{t['ref']}") + b"\n" + GS + b"!\x00" + ESC + b"E\x00"
+    out += b"\n"
+    if t["order_type"] == "takeaway":
+        out += ESC + b"E\x01" + GS + b"!\x11" + enc("TAKE AWAY") + b"\n"
+    else:
+        out += ESC + b"E\x01" + enc("TABLE") + b"\n" + GS + b"!\x22" + enc(t["table"]) + b"\n"
+    out += GS + b"!\x00" + ESC + b"E\x00"
+    if t["is_addition"]:
+        out += b"\n" + GS + b"B\x01" + ESC + b"E\x01" + enc(" *** KU DAR / ADDED ITEMS *** ") + ESC + b"E\x00" + GS + b"B\x00" + b"\n"
+    out += enc(f"Date: {t['date_str']}") + b"\n"
+    out += enc(t["staff_label"] or "Customer QR Order") + b"\n"
+    out += ESC + b"a\x00"                          # left
+    out += enc("-" * cols) + b"\n"
+    out += ESC + b"E\x01" + enc("Item Name".ljust(cols - 5) + "  Qty") + ESC + b"E\x00" + b"\n"
+    out += enc("-" * cols) + b"\n"
+    out += ESC + b"E\x01" + GS + b"!\x01"         # bold + double height for items
+    for l in t["lines"]:
+        name, qty = str(l["name"]), str(l["qty"])
+        width = cols - 5
+        chunks = [name[i:i + width] for i in range(0, len(name), width)] or [""]
+        out += enc(chunks[0].ljust(width) + qty.rjust(5)) + b"\n"
+        for c in chunks[1:]:
+            out += enc(c) + b"\n"
+    out += GS + b"!\x00" + ESC + b"E\x00"
+    out += enc("-" * cols) + b"\n"
+    out += enc("Total Items".ljust(cols - 5) + str(t["total_qty"]).rjust(5)) + b"\n"
+    out += enc("-" * cols) + b"\n"
+    out += ESC + b"a\x01" + enc("@SahalServer | www.sahalserver.com") + b"\n"
+    out += b"\n\n\n\n" + GS + b"V\x42\x00"         # feed + partial cut
+    return bytes(out)
+
+
+
+
+# =====================================================================
+# 🖨️ KITCHEN PRINTER SETTINGS + SAHAL PRINT AGENT
+# The website runs on the internet, the printer sits on the restaurant's
+# local network — a website can never reach 192.168.x.x by itself. So the
+# kitchen computer runs a tiny agent (Sahal_Print_Agent.bat, built into
+# Windows PowerShell, nothing to install). It asks the server every 2s
+# "anything to print?", sends the ticket straight to the POS printer
+# (network IP:9100 or USB printer name) and reports back. Both sides
+# identify each other: the agent proves itself with a secret key, and
+# reports the computer's IP + printer status, which the kitchen screen
+# compares with what was saved here.
+# =====================================================================
+PRINTER_AGENT_ONLINE_SEC = 20
+
+
+def _printer_public(cfg):
+    cfg = dict(cfg or {})
+    last = cfg.get("agent_last_seen")
+    last_m = _to_mogadishu(last) if last else None
+    online = bool(last_m and (datetime.now(MOGADISHU_TZ) - last_m).total_seconds() < PRINTER_AGENT_ONLINE_SEC)
+    agent_ips = cfg.get("agent_ips") or []
+    desktop_ip = (cfg.get("desktop_ip") or "").strip()
+    return {
+        "method":        cfg.get("method") or "browser",
+        "model":         cfg.get("model") or "",
+        "connection":    cfg.get("connection") or "network",
+        "printer_ip":    cfg.get("printer_ip") or "",
+        "printer_port":  int(cfg.get("printer_port") or 9100),
+        "printer_name":  cfg.get("printer_name") or "",
+        "desktop_ip":    desktop_ip,
+        "paper":         int(cfg.get("paper") or 80),
+        "has_key":       bool(cfg.get("agent_key")),
+        "agent_online":  online,
+        "agent_last_seen": last_m.strftime("%d/%m %I:%M:%S %p") if last_m else "",
+        "agent_ips":     agent_ips,
+        "agent_host":    cfg.get("agent_host") or "",
+        "desktop_match": (desktop_ip in agent_ips) if (desktop_ip and agent_ips) else None,
+        "printer_online": cfg.get("printer_online"),
+        "last_error":    cfg.get("last_error") or "",
+        "last_printed":  cfg.get("last_printed") or "",
+    }
+
+
+def _can_manage_printer(rid):
+    rid = str(rid)
+    return bool(session.get("kitchen_" + rid) or session.get("admin_" + rid) or session.get("admin_ok")
+                or (session.get("restaurant_login") and str(session.get("restaurant_id")) == rid))
+
+
+@app.route("/kitchen_printer/<rid>", methods=["GET", "POST"])
+def kitchen_printer_settings(rid):
+    if not _can_manage_printer(rid):
+        return jsonify({"success": False, "error": "Unauthorized"}), 401
+    ref = db.collection("restaurants").document(rid)
+    snap = ref.get()
+    if not snap.exists:
+        return jsonify({"success": False, "error": "Restaurant not found"}), 404
+    cfg = (snap.to_dict() or {}).get("kitchen_printer") or {}
+    if request.method == "GET":
+        return jsonify({"success": True, "printer": _printer_public(cfg)})
+
+    d = request.get_json(silent=True) or {}
+    ip_re = re.compile(r"^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$")
+    def valid_ip(v):
+        m = ip_re.match(v or "")
+        return bool(m) and all(0 <= int(x) <= 255 for x in m.groups())
+
+    method = "agent" if d.get("method") == "agent" else "browser"
+    connection = "usb" if d.get("connection") == "usb" else "network"
+    printer_ip = str(d.get("printer_ip", "")).strip()
+    desktop_ip = str(d.get("desktop_ip", "")).strip()
+    printer_name = str(d.get("printer_name", "")).strip()[:120]
+    try:
+        port = int(d.get("printer_port") or 9100)
+    except Exception:
+        port = 9100
+    if method == "agent" and connection == "network" and not valid_ip(printer_ip):
+        return jsonify({"success": False, "error": "Printer IP-ga sax ma aha (tusaale: 192.168.1.100)"})
+    if method == "agent" and connection == "usb" and not printer_name:
+        return jsonify({"success": False, "error": "Qor magaca printer-ka sida Windows ugu qoran yahay"})
+    if desktop_ip and not valid_ip(desktop_ip):
+        return jsonify({"success": False, "error": "Desktop IP-ga sax ma aha (tusaale: 192.168.1.20)"})
+
+    new_cfg = dict(cfg)
+    new_cfg.update({
+        "method": method,
+        "model": str(d.get("model", "")).strip()[:80],
+        "connection": connection,
+        "printer_ip": printer_ip,
+        "printer_port": port if 1 <= port <= 65535 else 9100,
+        "printer_name": printer_name,
+        "desktop_ip": desktop_ip,
+        "paper": 58 if str(d.get("paper")) == "58" else 80,
+        "updated_at": datetime.now(timezone.utc),
+    })
+    if not new_cfg.get("agent_key") or d.get("regenerate_key"):
+        new_cfg["agent_key"] = _secrets.token_urlsafe(24)
+    ref.update({"kitchen_printer": new_cfg})
+    _bump_orders_version(rid)
+    return jsonify({"success": True, "printer": _printer_public(new_cfg)})
+
+
+@app.route("/kitchen_print_agent/<rid>/Sahal_Print_Agent.bat")
+def kitchen_print_agent_download(rid):
+    if not _can_manage_printer(rid):
+        return "Unauthorized ❌", 401
+    ref = db.collection("restaurants").document(rid)
+    snap = ref.get()
+    if not snap.exists:
+        return "Restaurant not found ❌", 404
+    rest = snap.to_dict() or {}
+    cfg = rest.get("kitchen_printer") or {}
+    if not cfg.get("agent_key"):
+        cfg["agent_key"] = _secrets.token_urlsafe(24)
+        ref.update({"kitchen_printer": cfg})
+    server = request.host_url.rstrip("/")
+    if server.startswith("http://") and "localhost" not in server and "127.0.0.1" not in server:
+        server = "https://" + server[len("http://"):]
+    script = render_template("print_agent.bat.txt", server=server, rid=rid, key=cfg["agent_key"],
+                             restaurant_name=rest.get("name", "Restaurant"))
+    script = script.replace("\r\n", "\n").replace("\n", "\r\n")
+    resp = make_response(script)
+    resp.headers["Content-Type"] = "application/octet-stream"
+    resp.headers["Content-Disposition"] = "attachment; filename=Sahal_Print_Agent.bat"
+    return resp
+
+
+def _agent_auth(rid):
+    key = request.args.get("key") or (request.get_json(silent=True) or {}).get("key") or ""
+    ref = db.collection("restaurants").document(rid)
+    snap = ref.get()
+    if not snap.exists:
+        return None, None, None
+    rest = snap.to_dict() or {}
+    cfg = rest.get("kitchen_printer") or {}
+    if not key or not cfg.get("agent_key") or not _secrets.compare_digest(str(key), str(cfg["agent_key"])):
+        return None, None, None
+    return ref, rest, cfg
+
+
+@app.route("/api/print_agent/<rid>/jobs")
+def print_agent_jobs(rid):
+    ref, rest, cfg = _agent_auth(rid)
+    if ref is None:
+        return jsonify({"success": False, "error": "Invalid agent key"}), 401
+    try:
+        ips = [i.strip() for i in (request.args.get("ips") or "").split(",") if i.strip()][:8]
+        printer_online = request.args.get("printer_online")
+        hb = {"kitchen_printer.agent_last_seen": datetime.now(timezone.utc),
+              "kitchen_printer.agent_ips": ips,
+              "kitchen_printer.agent_host": (request.args.get("host") or "")[:60]}
+        if printer_online in ("0", "1"):
+            hb["kitchen_printer.printer_online"] = printer_online == "1"
+        ref.update(hb)
+
+        public = _printer_public(cfg)
+        jobs = []
+        if public["method"] == "agent":
+            now = datetime.now(MOGADISHU_TZ)
+            for doc in ref.collection("print_jobs").where("status", "==", "pending").limit(5).stream():
+                j = doc.to_dict() or {}
+                jobs.append({"id": doc.id, "kind": "test", "marker": "",
+                             "data": _b64.b64encode(_escpos_test_page(rest.get("name", ""), public)).decode()})
+            for doc in ref.collection("orders").order_by("created_at", direction=firestore.Query.DESCENDING).limit(60).stream():
+                if doc.id == "init" or len(jobs) >= 10:
+                    continue
+                o = doc.to_dict() or {}
+                if o.get("kitchen_cleared") or o.get("kitchen_printed"):
+                    continue
+                recent = _to_mogadishu(o.get("last_added_at") or o.get("created_at"))
+                if not o.get("reprint_requested") and (not recent or (now - recent).total_seconds() > 3600):
+                    continue   # never flood the printer with old orders
+                t = _kitchen_ticket_data(o, rest.get("name", "Restaurant"), paper=public["paper"])
+                marker = str(o.get("last_added_at") or o.get("created_at") or "")
+                jobs.append({"id": doc.id, "kind": "order", "marker": marker,
+                             "data": _b64.b64encode(_escpos_kitchen_ticket(t)).decode()})
+        return jsonify({"success": True, "printer": {
+            "method": public["method"], "connection": public["connection"], "ip": public["printer_ip"],
+            "port": public["printer_port"], "name": public["printer_name"], "model": public["model"]},
+            "jobs": list(reversed([j for j in jobs if j["kind"] == "order"])) + [j for j in jobs if j["kind"] == "test"]})
+    except Exception as e:
+        print("PRINT AGENT JOBS ERROR:", e)
+        return jsonify({"success": False, "error": str(e)})
+
+
+@app.route("/api/print_agent/<rid>/ack", methods=["POST"])
+def print_agent_ack(rid):
+    ref, rest, cfg = _agent_auth(rid)
+    if ref is None:
+        return jsonify({"success": False, "error": "Invalid agent key"}), 401
+    d = request.get_json(silent=True) or {}
+    job_id, kind, ok = str(d.get("id", "")), d.get("kind"), bool(d.get("ok"))
+    err = str(d.get("error", ""))[:200]
+    try:
+        stamp = datetime.now(MOGADISHU_TZ).strftime("%d/%m %I:%M:%S %p")
+        if not ok:
+            ref.update({"kitchen_printer.last_error": f"{stamp} — {err or 'print failed'}",
+                        "kitchen_printer.printer_online": False})
+            return jsonify({"success": True})
+        if kind == "test":
+            ref.collection("print_jobs").document(job_id).update({"status": "done", "printed_at": datetime.now(timezone.utc)})
+        elif kind == "order":
+            oref = ref.collection("orders").document(job_id)
+            snap = oref.get()
+            if snap.exists:
+                o = snap.to_dict() or {}
+                # Items added while this ticket was printing? Leave it
+                # unprinted so the addition prints on the next round.
+                if str(o.get("last_added_at") or o.get("created_at") or "") == str(d.get("marker", "")):
+                    oref.update({"kitchen_printed": True, "kitchen_printed_once": True,
+                                 "reprint_requested": False, "reprint_all": False,
+                                 "kitchen_printed_at": datetime.now(timezone.utc)})
+                    _bump_orders_version(rid)
+        ref.update({"kitchen_printer.last_error": "", "kitchen_printer.printer_online": True,
+                    "kitchen_printer.last_printed": stamp})
+        return jsonify({"success": True})
+    except Exception as e:
+        print("PRINT AGENT ACK ERROR:", e)
+        return jsonify({"success": False, "error": str(e)})
+
+
+def _escpos_test_page(restaurant_name, p):
+    ESC, GS = b"\x1b", b"\x1d"
+    e = lambda t: str(t).encode("ascii", "replace")
+    out = ESC + b"@" + ESC + b"a\x01" + ESC + b"E\x01" + GS + b"!\x11" + e("SAHAL SERVER") + b"\n"
+    out += GS + b"!\x00" + e("PRINTER TEST OK") + b"\n" + ESC + b"E\x00" + e(restaurant_name) + b"\n\n"
+    out += ESC + b"a\x00" + e(f"Model   : {p.get('model') or '-'}") + b"\n"
+    if p.get("connection") == "usb":
+        out += e(f"Printer : {p.get('printer_name')}") + b"\n"
+    else:
+        out += e(f"Printer : {p.get('printer_ip')}:{p.get('printer_port')}") + b"\n"
+    out += e(f"Desktop : {p.get('desktop_ip') or '-'}") + b"\n"
+    out += e(f"Paper   : {p.get('paper')}mm") + b"\n"
+    out += e("Time    : " + datetime.now(MOGADISHU_TZ).strftime("%d/%m/%Y %H:%M:%S")) + b"\n"
+    out += b"\n\n\n\n" + GS + b"V\x42\x00"
+    return out
+
+
+@app.route("/kitchen_print_test/<rid>", methods=["POST"])
+def kitchen_print_test(rid):
+    if not _can_manage_printer(rid):
+        return jsonify({"success": False, "error": "Unauthorized"}), 401
+    db.collection("restaurants").document(rid).collection("print_jobs").document() \
+      .set({"status": "pending", "kind": "test", "created_at": datetime.now(timezone.utc)})
+    return jsonify({"success": True})
+
+
+@app.route("/kitchen_reprint/<rid>/<order_id>", methods=["POST"])
+def kitchen_reprint(rid, order_id):
+    if not _can_view_restaurant_orders(rid):
+        return jsonify({"success": False, "error": "Unauthorized"}), 401
+    oref = db.collection("restaurants").document(rid).collection("orders").document(order_id)
+    if not oref.get().exists:
+        return jsonify({"success": False, "error": "Order not found"})
+    oref.update({"kitchen_printed": False, "reprint_requested": True, "reprint_all": True})
+    _bump_orders_version(rid)
+    return jsonify({"success": True})
+
 @app.route("/kitchen_ticket/<rid>/<order_id>")
 def kitchen_ticket(rid, order_id):
     if not _can_view_restaurant_orders(rid):
@@ -5061,26 +5469,25 @@ def kitchen_ticket(rid, order_id):
             receipt_ref = get_next_receipt_ref(rid)
             order_ref.update({"receipt_ref": receipt_ref})
 
-        show_all = request.args.get("all") == "1"
-        is_addition = bool(o.get("last_added_cart")) and bool(o.get("kitchen_printed_once")) and not show_all
-        lines = _order_cart_lines(o, o.get("last_added_cart")) if is_addition else _order_cart_lines(o)
-
-        created = _to_mogadishu(o.get("last_added_at") if is_addition else o.get("created_at")) \
-                  or datetime.now(MOGADISHU_TZ)
+        o["receipt_ref"] = receipt_ref
+        t = _kitchen_ticket_data(o, rest.get("name", "Restaurant"), request.args.get("all") == "1",
+                                 paper=int(((rest.get("kitchen_printer") or {}).get("paper")) or 80))
 
         resp = make_response(render_template(
             "kitchen_ticket.html",
             rid=rid,
             order_id=order_id,
-            restaurant_name=rest.get("name", "Restaurant"),
-            ref=receipt_ref,
-            table=o.get("table", ""),
-            waiter=o.get("employee_name") or "",
-            customer_phone=o.get("customer_phone") or "",
-            lines=lines,
-            total_qty=sum(l["qty"] for l in lines),
-            is_addition=is_addition,
-            date_str=created.strftime("%d/%m/%Y %H:%M"),
+            restaurant_name=t["restaurant_name"],
+            ref=t["ref"],
+            table=t["table"],
+            order_type=t["order_type"],
+            staff_label=t["staff_label"],
+            customer_phone=t["customer_phone"],
+            lines=t["lines"],
+            total_qty=t["total_qty"],
+            is_addition=t["is_addition"],
+            date_str=t["date_str"],
+            paper=t["paper"],
             autoprint=request.args.get("autoprint") == "1",
         ))
         resp.headers["Cache-Control"] = "no-store"
@@ -5097,16 +5504,23 @@ def create_order(rid):
         if not data:
             return jsonify({"error": "No data"}), 400
 
+        order_type = "takeaway" if str(data.get("order_type", "table")).lower() == "takeaway" else "table"
         table = str(data.get("table", "")).strip()
+        if order_type == "takeaway":
+            table = "Take Away"
         cart  = data.get("cart", [])
         customer_phone = str(data.get("customer_phone", "")).strip()
 
         if not table or not cart:
             return jsonify({"error": "Invalid order"}), 400
 
+        # Waiters AND cashiers can send orders to the kitchen — the
+        # ticket shows who ordered ("Waiter: …" / "Cashier: …").
         waiter_employee_id = ""
-        if session.get("staff_ok") and session.get("staff_role") == "waiter" and session.get("staff_rid") == rid:
+        staff_role = ""
+        if session.get("staff_ok") and session.get("staff_role") in ("waiter", "cashier") and session.get("staff_rid") == rid:
             waiter_employee_id = session.get("staff_employee_id", "")
+            staff_role = session.get("staff_role")
 
         restaurant_ref = db.collection("restaurants").document(rid)
 
@@ -5117,7 +5531,8 @@ def create_order(rid):
         existing_order_id = None
         existing_cart = []
         existing_data = {}
-        if waiter_employee_id:
+        # Take-away orders are always their own ticket — never merged.
+        if waiter_employee_id and order_type == "table":
             for doc in restaurant_ref.collection("orders") \
                     .where("table", "==", table) \
                     .where("employee_id", "==", waiter_employee_id) \
@@ -5147,11 +5562,12 @@ def create_order(rid):
             new_items_text = ", ".join([f"{i.get('qty')}x {i.get('name')}" for i in delta_cart])
 
             order_ref = restaurant_ref.collection("orders").document(existing_order_id)
-            update_fields = {
+            update_fields = {   # (only open = unpaid orders ever get merged)
                 "items":            items_text,
                 "cart":             merged_cart,
                 "price":            total_price,
                 "status":           "pending",          # back to kitchen's attention
+                "kitchen_status":   "pending",
                 "receipt_printed":  False,               # updated — needs reprint
                 "kitchen_printed":  False,               # new items — kitchen needs to re-print too
                 "last_added_cart":  delta_cart,
@@ -5171,8 +5587,10 @@ def create_order(rid):
                 "items":      items_text,
                 "cart":       cart,
                 "table":      table,
+                "order_type": order_type,
                 "price":      total_price,
                 "status":     "pending",
+                "kitchen_status": "pending",
                 "created_at": datetime.utcnow(),
                 "kitchen_cleared": False,
                 "receipt_printed": False,
@@ -5185,6 +5603,7 @@ def create_order(rid):
             if waiter_employee_id:
                 order_data["employee_id"]   = waiter_employee_id
                 order_data["employee_name"] = session.get("staff_name", "")
+                order_data["employee_role"] = staff_role
 
             order_ref = restaurant_ref.collection("orders").document()
             order_id  = order_ref.id
@@ -5224,13 +5643,12 @@ def update_status(rid, order_id, status):
 
         if not order_doc.exists:
             return jsonify({"success": False, "message": "Order not found ❌"})
-        if str((order_doc.to_dict() or {}).get("status", "")).lower() == "paid":
-            return jsonify({"success": False, "message": "Order already paid ✅"})
-
-        order_ref.update({
-            "status": status,
-            "updated_at": datetime.utcnow()
-        })
+        fields = {"kitchen_status": status, "updated_at": datetime.utcnow()}
+        # A paid order stays "paid" for the cashier — only its kitchen
+        # progress changes. Unpaid orders keep both in step.
+        if str((order_doc.to_dict() or {}).get("status", "")).lower() != "paid":
+            fields["status"] = status
+        order_ref.update(fields)
         _bump_orders_version(rid)
 
         updated_data = order_ref.get().to_dict()
@@ -5408,6 +5826,11 @@ def kitchen(rid):
             else:
                 order["created_at"] = "N/A"
 
+            order["kstatus"] = _kitchen_status(order)
+            order["is_paid"] = str(order.get("status", "")).lower() == "paid"
+            order["otype"] = _order_type(order)
+            order["staff_label"] = _staff_label(order)
+
             # ✅ Sawirrada iyo liiska cuntada
             order["display_items"] = build_display_items(order)
             order["main_image"] = next(
@@ -5442,8 +5865,8 @@ def kitchen(rid):
         # ✅ Tirooyinka stat-cards
         stats = {
             "total": len(orders),
-            "preparing": sum(1 for o in orders if o.get("status") == "preparing"),
-            "ready": sum(1 for o in orders if o.get("status") == "ready"),
+            "preparing": sum(1 for o in orders if o.get("kstatus") == "preparing"),
+            "ready": sum(1 for o in orders if o.get("kstatus") == "ready"),
         }
 
         return render_template(
@@ -5451,7 +5874,8 @@ def kitchen(rid):
             orders=orders,
             rid=rid,
             stats=stats,
-            restaurant_name=restaurant.get("name", "Restaurant")
+            restaurant_name=restaurant.get("name", "Restaurant"),
+            printer=_printer_public(restaurant.get("kitchen_printer") or {})
         )
 
     except Exception as e:
@@ -5764,7 +6188,11 @@ def receipt(rid, order_id):
             restaurant_name = rest.get("name", "Restaurant"),
             phone           = rest.get("phone", ""),
             payment         = rest.get("payment", ""),
-            table           = order.get("table", ""),
+            table           = "" if _order_type(order) == "takeaway" else order.get("table", ""),
+            order_type      = _order_type(order),
+            staff_label     = _staff_label(order),
+            status          = str(order.get("status", "")).lower(),
+            payment_method  = order.get("payment_method", ""),
             customer_phone  = order.get("customer_phone", ""),
             ref             = receipt_ref,
             items           = items,

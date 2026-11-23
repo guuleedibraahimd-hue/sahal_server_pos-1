@@ -58,6 +58,14 @@ button{font-family:inherit;}
 .tbl{width:54px;height:54px;border-radius:14px;background:var(--dark);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;}
 .tbl small{font-size:9px;font-weight:800;letter-spacing:1px;opacity:.7;}
 .tbl b{font-size:20px;line-height:1;}
+.tbl.ta{background:#c45f00;}
+.tbl.ta b{font-size:22px;}
+.split{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;}
+.split .sp{border-radius:14px;padding:14px;}
+.split .sp.tb{background:#eef0fe;} .split .sp.ta{background:#fff1e0;}
+.split .sp .l{font-size:12.5px;font-weight:800;}
+.split .sp .n{font-size:22px;font-weight:800;margin-top:2px;}
+.split .sp .s{font-size:12px;color:var(--muted);font-weight:700;}
 .c-info{flex:1;min-width:0;}
 .c-ref{font-weight:800;font-size:14.5px;}
 .c-sub{font-size:12px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
@@ -114,11 +122,17 @@ button{font-family:inherit;}
         <div class="stat s-paid"><div class="n" id="stPaid">$0.00</div><div class="l">💰 Paid today (<span id="stPaidCount">0</span>)</div></div>
     </div>
 
+    <div class="split">
+        <div class="sp tb"><div class="l">🪑 Table — maanta</div><div class="n" id="spTableAmt">$0.00</div><div class="s"><span id="spTableN">0</span> orders</div></div>
+        <div class="sp ta"><div class="l">🥡 Take Away — maanta</div><div class="n" id="spTaAmt">$0.00</div><div class="s"><span id="spTaN">0</span> orders</div></div>
+    </div>
+
     <div class="tabs" id="tabs">
         <button class="tab active" data-f="active">🔥 Active <span class="c" id="cActive">0</span></button>
         <button class="tab" data-f="pending">⏳ Pending <span class="c" id="cPending">0</span></button>
         <button class="tab" data-f="preparing">👨‍🍳 Preparing <span class="c" id="cPreparing">0</span></button>
         <button class="tab" data-f="ready">✅ Ready <span class="c" id="cReady">0</span></button>
+        <button class="tab" data-f="takeaway">🥡 Take Away <span class="c" id="cTa">0</span></button>
         <button class="tab" data-f="paid">💰 Paid today <span class="c" id="cPaid">0</span></button>
     </div>
 
@@ -187,13 +201,16 @@ function card(o, flash){
         return `<li class="${isNew ? "new" : ""}"><span class="q">${esc(it.qty)}×</span><span>${esc(it.name)}</span></li>`;
     }).join("") || `<li><span>${esc(o.items_text || "—")}</span></li>`;
     const age = o.age_min === null ? "" : (o.age_min < 1 ? "hadda" : (o.age_min < 60 ? `${o.age_min} min` : `${Math.floor(o.age_min/60)}h ${o.age_min%60}m`));
-    const who = o.waiter ? `🧑‍🍳 ${esc(o.waiter)}` : "📱 Customer QR";
+    const who = o.waiter ? `${o.staff_role === "cashier" ? "💰 Cashier" : "🧑‍🍳"} ${esc(o.waiter)}` : "📱 Customer QR";
+    const tbl = o.order_type === "takeaway"
+        ? `<div class="tbl ta"><small>TAKE</small><b>🥡</b></div>`
+        : `<div class="tbl"><small>TABLE</small><b>${esc(o.table)}</b></div>`;
     const paidInfo = o.status === "paid" && o.payment_method ? ` · ${esc(o.payment_method.toUpperCase())}` : "";
     return `<div class="card${late ? " late" : ""}${flash ? " flash" : ""}" data-status="${esc(o.status)}">
         <div class="c-head">
-            <div class="tbl"><small>TABLE</small><b>${esc(o.table)}</b></div>
+            ${tbl}
             <div class="c-info">
-                <div class="c-ref">#${esc(o.ref)}</div>
+                <div class="c-ref">#${esc(o.ref)}${o.order_type === "takeaway" ? " · Take Away" : ""}</div>
                 <div class="c-sub">${who} · ${esc(o.time)}${paidInfo}</div>
             </div>
             <span class="status st-${esc(o.status)}">${esc(o.status)}</span>
@@ -223,10 +240,16 @@ function render(){
     document.getElementById("cPreparing").textContent = s.preparing || 0;
     document.getElementById("cReady").textContent = s.ready || 0;
     document.getElementById("cPaid").textContent = data.paid_today.length;
+    document.getElementById("cTa").textContent = data.active.filter(o => o.order_type === "takeaway").length;
+    document.getElementById("spTableAmt").textContent = money(s.table_today_amount);
+    document.getElementById("spTableN").textContent = s.table_today || 0;
+    document.getElementById("spTaAmt").textContent = money(s.takeaway_today_amount);
+    document.getElementById("spTaN").textContent = s.takeaway_today || 0;
 
     let list;
     if(filter === "paid") list = data.paid_today;
     else if(filter === "active") list = data.active;
+    else if(filter === "takeaway") list = data.active.filter(o => o.order_type === "takeaway");
     else list = data.active.filter(o => o.status === filter);
 
     const grid = document.getElementById("grid");
