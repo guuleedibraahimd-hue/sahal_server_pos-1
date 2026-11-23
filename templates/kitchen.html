@@ -175,14 +175,31 @@
         }
         .empty .e-ic{font-size:48px;margin-bottom:12px;}
 
+        .mobile-nav{display:none;gap:8px;margin-bottom:16px;flex-wrap:wrap;}
+        .mobile-nav a{flex:1;min-width:110px;text-align:center;padding:11px 10px;border-radius:12px;background:#0f1523;color:#fff;text-decoration:none;font-weight:700;font-size:13.5px;}
+        .live-pill{display:inline-flex;align-items:center;gap:7px;padding:7px 14px;border-radius:20px;background:#e6f6ee;color:#1c8a54;font-weight:700;font-size:13px;}
+        .live-pill .dot{width:8px;height:8px;border-radius:50%;background:#22a565;animation:livePulse 1.4s infinite;}
+        .live-pill.off{background:#fdecea;color:#c62828;}
+        .live-pill.off .dot{background:#c62828;animation:none;}
+        @keyframes livePulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+        .print-help{font-size:12.5px;color:var(--muted);margin:-10px 0 20px;line-height:1.5;}
+        .print-help b{color:var(--text);}
+        .print-queue{font-size:12.5px;font-weight:700;color:#c77800;margin-left:6px;}
+        .new-flash{animation:newFlash 1.2s ease 3;}
+        @keyframes newFlash{0%,100%{box-shadow:0 2px 12px rgba(0,0,0,0.05);}50%{box-shadow:0 0 0 4px rgba(245,158,11,0.55);}}
+        .ticket-btn{background:#111827;text-decoration:none;}
         @media (max-width:980px){
+            .mobile-nav{display:flex;}
             .sidebar{display:none;}
             .stats{grid-template-columns:1fr 1fr;}
             .order-body{grid-template-columns:1fr;}
             .o-image{width:100%;height:180px;}
         }
         @media (max-width:600px){
-            .main{padding:18px;}
+            .main{padding:14px;}
+            .order{padding:16px;}
+            .order-actions{justify-content:stretch;}
+            .order-actions .status-btn{flex:1;justify-content:center;padding:12px 10px;}
             .top-actions{grid-template-columns:1fr;}
             .stats{grid-template-columns:1fr;}
             .main-title h2{font-size:24px;}
@@ -220,17 +237,24 @@
                 <span class="t-ic">👨‍🍳</span>
                 <div>
                     <h2>Kitchen Orders</h2>
-                    <p>Manage and prepare incoming orders</p>
+                    <p>{{ restaurant_name }} — dalabaadka cusub si toos ah ayay u soo galayaan</p>
                 </div>
             </div>
+            <span class="live-pill" id="livePill"><span class="dot"></span> <span id="liveText">Live</span></span>
+        </div>
+
+        <div class="mobile-nav">
+            <a href="#" onclick="location.reload();return false;">📋 Orders</a>
+            <a href="/dashboard/{{ rid }}">🍽️ Menu</a>
         </div>
 
         <div class="top-actions">
             <button class="clear-btn" id="clearOrdersBtn">🧹 Clear Kitchen Orders</button>
             <button class="clear-btn" id="autoPrintBtn">🖨 Auto-Print: OFF</button>
         </div>
+        <p class="print-help">🖨️ Dalab kasta oo waiter-ku soo diro <b>si toos ah ayuu u daabacmayaa</b> (rasiidka jikada). Si aanu u soo bixin sanduuqa "Print", Chrome-ka jikada ku fur <b>--kiosk-printing</b> oo printer-ka ka dhig <b>Default</b>.<span class="print-queue" id="printQueueInfo"></span></p>
 
-        <div class="stats">
+        <div class="stats" id="statsBox">
             <div class="stat s1"><div class="s-ic">📋</div><div><div class="s-num">{{ stats.total }}</div><div class="s-lbl">Total Orders</div></div></div>
             <div class="stat s2"><div class="s-ic">⏱️</div><div><div class="s-num">{{ stats.preparing }}</div><div class="s-lbl">Preparing</div></div></div>
             <div class="stat s3"><div class="s-ic">✅</div><div><div class="s-num">{{ stats.ready }}</div><div class="s-lbl">Ready</div></div></div>
@@ -306,6 +330,7 @@
             </div>
 
             <div class="order-actions">
+                <a class="status-btn ticket-btn" href="/kitchen_ticket/{{ rid }}/{{ o.id }}?all=1" target="_blank">🍳 Ticket</a>
                 <a class="status-btn print-btn" href="/receipt/{{ rid }}/{{ o.id }}" target="_blank">🧾 Receipt</a>
                 <button class="preparing status-btn" data-id="{{ o.id }}" data-status="preparing">⏳ Preparing</button>
                 <button class="ready status-btn" data-id="{{ o.id }}" data-status="ready">✅ Ready</button>
@@ -323,142 +348,215 @@
 const RID = "{{ rid }}";
 
 document.addEventListener("DOMContentLoaded", function(){
+
+    /* ---------- Clear kitchen (asks first) ---------- */
     document.getElementById("clearOrdersBtn").addEventListener("click", function(){
-        fetch("/clear_orders/" + RID).then(() => location.reload());
+        if(!confirm("Ma hubtaa inaad ka nadiifiso dhammaan dalabaadka shaashadda jikada?\n(Dalabaadka lacagta aan la bixin weli cashier-ka ayay uga muuqanayaan.)")) return;
+        fetch("/clear_orders/" + RID).then(() => refreshOrders(true));
     });
 
-    /* ── Auto-Print: every order the waiter sends goes straight to the
-       printer automatically — no one has to click anything. Defaults
-       ON (the button just lets kitchen staff pause it if needed).
-
-       A browser genuinely cannot detect whether a printer cable is
-       physically connected — window.print() just hands the job to the
-       OS/print spooler regardless. What we CAN guarantee: an order is
-       only marked "kitchen printed" after the print was actually
-       triggered, and on every page load (e.g. kitchen staff reopening
-       the screen after plugging the printer back in) we re-scan ALL
-       visible orders and print anything still unmarked — so a job
-       that never reached a disconnected printer gets sent again the
-       next time this screen is open, and nothing is silently lost. ── */
+    /* ---------- Auto-print toggle (ON by default) ---------- */
     const AUTOPRINT_KEY = "sahal_autoprint";
-
     function isAutoPrintOn(){
-        try{
-            const v = localStorage.getItem(AUTOPRINT_KEY);
-            return v === null ? true : v === "yes";   // ON by default
-        }catch(e){ return true; }
+        try{ const v = localStorage.getItem(AUTOPRINT_KEY); return v === null ? true : v === "yes"; }
+        catch(e){ return true; }
     }
     function updateAutoPrintBtn(){
         const btn = document.getElementById("autoPrintBtn");
-        if(!btn) return;
         const on = isAutoPrintOn();
         btn.innerText = on ? "🖨 Auto-Print: ON" : "🖨 Auto-Print: OFF";
         btn.style.background = on ? "#2e7d32" : "#0a7cff";
     }
     document.getElementById("autoPrintBtn").addEventListener("click", function(){
-        const on = isAutoPrintOn();
-        try{ localStorage.setItem(AUTOPRINT_KEY, on ? "no" : "yes"); }catch(e){}
+        try{ localStorage.setItem(AUTOPRINT_KEY, isAutoPrintOn() ? "no" : "yes"); }catch(e){}
         updateAutoPrintBtn();
+        if(isAutoPrintOn()) catchUpUnprinted();
     });
     updateAutoPrintBtn();
 
-    function getVisibleOrderIds(){
-        return Array.from(document.querySelectorAll("#ordersContainer .order"))
-            .map(el => el.id.replace("order", ""));
+    /* ---------- Sound for new orders ---------- */
+    let audioCtx = null;
+    function unlockAudio(){
+        try{
+            if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if(audioCtx.state === "suspended") audioCtx.resume();
+        }catch(e){}
+    }
+    document.addEventListener("click", unlockAudio, { once:false });
+    document.addEventListener("touchstart", unlockAudio, { once:false });
+    function ding(){
+        try{
+            unlockAudio(); if(!audioCtx) return;
+            [880, 1175, 1568].forEach((f, i) => {
+                const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+                o.type = "sine"; o.frequency.value = f;
+                const t = audioCtx.currentTime + i * 0.16;
+                g.gain.setValueAtTime(0.0001, t);
+                g.gain.exponentialRampToValueAtTime(0.4, t + 0.02);
+                g.gain.exponentialRampToValueAtTime(0.0001, t + 0.3);
+                o.connect(g); g.connect(audioCtx.destination);
+                o.start(t); o.stop(t + 0.32);
+            });
+        }catch(e){}
     }
 
-    function getLastAddedMarker(orderId){
-        const el = document.getElementById("order" + orderId);
-        return el ? el.dataset.lastAdded : "";
+    /* ---------- Helpers ---------- */
+    function orderEls(){ return Array.from(document.querySelectorAll("#ordersContainer .order")); }
+    function idOf(el){ return el.id.replace("order", ""); }
+    function getMarker(id){ const el = document.getElementById("order" + id); return el ? el.dataset.lastAdded : ""; }
+    function isPrinted(id){ const el = document.getElementById("order" + id); return el ? el.dataset.kitchenPrinted === "1" : true; }
+
+    /* ---------- Print queue: ONE ticket at a time ----------
+       Each ticket loads in a hidden frame and calls print(). The frame
+       reports back when printing finished; only then is the order marked
+       "kitchen printed" and the next ticket starts. If nothing comes back
+       in 60s (printer/dialog stuck) the job is released and retried later,
+       so no order is ever silently lost. */
+    const queue = [];
+    const queued = new Set();
+    const printedMarker = {};   // id -> marker already printed (avoids double prints during refresh races)
+    let current = null;         // { id, marker, frame, timer }
+
+    function updateQueueInfo(){
+        const n = queue.length + (current ? 1 : 0);
+        document.getElementById("printQueueInfo").textContent = n ? ` — ${n} ticket(s) printing…` : "";
     }
-
-    function isKitchenPrinted(orderId){
-        const el = document.getElementById("order" + orderId);
-        return el ? el.dataset.kitchenPrinted === "1" : true;
+    function enqueuePrint(id){
+        if(!isAutoPrintOn() || queued.has(id)) return;
+        if(Object.prototype.hasOwnProperty.call(printedMarker, id) && printedMarker[id] === (getMarker(id) || "")) return;
+        queued.add(id); queue.push(id); updateQueueInfo(); pump();
     }
-
-    let knownOrderIds = new Set(getVisibleOrderIds());
-    let seenUpdateMarkers = {};
-    knownOrderIds.forEach(id => { seenUpdateMarkers[id] = getLastAddedMarker(id); });
-
-    function silentPrintReceipt(orderId){
-        const iframe = document.createElement("iframe");
-        iframe.style.position = "fixed";
-        iframe.style.width = "0";
-        iframe.style.height = "0";
-        iframe.style.border = "0";
-        iframe.style.visibility = "hidden";
-        iframe.src = "/receipt/" + RID + "/" + orderId;
-        document.body.appendChild(iframe);
-        setTimeout(() => { iframe.remove(); }, 8000);
-
-        fetch("/mark_kitchen_printed/" + RID + "/" + orderId, { method: "POST" })
-            .then(() => {
-                const el = document.getElementById("order" + orderId);
-                if(el) el.dataset.kitchenPrinted = "1";
-            })
-            .catch(() => {});
+    function finish(id, ok){
+        if(!current || current.id !== id) return;
+        clearTimeout(current.timer);
+        const frame = current.frame;
+        const marker = current.marker;
+        setTimeout(() => frame.remove(), 1500);
+        current = null;
+        if(ok){
+            printedMarker[id] = marker;
+            fetch(`/mark_kitchen_printed/${RID}/${id}`, { method:"POST" })
+                .then(() => { const el = document.getElementById("order" + id); if(el) el.dataset.kitchenPrinted = "1"; })
+                .catch(() => {})
+                .finally(() => { queued.delete(id); });
+        } else {
+            queued.delete(id);   // allow a retry on the next refresh
+        }
+        updateQueueInfo();
+        setTimeout(pump, 400);
     }
+    function pump(){
+        if(current || !queue.length) return;
+        const id = queue.shift();
+        const frame = document.createElement("iframe");
+        frame.setAttribute("aria-hidden", "true");
+        frame.style.cssText = "position:fixed;right:0;bottom:0;width:1px;height:1px;border:0;opacity:0;pointer-events:none;";
+        frame.src = `/kitchen_ticket/${RID}/${id}?autoprint=1&t=${Date.now()}`;
+        current = { id, marker: getMarker(id) || "", frame, timer: setTimeout(() => finish(id, false), 60000) };
+        document.body.appendChild(frame);
+        updateQueueInfo();
+    }
+    window.addEventListener("message", (e) => {
+        const d = e.data || {};
+        if(d.type === "kitchen-ticket-printed" && d.orderId) finish(String(d.orderId), true);
+    });
 
     function catchUpUnprinted(){
         if(!isAutoPrintOn()) return;
-        getVisibleOrderIds().forEach(id => {
-            if(!isKitchenPrinted(id)) silentPrintReceipt(id);
-        });
+        // oldest first so the kitchen gets tickets in arrival order
+        orderEls().map(idOf).reverse().forEach(id => { if(!isPrinted(id)) enqueuePrint(id); });
     }
 
-    // Catch up immediately on load — covers "printer just got plugged
-    // back in, reopen this screen" and "orders arrived while auto-print
-    // was off".
-    catchUpUnprinted();
-
+    /* ---------- Status buttons ---------- */
     function attachStatusBtns(){
         document.querySelectorAll(".status-btn[data-id]").forEach(function(btn){
             if(btn.dataset.bound === "1") return;
             btn.dataset.bound = "1";
             btn.addEventListener("click", function(){
-                let id = btn.dataset.id, status = btn.dataset.status;
-                fetch("/update_status/" + RID + "/" + id + "/" + status)
-                .then(function(){
-                    let s = document.getElementById("status" + id);
-                    if(s) s.innerText = status;
-                    let card = document.getElementById("order" + id);
-                    if(card){ card.setAttribute("data-status", status); }
-                });
+                const id = btn.dataset.id, status = btn.dataset.status;
+                btn.disabled = true;
+                fetch(`/update_status/${RID}/${id}/${status}`)
+                    .then(r => r.json())
+                    .then(d => {
+                        if(d && d.success === false){ alert("❌ " + (d.message || "Failed")); return; }
+                        const s = document.getElementById("status" + id); if(s) s.innerText = status;
+                        const card = document.getElementById("order" + id);
+                        if(card){
+                            card.setAttribute("data-status", status);
+                            const pill = card.querySelector(".status-pill"); if(pill) pill.innerText = status;
+                        }
+                    })
+                    .catch(() => alert("❌ Network error"))
+                    .finally(() => { btn.disabled = false; });
             });
         });
     }
-    attachStatusBtns();
 
-    setInterval(function(){
-        fetch(location.href).then(r => r.text()).then(html => {
-            let parser = new DOMParser();
-            let doc = parser.parseFromString(html, "text/html");
-            let newOrders = doc.getElementById("ordersContainer");
-            if(newOrders){ document.getElementById("ordersContainer").innerHTML = newOrders.innerHTML; attachStatusBtns(); }
+    /* ---------- Live refresh (only when something changed) ---------- */
+    let knownIds = new Set(orderEls().map(idOf));
+    let seenMarkers = {};
+    knownIds.forEach(id => { seenMarkers[id] = getMarker(id); });
+    let lastVersion = null;
+    let refreshing = false;
 
-            if(newOrders){
-                getVisibleOrderIds().forEach(id => {
-                    const marker = getLastAddedMarker(id);
-                    if(!knownOrderIds.has(id)){
-                        // Brand-new order — print it the moment it shows up.
-                        knownOrderIds.add(id);
-                        seenUpdateMarkers[id] = marker;
-                        if(isAutoPrintOn()) silentPrintReceipt(id);
-                    } else if(marker && marker !== seenUpdateMarkers[id]){
-                        // Existing order was edited — new items were added.
-                        seenUpdateMarkers[id] = marker;
-                        if(isAutoPrintOn()) silentPrintReceipt(id);
-                    } else if(!isKitchenPrinted(id)){
-                        // Safety net: still marked unprinted from an
-                        // earlier attempt (e.g. printer was offline) —
-                        // keep retrying every cycle until it succeeds.
-                        if(isAutoPrintOn()) silentPrintReceipt(id);
-                    }
-                });
+    function setLive(ok){
+        document.getElementById("livePill").classList.toggle("off", !ok);
+        document.getElementById("liveText").textContent = ok ? "Live" : "Offline — reconnecting…";
+    }
+
+    function refreshOrders(force){
+        if(refreshing) return; refreshing = true;
+        fetch(location.pathname, { cache:"no-store" }).then(r => r.text()).then(html => {
+            const doc = new DOMParser().parseFromString(html, "text/html");
+            const fresh = doc.getElementById("ordersContainer");
+            if(!fresh){
+                // session expired → page is the login form
+                if(doc.querySelector('input[name="password"]')) location.reload();
+                return;
             }
-        }).catch(()=>{});
-    }, 3000);
+            const freshStats = doc.getElementById("statsBox");
+            document.getElementById("ordersContainer").innerHTML = fresh.innerHTML;
+            if(freshStats) document.getElementById("statsBox").innerHTML = freshStats.innerHTML;
+            attachStatusBtns();
+
+            let hasNew = false;
+            orderEls().map(idOf).reverse().forEach(id => {
+                const marker = getMarker(id);
+                if(!knownIds.has(id)){
+                    knownIds.add(id); seenMarkers[id] = marker; hasNew = true;
+                    const el = document.getElementById("order" + id); if(el) el.classList.add("new-flash");
+                    enqueuePrint(id);
+                } else if(marker && marker !== seenMarkers[id]){
+                    seenMarkers[id] = marker; hasNew = true;
+                    const el = document.getElementById("order" + id); if(el) el.classList.add("new-flash");
+                    enqueuePrint(id);
+                } else if(!isPrinted(id)){
+                    enqueuePrint(id);
+                }
+            });
+            if(hasNew) ding();
+            setLive(true);
+        }).catch(() => setLive(false)).finally(() => { refreshing = false; });
+    }
+
+    function checkVersion(){
+        fetch(`/api/orders_version/${RID}`, { cache:"no-store" })
+            .then(r => { if(r.status === 401){ location.reload(); throw 0; } return r.json(); })
+            .then(d => {
+                if(!d || !d.success) throw 0;
+                setLive(true);
+                if(lastVersion === null){ lastVersion = d.v; return; }
+                if(d.v !== lastVersion){ lastVersion = d.v; refreshOrders(); }
+            })
+            .catch(() => setLive(false));
+    }
+
+    attachStatusBtns();
+    catchUpUnprinted();
+    checkVersion();
+    setInterval(checkVersion, 3000);
+    setInterval(() => refreshOrders(), 60000);   // safety net
+    document.addEventListener("visibilitychange", () => { if(!document.hidden) refreshOrders(); });
 });
 </script>
 </body>

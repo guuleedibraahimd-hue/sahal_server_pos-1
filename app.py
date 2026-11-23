@@ -1470,65 +1470,6 @@ def change_passwords():
 
     return redirect("/admin")
 
-# ==========================================
-# 🎥 BECOME MEDIA TEAM (PUBLIC SELF-REGISTRATION)
-# Qofku wuxuu ka buuxiyaa Home → Become Media Team.
-# Wuxuu toos u galaa "team_media" — sidaas darteed admin-ka
-# Team Media of Xaji ayuu isla markiiba ka muuqdaa (Full/Part Time).
-# ==========================================
-@app.route("/become_media_team", methods=["GET", "POST"])
-def become_media_team():
-    if request.method == "GET":
-        return render_template("become_media_team.html")
-
-    try:
-        name        = (request.form.get("name") or "").strip()
-        phone       = re.sub(r"[^\d+]", "", (request.form.get("phone") or ""))
-        college     = (request.form.get("college") or "").strip()
-        member_type = (request.form.get("member_type") or "").strip()
-        photo       = request.files.get("photo")
-
-        if not name or len(name) > 80:
-            return jsonify({"success": False, "error": "Magaca waa qasab"})
-        if len(phone) < 7 or len(phone) > 15:
-            return jsonify({"success": False, "error": "Nambarka taleefanka sax ma aha"})
-        if not college or len(college) > 100:
-            return jsonify({"success": False, "error": "Kuliyada waa qasab"})
-        if member_type not in TEAM_MEDIA_TYPES:
-            return jsonify({"success": False, "error": "Dooro Full Time ama Part Time"})
-        if not photo or not photo.filename:
-            return jsonify({"success": False, "error": "Fadlan sawirkaaga geli"})
-        if not (photo.mimetype or "").startswith("image/"):
-            return jsonify({"success": False, "error": "Sawirku waa inuu noqdaa image (jpg, png, webp)"})
-
-        # Xadka cabbirka sawirka: 5MB
-        photo.stream.seek(0, 2)
-        size = photo.stream.tell()
-        photo.stream.seek(0)
-        if size > 5 * 1024 * 1024:
-            return jsonify({"success": False, "error": "Sawirku waa inuu ka yaraadaa 5MB"})
-
-        # Hal nambar hal mar keliya ha is-diiwaan geliyo
-        existing = list(db.collection("team_media").where("phone", "==", phone).limit(1).stream())
-        if existing:
-            return jsonify({"success": False, "error": "Nambarkan horay ayaa loo diiwaan geliyay"})
-
-        photo_url = upload_to_firebase_storage(photo, folder="team_media")
-
-        db.collection("team_media").document().set({
-            "name": name,
-            "phone": phone,
-            "college": college,
-            "title": "",
-            "member_type": member_type,
-            "photo": photo_url,
-            "source": "self_register",
-            "created_at": datetime.now().isoformat()
-        })
-        return jsonify({"success": True})
-    except Exception as e:
-        print("BECOME MEDIA TEAM ERROR:", e)
-        return jsonify({"success": False, "error": "Server error — fadlan isku day mar kale"})
 
 # =========================
 # ✅ ACTIVATE RESTAURANT
@@ -2557,7 +2498,10 @@ def dashboard(rid):
         today = datetime.now().strftime("%Y-%m-%d")
         total_orders_today = 0
         total_sales_today = 0.0
-        for doc in restaurant_ref.collection("orders").stream():
+        for doc in restaurant_ref.collection("orders") \
+                .order_by("created_at", direction=firestore.Query.DESCENDING).limit(300).stream():
+            if doc.id == "init":
+                continue
             o = doc.to_dict()
             created = o.get("created_at")
             created_date = created.strftime("%Y-%m-%d") if hasattr(created, "strftime") else str(created)[:10]
@@ -2702,8 +2646,14 @@ def customer_order(rid):
             "food_option": food_option,
             "tea_option": tea_option,
             "status": "pending",
-            "created_at": datetime.utcnow()
+            "created_at": datetime.utcnow(),
+            "kitchen_cleared": False,
+            "receipt_printed": False,
+            "kitchen_printed": False,
+            "kitchen_printed_once": False,
+            "receipt_ref": get_next_receipt_ref(rid)
         })
+        _bump_orders_version(rid)
 
         return redirect(f"/menu/{rid}/{table}")
 
@@ -3087,6 +3037,7 @@ def clear_kitchen_orders(rid):
                 "kitchen_cleared": True,
                 "cleared_at": datetime.now(timezone.utc)
             })
+        _bump_orders_version(rid)
 
         return redirect(f"/restaurant_admin/{rid}")
 
@@ -4063,6 +4014,7 @@ def mark_receipt_printed(rid, order_id):
     try:
         db.collection("restaurants").document(rid).collection("orders").document(order_id) \
           .update({"receipt_printed": True})
+        _bump_orders_version(rid)
         return jsonify({"success": True})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
@@ -4075,11 +4027,15 @@ def mark_receipt_printed(rid, order_id):
 # needs a valid order under this restaurant.
 @app.route("/mark_kitchen_printed/<rid>/<order_id>", methods=["POST"])
 def mark_kitchen_printed(rid, order_id):
+    if not _can_view_restaurant_orders(rid):
+        return jsonify({"success": False, "error": "Unauthorized"}), 401
     try:
         order_ref = db.collection("restaurants").document(rid).collection("orders").document(order_id)
         if not order_ref.get().exists:
             return jsonify({"success": False, "error": "Order not found"})
-        order_ref.update({"kitchen_printed": True})
+        order_ref.update({"kitchen_printed": True, "kitchen_printed_once": True,
+                          "kitchen_printed_at": datetime.now(timezone.utc)})
+        _bump_orders_version(rid)
         return jsonify({"success": True})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
@@ -4462,6 +4418,8 @@ def cashier_pay(rid, order_id):
             return jsonify({"success": False, "error": "Order not found"})
 
         order_data_dict = order_doc.to_dict()
+        if str(order_data_dict.get("status", "")).lower() == "paid":
+            return jsonify({"success": False, "error": "This order is already paid ✅"})
         amount = float(order_data_dict.get("price", 0))
         payment_id = get_next_payment_id(rid)
         now = datetime.now()
@@ -4492,6 +4450,7 @@ def cashier_pay(rid, order_id):
             "cashier_id":      employee_id,
             "updated_at":      datetime.utcnow()
         })
+        _bump_orders_version(rid)
 
         return jsonify({"success": True, "payment_id": payment_id})
     except Exception as e:
@@ -4899,6 +4858,238 @@ def get_next_receipt_ref(rid):
     return snap.to_dict().get("count", 1)
 
 
+
+# =====================================================================
+# 📡 LIVE ORDERS — shared helpers (waiter → kitchen → cashier → admin)
+# Every change to a restaurant's orders bumps ONE tiny counter document
+# (restaurants/<rid>/meta/orders_version). All screens poll only that
+# counter every few seconds (1 Firestore read) and re-fetch the full
+# order list only when it actually changed — fast, cheap, works on
+# every phone and behind any proxy.
+# =====================================================================
+LIVE_ORDER_STATUSES = ("pending", "preparing", "ready")
+MOGADISHU_TZ = ZoneInfo("Africa/Mogadishu")
+
+
+def _bump_orders_version(rid):
+    try:
+        db.collection("restaurants").document(rid).collection("meta").document("orders_version") \
+          .set({"v": firestore.Increment(1), "updated_at": firestore.SERVER_TIMESTAMP}, merge=True)
+    except Exception as e:
+        print("ORDERS VERSION BUMP ERROR:", e)
+    try:
+        socketio.emit("orders_changed", {"rid": rid}, to=f"orders_{rid}")
+    except Exception:
+        pass
+
+
+def _can_view_restaurant_orders(rid):
+    rid = str(rid)
+    return bool(
+        (session.get("restaurant_login") and str(session.get("restaurant_id")) == rid)
+        or session.get("admin_" + rid)
+        or session.get("admin_ok")
+        or (session.get("staff_ok") and str(session.get("staff_rid")) == rid)
+        or session.get("kitchen_" + rid)
+    )
+
+
+def _to_mogadishu(dt):
+    if not hasattr(dt, "astimezone"):
+        return None
+    try:
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt.astimezone(MOGADISHU_TZ)
+    except Exception:
+        return None
+
+
+def _order_cart_lines(o, cart_override=None):
+    cart = cart_override if cart_override is not None else o.get("cart")
+    lines = []
+    if cart and isinstance(cart, list):
+        for c in cart:
+            name = (c.get("name") or "").strip()
+            if not name:
+                continue
+            try:
+                qty = int(c.get("qty", 1))
+            except Exception:
+                qty = 1
+            try:
+                price = float(c.get("price", 0))
+            except Exception:
+                price = 0.0
+            lines.append({"name": name, "qty": qty, "price": price})
+    elif cart_override is None:
+        for part in (o.get("items") or "").split(","):
+            part = part.strip()
+            if not part:
+                continue
+            qty, name = 1, part
+            if "x " in part:
+                head, tail = part.split("x ", 1)
+                if head.strip().isdigit():
+                    qty, name = int(head.strip()), tail.strip()
+            lines.append({"name": name, "qty": qty, "price": 0.0})
+    return lines
+
+
+def _order_public(doc_id, o):
+    created = _to_mogadishu(o.get("created_at"))
+    age_min = None
+    if created:
+        age_min = max(0, int((datetime.now(MOGADISHU_TZ) - created).total_seconds() // 60))
+    try:
+        total = round(float(o.get("price", 0) or 0), 2)
+    except Exception:
+        total = 0.0
+    return {
+        "id":              doc_id,
+        "ref":             o.get("receipt_ref") or doc_id[:6],
+        "table":           str(o.get("table", "")),
+        "items":           _order_cart_lines(o),
+        "items_text":      o.get("items", ""),
+        "new_items":       _order_cart_lines(o, o.get("last_added_cart")) if o.get("last_added_cart") else [],
+        "total":           total,
+        "status":          str(o.get("status", "pending")).lower(),
+        "waiter":          o.get("employee_name") or "",
+        "customer_phone":  o.get("customer_phone") or "",
+        "payment_method":  o.get("payment_method") or "",
+        "receipt_printed": bool(o.get("receipt_printed")),
+        "kitchen_printed": bool(o.get("kitchen_printed")),
+        "time":            created.strftime("%I:%M %p") if created else "",
+        "date":            created.strftime("%d/%m/%Y") if created else "",
+        "age_min":         age_min,
+        "is_today":        bool(created and created.date() == datetime.now(MOGADISHU_TZ).date()),
+    }
+
+
+@app.route("/api/orders_version/<rid>")
+def api_orders_version(rid):
+    if not _can_view_restaurant_orders(rid):
+        return jsonify({"success": False, "error": "Unauthorized"}), 401
+    try:
+        snap = db.collection("restaurants").document(rid).collection("meta").document("orders_version").get()
+        v = (snap.to_dict() or {}).get("v", 0) if snap.exists else 0
+        resp = jsonify({"success": True, "v": v})
+        resp.headers["Cache-Control"] = "no-store"
+        return resp
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+
+@app.route("/api/live_orders/<rid>")
+def api_live_orders(rid):
+    if not _can_view_restaurant_orders(rid):
+        return jsonify({"success": False, "error": "Unauthorized"}), 401
+    try:
+        restaurant_ref = db.collection("restaurants").document(rid)
+        active, paid_today = [], []
+        stats = {"pending": 0, "preparing": 0, "ready": 0, "active_amount": 0.0,
+                 "paid_today_count": 0, "paid_today_amount": 0.0, "orders_today": 0}
+        for doc in restaurant_ref.collection("orders") \
+                .order_by("created_at", direction=firestore.Query.DESCENDING).limit(250).stream():
+            if doc.id == "init":
+                continue
+            o = _order_public(doc.id, doc.to_dict() or {})
+            if o["is_today"]:
+                stats["orders_today"] += 1
+            if o["status"] == "paid":
+                if o["is_today"]:
+                    stats["paid_today_count"] += 1
+                    stats["paid_today_amount"] += o["total"]
+                    if len(paid_today) < 40:
+                        paid_today.append(o)
+            elif o["status"] in LIVE_ORDER_STATUSES:
+                stats[o["status"]] += 1
+                stats["active_amount"] += o["total"]
+                active.append(o)
+        stats["active_amount"] = round(stats["active_amount"], 2)
+        stats["paid_today_amount"] = round(stats["paid_today_amount"], 2)
+        snap = restaurant_ref.collection("meta").document("orders_version").get()
+        v = (snap.to_dict() or {}).get("v", 0) if snap.exists else 0
+        resp = jsonify({"success": True, "v": v, "active": active, "paid_today": paid_today, "stats": stats,
+                        "server_time": datetime.now(MOGADISHU_TZ).strftime("%I:%M:%S %p")})
+        resp.headers["Cache-Control"] = "no-store"
+        return resp
+    except Exception as e:
+        print("LIVE ORDERS ERROR:", e)
+        return jsonify({"success": False, "error": str(e)})
+
+
+@app.route("/live_orders/<rid>")
+def live_orders_page(rid):
+    owner = (session.get("restaurant_login") and str(session.get("restaurant_id")) == str(rid)) \
+            or session.get("admin_" + str(rid)) or session.get("admin_ok")
+    if not owner:
+        return redirect("/login")
+    rest_doc = db.collection("restaurants").document(rid).get()
+    if not rest_doc.exists:
+        return "Restaurant not found ❌", 404
+    rest = rest_doc.to_dict() or {}
+    back_url = "/admin" if (session.get("admin_ok") and not session.get("restaurant_login")) else f"/dashboard/{rid}"
+    return render_template("live_orders.html", rid=rid, restaurant_name=rest.get("name", "Restaurant"),
+                           back_url=back_url, is_super_admin=bool(session.get("admin_ok")))
+
+
+# =====================================
+# 🍳 KITCHEN TICKET — the slip that prints in the kitchen the moment a
+# waiter sends an order. Only what the cook needs: table, ref, time,
+# waiter and Item / Qty — no prices (same layout as a POS kitchen slip).
+# When a waiter ADDS items to an order already printed, only the newly
+# added items print (marked "KU DAR / ADDED"), so nothing gets cooked twice.
+# ?all=1 forces the full order; ?autoprint=1 opens the print dialog
+# (or prints silently when Chrome runs with --kiosk-printing).
+# =====================================
+@app.route("/kitchen_ticket/<rid>/<order_id>")
+def kitchen_ticket(rid, order_id):
+    if not _can_view_restaurant_orders(rid):
+        return "Unauthorized ❌", 401
+    try:
+        order_ref = db.collection("restaurants").document(rid).collection("orders").document(order_id)
+        snap = order_ref.get()
+        if not snap.exists:
+            return "Order not found ❌", 404
+        o = snap.to_dict() or {}
+        rest_doc = db.collection("restaurants").document(rid).get()
+        rest = rest_doc.to_dict() if rest_doc.exists else {}
+
+        receipt_ref = o.get("receipt_ref")
+        if not receipt_ref:
+            receipt_ref = get_next_receipt_ref(rid)
+            order_ref.update({"receipt_ref": receipt_ref})
+
+        show_all = request.args.get("all") == "1"
+        is_addition = bool(o.get("last_added_cart")) and bool(o.get("kitchen_printed_once")) and not show_all
+        lines = _order_cart_lines(o, o.get("last_added_cart")) if is_addition else _order_cart_lines(o)
+
+        created = _to_mogadishu(o.get("last_added_at") if is_addition else o.get("created_at")) \
+                  or datetime.now(MOGADISHU_TZ)
+
+        resp = make_response(render_template(
+            "kitchen_ticket.html",
+            rid=rid,
+            order_id=order_id,
+            restaurant_name=rest.get("name", "Restaurant"),
+            ref=receipt_ref,
+            table=o.get("table", ""),
+            waiter=o.get("employee_name") or "",
+            customer_phone=o.get("customer_phone") or "",
+            lines=lines,
+            total_qty=sum(l["qty"] for l in lines),
+            is_addition=is_addition,
+            date_str=created.strftime("%d/%m/%Y %H:%M"),
+            autoprint=request.args.get("autoprint") == "1",
+        ))
+        resp.headers["Cache-Control"] = "no-store"
+        return resp
+    except Exception as e:
+        print("KITCHEN TICKET ERROR:", e)
+        return f"Kitchen ticket error ❌ {str(e)}", 500
+
+
 @app.route("/order/<rid>", methods=["POST"])
 def create_order(rid):
     try:
@@ -4925,14 +5116,18 @@ def create_order(rid):
         # waiter, still open -> add to it" behaviour.
         existing_order_id = None
         existing_cart = []
+        existing_data = {}
         if waiter_employee_id:
             for doc in restaurant_ref.collection("orders") \
                     .where("table", "==", table) \
                     .where("employee_id", "==", waiter_employee_id) \
                     .where("status", "in", ["pending", "preparing", "ready"]) \
                     .limit(1).stream():
+                if doc.id == "init":
+                    continue
                 existing_order_id = doc.id
-                existing_cart = doc.to_dict().get("cart", [])
+                existing_data = doc.to_dict() or {}
+                existing_cart = existing_data.get("cart", [])
                 break
 
         if existing_order_id:
@@ -4943,7 +5138,13 @@ def create_order(rid):
             # The items sent in THIS request only — the delta the kitchen
             # actually needs to prepare, since everything else in
             # merged_cart was already sent and (maybe) already made.
-            new_items_text = ", ".join([f"{i.get('qty')}x {i.get('name')}" for i in cart])
+            # If the kitchen hasn't printed the previous addition yet,
+            # keep it in the delta too — otherwise two quick additions in
+            # a row would lose the first one from the kitchen slip.
+            delta_cart = list(cart)
+            if existing_data.get("last_added_cart") and not existing_data.get("kitchen_printed"):
+                delta_cart = list(existing_data.get("last_added_cart") or []) + delta_cart
+            new_items_text = ", ".join([f"{i.get('qty')}x {i.get('name')}" for i in delta_cart])
 
             order_ref = restaurant_ref.collection("orders").document(existing_order_id)
             update_fields = {
@@ -4953,7 +5154,7 @@ def create_order(rid):
                 "status":           "pending",          # back to kitchen's attention
                 "receipt_printed":  False,               # updated — needs reprint
                 "kitchen_printed":  False,               # new items — kitchen needs to re-print too
-                "last_added_cart":  cart,
+                "last_added_cart":  delta_cart,
                 "last_added_items": new_items_text,
                 "last_added_at":    datetime.utcnow(),
                 "updated_at":       datetime.utcnow()
@@ -4976,6 +5177,7 @@ def create_order(rid):
                 "kitchen_cleared": False,
                 "receipt_printed": False,
                 "kitchen_printed": False,
+                "kitchen_printed_once": False,
                 "receipt_ref": get_next_receipt_ref(rid)
             }
             if customer_phone:
@@ -4988,12 +5190,14 @@ def create_order(rid):
             order_id  = order_ref.id
             order_ref.set(order_data)
 
+        _bump_orders_version(rid)
         return jsonify({
             "success":     True,
             "message":     "Order sent ✅",
             "order_id":    order_id,
             "merged":      bool(existing_order_id),
-            "receipt_url": f"/receipt/{rid}/{order_id}"
+            "receipt_url": f"/receipt/{rid}/{order_id}",
+            "kitchen_ticket_url": f"/kitchen_ticket/{rid}/{order_id}"
         })
 
     except Exception as e:
@@ -5005,6 +5209,11 @@ def create_order(rid):
 # =====================================
 @app.route("/update_status/<rid>/<order_id>/<status>")
 def update_status(rid, order_id, status):
+    if not _can_view_restaurant_orders(rid):
+        return jsonify({"success": False, "message": "Unauthorized ❌"}), 401
+    status = str(status).lower().strip()
+    if status not in LIVE_ORDER_STATUSES:
+        return jsonify({"success": False, "message": "Invalid status ❌"}), 400
     try:
         order_ref = db.collection("restaurants") \
             .document(rid) \
@@ -5015,11 +5224,14 @@ def update_status(rid, order_id, status):
 
         if not order_doc.exists:
             return jsonify({"success": False, "message": "Order not found ❌"})
+        if str((order_doc.to_dict() or {}).get("status", "")).lower() == "paid":
+            return jsonify({"success": False, "message": "Order already paid ✅"})
 
         order_ref.update({
             "status": status,
             "updated_at": datetime.utcnow()
         })
+        _bump_orders_version(rid)
 
         updated_data = order_ref.get().to_dict()
 
@@ -5169,10 +5381,13 @@ def kitchen(rid):
 
         order_docs = restaurant_ref.collection("orders") \
             .order_by("created_at", direction=firestore.Query.DESCENDING) \
+            .limit(200) \
             .stream()
 
         orders = []
         for doc in order_docs:
+            if doc.id == "init":
+                continue
             order = doc.to_dict()
             order["id"] = doc.id
 
@@ -5182,9 +5397,7 @@ def kitchen(rid):
             created_at = order.get("created_at")
             if created_at:
                 try:
-                    order["created_at"] = created_at.astimezone(
-                        ZoneInfo("Africa/Mogadishu")
-                    ).strftime("%Y-%m-%d %I:%M:%S %p")
+                    order["created_at"] = _to_mogadishu(created_at).strftime("%Y-%m-%d %I:%M:%S %p")
                 except:
                     order["created_at"] = str(created_at)
             else:
@@ -5418,15 +5631,25 @@ def compare(rid):
 # =====================================
 @app.route("/clear_orders/<rid>")
 def clear_orders(rid):
+    # Kitchen "Clear" button. It used to write a field the kitchen never
+    # reads ("cleared_from_kitchen"), so nothing ever disappeared — it now
+    # sets kitchen_cleared, exactly like the admin's clear does.
+    if not _can_view_restaurant_orders(rid):
+        return "Unauthorized ❌", 401
     try:
         orders_ref = db.collection("restaurants").document(rid).collection("orders")
-        docs = orders_ref.stream()
-
-        for doc in docs:
-            orders_ref.document(doc.id).update({
-                "cleared_from_kitchen": True
-            })
-
+        batch = db.batch()
+        n = 0
+        for doc in orders_ref.order_by("created_at", direction=firestore.Query.DESCENDING).limit(400).stream():
+            if doc.id == "init" or (doc.to_dict() or {}).get("kitchen_cleared"):
+                continue
+            batch.update(doc.reference, {"kitchen_cleared": True, "cleared_at": datetime.now(timezone.utc)})
+            n += 1
+            if n % 400 == 0:
+                batch.commit()
+                batch = db.batch()
+        batch.commit()
+        _bump_orders_version(rid)
         return "OK"
 
     except Exception as e:
@@ -6010,515 +6233,95 @@ def dashboard_login():
 
 
 # ==============================
-# 💎 DHIBIC DAHAB — ORDERS LOADER (shared by page + live feed)
-# ==============================
-DHIBIC_COLLECTIONS = ("data_orders", "orders", "exchange_orders")
-DHIBIC_TZ = ZoneInfo("Africa/Mogadishu")
-
-
-def _dhibic_fmt_ts(ts):
-    """Firestore timestamp -> 'YYYY-MM-DD HH:MM' Mogadishu time."""
-    if not ts:
-        return ""
-    try:
-        if hasattr(ts, "astimezone"):
-            ts = ts.astimezone(DHIBIC_TZ)
-        return ts.strftime("%Y-%m-%d %H:%M")
-    except Exception:
-        return str(ts)
-
-
-def _dhibic_ts_ms(ts):
-    try:
-        return int(ts.timestamp() * 1000) if ts and hasattr(ts, "timestamp") else 0
-    except Exception:
-        return 0
-
-
-def _dhibic_txt(v, default=""):
-    """Make any Firestore value JSON-safe (numbers stay numbers)."""
-    if v is None:
-        return default
-    if isinstance(v, (str, int, float, bool)):
-        return v
-    return str(v)
-
-
-def _dhibic_serialize(collection, doc):
-    d = doc.to_dict() or {}
-    created = d.get("createdAt")
-    base = {
-        "docId":       doc.id,
-        "status":      _dhibic_txt(d.get("status"), "PENDING"),
-        "createdAt":   _dhibic_fmt_ts(created),
-        "createdAtMs": _dhibic_ts_ms(created),
-    }
-    if collection == "data_orders":
-        base.update({
-            "referenceId":   _dhibic_txt(d.get("referenceId")),
-            "senderPhone":   _dhibic_txt(d.get("senderPhone")),
-            "receiverPhone": _dhibic_txt(d.get("receiverPhone")),
-            "packageName":   _dhibic_txt(d.get("packageName")),
-            "packageData":   _dhibic_txt(d.get("packageData")),
-            "description":   _dhibic_txt(d.get("description")),
-            "amount":        _dhibic_txt(d.get("amount"), "0"),
-        })
-    elif collection == "orders":
-        base.update({
-            "orderId":       _dhibic_txt(d.get("orderId")),
-            "customerId":    _dhibic_txt(d.get("customerId")),
-            "address":       _dhibic_txt(d.get("address")),
-            "merchantId":    _dhibic_txt(d.get("merchantId")),
-            "merchantName":  _dhibic_txt(d.get("merchantName")),
-            "merchantPhone": _dhibic_txt(d.get("merchantPhone")),
-            "deliveryType":  _dhibic_txt(d.get("deliveryType")),
-            "price":         _dhibic_txt(d.get("price", d.get("amount")), "0"),
-        })
-    else:  # exchange_orders
-        base.update({
-            "senderNumber":   _dhibic_txt(d.get("senderNumber")),
-            "receiverNumber": _dhibic_txt(d.get("receiverNumber")),
-            "fromCompany":    _dhibic_txt(d.get("fromCompany")),
-            "toCompany":      _dhibic_txt(d.get("toCompany")),
-            "amount":         _dhibic_txt(d.get("amount"), "0"),
-            "finalAmount":    _dhibic_txt(d.get("finalAmount"), "0"),
-            "customerEmail":  _dhibic_txt(d.get("customerEmail")),
-            "approvedAt":     _dhibic_fmt_ts(d.get("approvedAt")),
-        })
-    return base
-
-
-def _load_dhibic_collection(collection, since_ms=0, limit=200):
-    """since_ms > 0  -> only docs created AFTER that moment (cheap polling:
-    an empty result costs a single Firestore read).
-    since_ms == 0 -> the latest `limit` docs (full load)."""
-    ref = dhibic_db.collection(collection)
-    if since_ms and since_ms > 0:
-        since_dt = datetime.fromtimestamp(since_ms / 1000.0, tz=timezone.utc)
-        query = ref.where("createdAt", ">", since_dt) \
-                   .order_by("createdAt", direction=firestore.Query.ASCENDING) \
-                   .limit(50)
-    else:
-        query = ref.order_by("createdAt", direction=firestore.Query.DESCENDING) \
-                   .limit(limit)
-    items = [_dhibic_serialize(collection, doc) for doc in query.get()]
-    items.sort(key=lambda x: x.get("createdAtMs", 0), reverse=True)
-    return items
-
-
-# ==============================
 # VIEW ORDERS PAGE
 # ==============================
 @app.route("/view-orders")
 def view_orders():
     if "dashboard_user" not in session:
         return redirect("/")
+
+    def fmt_ts(ts):
+        try:
+            return ts.strftime("%Y-%m-%d %H:%M") if ts else ""
+        except:
+            return str(ts) if ts else ""
+
     try:
-        resp = make_response(render_template(
+        # ── data_orders ──
+        do_docs = dhibic_db.collection("data_orders") \
+            .order_by("createdAt", direction=firestore.Query.DESCENDING) \
+            .limit(200).get()
+
+        data_orders = []
+        for doc in do_docs:
+            d = doc.to_dict()
+            data_orders.append({
+                "docId":         doc.id,
+                "referenceId":   d.get("referenceId", ""),
+                "senderPhone":   d.get("senderPhone", ""),
+                "receiverPhone": d.get("receiverPhone", ""),
+                "packageName":   d.get("packageName", ""),
+                "packageData":   d.get("packageData", ""),
+                "description":   d.get("description", ""),
+                "amount":        d.get("amount", "0"),
+                "status":        d.get("status", "PENDING"),
+                "createdAt":     fmt_ts(d.get("createdAt")),
+            })
+
+        # ── orders ──
+        or_docs = dhibic_db.collection("orders") \
+            .order_by("createdAt", direction=firestore.Query.DESCENDING) \
+            .limit(200).get()
+
+        orders = []
+        for doc in or_docs:
+            d = doc.to_dict()
+            orders.append({
+                "docId":        doc.id,
+                "orderId":      d.get("orderId", ""),
+                "customerId":   d.get("customerId", ""),
+                "address":      d.get("address", ""),
+                "merchantId":   d.get("merchantId", ""),
+                "merchantName": d.get("merchantName", ""),
+                "merchantPhone":d.get("merchantPhone", ""),
+                "deliveryType": d.get("deliveryType", ""),
+                "price":        d.get("price", d.get("amount", "0")),
+                "status":       d.get("status", "PENDING"),
+                "createdAt":    fmt_ts(d.get("createdAt")),
+            })
+
+        # ── exchange_orders ──
+        ex_docs = dhibic_db.collection("exchange_orders") \
+            .order_by("createdAt", direction=firestore.Query.DESCENDING) \
+            .limit(200).get()
+
+        exchange_orders = []
+        for doc in ex_docs:
+            d = doc.to_dict()
+            exchange_orders.append({
+                "docId":         doc.id,
+                "senderNumber":  d.get("senderNumber", ""),
+                "receiverNumber":d.get("receiverNumber", ""),
+                "fromCompany":   d.get("fromCompany", ""),
+                "toCompany":     d.get("toCompany", ""),
+                "amount":        d.get("amount", "0"),
+                "finalAmount":   d.get("finalAmount", "0"),
+                "customerEmail": d.get("customerEmail", ""),
+                "status":        d.get("status", "PENDING"),
+                "createdAt":     fmt_ts(d.get("createdAt")),
+                "approvedAt":    fmt_ts(d.get("approvedAt")),
+            })
+
+        return render_template(
             "view_orders.html",
-            data_orders=_load_dhibic_collection("data_orders"),
-            orders=_load_dhibic_collection("orders"),
-            exchange_orders=_load_dhibic_collection("exchange_orders"),
-        ))
-        resp.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
-        return resp
+            data_orders=data_orders,
+            orders=orders,
+            exchange_orders=exchange_orders,
+        )
+
     except Exception as e:
         import traceback; traceback.print_exc()
         return f"Error: {str(e)}", 500
-
-
-# ==============================
-# 🔔 LIVE ORDERS FEED (dashboard polls this every few seconds)
-#   GET /dhibic-orders-feed?data_orders=<ms>&orders=<ms>&exchange_orders=<ms>
-#       -> only orders newer than each timestamp
-#   GET /dhibic-orders-feed?full=1
-#       -> latest 200 of each (used to sync status changes)
-# ==============================
-@app.route("/dhibic-orders-feed")
-def dhibic_orders_feed():
-    if "dashboard_user" not in session:
-        return jsonify({"success": False, "error": "Not logged in"}), 401
-    try:
-        full = request.args.get("full") == "1"
-        result = {"success": True, "full": full}
-        for coll in DHIBIC_COLLECTIONS:
-            since_ms = 0 if full else request.args.get(coll, default=0, type=int)
-            result[coll] = _load_dhibic_collection(coll, since_ms=since_ms)
-        resp = jsonify(result)
-        resp.headers["Cache-Control"] = "no-store"
-        return resp
-    except Exception as e:
-        import traceback; traceback.print_exc()
-        return jsonify({"success": False, "error": str(e)}), 500
-
-
-# ==============================
-# 🧾 DHIBIC DAHAB — A5 RECEIPTS
-# Same content as the Flutter app's A5ReceiptPdf (Shipping & Delivery
-# Form + Sales Receipt), styled like the official DD payment receipt.
-#   GET /dhibic-receipt/<collection>/<doc_id>[?copies=N&embed=1]
-# ==============================
-DD_STORE = {
-    "name":     "Dhibic Dahab Online Store",
-    "phone":    "+252 61 775 3787",
-    "email":    "dhibicdahabstore@gmail.com",
-    "website":  "dhibicdahab.com",
-    "location": "Mogadishu, Somalia",
-    "owner":    "Abdi Ahmed Abshir",
-    "admin":    "Gulled Ibrahim Dahir",
-}
-
-_DD_ONES = ["Zero", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine",
-            "Ten", "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen",
-            "Seventeen", "Eighteen", "Nineteen"]
-_DD_TENS = ["", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"]
-
-
-def _dd_words_int(n):
-    n = int(n)
-    if n < 20:
-        return _DD_ONES[n]
-    if n < 100:
-        return _DD_TENS[n // 10] + ("-" + _DD_ONES[n % 10] if n % 10 else "")
-    if n < 1000:
-        rest = n % 100
-        return _DD_ONES[n // 100] + " Hundred" + (" and " + _dd_words_int(rest) if rest else "")
-    for div, name in ((10 ** 9, "Billion"), (10 ** 6, "Million"), (1000, "Thousand")):
-        if n >= div:
-            rest = n % div
-            s = _dd_words_int(n // div) + " " + name
-            if rest:
-                s += (" and " if rest < 100 else " ") + _dd_words_int(rest)
-            return s
-    return str(n)
-
-
-def _dd_amount_words(x):
-    cents_total = int(round(abs(x) * 100))
-    dollars, cents = divmod(cents_total, 100)
-    s = _dd_words_int(dollars) + (" US Dollar" if dollars == 1 else " US Dollars")
-    if cents:
-        s += " and " + _dd_words_int(cents) + (" Cent" if cents == 1 else " Cents")
-    return s
-
-
-def _dd_num(v):
-    try:
-        return float(str(v if v is not None else 0).replace("$", "").replace(",", "").strip() or 0)
-    except Exception:
-        return 0.0
-
-
-def _dd_str(v):
-    return "" if v is None else str(v).strip()
-
-
-def _dd_local(ts):
-    """Firestore timestamp / datetime / ISO string -> Mogadishu datetime (or None)."""
-    if ts is None or ts == "":
-        return None
-    try:
-        if isinstance(ts, datetime):
-            if ts.tzinfo is None:
-                ts = ts.replace(tzinfo=timezone.utc)
-            return ts.astimezone(DHIBIC_TZ)
-        if isinstance(ts, (int, float)):
-            return datetime.fromtimestamp(ts / 1000 if ts > 1e11 else ts, tz=timezone.utc).astimezone(DHIBIC_TZ)
-        if isinstance(ts, str):
-            return _dd_local(datetime.fromisoformat(ts.replace("Z", "+00:00")))
-        if hasattr(ts, "timestamp"):
-            return datetime.fromtimestamp(ts.timestamp(), tz=timezone.utc).astimezone(DHIBIC_TZ)
-    except Exception:
-        return None
-    return None
-
-
-def _dd_date(dt):
-    return dt.strftime("%d %b %Y") if dt else "—"
-
-
-def _dd_dt(dt):
-    return dt.strftime("%d %b %Y, %H:%M:%S") + " (UTC+03:00)" if dt else "—"
-
-
-def _dd_duration(a, b):
-    if not a or not b or b < a:
-        return ""
-    mins = int((b - a).total_seconds() // 60)
-    d, rem = divmod(mins, 1440)
-    h, m = divmod(rem, 60)
-    parts = []
-    if d:
-        parts.append(f"{d} day" + ("s" if d != 1 else ""))
-    if h:
-        parts.append(f"{h} hour" + ("s" if h != 1 else ""))
-    if not d and m:
-        parts.append(f"{m} minute" + ("s" if m != 1 else ""))
-    return " ".join(parts) or "Less than a minute"
-
-
-def _dd_method_label(m):
-    key = _dd_str(m).lower()
-    return {
-        "waafi": "Waafi / EVC Plus",
-        "evc": "Waafi / EVC Plus",
-        "edahab": "eDahab",
-        "premier": "Premier Bank",
-        "points": "Points",
-        "points_payment": "Points",
-    }.get(key, _dd_str(m) or "Mobile Money")
-
-
-def _dd_qr_data_uri(text):
-    import base64
-    qr = qrcode.QRCode(version=None, error_correction=qrcode.constants.ERROR_CORRECT_M,
-                       box_size=8, border=1)
-    qr.add_data(text)
-    qr.make(fit=True)
-    img = qr.make_image(fill_color="black", back_color="white")
-    buf = BytesIO()
-    img.save(buf)
-    return "data:image/png;base64," + base64.b64encode(buf.getvalue()).decode()
-
-
-def _dd_stamp(status, kind):
-    s = _dd_str(status).upper()
-    if s == "FAILED":
-        return {"label": "FAILED", "cls": "failed"}
-    if s in ("APPROVED", "SUCCESS", "PAID", "COMPLETED") or kind == "orders":
-        # Store orders are paid at checkout — the app prints them as PAID too.
-        return {"label": "PAID", "cls": "paid"}
-    return {"label": "PENDING", "cls": "pending"}
-
-
-def _dd_receipt_no(prefix, created, ident):
-    day = (created or datetime.now(DHIBIC_TZ)).strftime("%Y%m%d")
-    ident = re.sub(r"[^A-Za-z0-9]", "", _dd_str(ident)).upper() or "000000"
-    return f"DD-{prefix}-{day}-{ident}"
-
-
-def _dd_verify_url(ident, merchant_id=None):
-    url = f"https://{DD_STORE['website']}/verify?id={quote(_dd_str(ident))}"
-    return url + (f"&m={quote(merchant_id)}" if merchant_id else "")
-
-
-def _dd_ctx_orders(doc_id):
-    """Mirrors A5OrderLoader.fromDocs — one order = every doc that shares
-    orderId + customerId (one doc per product / store)."""
-    ref = dhibic_db.collection("orders")
-    snap = ref.document(doc_id).get()
-    if not snap.exists:
-        return None
-    first = snap.to_dict() or {}
-    raw_order_id = first.get("orderId")
-    order_id = _dd_str(raw_order_id)
-    customer_id = _dd_str(first.get("customerId"))
-
-    docs = [first]
-    if order_id:
-        try:
-            found = [d.to_dict() or {} for d in ref.where("orderId", "==", raw_order_id).get()]
-            if customer_id:
-                found = [d for d in found if _dd_str(d.get("customerId")) == customer_id]
-            if found:
-                docs = found
-        except Exception as e:
-            print("DD receipt group lookup error:", e)
-
-    created = None
-    for d in docs:
-        created = _dd_local(d.get("createdAt"))
-        if created:
-            break
-
-    # Address / payment info: use whichever doc of this order carries it
-    # (the clicked doc may be a 2nd product line without the address).
-    status_doc = first
-    first = next((d for d in docs if isinstance(d.get("shippingAddress"), dict) and d.get("shippingAddress")),
-                 next((d for d in docs if _dd_str(d.get("address")) or _dd_str(d.get("paymentMethod"))), first))
-
-    # Address — new orders (shippingAddress map) or older ones (address string)
-    sa = first.get("shippingAddress")
-    if isinstance(sa, dict) and sa:
-        address = {k: _dd_str(sa.get(k)) for k in
-                   ("fullName", "receiverPhone", "contactPhone", "fullAddress",
-                    "country", "region", "city", "district", "landmark")}
-    else:
-        sender = _dd_str(first.get("senderPhone"))
-        addr = _dd_str(first.get("address"))
-        address = {
-            "fullName": _dd_str(first.get("customerName")),
-            "receiverPhone": _dd_str(first.get("receiverPhone")),
-            "contactPhone": "" if sender == "points_payment" else sender,
-            "fullAddress": addr, "country": "Somalia", "region": "",
-            "city": "", "district": "", "landmark": addr,
-        }
-    country = address.get("country", "").lower()
-    address["isDomestic"] = country in ("somalia", "soomaaliya", "soomaaliland")
-    address["oneLine"] = ", ".join(p for p in (address.get("fullAddress"), address.get("district"),
-                                               address.get("city"), address.get("region"),
-                                               address.get("country")) if p)
-
-    items = []
-    for d in docs:
-        q = d.get("quantity")
-        try:
-            qty = int(float(q)) if q not in (None, "") else 1
-        except Exception:
-            qty = 1
-        qty = qty if qty > 0 else 1
-        price = _dd_num(d.get("price"))
-        m_name = _dd_str(d.get("merchantName")) or "Store"
-        items.append({
-            "name": _dd_str(d.get("productName")) or _dd_str(d.get("name")) or "Item",
-            "qty": qty,
-            "price": price,
-            "total": round(price * qty, 2),
-            "merchantId": _dd_str(d.get("merchantId")),
-            "merchantName": m_name,
-            "merchantPhone": _dd_str(d.get("merchantPhone")),
-        })
-
-    groups = []
-    index = {}
-    for it in items:
-        key = it["merchantId"] or it["merchantName"]
-        if key not in index:
-            index[key] = {"merchantName": it["merchantName"], "merchantPhone": it["merchantPhone"],
-                          "lines": [], "subtotal": 0.0}
-            groups.append(index[key])
-        index[key]["lines"].append(it)
-        index[key]["subtotal"] = round(index[key]["subtotal"] + it["total"], 2)
-
-    fee = first.get("deliveryFee")
-    if isinstance(fee, (int, float)):
-        delivery_fee = float(fee)
-    else:
-        delivery_fee = 1.0 if _dd_str(first.get("deliveryType")) == "delivery" else 0.0
-    discount = first.get("discount")
-    discount = float(discount) if isinstance(discount, (int, float)) else 0.0
-
-    subtotal = round(sum(i["total"] for i in items), 2)
-    total = round(subtotal + delivery_fee - discount, 2)
-    method = _dd_str(first.get("paymentMethod")).lower()
-    speed = (_dd_str(first.get("shippingSpeed")) or "standard").lower()
-    approved = _dd_local(status_doc.get("approvedAt") or first.get("approvedAt"))
-
-    return {
-        "kind": "orders",
-        "order_id": order_id or doc_id,
-        "receipt_no": _dd_receipt_no("ORD", created, order_id or doc_id[:6]),
-        "created": created, "created_date": _dd_date(created),
-        "created_time": created.strftime("%H:%M") if created else "—",
-        "created_full": _dd_dt(created),
-        "approved_full": _dd_dt(approved) if approved else "",
-        "status": _dd_str(status_doc.get("status")).upper() or "PENDING",
-        "stamp": _dd_stamp(status_doc.get("status"), "orders"),
-        "address": address,
-        "lines": items, "groups": groups,
-        "subtotal": subtotal, "delivery_fee": delivery_fee, "discount": discount,
-        "total": total, "total_words": _dd_amount_words(total),
-        "method": method, "method_label": _dd_method_label(method or "waafi"),
-        "express": speed == "express",
-        "delivery_type": _dd_str(first.get("deliveryType")),
-        "customer_id": customer_id,
-        "qr": _dd_qr_data_uri(_dd_verify_url(order_id or doc_id)),
-    }
-
-
-def _dd_ctx_data(doc_id):
-    snap = dhibic_db.collection("data_orders").document(doc_id).get()
-    if not snap.exists:
-        return None
-    d = snap.to_dict() or {}
-    created = _dd_local(d.get("createdAt"))
-    approved = _dd_local(d.get("approvedAt"))
-    amount = _dd_num(d.get("amount"))
-    status = _dd_str(d.get("status")).upper() or "PENDING"
-    return {
-        "kind": "data_orders",
-        "doc_id": doc_id,
-        "receipt_no": _dd_receipt_no("DAT", created, doc_id[:6]),
-        "created_date": _dd_date(created), "created_full": _dd_dt(created),
-        "created_time": created.strftime("%H:%M") if created else "",
-        "approved_full": _dd_dt(approved) if approved else "",
-        "processing": _dd_duration(created, approved),
-        "status": status, "stamp": _dd_stamp(status, "data_orders"),
-        "reference_id": _dd_str(d.get("referenceId")),
-        "sender": _dd_str(d.get("senderPhone")),
-        "receiver": _dd_str(d.get("receiverPhone")),
-        "package_name": _dd_str(d.get("packageName")),
-        "package_data": _dd_str(d.get("packageData")),
-        "description": _dd_str(d.get("description")),
-        "method_label": _dd_method_label(d.get("paymentMethod") or "Mobile Money"),
-        "amount": amount, "amount_words": _dd_amount_words(amount),
-        "qr": _dd_qr_data_uri(_dd_verify_url(doc_id)),
-    }
-
-
-def _dd_ctx_exchange(doc_id):
-    snap = dhibic_db.collection("exchange_orders").document(doc_id).get()
-    if not snap.exists:
-        return None
-    d = snap.to_dict() or {}
-    created = _dd_local(d.get("createdAt"))
-    approved = _dd_local(d.get("approvedAt"))
-    amount = _dd_num(d.get("amount"))
-    final = _dd_num(d.get("finalAmount"))
-    status = _dd_str(d.get("status")).upper() or "PENDING"
-    return {
-        "kind": "exchange_orders",
-        "doc_id": doc_id,
-        "receipt_no": _dd_receipt_no("EXC", created, doc_id[:6]),
-        "created_date": _dd_date(created), "created_full": _dd_dt(created),
-        "created_time": created.strftime("%H:%M") if created else "",
-        "approved_full": _dd_dt(approved) if approved else "",
-        "processing": _dd_duration(created, approved),
-        "status": status, "stamp": _dd_stamp(status, "exchange_orders"),
-        "sender": _dd_str(d.get("senderNumber")),
-        "receiver": _dd_str(d.get("receiverNumber")),
-        "from_company": _dd_str(d.get("fromCompany")),
-        "to_company": _dd_str(d.get("toCompany")),
-        "email": _dd_str(d.get("customerEmail")),
-        "amount": amount, "final_amount": final,
-        "fee": round(max(amount - final, 0), 2),
-        "amount_words": _dd_amount_words(amount),
-        "final_words": _dd_amount_words(final),
-        "qr": _dd_qr_data_uri(_dd_verify_url(doc_id)),
-    }
-
-
-_DD_RECEIPT_BUILDERS = {
-    "orders": _dd_ctx_orders,
-    "data_orders": _dd_ctx_data,
-    "exchange_orders": _dd_ctx_exchange,
-}
-
-
-@app.route("/dhibic-receipt/<collection>/<doc_id>")
-def dhibic_receipt(collection, doc_id):
-    if "dashboard_user" not in session:
-        return redirect("/")
-    if collection not in _DD_RECEIPT_BUILDERS:
-        return "Invalid collection ❌", 400
-    try:
-        r = _DD_RECEIPT_BUILDERS[collection](doc_id)
-        if not r:
-            return "<h2 style='font-family:Arial;text-align:center;margin-top:80px'>❌ Receipt not found</h2>", 404
-        copies = max(1, min(5, request.args.get("copies", default=1, type=int) or 1))
-        resp = make_response(render_template(
-            "dhibic_receipt.html",
-            r=r,
-            store=DD_STORE,
-            copies=copies,
-            embed=request.args.get("embed") == "1",
-            printed_at=_dd_dt(datetime.now(DHIBIC_TZ)),
-        ))
-        resp.headers["Cache-Control"] = "no-store"
-        return resp
-    except Exception as e:
-        import traceback; traceback.print_exc()
-        return f"Receipt Error ❌ {str(e)}", 500
 
 
 # ==============================
@@ -6536,8 +6339,7 @@ def approve_order(collection, doc_id):
     try:
         status_val = "approved" if collection == "exchange_orders" else "APPROVED"
         dhibic_db.collection(collection).document(doc_id).update({
-            "status": status_val,
-            "approvedAt": firestore.SERVER_TIMESTAMP
+            "status": status_val
         })
         return jsonify({"success": True})
 
@@ -7998,6 +7800,21 @@ def admin_delete_team_media(member_id):
         return jsonify({"success": False, "error": str(e)})
 
 
+# =====================================
+# 📡 LIVE ORDERS — optional SocketIO fast path. Screens join
+# "orders_<rid>" and get an instant "orders_changed" nudge; the version
+# polling keeps working even when sockets are blocked.
+# =====================================
+@socketio.on("join_orders")
+def _join_orders_room(data):
+    try:
+        rid = str((data or {}).get("rid", ""))
+        if rid and _can_view_restaurant_orders(rid):
+            join_room(f"orders_{rid}")
+    except Exception as e:
+        print("JOIN ORDERS ROOM ERROR:", e)
+
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8080))
 
@@ -8008,3 +7825,4 @@ if __name__ == "__main__":
         host="0.0.0.0",
         port=port
     )
+

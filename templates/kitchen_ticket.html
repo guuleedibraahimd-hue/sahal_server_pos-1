@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="so">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kitchen #{{ ref }} · Table {{ table }}</title>
+<style>
+/* 80mm thermal paper (works on 58mm too — content just narrows) */
+@page { size: 80mm auto; margin: 0; }
+*{ box-sizing:border-box; margin:0; padding:0; }
+html,body{ background:#fff; }
+body{
+    font-family: "Courier New", Courier, monospace;
+    color:#000;
+    width: 76mm;
+    max-width: 100%;
+    margin: 0 auto;
+    padding: 4mm 3mm 6mm;
+    font-size: 13px;
+    line-height: 1.35;
+}
+.center{ text-align:center; }
+.brand{ font-family: Arial, Helvetica, sans-serif; font-size: 20px; font-weight: 700; letter-spacing: .5px; }
+.sub{ font-family: Arial, Helvetica, sans-serif; font-size: 11px; margin-top: 1px; }
+.ref{ font-family: Arial, Helvetica, sans-serif; font-size: 22px; font-weight: 700; margin: 8px 0 4px; }
+.table-box{
+    border: 2px solid #000; border-radius: 6px;
+    margin: 6px auto 6px; padding: 4px 0; width: 70%;
+    font-family: Arial, Helvetica, sans-serif;
+}
+.table-box .lbl{ font-size: 11px; font-weight: 700; letter-spacing: 2px; }
+.table-box .num{ font-size: 30px; font-weight: 900; line-height: 1.05; }
+.added{
+    margin: 6px 0 2px; padding: 3px 0;
+    background:#000; color:#fff; font-weight:900; font-size: 14px;
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+}
+.meta{ font-size: 13px; }
+.rule{ border-top: 1px dashed #000; margin: 6px 0; }
+table{ width:100%; border-collapse: collapse; }
+th{ text-align:left; font-weight:700; font-size: 13px; padding: 2px 0; }
+th.q, td.q{ text-align:right; width: 14mm; }
+td{ padding: 3px 0; font-size: 15px; font-weight: 700; vertical-align: top; word-break: break-word; }
+.tot{ display:flex; justify-content:space-between; font-weight:700; font-size: 13px; }
+.foot{ font-size: 11px; margin-top: 4px; }
+
+/* On-screen helper bar (never printed) */
+.screen-bar{
+    font-family: Arial, sans-serif; display:flex; gap:8px; justify-content:center;
+    margin: 0 0 12px; flex-wrap: wrap;
+}
+.screen-bar button, .screen-bar a{
+    font: 700 13px Arial, sans-serif; padding: 9px 14px; border-radius: 8px;
+    border: none; cursor: pointer; text-decoration: none; color:#fff; background:#111;
+}
+.screen-bar a.alt{ background:#555; }
+@media print{ .screen-bar{ display:none !important; } }
+@media screen{
+    html{ background:#e9ebef; }
+    body{ background:#fff; margin: 14px auto; box-shadow: 0 4px 18px rgba(0,0,0,.15); }
+}
+</style>
+</head>
+<body>
+
+{% if not autoprint %}
+<div class="screen-bar">
+    <button onclick="window.print()">🖨️ Print</button>
+    {% if is_addition %}<a class="alt" href="?all=1">Show full order</a>{% endif %}
+</div>
+{% endif %}
+
+<div class="center">
+    <div class="brand">{{ restaurant_name }}</div>
+    <div class="sub">KITCHEN ORDER</div>
+    <div class="ref">Ref:{{ ref }}</div>
+
+    <div class="table-box">
+        <div class="lbl">TABLE</div>
+        <div class="num">{{ table }}</div>
+    </div>
+
+    {% if is_addition %}<div class="added">*** KU DAR / ADDED ITEMS ***</div>{% endif %}
+
+    <div class="meta">Date: {{ date_str }}</div>
+    {% if waiter %}<div class="meta">Waiter: {{ waiter }}</div>{% else %}<div class="meta">Customer QR Order</div>{% endif %}
+</div>
+
+<div class="rule"></div>
+<table>
+    <thead><tr><th>Item Name</th><th class="q">Qty</th></tr></thead>
+</table>
+<div class="rule"></div>
+<table>
+    <tbody>
+    {% for l in lines %}
+    <tr><td>{{ l.name }}</td><td class="q">{{ l.qty }}</td></tr>
+    {% else %}
+    <tr><td colspan="2" class="center">—</td></tr>
+    {% endfor %}
+    </tbody>
+</table>
+<div class="rule"></div>
+<div class="tot"><span>Total Items</span><span>{{ total_qty }}</span></div>
+<div class="rule"></div>
+<div class="center foot">@SahalServer | Powered by www.sahalserver.com</div>
+
+{% if autoprint %}
+<script>
+/* Printed from the kitchen screen inside a hidden frame.
+   Tell the kitchen screen when printing finished so it can mark the
+   order as printed (and move on to the next one in the queue). */
+(function(){
+    var ORDER_ID = {{ order_id|tojson }};
+    var done = false;
+    function report(){
+        if(done) return; done = true;
+        try{ parent.postMessage({ type: "kitchen-ticket-printed", orderId: ORDER_ID }, "*"); }catch(e){}
+    }
+    window.addEventListener("afterprint", report);
+    window.addEventListener("load", function(){
+        setTimeout(function(){
+            window.print();
+            // Some browsers never fire afterprint — print() returns once the
+            // job is handed to the printer (or the dialog closes).
+            setTimeout(report, 300);
+        }, 250);
+    });
+})();
+</script>
+{% endif %}
+</body>
+</html>

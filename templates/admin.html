@@ -501,6 +501,7 @@ table.tm-bulk{ min-width:820px; }
                                 <td><div class="card">📅 Expiry Date<br><br><b style="color:#ff9800;">{{ r.expiry_date or r.expiry }}</b></div></td>
                                 <td>{% if r.status == 'active' or r.active == true %}<span class="status-active">✅ Active</span>{% else %}<span class="status-disabled">❌ Disabled</span>{% endif %}</td>
                                 <td>
+                                    <a href="/live_orders/{{ r.id }}" target="_blank" class="btn edit" style="background:#2f6fed;color:#fff;">📡 Live Orders</a>
                                     <a href="/activate/restaurant/{{ r.id }}" class="btn activate">Activate</a>
                                     <a href="/disable/restaurant/{{ r.id }}" class="btn disable">Disable</a>
                                     <a href="/delete/restaurant/{{ r.id }}" class="btn delete">Delete</a>
@@ -1610,7 +1611,23 @@ function tmCard(m){
             <button class="btn edit" data-id="${tmEscape(m.id)}" onclick="openTmEdit(this)">✏️ Edit</button>
             <button class="btn delete" data-id="${tmEscape(m.id)}" data-name="${tmEscape(m.name)}" onclick="deleteTeamMedia(this)">🗑 Delete</button>
         </div>
+        ${m.phone ? `<div style="margin-top:8px;"><a class="btn" style="background:#25D366;color:#fff;text-decoration:none;display:inline-block;" target="_blank" rel="noopener" href="${tmWaLink(m)}">💬 U dir Group Link</a></div>` : ""}
     </div>`;
+}
+
+// ===== WhatsApp group link — u dir xubin kasta =====
+const TM_WA_GROUP = "https://chat.whatsapp.com/KodLGSXDeZEJgyxQKDeDtz";
+function tmWaNumber(phone){
+    let p = String(phone || "").replace(/[^\d]/g, "");
+    if(p.startsWith("00")) p = p.slice(2);
+    if(p.startsWith("252")) return p;
+    if(p.startsWith("0")) p = p.slice(1);
+    return "252" + p;
+}
+function tmWaLink(m){
+    const team = m.member_type === "part_time" ? "Part Time" : "Full Time";
+    const text = `Asc ${m.name || ""} 👋\nWaxaa lagugu daray Media Team of Xaji (${team}).\nFadlan ku biir group-ka WhatsApp:\n${TM_WA_GROUP}`;
+    return `https://wa.me/${tmWaNumber(m.phone)}?text=${encodeURIComponent(text)}`;
 }
 
 async function loadTeamMedia(){

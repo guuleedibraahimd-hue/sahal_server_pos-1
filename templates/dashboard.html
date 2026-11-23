@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <title>{{restaurant}} Dashboard</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
 <style>
@@ -585,19 +585,60 @@ body{
 /* ── DIVIDER ── */
 hr{border:none;border-top:1px solid var(--border);margin:0;}
 
-@media(max-width:700px){
-    .main{padding:16px 14px 100px;}
-    .sidebar{width:64px;}
-    .main{margin-left:64px;}
-    .stats-row{grid-template-columns:repeat(2,1fr);}
-    .menu-grid{grid-template-columns:repeat(2,1fr);}
+/* ── LIVE ORDERS PANEL ── */
+.live-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:14px;}
+.live-pill{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:20px;background:#e6f6ee;color:#1c8a54;font-weight:800;font-size:12px;}
+.live-pill .dot{width:7px;height:7px;border-radius:50%;background:#22a565;animation:livePulse 1.4s infinite;}
+.live-pill.off{background:#fdecea;color:#c62828;} .live-pill.off .dot{background:#c62828;animation:none;}
+@keyframes livePulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+.live-chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;}
+.live-chip{padding:7px 12px;border-radius:10px;font-size:12.5px;font-weight:800;background:var(--bg);}
+.live-list{display:flex;flex-direction:column;gap:8px;}
+.live-row{display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--border);border-radius:12px;}
+.live-row .t{width:42px;height:42px;border-radius:10px;background:var(--sidebar-bg);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;flex-shrink:0;}
+.live-row .info{flex:1;min-width:0;}
+.live-row .r1{font-weight:800;font-size:13.5px;}
+.live-row .r2{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.live-row .amt{font-weight:800;font-size:14px;white-space:nowrap;}
+.lst{padding:4px 10px;border-radius:20px;font-size:11px;font-weight:800;text-transform:capitalize;white-space:nowrap;}
+.lst-pending{background:#e8efff;color:var(--blue);} .lst-preparing{background:#fef3e2;color:#b86e00;} .lst-ready{background:#e3f6ec;color:#167a45;}
+.live-empty{color:var(--muted);font-size:13px;text-align:center;padding:18px;}
+.live-row.flash{animation:rowFlash 1.1s ease 3;}
+@keyframes rowFlash{50%{background:#fff7e0;}}
+
+/* ── MOBILE DRAWER ── */
+.menu-toggle{display:none;width:40px;height:40px;border-radius:12px;border:1px solid var(--border);background:#fff;font-size:20px;cursor:pointer;align-items:center;justify-content:center;flex-shrink:0;}
+.nav-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:190;}
+@media(max-width:860px){
+    .sidebar{transform:translateX(-105%);transition:transform .25s ease;width:260px;max-width:85vw;overflow-y:auto;}
+    body.nav-open .sidebar{transform:none;}
+    body.nav-open .nav-overlay{display:block;}
+    .main{margin-left:0;padding:14px 12px 100px;}
+    .menu-toggle{display:inline-flex;}
+    .topbar{gap:12px;}
+    .topbar-left{display:flex;align-items:center;gap:10px;}
+    .topbar-left h1{font-size:18px;}
+    .topbar-right{display:none;}
+    .admin-reverify-box{width:100%;}
+    .admin-reverify-box .arb-pass-wrap{flex:1;}
+    .admin-reverify-box input{width:100%;}
+    .action-row{justify-content:stretch;}
+    .action-btn{flex:1 1 45%;justify-content:center;}
+    .stats-row{grid-template-columns:repeat(2,1fr);gap:10px;}
+    .stat-card{padding:14px 12px;gap:10px;}
+    .stat-icon{width:40px;height:40px;}
+    .stat-info .val{font-size:19px;}
+    .menu-grid{grid-template-columns:repeat(2,1fr);gap:10px;}
+    .menu-card-img{height:110px;}
     .form-row{flex-direction:column;align-items:stretch;}
     .form-row input,.file-label,.submit-btn{width:100%;}
+    .popup-box{width:92vw;}
 }
 </style>
 </head>
 
 <body>
+<div class="nav-overlay" onclick="toggleNav(false)"></div>
 
 <!-- ── SIDEBAR ── -->
 <aside class="sidebar">
@@ -610,6 +651,10 @@ hr{border:none;border-top:1px solid var(--border);margin:0;}
         <a class="nav-link active" href="#top">
             <svg viewBox="0 0 24 24" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
             Dashboard
+        </a>
+        <a class="nav-link" href="/live_orders/{{ rid }}">
+            <svg viewBox="0 0 24 24" stroke-width="2"><circle cx="12" cy="12" r="2"/><path d="M16.24 7.76a6 6 0 0 1 0 8.49M7.76 16.24a6 6 0 0 1 0-8.49M19.07 4.93a10 10 0 0 1 0 14.14M4.93 19.07a10 10 0 0 1 0-14.14"/></svg>
+            Live Orders
         </a>
         <a class="nav-link" href="#menuListSection">
             <svg viewBox="0 0 24 24" stroke-width="2"><path d="M3 11l19-9-9 19-2-8-8-2z"/></svg>
@@ -654,8 +699,11 @@ hr{border:none;border-top:1px solid var(--border);margin:0;}
     <!-- TOPBAR -->
     <div class="topbar">
         <div class="topbar-left">
-            <h1>{{restaurant}} <span>Dashboard</span></h1>
-            <p>Manage your menu, ads and restaurant easily</p>
+            <button class="menu-toggle" onclick="toggleNav()" aria-label="Menu">☰</button>
+            <div>
+                <h1>{{restaurant}} <span>Dashboard</span></h1>
+                <p>Manage your menu, ads and restaurant easily</p>
+            </div>
         </div>
 
         <form class="admin-reverify-box" action="/restaurant_admin_login/{{ rid }}" method="post">
@@ -700,6 +748,7 @@ hr{border:none;border-top:1px solid var(--border);margin:0;}
 
     <!-- ACTION BUTTONS -->
     <div class="action-row">
+        <a href="/live_orders/{{ rid }}" class="action-btn btn-blue">📡 Live Orders</a>
         <button class="action-btn btn-green" onclick="document.getElementById('addAdSection').scrollIntoView({behavior:'smooth'})">
             <svg viewBox="0 0 24 24" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
             Add Advertisement
@@ -755,11 +804,34 @@ hr{border:none;border-top:1px solid var(--border);margin:0;}
                 <svg viewBox="0 0 24 24" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
             </div>
             <div class="stat-info">
-                <h4>Total Views</h4>
-                <div class="val" id="totalViews">—</div>
-                <div class="sub">Today</div>
+                <h4>Open Orders</h4>
+                <div class="val" id="openOrders">—</div>
+                <div class="sub">Live now</div>
             </div>
         </div>
+    </div>
+
+    <!-- LIVE ORDERS -->
+    <div class="section-card" id="liveSection">
+        <div class="live-head">
+            <div class="section-head" style="margin-bottom:0;">
+                <div class="section-head-icon" style="background:var(--red);">
+                    <svg viewBox="0 0 24 24" stroke-width="2"><circle cx="12" cy="12" r="2"/><path d="M16.24 7.76a6 6 0 0 1 0 8.49M7.76 16.24a6 6 0 0 1 0-8.49"/></svg>
+                </div>
+                <h2>Live Orders</h2>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center;">
+                <span class="live-pill" id="livePill"><span class="dot"></span><span id="liveText">Live</span></span>
+                <a href="/live_orders/{{ rid }}" class="view-all-link">Full screen ›</a>
+            </div>
+        </div>
+        <div class="live-chips">
+            <span class="live-chip">⏳ Pending: <b id="lcPending">0</b></span>
+            <span class="live-chip">👨‍🍳 Preparing: <b id="lcPreparing">0</b></span>
+            <span class="live-chip">✅ Ready: <b id="lcReady">0</b></span>
+            <span class="live-chip">💳 Unpaid: <b id="lcUnpaid">$0.00</b></span>
+        </div>
+        <div class="live-list" id="liveList"><div class="live-empty">Loading…</div></div>
     </div>
 
     <!-- ADD AD -->
@@ -1009,17 +1081,94 @@ function generateQR(){
     })
 }
 
-// New order notification
-setInterval(async ()=>{
+/* ── Mobile drawer ── */
+function toggleNav(force){
+    const open = (typeof force === "boolean") ? force : !document.body.classList.contains("nav-open");
+    document.body.classList.toggle("nav-open", open);
+}
+document.querySelectorAll(".sidebar a").forEach(a => a.addEventListener("click", () => toggleNav(false)));
+
+/* ── 📡 Live orders (polls a tiny version counter; refetches on change) ── */
+function escHtml(s){ return String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+let _ac = null;
+function ding(){
     try{
-        let res = await fetch(`/check_new_order/${RID}`)
-        let data = await res.json()
-        if(data.new_order){
-            document.title = "🔔 NEW ORDER! - Dashboard"
-            setTimeout(()=>{ document.title = "{{restaurant}} Dashboard" }, 5000)
-        }
+        if(!_ac) _ac = new (window.AudioContext || window.webkitAudioContext)();
+        if(_ac.state === "suspended") _ac.resume();
+        [880, 1175].forEach((f, i) => {
+            const o = _ac.createOscillator(), g = _ac.createGain();
+            o.frequency.value = f; const t = _ac.currentTime + i * 0.15;
+            g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.3, t + 0.02);
+            g.gain.exponentialRampToValueAtTime(0.0001, t + 0.26);
+            o.connect(g); g.connect(_ac.destination); o.start(t); o.stop(t + 0.28);
+        });
     }catch(e){}
-}, 3000)
+}
+document.addEventListener("click", () => { try{ if(_ac && _ac.state === "suspended") _ac.resume(); }catch(e){} });
+
+let liveVersion = null, liveKnown = null, liveBusy = false;
+function setLive(ok){
+    document.getElementById("livePill").classList.toggle("off", !ok);
+    document.getElementById("liveText").textContent = ok ? "Live" : "Offline";
+}
+async function loadLive(){
+    if(liveBusy) return; liveBusy = true;
+    try{
+        const r = await fetch(`/api/live_orders/${RID}`, { cache:"no-store" });
+        if(r.status === 401){ location.href = "/login"; return; }
+        const d = await r.json();
+        if(!d.success) throw 0;
+        liveVersion = d.v;
+        const s = d.stats || {};
+        document.getElementById("lcPending").textContent = s.pending || 0;
+        document.getElementById("lcPreparing").textContent = s.preparing || 0;
+        document.getElementById("lcReady").textContent = s.ready || 0;
+        document.getElementById("lcUnpaid").textContent = "$" + (s.active_amount || 0).toFixed(2);
+        document.getElementById("openOrders").textContent = d.active.length;
+        document.getElementById("totalOrders").textContent = s.orders_today || 0;
+        document.getElementById("totalSalesCard").textContent = "$" + (s.paid_today_amount || 0).toFixed(2);
+
+        const ids = new Set(d.active.map(o => o.id));
+        const fresh = liveKnown ? d.active.filter(o => !liveKnown.has(o.id)).map(o => o.id) : [];
+        liveKnown = ids;
+
+        const list = document.getElementById("liveList");
+        if(!d.active.length){
+            list.innerHTML = '<div class="live-empty">🍽️ Hadda dalab furan ma jiro</div>';
+        } else {
+            list.innerHTML = d.active.slice(0, 8).map(o => `
+                <div class="live-row${fresh.includes(o.id) ? " flash" : ""}">
+                    <div class="t">${escHtml(o.table)}</div>
+                    <div class="info">
+                        <div class="r1">#${escHtml(o.ref)} · ${escHtml(o.waiter || "Customer QR")} · ${escHtml(o.time)}</div>
+                        <div class="r2">${escHtml(o.items.map(i => i.qty + "× " + i.name).join(", ") || o.items_text)}</div>
+                    </div>
+                    <span class="lst lst-${escHtml(o.status)}">${escHtml(o.status)}</span>
+                    <div class="amt">$${Number(o.total || 0).toFixed(2)}</div>
+                </div>`).join("") + (d.active.length > 8 ? `<a class="view-all-link" style="justify-content:center;padding:6px;" href="/live_orders/${RID}">+${d.active.length - 8} more ›</a>` : "");
+        }
+        if(fresh.length){
+            ding();
+            document.title = "🔔 NEW ORDER! - Dashboard";
+            setTimeout(() => { document.title = "{{restaurant|e}} Dashboard"; }, 5000);
+        }
+        setLive(true);
+    }catch(e){ setLive(false); }
+    finally{ liveBusy = false; }
+}
+async function checkLive(){
+    try{
+        const r = await fetch(`/api/orders_version/${RID}`, { cache:"no-store" });
+        if(r.status === 401){ location.href = "/login"; return; }
+        const d = await r.json();
+        if(!d.success) throw 0;
+        setLive(true);
+        if(liveVersion === null || d.v !== liveVersion) loadLive();
+    }catch(e){ setLive(false); }
+}
+loadLive();
+setInterval(checkLive, 3000);
+document.addEventListener("visibilitychange", () => { if(!document.hidden) loadLive(); });
 </script>
 
 </body>

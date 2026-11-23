@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Cashier Dashboard - {{ restaurant_name }}</title>
 <style>
 :root{
@@ -196,14 +196,48 @@ table.orders-tbl td{ padding:10px 6px; border-bottom:1px solid #f4f4f4; vertical
 .cat-add-row input{ flex:1; min-width:180px; padding:11px 14px; border-radius:10px; border:1px solid #ddd; font-size:13px; font-family:inherit; }
 .date-search-row input[type="date"]{ padding:10px 14px; border-radius:10px; border:1px solid #ddd; font-size:13px; font-family:inherit; }
 
+/* ---- tables used on the Waiters page ---- */
+table.tx-tbl{ width:100%; border-collapse:collapse; font-size:13px; }
+table.tx-tbl th{ text-align:left; color:var(--muted); font-weight:700; font-size:11.5px; padding:8px 6px; border-bottom:1px solid var(--border); }
+table.tx-tbl td{ padding:9px 6px; border-bottom:1px solid #f4f4f4; }
+.msg{ display:none; margin-top:10px; padding:10px; border-radius:8px; font-size:13px; font-weight:700; }
+.msg.show{ display:block; } .msg.ok{ background:#d4edda; color:#155724; } .msg.err{ background:#f8d7da; color:#721c24; }
+
+/* ---- live indicator + toast ---- */
+.live-pill{ display:inline-flex; align-items:center; gap:6px; padding:6px 12px; border-radius:20px; background:#e6f6ee; color:#1c8a54; font-weight:800; font-size:12px; }
+.live-pill .dot{ width:7px; height:7px; border-radius:50%; background:#22a565; animation:livePulse 1.4s infinite; }
+.live-pill.off{ background:#fdecea; color:#c62828; } .live-pill.off .dot{ background:#c62828; animation:none; }
+@keyframes livePulse{ 0%,100%{opacity:1;} 50%{opacity:.3;} }
+.toast{ position:fixed; left:50%; bottom:22px; transform:translateX(-50%) translateY(140%); background:#0f1b2d; color:#fff; padding:13px 18px; border-radius:14px; font-weight:800; font-size:14px; z-index:400; box-shadow:0 10px 30px rgba(0,0,0,.3); transition:transform .3s; max-width:92vw; text-align:center; }
+.toast.show{ transform:translateX(-50%) translateY(0); }
+.row-new{ animation:rowNew 1.2s ease 3; }
+@keyframes rowNew{ 50%{ background:#fff7e0; } }
+
+/* ---- mobile drawer ---- */
+.menu-toggle{ display:none; width:40px; height:40px; border-radius:10px; border:1px solid var(--border); background:#fff; font-size:20px; cursor:pointer; align-items:center; justify-content:center; }
+.nav-overlay{ display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:250; }
 @media(max-width:800px){
-    .sidebar{ display:none; }
-    .content{ padding:16px; }
+    .sidebar{ position:fixed; top:0; left:0; bottom:0; width:270px; max-width:85vw; z-index:300; transform:translateX(-105%); transition:transform .25s ease; overflow-y:auto; }
+    body.nav-open .sidebar{ transform:none; }
+    body.nav-open .nav-overlay{ display:block; }
+    .menu-toggle{ display:inline-flex; }
+    .topbar{ position:sticky; top:0; z-index:50; padding:10px 14px; }
+    .tb-admin{ display:none; }
+    .content{ padding:14px; }
+    .section{ padding:14px; }
+    .section-head{ flex-wrap:wrap; gap:10px; }
+    .stats-row{ grid-template-columns:1fr 1fr; gap:10px; }
+    .stat-card{ padding:12px; }
+    .stat-info .value{ font-size:16px; }
+    .waiter-summary-right{ gap:12px; }
+    .modal-actions button{ padding:14px; }
 }
 </style>
 </head>
 <body>
 
+<div class="nav-overlay" onclick="toggleNav(false)"></div>
+<div class="toast" id="toast"></div>
 <div class="shell">
     <!-- ================= SIDEBAR ================= -->
     <aside class="sidebar">
@@ -231,7 +265,7 @@ table.orders-tbl td{ padding:10px 6px; border-bottom:1px solid #f4f4f4; vertical
         <ul class="sb-nav">
             <li><button class="sb-link active" data-page="dashboard" onclick="showPage('dashboard',this)">📊 Dashboard</button></li>
             {% if has_shift %}
-            <li><button class="sb-link" data-page="orders" onclick="showPage('orders',this)">🧾 Orders {% if pending_count %}<span class="badge">{{ pending_count }}</span>{% endif %}</button></li>
+            <li><button class="sb-link" id="sbOrdersLink" data-page="orders" onclick="showPage('orders',this)">🧾 Orders {% if pending_count %}<span class="badge">{{ pending_count }}</span>{% endif %}</button></li>
             <li><button class="sb-link" data-page="payments" onclick="showPage('payments',this)">💳 Payments</button></li>
             <li><button class="sb-link" data-page="receipts" onclick="showPage('receipts',this)">📄 Receipt History</button></li>
             <li><button class="sb-link" data-page="addmenu" onclick="showPage('addmenu',this)">🍽️ Add Menu</button></li>
@@ -263,9 +297,11 @@ table.orders-tbl td{ padding:10px 6px; border-bottom:1px solid #f4f4f4; vertical
     <div class="main">
         <div class="topbar">
             <div class="tb-left">
+                <button class="menu-toggle" onclick="toggleNav()" aria-label="Menu">☰</button>
                 <div class="tb-restaurant">🏪 {{ restaurant_name }}</div>
             </div>
             <div class="tb-right">
+                {% if has_shift %}<span class="live-pill" id="livePill"><span class="dot"></span><span id="liveText">Live</span></span>{% endif %}
                 <div class="tb-avatar">{{ staff_name[:1]|upper }}</div>
                 <div class="tb-admin">
                     <div class="an1">{{ staff_name }}</div>
@@ -290,7 +326,7 @@ table.orders-tbl td{ padding:10px 6px; border-bottom:1px solid #f4f4f4; vertical
 
         <!-- ============ DASHBOARD PAGE ============ -->
         <div class="page active" id="page-dashboard">
-            <div class="stats-row">
+            <div class="stats-row" id="cashierStats" data-pending="{{ pending_count }}">
                 <div class="stat-card"><div class="stat-ic si-blue">💵</div><div class="stat-info"><div class="label">Today's Sales</div><div class="value">${{ today_sales }}</div></div></div>
                 <div class="stat-card"><div class="stat-ic si-green">🧾</div><div class="stat-info"><div class="label">Total Orders</div><div class="value">{{ today_orders_count }}</div></div></div>
                 <div class="stat-card"><div class="stat-ic si-orange">💰</div><div class="stat-info"><div class="label">Cash Collected</div><div class="value">${{ today_cash }}</div></div></div>
@@ -327,7 +363,7 @@ table.orders-tbl td{ padding:10px 6px; border-bottom:1px solid #f4f4f4; vertical
                     <table class="orders-tbl">
                         <tr><th>Order</th><th>Table</th><th>Waiter</th><th>Items</th><th>Amount</th><th>Status</th><th>Action</th></tr>
                         {% for o in pending_orders %}
-                        <tr>
+                        <tr data-oid="{{ o.id }}">
                             <td>#{{ o.receipt_ref or o.id[:6] }}</td>
                             <td>{{ o.table }}</td>
                             <td>
@@ -514,6 +550,7 @@ table.orders-tbl td{ padding:10px 6px; border-bottom:1px solid #f4f4f4; vertical
                     <input type="date" id="reportDateInput" value="{{ report_date }}">
                     <button type="submit" class="qr-btn" style="margin-bottom:0;width:auto;padding:11px 20px;">🔍 Search Date</button>
                 </form>
+                <div style="overflow-x:auto;">
                 <table class="tx-tbl" style="margin-top:14px;">
                     <tr><th>Waiter</th><th>Orders</th><th>Sales</th><th>% of Day</th><th>Active Hours</th></tr>
                     {% for w in waiters_performance %}
@@ -530,6 +567,7 @@ table.orders-tbl td{ padding:10px 6px; border-bottom:1px solid #f4f4f4; vertical
                     <tr><td colspan="5" style="text-align:center;color:var(--muted);padding:16px;">No waiters registered yet</td></tr>
                     {% endfor %}
                 </table>
+                </div>
             </div>
         </div>
 
@@ -592,7 +630,7 @@ table.orders-tbl td{ padding:10px 6px; border-bottom:1px solid #f4f4f4; vertical
         </div>
         <div class="modal-actions">
             <button class="cancel-btn" onclick="closePayModal()">Cancel</button>
-            <button class="confirm-btn" onclick="confirmPayment()">Confirm Payment</button>
+            <button class="confirm-btn" id="confirmPayBtn" onclick="confirmPayment()">Confirm Payment</button>
         </div>
     </div>
 </div>
@@ -679,6 +717,12 @@ function showPage(id, el){
     if(link) link.classList.add("active");
 
     window.scrollTo({top:0, behavior:"smooth"});
+    toggleNav(false);
+}
+
+function toggleNav(force){
+    const open = (typeof force === "boolean") ? force : !document.body.classList.contains("nav-open");
+    document.body.classList.toggle("nav-open", open);
 }
 
 function goToWaitersDate(e){
@@ -731,14 +775,31 @@ function calcChange(){
     document.getElementById("changeAmount").textContent = "$" + (change > 0 ? change.toFixed(2) : "0.00");
 }
 
+let paying = false;
 async function confirmPayment(){
-    const res = await fetch(`/cashier_pay/${RID}/${currentOrderId}`, {
-        method: "POST", headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({ method: selectedMethod })
-    });
-    const data = await res.json();
-    if(data.success){ location.reload(); }
-    else { alert("❌ " + (data.error || "Failed")); }
+    if(paying || !currentOrderId) return;
+    paying = true;
+    const btn = document.getElementById("confirmPayBtn");
+    btn.disabled = true; btn.textContent = "⏳ Processing...";
+    try{
+        const res = await fetch(`/cashier_pay/${RID}/${currentOrderId}`, {
+            method: "POST", headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({ method: selectedMethod })
+        });
+        const data = await res.json();
+        if(data.success){
+            closePayModal();
+            showToast(`✅ Paid — ${data.payment_id || ""}`);
+            liveRefresh(true);
+        } else {
+            alert("❌ " + (data.error || "Failed"));
+            liveRefresh(true);
+        }
+    }catch(e){
+        alert("❌ Network error — please try again");
+    }finally{
+        paying = false; btn.disabled = false; btn.textContent = "Confirm Payment";
+    }
 }
 
 function openCloseModal(){ document.getElementById("closeModal").classList.add("show"); }
@@ -1121,6 +1182,106 @@ async function deleteMenuItem(btn){
         alert("❌ Server error, please try again");
     }
 }
+
+/* ================================
+   📡 LIVE ORDERS — new waiter orders appear here on their own.
+   Polls a tiny version counter every 3s; only when it changes does the
+   page re-fetch and swap the order lists/stats in place (current page,
+   open modals and forms are never interrupted).
+   ================================ */
+function showToast(text){
+    const t = document.getElementById("toast");
+    if(!t) return;
+    t.textContent = text; t.classList.add("show");
+    clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove("show"), 3500);
+}
+let _ac = null;
+function ding(){
+    try{
+        if(!_ac) _ac = new (window.AudioContext || window.webkitAudioContext)();
+        if(_ac.state === "suspended") _ac.resume();
+        [988, 1319].forEach((f, i) => {
+            const o = _ac.createOscillator(), g = _ac.createGain();
+            o.frequency.value = f; const t = _ac.currentTime + i * 0.14;
+            g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.35, t + 0.02);
+            g.gain.exponentialRampToValueAtTime(0.0001, t + 0.25);
+            o.connect(g); g.connect(_ac.destination); o.start(t); o.stop(t + 0.27);
+        });
+    }catch(e){}
+}
+document.addEventListener("click", () => { try{ if(_ac && _ac.state === "suspended") _ac.resume(); }catch(e){} });
+
+function anyModalOpen(){ return !!document.querySelector(".modal-bg.show"); }
+function setLive(ok){
+    const p = document.getElementById("livePill"); if(!p) return;
+    p.classList.toggle("off", !ok);
+    document.getElementById("liveText").textContent = ok ? "Live" : "Offline";
+}
+
+let liveVersion = null, liveBusy = false, liveDeferred = false;
+async function liveRefresh(force){
+    if(!document.getElementById("cashierStats")) return;   // no shift open
+    if(anyModalOpen() && !force){ liveDeferred = true; return; }
+    if(liveBusy) return; liveBusy = true;
+    try{
+        const r = await fetch(location.pathname + location.search, { cache:"no-store" });
+        const html = await r.text();
+        const doc = new DOMParser().parseFromString(html, "text/html");
+        if(!doc.getElementById("cashierStats")){ location.reload(); return; }
+
+        const oldIds = new Set(Array.from(document.querySelectorAll("#ordersViewAll tr[data-oid]")).map(tr => tr.dataset.oid));
+        const view = (document.querySelector(".toggle-btn.active") || {}).dataset?.view || "all";
+        const openDetails = Array.from(document.querySelectorAll(".waiter-orders-detail.show")).map(d => d.id);
+
+        ["cashierStats", "page-orders", "page-payments", "page-receipts", "page-shiftreport", "page-salesreport"].forEach(id => {
+            const fresh = doc.getElementById(id), cur = document.getElementById(id);
+            if(fresh && cur) cur.innerHTML = fresh.innerHTML;
+        });
+        const freshLink = doc.getElementById("sbOrdersLink"), curLink = document.getElementById("sbOrdersLink");
+        if(freshLink && curLink) curLink.innerHTML = freshLink.innerHTML;
+
+        const donut = document.getElementById("paymentsDonut");
+        const freshDonut = doc.getElementById("paymentsDonut");
+        if(donut && freshDonut){ donut.dataset.gradient = freshDonut.dataset.gradient; donut.style.background = freshDonut.dataset.gradient; }
+
+        // keep the cashier's current view
+        const btn = document.querySelector(`.toggle-btn[data-view="${view}"]`);
+        if(btn) setOrdersView(view, btn);
+        openDetails.forEach(id => {
+            const d = document.getElementById(id); if(d) d.classList.add("show");
+            const a = document.getElementById(id.replace("detail-", "arrow-")); if(a) a.classList.add("open");
+        });
+
+        let newCount = 0;
+        document.querySelectorAll("#ordersViewAll tr[data-oid]").forEach(tr => {
+            if(!oldIds.has(tr.dataset.oid)){ tr.classList.add("row-new"); newCount++; }
+        });
+        if(newCount && liveVersion !== null){
+            ding();
+            showToast(`🔔 ${newCount} dalab cusub ayaa yimid`);
+        }
+        setLive(true);
+    }catch(e){
+        setLive(false);
+    }finally{ liveBusy = false; }
+}
+
+async function liveCheck(){
+    if(!document.getElementById("cashierStats")) return;
+    try{
+        const r = await fetch(`/api/orders_version/${RID}`, { cache:"no-store" });
+        if(r.status === 401){ location.reload(); return; }
+        const d = await r.json();
+        if(!d.success) throw 0;
+        setLive(true);
+        if(liveVersion === null){ liveVersion = d.v; return; }
+        if(d.v !== liveVersion){ liveVersion = d.v; liveRefresh(); }
+        else if(liveDeferred && !anyModalOpen()){ liveDeferred = false; liveRefresh(); }
+    }catch(e){ setLive(false); }
+}
+liveCheck();
+setInterval(liveCheck, 3000);
+document.addEventListener("visibilitychange", () => { if(!document.hidden) liveRefresh(); });
 </script>
 
 </body>
