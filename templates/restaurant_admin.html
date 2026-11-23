@@ -487,7 +487,7 @@ select, .range-select{
 
 canvas{max-width:100%;}
 </style>
-<link rel="stylesheet" href="/static/sahal_app.css">
+<link rel="stylesheet" href="/static/sahal_app.css?v={{ asset_v }}">
 <link rel="manifest" href="/app_manifest/{{ rid }}/admin.webmanifest">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -1422,6 +1422,6 @@ async function deleteStaff(btn){
 }
 </script>
 
-<script src="/static/sahal_app.js" defer></script>
+<script src="/static/sahal_app.js?v={{ asset_v }}" defer></script>
 </body>
 </html>

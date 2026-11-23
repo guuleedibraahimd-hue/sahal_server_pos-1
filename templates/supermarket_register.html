@@ -1,38 +1,178 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>Register Supermarket</title>
+<title>Register Supermarket · Sahal Server</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b1220">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
 <style>
-body{font-family:Arial;background:#f4f6f9;padding:20px;}
-.container{
-    max-width:500px;
-    margin:auto;
-    background:white;
-    padding:20px;
-    border-radius:15px;
+:root{ --ink:#0f172a; --ink-3:#334155; --soft:#64748b; --line:#e2e8f0; --bg:#f4f6fb; --acc:#ea580c; --acc-2:#fb923c; }
+*{ box-sizing:border-box; }
+body{ margin:0; font-family:'Plus Jakarta Sans','Segoe UI',Arial,sans-serif; background:var(--bg); color:var(--ink); -webkit-font-smoothing:antialiased; }
+.top{
+    background:radial-gradient(90% 140% at 100% 0%, rgba(245,179,1,.25) 0%, transparent 50%), linear-gradient(135deg,#0b1220,#16233d);
+    color:#fff; padding:22px 20px 80px;
 }
-input,button{
-    width:100%;
-    padding:12px;
-    margin-top:12px;
+.top-in{ max-width:860px; margin:0 auto; display:flex; align-items:center; gap:14px; }
+.back{ width:42px; height:42px; border-radius:13px; display:flex; align-items:center; justify-content:center; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.12); color:#fff; text-decoration:none; font-size:18px; flex-shrink:0; }
+.back:hover{ background:rgba(255,255,255,.14); }
+.top h1{ margin:0; font-size:22px; font-weight:800; letter-spacing:-.4px; }
+.top p{ margin:3px 0 0; color:#a5b4cf; font-size:13px; font-weight:600; }
+.top .ic{ width:52px; height:52px; border-radius:16px; display:flex; align-items:center; justify-content:center; font-size:26px; background:linear-gradient(135deg,var(--acc-2),var(--acc)); box-shadow:0 10px 24px rgba(0,0,0,.25); flex-shrink:0; }
+.wrap{ max-width:860px; margin:-58px auto 40px; padding:0 16px; }
+.card{ background:#fff; border:1px solid #e8edf5; border-radius:22px; padding:22px; box-shadow:0 1px 2px rgba(15,23,42,.04), 0 12px 30px rgba(15,23,42,.07); margin-bottom:16px; }
+.card h3{ margin:0 0 4px; font-size:15.5px; font-weight:800; display:flex; align-items:center; gap:8px; }
+.card .hint{ margin:0 0 16px; color:var(--soft); font-size:12.5px; font-weight:600; }
+.grid{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+.grid .full{ grid-column:1/-1; }
+label{ display:block; font-size:12px; font-weight:800; color:#475569; margin-bottom:6px; letter-spacing:.2px; }
+label .req{ color:#dc2626; }
+input,select{
+    width:100%; height:48px; padding:0 14px; border:1.5px solid var(--line); border-radius:13px; background:#f8fafc;
+    font:600 14.5px 'Plus Jakarta Sans',sans-serif; color:var(--ink); transition:border-color .15s, box-shadow .15s, background .15s;
 }
-button{
-    background:#28a745;
-    color:white;
-    border:none;
+input:focus,select:focus{ outline:none; border-color:#93c5fd; background:#fff; box-shadow:0 0 0 4px rgba(59,130,246,.12); }
+.pw{ position:relative; } .pw input{ padding-right:48px; }
+.pw button{ position:absolute; right:5px; top:50%; transform:translateY(-50%); width:38px; height:38px; border:none; background:none; border-radius:10px; cursor:pointer; font-size:15px; }
+.pw button:hover{ background:#f1f5f9; }
+.gen{ font-size:11.5px; font-weight:800; color:#2563eb; background:none; border:none; cursor:pointer; padding:0; margin-left:6px; font-family:inherit; }
+
+.plan-pick{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.plan-opt{ position:relative; border:2px solid var(--line); border-radius:18px; padding:16px; cursor:pointer; background:#fff; transition:.15s; }
+.plan-opt input{ position:absolute; opacity:0; pointer-events:none; width:1px; height:1px; }
+.plan-opt .pt{ font-weight:800; font-size:16px; display:flex; align-items:center; gap:8px; }
+.plan-opt .pd{ font-size:12.5px; color:var(--soft); font-weight:600; margin-top:5px; line-height:1.45; }
+.plan-opt .tick{ position:absolute; top:12px; right:12px; width:22px; height:22px; border-radius:50%; border:2px solid var(--line); display:flex; align-items:center; justify-content:center; font-size:12px; color:#fff; }
+.plan-opt.free.on{ border-color:#22c55e; background:#f0fdf4; box-shadow:0 0 0 4px rgba(34,197,94,.12); }
+.plan-opt.paid.on{ border-color:#6366f1; background:#eef2ff; box-shadow:0 0 0 4px rgba(99,102,241,.12); }
+.plan-opt.free.on .tick{ background:#22c55e; border-color:#22c55e; }
+.plan-opt.paid.on .tick{ background:#6366f1; border-color:#6366f1; }
+.plan-opt.on .tick::after{ content:"✓"; }
+.hide{ display:none !important; }
+.free-note{ margin-top:14px; background:#f0fdf4; border:1px solid #bbf7d0; color:#166534; border-radius:14px; padding:12px 14px; font-size:13px; font-weight:700; }
+.sum{ margin-top:14px; background:#f8fafc; border:1px dashed #cbd5e1; border-radius:14px; padding:12px 14px; font-size:13px; font-weight:700; color:var(--ink-3); display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; }
+
+.pm-row{ display:grid; grid-template-columns:150px 1fr 44px; gap:8px; margin-bottom:8px; }
+.pm-del{ height:48px; border:1.5px solid #fecaca; background:#fff; color:#dc2626; border-radius:13px; cursor:pointer; font-size:16px; }
+.add-pm{ border:1.5px dashed #cbd5e1; background:#fff; color:var(--ink-3); border-radius:13px; height:44px; width:100%; font:800 13px 'Plus Jakarta Sans',sans-serif; cursor:pointer; }
+.add-pm:hover{ border-color:#94a3b8; background:#f8fafc; }
+
+.error{ background:#fef2f2; color:#b91c1c; border:1px solid #fecaca; padding:12px 14px; border-radius:14px; font-size:13.5px; font-weight:700; margin-bottom:16px; }
+.actions{ display:flex; gap:10px; position:sticky; bottom:0; padding:12px 0 calc(12px + env(safe-area-inset-bottom)); background:linear-gradient(to top, var(--bg) 70%, transparent); }
+.btn{ flex:1; height:52px; border:none; border-radius:15px; font:800 15px 'Plus Jakarta Sans',sans-serif; cursor:pointer; display:flex; align-items:center; justify-content:center; text-decoration:none; }
+.btn.main{ color:#fff; background:linear-gradient(135deg,var(--acc-2),var(--acc)); box-shadow:0 12px 26px rgba(234,88,12,.28); flex:2; }
+.btn.main[disabled]{ opacity:.75; cursor:wait; }
+.btn.sec{ background:#fff; color:var(--ink-3); border:1.5px solid var(--line); }
+@media(max-width:640px){
+    .grid{ grid-template-columns:1fr; }
+    .top{ padding:16px 16px 74px; } .top h1{ font-size:19px; }
+    .card{ padding:18px 16px; border-radius:20px; }
+    .plan-opt{ padding:14px 12px; } .plan-opt .pd{ font-size:11.5px; }
+    .pm-row{ grid-template-columns:1fr 44px; } .pm-row select{ grid-column:1/-1; }
 }
 </style>
+
+<style>:root{ --acc:#059669; --acc-2:#34d399; } .btn.main{ box-shadow:0 12px 26px rgba(5,150,105,.28); }</style>
 </head>
 <body>
-<div class="container">
-    <h1>🛒 Register Supermarket</h1>
+{% set form = form or {} %}
+<div class="top">
+    <div class="top-in">
+        <a href="/admin#supermarkets" class="back" title="Back to admin">←</a>
+        <div class="ic">🛒</div>
+        <div>
+            <h1>Register Supermarket</h1>
+            <p>Abuur supermarket cusub — dooro FREE ama PAID.</p>
+        </div>
+    </div>
+</div>
 
-    <form method="POST">
-        <input name="name" placeholder="Supermarket Name" required>
-        <input name="username" placeholder="Username" required>
-        <input name="password" placeholder="Password" required>
-        <button type="submit">Register</button>
+<div class="wrap">
+    {% if error %}<div class="error">⚠️ {{ error }}</div>{% endif %}
+
+    <form method="POST" id="regForm" autocomplete="off">
+        <div class="card">
+            <h3>💎 Plan</h3>
+            <p class="hint">FREE weligiis ma dhacayo, lacagna looma baahna ilaa adiga aad Paid ka dhigto (Admin → Supermarkets → Make Paid).</p>
+            {% set cur_plan = 'free' if form.get('plan') == 'free' else 'paid' %}
+            <div class="plan-pick" id="planPick">
+                <label class="plan-opt free {{ 'on' if cur_plan == 'free' }}"><input type="radio" name="plan" value="free" {{ 'checked' if cur_plan == 'free' }}><span class="tick"></span><div class="pt">🎁 FREE</div><div class="pd">Bilaash — ma dhacayo, wax lacag ah lama weydiinayo.</div></label>
+                <label class="plan-opt paid {{ 'on' if cur_plan == 'paid' }}"><input type="radio" name="plan" value="paid" {{ 'checked' if cur_plan == 'paid' }}><span class="tick"></span><div class="pt">💎 PAID</div><div class="pd">Lacag bille ah + muddo. Marka uu dhaco wuu xirmayaa ilaa la cusbooneysiiyo.</div></label>
+            </div>
+            <div class="grid paid-only" style="margin-top:16px;">
+                <div>
+                    <label>Monthly Fee ($) <span class="req">*</span></label>
+                    <input type="number" name="price" id="price" min="0" step="0.01" placeholder="e.g. 25" value="{{ form.get('price', '') }}">
+                </div>
+                <div>
+                    <label>Subscription</label>
+                    {% set mo = form.get('months', '3') %}
+                    <select name="months" id="months">
+                        {% for m in ['1','2','3','6','12'] %}<option value="{{ m }}" {{ 'selected' if mo == m }}>{{ m }} Month{{ 's' if m != '1' }}</option>{% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="sum paid-only"><span>📅 Expiry: <b id="sumExp">—</b></span><span>🧾 Total: <b id="sumTotal">$0</b></span></div>
+            <div class="free-note free-only">🎁 Account-kan waa FREE — ma laha expiry, lacagna ma weydiin doono. Waxaad mar walba ka beddeli kartaa Admin panel-ka.</div>
+        </div>
+
+        <div class="card">
+            <h3>🏪 Supermarket Info &amp; Login</h3>
+            <p class="hint">Username-ka waa inuu noqdaa mid aan horey loo isticmaalin.</p>
+            <div class="grid">
+                <div class="full"><label>Supermarket Name <span class="req">*</span></label><input name="name" required placeholder="e.g. Hodan Supermarket" value="{{ form.get('name', '') }}"></div>
+                <div><label>Username <span class="req">*</span></label><input name="username" required autocapitalize="off" placeholder="login username" value="{{ form.get('username', '') }}"></div>
+                <div><label>Password <span class="req">*</span><button type="button" class="gen" data-gen="password">Generate</button></label><div class="pw"><input name="password" id="password" type="password" required value="{{ form.get('password', '') }}"><button type="button" data-eye>👁️</button></div></div>
+                <div class="full"><label>Payment Method / Number</label><input name="payment" placeholder="e.g. EVC Plus 61xxxxxxx" value="{{ form.get('payment', '') }}"></div>
+            </div>
+        </div>
+
+        <div class="actions">
+            <a href="/admin#supermarkets" class="btn sec">Cancel</a>
+            <button type="submit" class="btn main" id="submitBtn">✅ Create Supermarket</button>
+        </div>
     </form>
 </div>
+
+<script>
+(function(){
+    const pick = document.getElementById("planPick");
+    const price = document.getElementById("price"), months = document.getElementById("months");
+    function plan(){ const c = pick.querySelector("input:checked"); return c ? c.value : "paid"; }
+    function sync(){
+        const p = plan();
+        pick.querySelectorAll(".plan-opt").forEach(o => o.classList.toggle("on", o.querySelector("input").checked));
+        document.querySelectorAll(".paid-only").forEach(e => e.classList.toggle("hide", p !== "paid"));
+        document.querySelectorAll(".free-only").forEach(e => e.classList.toggle("hide", p !== "free"));
+        price.required = p === "paid";
+        const m = parseInt(months.value) || 1, fee = parseFloat(price.value) || 0;
+        const d = new Date(); d.setDate(d.getDate() + m * 30);
+        document.getElementById("sumExp").textContent = d.toISOString().slice(0, 10);
+        document.getElementById("sumTotal").textContent = "$" + (fee * m).toFixed(2);
+    }
+    pick.addEventListener("change", sync); price.addEventListener("input", sync); months.addEventListener("change", sync);
+    sync();
+    document.querySelectorAll("[data-eye]").forEach(b => b.addEventListener("click", () => {
+        const i = b.previousElementSibling; const s = i.type === "password";
+        i.type = s ? "text" : "password"; b.textContent = s ? "🙈" : "👁️";
+    }));
+    document.querySelectorAll("[data-gen]").forEach(b => b.addEventListener("click", () => {
+        const i = document.getElementById(b.dataset.gen);
+        const chars = "abcdefghjkmnpqrstuvwxyz23456789";
+        let s = ""; const a = new Uint32Array(8); window.crypto.getRandomValues(a);
+        a.forEach(n => s += chars[n % chars.length]);
+        i.value = s; i.type = "text"; const e = i.nextElementSibling; if(e) e.textContent = "🙈";
+    }));
+    document.getElementById("regForm").addEventListener("submit", (e) => {
+        if(plan() === "paid" && (price.value === "" || parseFloat(price.value) < 0)){
+            e.preventDefault(); price.focus(); alert("Geli Monthly Fee (PAID plan)."); return;
+        }
+        const b = document.getElementById("submitBtn"); b.disabled = true; b.textContent = "⏳ Creating…";
+    });
+})();
+</script>
 </body>
 </html>

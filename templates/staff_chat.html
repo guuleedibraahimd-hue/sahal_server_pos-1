@@ -10,7 +10,7 @@
 <link rel="manifest" href="/app_manifest/{{ rid }}/chat.webmanifest">
 <link rel="icon" href="/static/logo.png">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/static/sahal_app.css">
+<link rel="stylesheet" href="/static/sahal_app.css?v={{ asset_v }}">
 <style>
 :root{
     --hdr:#075e54; --hdr2:#0b7a6d; --mine:#d9fdd3; --theirs:#ffffff; --bg:#efeae2; --text:#111b21; --muted:#667781;
@@ -194,7 +194,7 @@ video.media{background:#000;}
 <div class="viewer" id="viewer" onclick="closeViewer()"><img id="viewerImg" alt=""><button onclick="closeViewer()">✕</button></div>
 <div class="toast" id="toast"></div>
 
-<script src="/static/sahal_app.js" defer></script>
+<script src="/static/sahal_app.js?v={{ asset_v }}" defer></script>
 <script>
 const RID = {{ rid|tojson }};
 const ME = {{ me|tojson }};

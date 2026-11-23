@@ -2,123 +2,160 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Admin Login</title>
-
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b1220">
+<title>Admin Login · Sahal Server</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
 <style>
-
+:root{
+    --ink:#0f172a; --soft:#64748b; --line:#e2e8f0;
+    --gold:#f5b301; --gold-2:#ff8a00; --red:#dc2626;
+}
+*{ box-sizing:border-box; }
+html,body{ height:100%; }
 body{
-    margin:0;
-    font-family: Arial, sans-serif;
-    background: linear-gradient(to right, #0f2027, #2c5364);
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    height:100vh;
+    margin:0; font-family:'Plus Jakarta Sans','Segoe UI',Arial,sans-serif; color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+    background:
+        radial-gradient(60% 50% at 85% 10%, rgba(245,179,1,.22) 0%, transparent 60%),
+        radial-gradient(55% 55% at 10% 90%, rgba(124,58,237,.30) 0%, transparent 60%),
+        linear-gradient(140deg,#070c17 0%,#0b1220 45%,#132040 100%);
+    display:flex; align-items:center; justify-content:center; padding:20px;
+    min-height:100vh; min-height:100dvh; overflow-x:hidden;
 }
+.grid-bg{
+    position:fixed; inset:0; pointer-events:none;
+    background-image:linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px);
+    background-size:44px 44px;
+    -webkit-mask-image:radial-gradient(ellipse at center, #000 30%, transparent 75%); mask-image:radial-gradient(ellipse at center, #000 30%, transparent 75%);
+}
+.wrap{ position:relative; width:100%; max-width:410px; animation:rise .55s cubic-bezier(.2,.8,.2,1); }
+@keyframes rise{ from{ opacity:0; transform:translateY(18px) scale(.98); } to{ opacity:1; transform:none; } }
 
-/* CARD */
+.brand{ display:flex; flex-direction:column; align-items:center; text-align:center; margin-bottom:22px; color:#fff; }
+.logo{
+    width:66px; height:66px; border-radius:20px; display:flex; align-items:center; justify-content:center;
+    font-size:30px; font-weight:800; color:#111827;
+    background:linear-gradient(135deg,var(--gold),var(--gold-2));
+    box-shadow:0 14px 36px rgba(245,158,11,.40), inset 0 1px 0 rgba(255,255,255,.5);
+}
+.brand h1{ margin:14px 0 4px; font-size:22px; font-weight:800; letter-spacing:-.4px; }
+.brand p{ margin:0; color:#94a3b8; font-size:13px; font-weight:600; }
+
 .card{
-    background:white;
-    padding:30px;
-    border-radius:15px;
-    width:90%;
-    max-width:350px;
-    text-align:center;
-    box-shadow:0 10px 30px rgba(0,0,0,0.3);
-    animation: fadeIn 0.5s ease;
+    background:rgba(255,255,255,.97); border-radius:26px; padding:28px 26px 24px;
+    box-shadow:0 30px 80px rgba(2,6,23,.55), 0 0 0 1px rgba(255,255,255,.06);
 }
+.card h2{ margin:0; font-size:19px; font-weight:800; letter-spacing:-.3px; }
+.card .sub{ margin:4px 0 20px; color:var(--soft); font-size:13px; font-weight:600; }
 
-/* TITLE */
-h2{
-    margin-bottom:20px;
-}
-
-/* INPUT */
-input{
-    width:100%;
-    padding:12px;
-    margin:10px 0;
-    border:1px solid #ddd;
-    border-radius:8px;
-    font-size:14px;
-    transition:0.3s;
-}
-
-input:focus{
-    border-color:#0a7cff;
-    outline:none;
-}
-
-/* BUTTON */
-button{
-    width:100%;
-    padding:12px;
-    background: linear-gradient(to right, #ff416c, #ff4b2b);
-    color:white;
-    border:none;
-    border-radius:8px;
-    cursor:pointer;
-    font-size:16px;
-    font-weight:bold;
-}
-
-button:hover{
-    opacity:0.9;
-}
-
-/* ERROR */
 .error{
-    background:#ffe5e5;
-    color:red;
-    padding:8px;
-    border-radius:5px;
-    margin-bottom:10px;
+    display:flex; gap:10px; align-items:center; background:#fef2f2; color:#b91c1c; border:1px solid #fecaca;
+    padding:11px 13px; border-radius:14px; font-size:13px; font-weight:700; margin-bottom:16px;
+    animation:shake .4s;
 }
+@keyframes shake{ 0%,100%{transform:none} 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }
 
-/* SMALL TEXT */
-.footer{
-    margin-top:15px;
-    font-size:12px;
-    color:#777;
+label{ display:block; font-size:12px; font-weight:800; color:#475569; margin-bottom:7px; letter-spacing:.3px; }
+.field{ position:relative; }
+.field .lead{ position:absolute; left:15px; top:50%; transform:translateY(-50%); font-size:16px; opacity:.7; pointer-events:none; }
+input{
+    width:100%; height:52px; padding:0 52px 0 44px; border:1.5px solid var(--line); border-radius:15px;
+    font:600 15px 'Plus Jakarta Sans',sans-serif; color:var(--ink); background:#f8fafc;
+    transition:border-color .15s, box-shadow .15s, background .15s;
 }
-
-/* ANIMATION */
-@keyframes fadeIn{
-    from{opacity:0; transform:translateY(20px);}
-    to{opacity:1; transform:translateY(0);}
+input:focus{ outline:none; border-color:#f59e0b; background:#fff; box-shadow:0 0 0 4px rgba(245,158,11,.15); }
+.eye{
+    position:absolute; right:7px; top:50%; transform:translateY(-50%); width:40px; height:40px; border:none; border-radius:11px;
+    background:transparent; cursor:pointer; font-size:17px; color:var(--soft);
 }
+.eye:hover{ background:#f1f5f9; }
+.caps{ display:none; margin-top:8px; font-size:12px; font-weight:700; color:#b45309; }
+.caps.show{ display:block; }
 
+button[type=submit]{
+    margin-top:18px; width:100%; height:52px; border:none; border-radius:15px; cursor:pointer;
+    font:800 15px 'Plus Jakarta Sans',sans-serif; color:#111827; letter-spacing:.2px;
+    background:linear-gradient(135deg,var(--gold),var(--gold-2));
+    box-shadow:0 12px 26px rgba(245,158,11,.35);
+    display:flex; align-items:center; justify-content:center; gap:10px;
+    transition:transform .1s, filter .15s, box-shadow .15s;
+}
+button[type=submit]:hover{ filter:brightness(1.04); box-shadow:0 16px 32px rgba(245,158,11,.42); }
+button[type=submit]:active{ transform:scale(.985); }
+button[type=submit][disabled]{ opacity:.8; cursor:wait; }
+.spin{ width:18px; height:18px; border-radius:50%; border:2.5px solid rgba(17,24,39,.25); border-top-color:#111827; animation:sp .7s linear infinite; display:none; }
+button[disabled] .spin{ display:block; }
+@keyframes sp{ to{ transform:rotate(360deg); } }
+
+.secure{ display:flex; align-items:center; justify-content:center; gap:7px; margin-top:18px; color:var(--soft); font-size:12px; font-weight:700; }
+.foot{ text-align:center; margin-top:20px; color:#64748b; font-size:12px; font-weight:600; }
+.foot b{ color:#cbd5e1; }
+.pills{ display:flex; justify-content:center; gap:8px; margin-top:12px; flex-wrap:wrap; }
+.pills span{ background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.10); color:#cbd5e1; padding:6px 11px; border-radius:20px; font-size:11.5px; font-weight:700; }
+@media(max-width:420px){ .card{ padding:24px 18px 20px; border-radius:22px; } }
 </style>
 </head>
-
 <body>
+<div class="grid-bg"></div>
 
-<div class="card">
+<div class="wrap">
+    <div class="brand">
+        <div class="logo">S</div>
+        <h1>Sahal Server</h1>
+        <p>System Admin Control Center</p>
+    </div>
 
-<h2>🔐 Admin Login</h2>
+    <div class="card">
+        <h2>Welcome back 👋</h2>
+        <div class="sub">Geli password-ka admin-ka si aad u gasho.</div>
 
-{% if error %}
-<div class="error">{{error}}</div>
-{% endif %}
+        {% if error %}
+        <div class="error">⚠️ <span>{{ error }}</span></div>
+        {% endif %}
 
-<form method="POST">
+        <form method="POST" id="loginForm" autocomplete="off">
+            <label for="pw">ADMIN PASSWORD</label>
+            <div class="field">
+                <span class="lead">🔐</span>
+                <input id="pw" name="password" type="password" placeholder="••••••••" required autofocus autocomplete="current-password">
+                <button type="button" class="eye" id="eye" aria-label="Show password">👁️</button>
+            </div>
+            <div class="caps" id="caps">⇪ Caps Lock waa shidan yahay</div>
 
-<input 
-name="password" 
-type="password" 
-placeholder="Enter Admin Password" 
-required>
+            <button type="submit" id="go"><span class="spin"></span><span id="goText">Login</span> <span>→</span></button>
+        </form>
 
-<button type="submit">Login</button>
+        <div class="secure">🛡️ Xiriir sugan · Session-ku wuu ku xasuustaa</div>
+    </div>
 
-</form>
-
-<div class="footer">
-Sahal Server System
+    <div class="foot">
+        © <b>Sahal Server</b> — One Platform • Many Services
+        <div class="pills"><span>🍽️ Restaurants</span><span>🛒 Supermarkets</span><span>💊 Pharmacies</span></div>
+    </div>
 </div>
 
-</div>
-
+<script>
+(function(){
+    const pw = document.getElementById("pw"), eye = document.getElementById("eye");
+    eye.addEventListener("click", () => {
+        const show = pw.type === "password";
+        pw.type = show ? "text" : "password";
+        eye.textContent = show ? "🙈" : "👁️";
+        eye.setAttribute("aria-label", show ? "Hide password" : "Show password");
+        pw.focus();
+    });
+    const caps = document.getElementById("caps");
+    ["keyup","keydown"].forEach(ev => pw.addEventListener(ev, e => {
+        if(e.getModifierState) caps.classList.toggle("show", e.getModifierState("CapsLock"));
+    }));
+    document.getElementById("loginForm").addEventListener("submit", () => {
+        const b = document.getElementById("go"); b.disabled = true;
+        document.getElementById("goText").textContent = "Checking…";
+    });
+})();
+</script>
 </body>
 </html>

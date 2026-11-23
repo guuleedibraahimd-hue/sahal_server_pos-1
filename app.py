@@ -10,7 +10,8 @@ from flask import (
     flash,
     send_from_directory,
     Response,
-    make_response
+    make_response,
+    render_template_string
 )
 
 from flask_socketio import (
@@ -99,6 +100,23 @@ app.secret_key = os.environ.get("SECRET_KEY") or "supersecretkey123"
 # in the same browser without kicking each other out.
 # =========================
 app.permanent_session_lifetime = timedelta(days=365)
+
+
+# Cache-busting for the shared app files: pages load
+# /static/sahal_app.js?v=<hash>, so every update reaches every phone and
+# computer immediately instead of an old cached copy being used.
+def _asset_version():
+    import hashlib
+    h = hashlib.md5()
+    for f in ("static/sahal_app.js", "static/sahal_app.css", "static/sahal-sw.js"):
+        try:
+            with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), f), "rb") as fh:
+                h.update(fh.read())
+        except Exception:
+            h.update(str(time.time()).encode())
+    return h.hexdigest()[:10]
+
+app.jinja_env.globals["asset_v"] = _asset_version()
 app.config.update(SESSION_COOKIE_SAMESITE="Lax", SESSION_COOKIE_HTTPONLY=True, SESSION_REFRESH_EACH_REQUEST=True)
 
 STAFF_SESSION_KEYS = ("staff_ok", "staff_role", "staff_rid", "staff_id", "staff_name", "staff_employee_id")
@@ -597,6 +615,68 @@ def auto_check_expiry(rid):
     conn.close()
 
 # =========================
+# 🎁 FREE / 💎 PAID PLANS
+# Every restaurant, supermarket and pharmacy is either:
+#   • "free" — never expires, never asked to pay, never suspended for
+#     money. Works fully until the system admin changes it to paid.
+#   • "paid" — normal subscription with an expiry date (old accounts
+#     without a plan field are "paid", exactly as before).
+# The admin can only switch it — nobody else can.
+# =========================
+PLAN_COLLECTIONS = {"restaurant": "restaurants", "supermarket": "supermarkets", "pharmacy": "pharmacies"}
+
+
+def _is_free(data):
+    return str((data or {}).get("plan", "")).lower() == "free"
+
+
+def _entity_expiry(data):
+    return (data or {}).get("expiry_date") or (data or {}).get("expiry") or ""
+
+
+def _decorate_plan(item):
+    """Adds plan / days_left / expired fields used by the admin panel."""
+    item["plan"] = "free" if _is_free(item) else "paid"
+    item["is_free"] = item["plan"] == "free"
+    exp = _entity_expiry(item)
+    item["expiry_show"] = exp
+    item["days_left"] = None
+    item["expired"] = False
+    if not item["is_free"] and exp and exp != "N/A":
+        try:
+            item["days_left"] = (datetime.strptime(exp[:10], "%Y-%m-%d").date() - datetime.now().date()).days
+            item["expired"] = item["days_left"] < 0
+        except Exception:
+            pass
+    active = item.get("active")
+    if active is None:
+        active = item.get("status", True)
+    item["is_active"] = not (active is False or active == "disabled")
+    return item
+
+
+_DISABLED_PAGE = """<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1"><title>Account paused · {{ name }}</title>
+<style>
+body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;
+font-family:'Segoe UI',Arial,sans-serif;background:linear-gradient(140deg,#0b1220,#16233d);color:#0f172a}
+.c{background:#fff;border-radius:24px;max-width:420px;width:100%;padding:32px 26px;text-align:center;box-shadow:0 30px 80px rgba(0,0,0,.45)}
+.i{width:70px;height:70px;border-radius:22px;margin:0 auto 14px;display:flex;align-items:center;justify-content:center;font-size:34px;background:#f1f5f9}
+h1{margin:0 0 6px;font-size:21px} p{margin:0 0 18px;color:#64748b;font-size:14.5px;line-height:1.55}
+.t{display:inline-block;background:#ecfdf5;color:#047857;font-weight:800;font-size:12px;padding:5px 12px;border-radius:20px;margin-bottom:16px}
+a{display:inline-block;background:#0f172a;color:#fff;text-decoration:none;padding:12px 20px;border-radius:12px;font-weight:700}
+</style></head><body><div class="c"><div class="i">⏸️</div><div class="t">🎁 FREE PLAN</div>
+<h1>{{ name }}</h1><p>{{ portal }}-kan waxaa si ku-meel-gaar ah u xiray maamulka Sahal Server.<br>Lacag looma baahna — la xiriir admin-ka si loo furo.</p>
+<a href="{{ back }}">← Back</a></div></body></html>"""
+
+
+def _disabled_by_admin_page(name, portal, back="/"):
+    # A FREE account that the admin switched off: no payment page,
+    # just "paused by admin".
+    return render_template_string(_DISABLED_PAGE, name=name, portal=portal, back=back)
+
+
+# =========================
 # 🔥 FIRESTORE FUNCTIONS
 # =========================
 def get_restaurants_firestore():
@@ -606,14 +686,14 @@ def get_restaurants_firestore():
         for doc in docs:
             item = doc.to_dict()
             item["id"] = doc.id
-            item["active"] = item.get("active", False)
+            item["active"] = item.get("active", item.get("status", "active") != "disabled")
             item["name"] = item.get("name", "N/A")
             item["phone"] = item.get("phone", "N/A")
             item["username"] = item.get("username", "N/A")
             item["kitchen_password"] = item.get("kitchen_password", "N/A")
             item["password"] = item.get("password", "N/A")
             item["expiry"] = item.get("expiry", "N/A")
-            restaurants.append(item)
+            restaurants.append(_decorate_plan(item))
     except Exception as e:
         print("Restaurant Load Error:", e)
     return restaurants
@@ -626,11 +706,11 @@ def get_supermarkets_firestore():
         for doc in docs:
             item = doc.to_dict()
             item["id"] = doc.id
-            item["active"] = item.get("active", False)
+            item["active"] = item.get("active", item.get("status", "active") != "disabled")
             item["name"] = item.get("name", "N/A")
             item["username"] = item.get("username", "N/A")
             item["expiry"] = item.get("expiry", "N/A")
-            supermarkets.append(item)
+            supermarkets.append(_decorate_plan(item))
     except Exception as e:
         print("Supermarket Load Error:", e)
     return supermarkets
@@ -650,6 +730,11 @@ def get_pharmacies_list():
                     item["days_left"] = (datetime.strptime(expiry_date, "%Y-%m-%d").date() - today).days
                 except Exception:
                     pass
+            _decorate_plan(item)
+            if item["is_free"]:
+                item.pop("days_left", None)
+            elif item["days_left"] is None:
+                item.pop("days_left", None)
             pharmacies.append(item)
     except Exception as e:
         print("Pharmacy Load Error:", e)
@@ -1064,6 +1149,8 @@ def renew_push_payment(entity_type, entity_id):
             return jsonify({"success": False, "error": "Account not found"})
 
         entity_data   = entity_doc.to_dict()
+        if _is_free(entity_data):
+            return jsonify({"success": False, "error": "Account-kan waa FREE — lacag looma baahna ✅"})
         business_name = entity_data.get(RENEWAL_NAME_FIELD_MAP[entity_type], entity_id)
         monthly_fee   = _monthly_fee_for(entity_type, entity_data)
         if monthly_fee <= 0:
@@ -1464,8 +1551,31 @@ def admin():
             b["id"] = doc.id
             sent_broadcasts.append(b)
 
+        everything = restaurants + supermarkets + pharmacies
+        month_prefix = datetime.now().strftime("%Y-%m")
+        month_revenue = 0.0
+        try:
+            for doc in db.collection("subscription_payments").where("created_at", ">=", month_prefix).stream():
+                p = doc.to_dict() or {}
+                if str(p.get("status", "")).upper() == "SUCCESS" and str(p.get("created_at", "")).startswith(month_prefix):
+                    month_revenue += float(p.get("amount", 0) or 0)
+        except Exception as e:
+            print("ADMIN REVENUE ERROR:", e)
+        kpi = {
+            "accounts": len(everything),
+            "active": sum(1 for x in everything if x.get("is_active") and not x.get("expired")),
+            "free": sum(1 for x in everything if x.get("is_free")),
+            "paid": sum(1 for x in everything if not x.get("is_free")),
+            "expiring": sum(1 for x in everything if not x.get("is_free") and x.get("days_left") is not None and 0 <= x["days_left"] <= 7),
+            "expired": sum(1 for x in everything if x.get("expired")),
+            "disabled": sum(1 for x in everything if not x.get("is_active")),
+            "month_revenue": round(month_revenue, 2),
+            "renewals": len(renewal_requests),
+        }
+
         return render_template(
             "admin.html",
+            kpi=kpi,
             restaurants=restaurants,
             supermarkets=supermarkets,
             pharmacies=pharmacies,
@@ -1489,6 +1599,47 @@ def admin():
 # =========================
 # 🔓 LOGOUT ADMIN
 # =========================
+@app.route("/admin/set_plan/<entity_type>/<entity_id>", methods=["POST"])
+def admin_set_plan(entity_type, entity_id):
+    """System admin switches an account between FREE and PAID."""
+    if not session.get("admin_ok"):
+        return jsonify({"success": False, "error": "Unauthorized"}), 401
+    if entity_type not in PLAN_COLLECTIONS:
+        return jsonify({"success": False, "error": "Invalid account type"}), 400
+    ref = db.collection(PLAN_COLLECTIONS[entity_type]).document(entity_id)
+    snap = ref.get()
+    if not snap.exists:
+        return jsonify({"success": False, "error": "Account not found"}), 404
+    body = request.get_json(silent=True) or {}
+    plan = str(body.get("plan", "")).lower()
+    now = datetime.now()
+    if plan == "free":
+        upd = {"plan": "free", "active": True, "status": "active", "plan_changed_at": now.isoformat()}
+        ref.update(upd)
+        return jsonify({"success": True, "plan": "free", "message": "✅ Account-ku hadda waa FREE — weligiis ma dhacayo"})
+    if plan == "paid":
+        try:
+            months = int(body.get("months", 1))
+        except Exception:
+            months = 1
+        months = max(0, min(months, 120))
+        new_exp = (now + timedelta(days=months * 30)).strftime("%Y-%m-%d")
+        upd = {"plan": "paid", "expiry_date": new_exp, "plan_changed_at": now.isoformat()}
+        if entity_type != "pharmacy":
+            upd["expiry"] = new_exp
+        if months > 0:
+            upd.update({"active": True, "status": "active"})
+        if "monthly_fee" in body:
+            try:
+                upd["monthly_fee"] = float(body.get("monthly_fee") or 0)
+            except Exception:
+                return jsonify({"success": False, "error": "Monthly fee must be a number"})
+        ref.update(upd)
+        return jsonify({"success": True, "plan": "paid", "expiry_date": new_exp,
+                        "message": f"✅ Account-ku hadda waa PAID — wuxuu dhacayaa {new_exp}"})
+    return jsonify({"success": False, "error": "Plan must be free or paid"}), 400
+
+
 @app.route("/logout_admin")
 def logout_admin():
     session.pop("admin_ok",      None)
@@ -1592,7 +1743,7 @@ def activate_restaurant(rid):
             "activated_at": datetime.now()
         })
 
-        return redirect("/admin")
+        return redirect("/admin#restaurants")
 
     except Exception as e:
         return f"Activate restaurant error ❌ {e}"
@@ -1626,7 +1777,7 @@ def disable_restaurant(rid):
             "disabled_at": datetime.now()
         })
 
-        return redirect("/admin")
+        return redirect("/admin#restaurants")
 
     except Exception as e:
         return f"Disable restaurant error ❌ {e}"
@@ -1642,7 +1793,7 @@ def delete_restaurant(rid):
             return redirect("/admin")
 
         db.collection("restaurants").document(rid).delete()
-        return redirect("/admin")
+        return redirect("/admin#restaurants")
 
     except Exception as e:
         return f"Delete restaurant error ❌ {e}"
@@ -1661,8 +1812,8 @@ def activate_market(mid):
     try:
         if not session.get("admin_ok"):
             return redirect("/admin")
-        db.collection("supermarkets").document(mid).update({"active": True})
-        return redirect("/admin")
+        db.collection("supermarkets").document(mid).update({"active": True, "status": "active"})
+        return redirect("/admin#supermarkets")
     except Exception as e:
         return f"Activate market error ❌ {e}"
 
@@ -1683,7 +1834,7 @@ def disable_market(mid):
             "expiry_date": today_str,
             "expiry": today_str
         })
-        return redirect("/admin")
+        return redirect("/admin#supermarkets")
     except Exception as e:
         return f"Disable market error ❌ {e}"
 
@@ -1696,9 +1847,9 @@ def disable_market(mid):
 def delete_market(mid):
     try:
         if not session.get("admin_ok"):
-            return redirect("/admin")
+            return redirect("/admin#supermarkets")
         db.collection("supermarkets").document(mid).delete()
-        return redirect("/admin")
+        return redirect("/admin#supermarkets")
     except Exception as e:
         return f"Delete market error ❌ {e}"
 
@@ -1731,6 +1882,7 @@ def renew_market(mid):
         market_ref.update({
             "active": True,
             "status": "active",
+            "plan": "paid",
             "expiry_date": new_expiry,
             "expiry": new_expiry,
             "renewed_at": datetime.now().isoformat()
@@ -1812,6 +1964,7 @@ def renew_restaurant(rid):
         restaurant_ref.update({
             "active": True,
             "status": "active",
+            "plan": "paid",
             "expiry_date": new_expiry,
             "expiry": new_expiry,
             "renewed_at": datetime.now().isoformat()
@@ -1838,6 +1991,8 @@ def renew_restaurant(rid):
 @app.route("/register", methods=["GET", "POST"])
 def register():
     try:
+        if session.get("admin_ok"):
+            session["register_ok"] = True     # system admin is already verified
         if not session.get("register_ok"):
             if request.method == "POST":
                 passwords = get_system_passwords()
@@ -1854,10 +2009,28 @@ def register():
             return render_template("access_register.html")
 
         if request.method == "POST":
-            months = int(request.form["months"])
+            plan = "free" if request.form.get("plan") == "free" else "paid"
+            f = request.form
+            required = ["name", "username", "password", "kitchen_password", "restaurant_admin_password"]
+            if any(not (f.get(k) or "").strip() for k in required):
+                return render_template("register.html", error="Fadlan buuxi dhammaan meelaha * leh ❌", form=f)
+            if plan == "paid":
+                try:
+                    if float(f.get("price") or 0) < 0:
+                        raise ValueError
+                except ValueError:
+                    return render_template("register.html", error="Monthly fee waa inuu noqdaa lambar ❌", form=f)
+            uname = f.get("username", "").strip()
+            if list(db.collection("restaurants").where("username", "==", uname).limit(1).stream()):
+                return render_template("register.html", error=f"Username-ka '{uname}' horey ayaa loo isticmaalay ❌", form=f)
+            try:
+                months = int(f.get("months") or 1) if plan == "paid" else 0
+            except ValueError:
+                months = 1
+            months = max(1, min(months, 120)) if plan == "paid" else 0
             expiry_date = (
                 datetime.now() + timedelta(days=months * 30)
-            ).strftime("%Y-%m-%d")
+            ).strftime("%Y-%m-%d") if plan == "paid" else ""
 
             try:
                 payment_methods = json.loads(request.form.get("payment_methods_json", "[]"))
@@ -1880,10 +2053,14 @@ def register():
                 "restaurant_admin_password": request.form["restaurant_admin_password"].strip(),
                 "admin_name": request.form.get("admin_name", "").strip(),
                 "admin_email": request.form.get("admin_email", "").strip(),
-                "price": request.form["price"].strip(),
+                "price": (request.form.get("price") or "0").strip() if plan == "paid" else "0",
+                "monthly_fee": float(request.form.get("price") or 0) if plan == "paid" else 0.0,
+                "plan": plan,
                 "payment": payment_summary,
                 "payment_methods": payment_methods,
                 "expiry": expiry_date,
+                "expiry_date": expiry_date,
+                "status": "active",
                 "active": True,
                 "review_count": 0,
                 "average_rating": 0,
@@ -1897,9 +2074,9 @@ def register():
             restaurant_ref.collection("menu").document("init").set({"created_at": datetime.now()})
             restaurant_ref.collection("orders").document("init").set({"created_at": datetime.now()})
 
-            return redirect("/admin")
+            return redirect("/admin#restaurants")
 
-        return render_template("register.html")
+        return render_template("register.html", form={})
 
     except Exception as e:
         print("Register Error:", e)
@@ -2036,6 +2213,8 @@ def supermarket_dashboard():
         if market_doc.exists:
             market = market_doc.to_dict()
             is_active = market.get("active", market.get("status", True))
+            if (is_active is False or is_active == "disabled") and _is_free(market):
+                return _disabled_by_admin_page(market.get("name", "Supermarket"), "Supermarket", "/logout")
             if is_active is False or is_active == "disabled":
                 return render_template(
                     "renew.html",
@@ -2510,21 +2689,48 @@ def supermarket_analytics():
 @app.route("/supermarket_register", methods=["GET", "POST"])
 def supermarket_register():
     try:
+        # Only the system admin may create accounts (this page used to be
+        # open to anyone on the internet).
+        if not session.get("admin_ok"):
+            return redirect("/admin")
         if request.method == "POST":
-            months = int(request.form.get("months", 1))
-            expiry = (datetime.now() + timedelta(days=months*30)).strftime("%Y-%m-%d")
+            f = request.form
+            plan = "free" if f.get("plan") == "free" else "paid"
+            name = f.get("name", "").strip()
+            username = f.get("username", "").strip()
+            password = f.get("password", "").strip()
+            if not name or not username or not password:
+                return render_template("supermarket_register.html", error="Fadlan buuxi dhammaan meelaha * leh ❌", form=f)
+            try:
+                months = max(1, min(int(f.get("months") or 1), 120)) if plan == "paid" else 0
+            except ValueError:
+                months = 1
+            fee = (f.get("price") or "0").strip() if plan == "paid" else "0"
+            try:
+                fee_num = float(fee or 0)
+                if fee_num < 0:
+                    raise ValueError
+            except ValueError:
+                return render_template("supermarket_register.html", error="Monthly fee waa inuu noqdaa lambar ❌", form=f)
+            if list(db.collection("supermarkets").where("username", "==", username).limit(1).stream()):
+                return render_template("supermarket_register.html", error=f"Username-ka '{username}' horey ayaa loo isticmaalay ❌", form=f)
+            expiry = (datetime.now() + timedelta(days=months*30)).strftime("%Y-%m-%d") if plan == "paid" else ""
             db.collection("supermarkets").add({
-                "name":       request.form.get("name", ""),
-                "username":   request.form.get("username", ""),
-                "password":   request.form.get("password", ""),
-                "price":      request.form.get("price", ""),
-                "payment":    request.form.get("payment", ""),
+                "name":       name,
+                "username":   username,
+                "password":   password,
+                "price":      fee,
+                "monthly_fee": fee_num,
+                "plan":       plan,
+                "payment":    f.get("payment", "").strip(),
                 "expiry_date":expiry,
+                "expiry":     expiry,
+                "status":     "active",
                 "active":     True,
                 "created_at": datetime.now()
             })
-            return redirect("/supermarket_login")
-        return render_template("supermarket_register.html")
+            return redirect("/admin#supermarkets")
+        return render_template("supermarket_register.html", form={})
     except Exception as e:
         return f"Register Error ❌ {str(e)}"
 
@@ -2559,9 +2765,11 @@ def dashboard(rid):
             )
 
         if not restaurant.get("active", True):
+            if _is_free(restaurant):
+                return _disabled_by_admin_page(restaurant.get("name", "Restaurant"), "Restaurant", "/logout_restaurant")
             return suspended_page()
 
-        expiry = restaurant.get("expiry", "")
+        expiry = "" if _is_free(restaurant) else restaurant.get("expiry", "")
         if expiry:
             try:
                 expiry_date = datetime.strptime(expiry, "%Y-%m-%d")
@@ -2616,7 +2824,7 @@ def dashboard(rid):
             rid=rid,
             restaurant=restaurant.get("name", "Restaurant"),
             restaurant_phone=restaurant.get("phone", ""),
-            restaurant_expiry=restaurant.get("expiry", ""),
+            restaurant_expiry="" if _is_free(restaurant) else restaurant.get("expiry", ""),
             menu=menu,
             ads=ads,
             total_orders_today=total_orders_today,
@@ -7316,7 +7524,9 @@ def pharmacy_login():
                     session["pharmacy_name"]   = ph.get("pharmacy_name", username)
                     session["pharmacy_id"]     = doc.id
                     session["pharmacy_expiry"] = expiry
-                    if expiry and expiry < today:
+                    if _is_free(ph):
+                        session.pop("pharmacy_suspended", None)
+                    elif expiry and expiry < today:
                         session["pharmacy_suspended"] = True
                     elif not ph.get("active", True):
                         session["pharmacy_suspended"] = True
@@ -7378,6 +7588,25 @@ def pharmacy_logout():
 def pharmacy():
     if not session.get("pharmacy_ok"):
         return redirect("/pharmacy_login")
+    # Re-check the subscription on every visit — logins now last a year,
+    # so a pharmacy that was renewed or made FREE must work immediately.
+    try:
+        _pid = session.get("pharmacy_id", "")
+        _snap = db.collection("pharmacies").document(_pid).get() if _pid else None
+        if _snap is not None and _snap.exists:
+            _ph = _snap.to_dict() or {}
+            _exp = _ph.get("expiry_date", "")
+            if _is_free(_ph):
+                if not _ph.get("active", True):
+                    return _disabled_by_admin_page(_ph.get("pharmacy_name", "Pharmacy"), "Pharmacy", "/pharmacy/logout")
+                session.pop("pharmacy_suspended", None)
+            elif (_exp and _exp < datetime.now().strftime("%Y-%m-%d")) or not _ph.get("active", True):
+                session["pharmacy_suspended"] = True
+            else:
+                session.pop("pharmacy_suspended", None)
+            session["pharmacy_expiry"] = "" if _is_free(_ph) else _exp
+    except Exception as _e:
+        print("PHARMACY PLAN CHECK ERROR:", _e)
     if session.get("pharmacy_suspended"):
         pharmacy_id = session.get("pharmacy_id", "")
         pharmacy_fee = 0.0
@@ -7810,8 +8039,9 @@ def admin_register_pharmacy():
         data            = request.get_json()
         pharmacy_name   = data.get("pharmacy_name", "").strip()
         phone           = data.get("phone", "").strip()
-        monthly_fee     = float(data.get("monthly_fee", 0))
-        months          = int(data.get("months", 3))
+        plan            = "free" if str(data.get("plan", "")).lower() == "free" else "paid"
+        monthly_fee     = float(data.get("monthly_fee", 0) or 0) if plan == "paid" else 0.0
+        months          = int(data.get("months", 3) or 3) if plan == "paid" else 0
         username        = data.get("username", "").strip()
         password        = data.get("password", "").strip()
         payment_account = data.get("payment_account", "").strip()
@@ -7821,9 +8051,10 @@ def admin_register_pharmacy():
             return jsonify({"success": False, "error": "Payment account must contain digits only"})
         if payment_account and len(payment_account) > 4:
             return jsonify({"success": False, "error": "Payment account must be 1-4 digits"})
-        expiry_date = (datetime.now() + timedelta(days=months * 30)).strftime("%Y-%m-%d")
+        expiry_date = (datetime.now() + timedelta(days=months * 30)).strftime("%Y-%m-%d") if plan == "paid" else ""
         total_fee   = round(monthly_fee * months, 2)
         doc_ref = db.collection("pharmacies").add({
+            "plan": plan,
             "pharmacy_name": pharmacy_name, "phone": phone,
             "username": username, "password": password,
             "monthly_fee": monthly_fee, "months": months, "total_fee": total_fee,
@@ -7842,8 +8073,8 @@ def admin_register_pharmacy():
             "username":      username,
             "created_at":    datetime.now().isoformat()
         })
-        return jsonify({"success": True, "message": "Pharmacy registered",
-                        "expiry_date": expiry_date, "total_fee": total_fee})
+        return jsonify({"success": True, "message": "Pharmacy registered", "plan": plan,
+                        "expiry_date": expiry_date or "FREE — never expires", "total_fee": total_fee})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
 
@@ -7869,7 +8100,7 @@ def admin_renew_pharmacy(pid):
         except:
             base = datetime.now()
         new_expiry = (base + timedelta(days=months * 30)).strftime("%Y-%m-%d")
-        ph_ref.update({"expiry_date": new_expiry, "active": True,
+        ph_ref.update({"expiry_date": new_expiry, "active": True, "plan": "paid",
                        "last_renewed": datetime.now().isoformat(), "renewed_months": months})
         return jsonify({"success": True, "expiry_date": new_expiry})
     except Exception as e:
@@ -8904,4 +9135,3 @@ if __name__ == "__main__":
         host="0.0.0.0",
         port=port
     )
-

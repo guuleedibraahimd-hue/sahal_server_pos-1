@@ -98,7 +98,7 @@ button{font-family:inherit;}
     .title h1{font-size:16px;}
 }
 </style>
-<link rel="stylesheet" href="/static/sahal_app.css">
+<link rel="stylesheet" href="/static/sahal_app.css?v={{ asset_v }}">
 <link rel="manifest" href="/app_manifest/{{ rid }}/live.webmanifest">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -314,6 +314,6 @@ setInterval(checkVersion, 3000);
 setInterval(load, 60000);                         // refresh ages / safety net
 document.addEventListener("visibilitychange", () => { if(!document.hidden) load(); });
 </script>
-<script src="/static/sahal_app.js" defer></script>
+<script src="/static/sahal_app.js?v={{ asset_v }}" defer></script>
 </body>
 </html>

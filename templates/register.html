@@ -1,198 +1,237 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<title>Register Restaurant · Sahal Server</title>
 <meta charset="UTF-8">
-<title>Register Restaurant</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b1220">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
 <style>
-body{
-    font-family: Arial;
-    background: #f4f6f9;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
-    margin: 0;
-    padding:20px;
+:root{ --ink:#0f172a; --ink-3:#334155; --soft:#64748b; --line:#e2e8f0; --bg:#f4f6fb; --acc:#ea580c; --acc-2:#fb923c; }
+*{ box-sizing:border-box; }
+body{ margin:0; font-family:'Plus Jakarta Sans','Segoe UI',Arial,sans-serif; background:var(--bg); color:var(--ink); -webkit-font-smoothing:antialiased; }
+.top{
+    background:radial-gradient(90% 140% at 100% 0%, rgba(245,179,1,.25) 0%, transparent 50%), linear-gradient(135deg,#0b1220,#16233d);
+    color:#fff; padding:22px 20px 80px;
 }
+.top-in{ max-width:860px; margin:0 auto; display:flex; align-items:center; gap:14px; }
+.back{ width:42px; height:42px; border-radius:13px; display:flex; align-items:center; justify-content:center; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.12); color:#fff; text-decoration:none; font-size:18px; flex-shrink:0; }
+.back:hover{ background:rgba(255,255,255,.14); }
+.top h1{ margin:0; font-size:22px; font-weight:800; letter-spacing:-.4px; }
+.top p{ margin:3px 0 0; color:#a5b4cf; font-size:13px; font-weight:600; }
+.top .ic{ width:52px; height:52px; border-radius:16px; display:flex; align-items:center; justify-content:center; font-size:26px; background:linear-gradient(135deg,var(--acc-2),var(--acc)); box-shadow:0 10px 24px rgba(0,0,0,.25); flex-shrink:0; }
+.wrap{ max-width:860px; margin:-58px auto 40px; padding:0 16px; }
+.card{ background:#fff; border:1px solid #e8edf5; border-radius:22px; padding:22px; box-shadow:0 1px 2px rgba(15,23,42,.04), 0 12px 30px rgba(15,23,42,.07); margin-bottom:16px; }
+.card h3{ margin:0 0 4px; font-size:15.5px; font-weight:800; display:flex; align-items:center; gap:8px; }
+.card .hint{ margin:0 0 16px; color:var(--soft); font-size:12.5px; font-weight:600; }
+.grid{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+.grid .full{ grid-column:1/-1; }
+label{ display:block; font-size:12px; font-weight:800; color:#475569; margin-bottom:6px; letter-spacing:.2px; }
+label .req{ color:#dc2626; }
+input,select{
+    width:100%; height:48px; padding:0 14px; border:1.5px solid var(--line); border-radius:13px; background:#f8fafc;
+    font:600 14.5px 'Plus Jakarta Sans',sans-serif; color:var(--ink); transition:border-color .15s, box-shadow .15s, background .15s;
+}
+input:focus,select:focus{ outline:none; border-color:#93c5fd; background:#fff; box-shadow:0 0 0 4px rgba(59,130,246,.12); }
+.pw{ position:relative; } .pw input{ padding-right:48px; }
+.pw button{ position:absolute; right:5px; top:50%; transform:translateY(-50%); width:38px; height:38px; border:none; background:none; border-radius:10px; cursor:pointer; font-size:15px; }
+.pw button:hover{ background:#f1f5f9; }
+.gen{ font-size:11.5px; font-weight:800; color:#2563eb; background:none; border:none; cursor:pointer; padding:0; margin-left:6px; font-family:inherit; }
 
-.card{
-    background: white;
-    padding: 30px;
-    border-radius: 12px;
-    box-shadow: 0 0 10px rgba(0,0,0,0.15);
-    width: 450px;
-    max-width: 100%;
-}
+.plan-pick{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.plan-opt{ position:relative; border:2px solid var(--line); border-radius:18px; padding:16px; cursor:pointer; background:#fff; transition:.15s; }
+.plan-opt input{ position:absolute; opacity:0; pointer-events:none; width:1px; height:1px; }
+.plan-opt .pt{ font-weight:800; font-size:16px; display:flex; align-items:center; gap:8px; }
+.plan-opt .pd{ font-size:12.5px; color:var(--soft); font-weight:600; margin-top:5px; line-height:1.45; }
+.plan-opt .tick{ position:absolute; top:12px; right:12px; width:22px; height:22px; border-radius:50%; border:2px solid var(--line); display:flex; align-items:center; justify-content:center; font-size:12px; color:#fff; }
+.plan-opt.free.on{ border-color:#22c55e; background:#f0fdf4; box-shadow:0 0 0 4px rgba(34,197,94,.12); }
+.plan-opt.paid.on{ border-color:#6366f1; background:#eef2ff; box-shadow:0 0 0 4px rgba(99,102,241,.12); }
+.plan-opt.free.on .tick{ background:#22c55e; border-color:#22c55e; }
+.plan-opt.paid.on .tick{ background:#6366f1; border-color:#6366f1; }
+.plan-opt.on .tick::after{ content:"✓"; }
+.hide{ display:none !important; }
+.free-note{ margin-top:14px; background:#f0fdf4; border:1px solid #bbf7d0; color:#166534; border-radius:14px; padding:12px 14px; font-size:13px; font-weight:700; }
+.sum{ margin-top:14px; background:#f8fafc; border:1px dashed #cbd5e1; border-radius:14px; padding:12px 14px; font-size:13px; font-weight:700; color:var(--ink-3); display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; }
 
-h2, h3{
-    margin-bottom: 10px;
-}
+.pm-row{ display:grid; grid-template-columns:160px 1fr 44px; gap:8px; margin-bottom:8px; }
+.pm-del{ height:48px; border:1.5px solid #fecaca; background:#fff; color:#dc2626; border-radius:13px; cursor:pointer; font-size:16px; }
+.add-pm{ border:1.5px dashed #cbd5e1; background:#fff; color:var(--ink-3); border-radius:13px; height:44px; width:100%; font:800 13px 'Plus Jakarta Sans',sans-serif; cursor:pointer; }
+.add-pm:hover{ border-color:#94a3b8; background:#f8fafc; }
 
-input, select{
-    width: 100%;
-    padding: 10px;
-    margin: 8px 0;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    box-sizing:border-box;
-}
-
-button{
-    width: 100%;
-    padding: 12px;
-    background: #0a7cff;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 16px;
-}
-
-button:hover{
-    background: #095fcc;
-}
-
-.pm-row{
-    display:flex;
-    gap:8px;
-    margin:8px 0;
-}
-.pm-row select{
-    flex:0 0 130px;
-    margin:0;
-}
-.pm-row input{
-    flex:1;
-    margin:0;
-}
-.pm-row input.pm-type{
-    flex:0 0 150px;
-}
-.pm-row .pm-remove{
-    flex:0 0 auto;
-    width:auto;
-    padding:10px 14px;
-    background:#dc3545;
-    font-size:14px;
-}
-.pm-row .pm-remove:hover{
-    background:#c82333;
-}
-.pm-add-btn{
-    background:#28a745;
-    margin-top:4px;
-}
-.pm-add-btn:hover{
-    background:#218838;
+.error{ background:#fef2f2; color:#b91c1c; border:1px solid #fecaca; padding:12px 14px; border-radius:14px; font-size:13.5px; font-weight:700; margin-bottom:16px; }
+.actions{ display:flex; gap:10px; position:sticky; bottom:0; padding:12px 0 calc(12px + env(safe-area-inset-bottom)); background:linear-gradient(to top, var(--bg) 70%, transparent); }
+.btn{ flex:1; height:52px; border:none; border-radius:15px; font:800 15px 'Plus Jakarta Sans',sans-serif; cursor:pointer; display:flex; align-items:center; justify-content:center; text-decoration:none; }
+.btn.main{ color:#fff; background:linear-gradient(135deg,var(--acc-2),var(--acc)); box-shadow:0 12px 26px rgba(234,88,12,.28); flex:2; }
+.btn.main[disabled]{ opacity:.75; cursor:wait; }
+.btn.sec{ background:#fff; color:var(--ink-3); border:1.5px solid var(--line); }
+@media(max-width:640px){
+    .grid{ grid-template-columns:1fr; }
+    .top{ padding:16px 16px 74px; } .top h1{ font-size:19px; }
+    .card{ padding:18px 16px; border-radius:20px; }
+    .plan-opt{ padding:14px 12px; } .plan-opt .pd{ font-size:11.5px; }
+    .pm-row{ grid-template-columns:1fr 44px; } .pm-row .pm-type{ grid-column:1/-1; }
 }
 </style>
+
 </head>
-
 <body>
-
-<div class="card">
-
-<h2>🍽 Register Restaurant</h2>
-
-<form method="POST" onsubmit="return preparePaymentMethods()">
-
-    <input name="name" placeholder="Restaurant Name" required>
-    <input name="phone" placeholder="Phone Number">
-
-    <input name="username" placeholder="Username" required>
-    <input name="password" type="password" placeholder="Restaurant Login Password" required>
-    <input name="kitchen_password" type="password" placeholder="Kitchen Password" required>
-
-    <h3>🔐 Restaurant Admin Password</h3>
-    <input name="restaurant_admin_password"
-           type="password"
-           placeholder="Restaurant Admin Password"
-           required>
-
-    <h3>👤 Restaurant Admin Info</h3>
-    <input name="admin_name" placeholder="Admin Name">
-    <input name="admin_email" placeholder="Admin Email">
-
-    <h3>💵 Subscription Price</h3>
-    <input name="price" placeholder="Example: 20" required>
-
-    <h3>📅 Subscription Period</h3>
-    <select name="months" required>
-        <option value="3">3 Months</option>
-        <option value="6">6 Months</option>
-        <option value="12">1 Year</option>
-    </select>
-
-    <h3>📲 Payment Methods</h3>
-    <datalist id="pmTypeOptions">
-        <option value="EVC Plus">
-        <option value="eDahab">
-        <option value="Sahal">
-        <option value="Golis">
-        <option value="Premier Bank">
-        <option value="Cash">
-    </datalist>
-    <div id="pmList">
-        <div class="pm-row">
-            <input class="pm-type" list="pmTypeOptions" value="EVC Plus" placeholder="e.g. EVC Plus">
-            <input class="pm-code" placeholder="Example: *789*657090*$#" required>
-            <button type="button" class="pm-remove" onclick="removePaymentRow(this)" style="display:none;">✕</button>
+{% set form = form or {} %}
+<div class="top">
+    <div class="top-in">
+        <a href="/admin#restaurants" class="back" title="Back to admin">←</a>
+        <div class="ic">🍽️</div>
+        <div>
+            <h1>Register Restaurant</h1>
+            <p>Abuur maqaayad cusub — dooro FREE ama PAID.</p>
         </div>
     </div>
-    <button type="button" class="pm-add-btn" onclick="addPaymentRow()">➕ Add Another Payment Method</button>
-    <input type="hidden" name="payment_methods_json" id="payment_methods_json">
+</div>
 
-    <button type="submit">Create Restaurant</button>
+<div class="wrap">
+    {% if error %}<div class="error">⚠️ {{ error }}</div>{% endif %}
 
-</form>
+    <form method="POST" id="regForm" autocomplete="off">
+        <input type="hidden" name="payment_methods_json" id="payment_methods_json" value="[]">
 
+        <!-- PLAN -->
+        <div class="card">
+            <h3>💎 Plan</h3>
+            <p class="hint">FREE weligiis ma dhacayo, lacagna looma baahna ilaa adiga aad Paid ka dhigto (Admin → Restaurants → Make Paid).</p>
+            {% set cur_plan = 'free' if form.get('plan') == 'free' else 'paid' %}
+            <div class="plan-pick" id="planPick">
+                <label class="plan-opt free {{ 'on' if cur_plan == 'free' }}"><input type="radio" name="plan" value="free" {{ 'checked' if cur_plan == 'free' }}><span class="tick"></span><div class="pt">🎁 FREE</div><div class="pd">Bilaash — ma dhacayo, wax lacag ah lama weydiinayo.</div></label>
+                <label class="plan-opt paid {{ 'on' if cur_plan == 'paid' }}"><input type="radio" name="plan" value="paid" {{ 'checked' if cur_plan == 'paid' }}><span class="tick"></span><div class="pt">💎 PAID</div><div class="pd">Lacag bille ah + muddo. Marka uu dhaco wuu xirmayaa ilaa la cusbooneysiiyo.</div></label>
+            </div>
+            <div class="grid paid-only" style="margin-top:16px;">
+                <div>
+                    <label>Monthly Fee ($) <span class="req">*</span></label>
+                    <input type="number" name="price" id="price" min="0" step="0.01" placeholder="e.g. 30" value="{{ form.get('price', '') }}">
+                </div>
+                <div>
+                    <label>Subscription</label>
+                    {% set mo = form.get('months', '3') %}
+                    <select name="months" id="months">
+                        {% for m in ['1','2','3','6','12'] %}<option value="{{ m }}" {{ 'selected' if mo == m }}>{{ m }} Month{{ 's' if m != '1' }}</option>{% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="sum paid-only" id="sum"><span>📅 Expiry: <b id="sumExp">—</b></span><span>🧾 Total: <b id="sumTotal">$0</b></span></div>
+            <div class="free-note free-only">🎁 Account-kan waa FREE — ma laha expiry, lacagna ma weydiin doono. Waxaad mar walba ka beddeli kartaa Admin panel-ka.</div>
+        </div>
+
+        <!-- BUSINESS -->
+        <div class="card">
+            <h3>🏪 Restaurant Info</h3>
+            <p class="hint">Magaca iyo xiriirka maqaayadda.</p>
+            <div class="grid">
+                <div><label>Restaurant Name <span class="req">*</span></label><input name="name" required placeholder="e.g. Hiil Restaurant" value="{{ form.get('name', '') }}"></div>
+                <div><label>Phone</label><input name="phone" inputmode="tel" placeholder="e.g. 0612345678" value="{{ form.get('phone', '') }}"></div>
+                <div><label>Owner / Admin Name</label><input name="admin_name" placeholder="e.g. Axmed Cali" value="{{ form.get('admin_name', '') }}"></div>
+                <div><label>Admin Email</label><input name="admin_email" type="email" placeholder="name@email.com" value="{{ form.get('admin_email', '') }}"></div>
+            </div>
+        </div>
+
+        <!-- LOGINS -->
+        <div class="card">
+            <h3>🔐 Logins &amp; Passwords</h3>
+            <p class="hint">Username-ka waa inuu noqdaa mid aan horey loo isticmaalin.</p>
+            <div class="grid">
+                <div><label>Username <span class="req">*</span></label><input name="username" required autocapitalize="off" placeholder="login username" value="{{ form.get('username', '') }}"></div>
+                <div><label>Login Password <span class="req">*</span><button type="button" class="gen" data-gen="password">Generate</button></label><div class="pw"><input name="password" id="password" type="password" required value="{{ form.get('password', '') }}"><button type="button" data-eye>👁️</button></div></div>
+                <div><label>Admin Panel Password <span class="req">*</span><button type="button" class="gen" data-gen="restaurant_admin_password">Generate</button></label><div class="pw"><input name="restaurant_admin_password" id="restaurant_admin_password" type="password" required value="{{ form.get('restaurant_admin_password', '') }}"><button type="button" data-eye>👁️</button></div></div>
+                <div><label>Kitchen Password <span class="req">*</span><button type="button" class="gen" data-gen="kitchen_password">Generate</button></label><div class="pw"><input name="kitchen_password" id="kitchen_password" type="password" required value="{{ form.get('kitchen_password', '') }}"><button type="button" data-eye>👁️</button></div></div>
+            </div>
+        </div>
+
+        <!-- PAYMENT METHODS -->
+        <div class="card">
+            <h3>💳 Payment Methods</h3>
+            <p class="hint">Ugu yaraan hal habka lacag-bixinta — magaca (EVC Plus, eDahab, Sahal, Golis, Premier Bank, Cash…) iyo lambarka/code-ka (tusaale *789*657090*$#).</p>
+            <datalist id="pmTypeOptions">
+                <option value="EVC Plus"><option value="eDahab"><option value="Sahal"><option value="Golis">
+                <option value="Zaad"><option value="Premier Bank"><option value="Premier Wallet"><option value="Cash">
+            </datalist>
+            <div id="pmList"></div>
+            <button type="button" class="add-pm" onclick="addPm()">➕ Add payment method</button>
+        </div>
+
+        <div class="actions">
+            <a href="/admin#restaurants" class="btn sec">Cancel</a>
+            <button type="submit" class="btn main" id="submitBtn">✅ Create Restaurant</button>
+        </div>
+    </form>
 </div>
 
 <script>
-function addPaymentRow(){
-    const list = document.getElementById("pmList");
-    const row = document.createElement("div");
-    row.className = "pm-row";
-    row.innerHTML = `
-        <input class="pm-type" list="pmTypeOptions" placeholder="e.g. EVC Plus">
-        <input class="pm-code" placeholder="Example: *789*657090*$#" required>
-        <button type="button" class="pm-remove" onclick="removePaymentRow(this)">✕</button>
-    `;
-    list.appendChild(row);
-    updateRemoveButtons();
-}
-
-function removePaymentRow(btn){
-    btn.closest(".pm-row").remove();
-    updateRemoveButtons();
-}
-
-function updateRemoveButtons(){
-    const rows = document.querySelectorAll("#pmList .pm-row");
-    rows.forEach(row => {
-        const removeBtn = row.querySelector(".pm-remove");
-        removeBtn.style.display = rows.length > 1 ? "inline-block" : "none";
-    });
-}
-
-function preparePaymentMethods(){
-    const rows = document.querySelectorAll("#pmList .pm-row");
-    const methods = [];
-    rows.forEach(row => {
-        const type = row.querySelector(".pm-type").value;
-        const code = row.querySelector(".pm-code").value.trim();
-        if(code) methods.push({ type, code });
-    });
-    if(methods.length === 0){
-        alert("Please add at least one payment method");
-        return false;
+(function(){
+    /* ---------- plan picker ---------- */
+    const pick = document.getElementById("planPick");
+    const price = document.getElementById("price"), months = document.getElementById("months");
+    function plan(){ const c = pick.querySelector("input:checked"); return c ? c.value : "paid"; }
+    function sync(){
+        const p = plan();
+        pick.querySelectorAll(".plan-opt").forEach(o => o.classList.toggle("on", o.querySelector("input").checked));
+        document.querySelectorAll(".paid-only").forEach(e => e.classList.toggle("hide", p !== "paid"));
+        document.querySelectorAll(".free-only").forEach(e => e.classList.toggle("hide", p !== "free"));
+        price.required = p === "paid";
+        const m = parseInt(months.value) || 1, fee = parseFloat(price.value) || 0;
+        const d = new Date(); d.setDate(d.getDate() + m * 30);
+        document.getElementById("sumExp").textContent = d.toISOString().slice(0, 10);
+        document.getElementById("sumTotal").textContent = "$" + (fee * m).toFixed(2);
     }
-    document.getElementById("payment_methods_json").value = JSON.stringify(methods);
-    return true;
-}
-</script>
+    pick.addEventListener("change", sync); price.addEventListener("input", sync); months.addEventListener("change", sync);
+    sync();
 
+    /* ---------- passwords ---------- */
+    document.querySelectorAll("[data-eye]").forEach(b => b.addEventListener("click", () => {
+        const i = b.previousElementSibling; const s = i.type === "password";
+        i.type = s ? "text" : "password"; b.textContent = s ? "🙈" : "👁️";
+    }));
+    document.querySelectorAll("[data-gen]").forEach(b => b.addEventListener("click", () => {
+        const i = document.getElementById(b.dataset.gen);
+        const chars = "abcdefghjkmnpqrstuvwxyz23456789";
+        let s = ""; const a = new Uint32Array(8); (window.crypto || window.msCrypto).getRandomValues(a);
+        a.forEach(n => s += chars[n % chars.length]);
+        i.value = s; i.type = "text"; const e = i.nextElementSibling; if(e) e.textContent = "🙈";
+    }));
+
+    /* ---------- payment methods ---------- */
+    const list = document.getElementById("pmList");
+    function syncRemove(){
+        const rows = list.querySelectorAll(".pm-row");
+        rows.forEach(r => r.querySelector(".pm-del").style.visibility = rows.length > 1 ? "visible" : "hidden");
+    }
+    window.addPm = function(type, code){
+        const row = document.createElement("div"); row.className = "pm-row";
+        const t = document.createElement("input"); t.className = "pm-type"; t.setAttribute("list", "pmTypeOptions");
+        t.placeholder = "e.g. EVC Plus"; t.value = type || "";
+        const inp = document.createElement("input"); inp.className = "pm-code"; inp.placeholder = "Example: *789*657090*$#"; inp.value = code || "";
+        const del = document.createElement("button"); del.type = "button"; del.className = "pm-del"; del.textContent = "✕"; del.title = "Remove";
+        del.addEventListener("click", () => { row.remove(); syncRemove(); });
+        row.append(t, inp, del); list.appendChild(row); syncRemove();
+        return row;
+    };
+    let initial = [];
+    try{ initial = JSON.parse({{ (form.get('payment_methods_json') or '[]')|tojson }}) || []; }catch(e){}
+    if(initial.length) initial.forEach(m => addPm(m.type, m.code)); else addPm("EVC Plus", "");
+
+    /* ---------- submit ---------- */
+    document.getElementById("regForm").addEventListener("submit", (e) => {
+        const methods = Array.from(list.querySelectorAll(".pm-row")).map(r => ({
+            type: r.querySelector(".pm-type").value.trim() || "Other", code: r.querySelector(".pm-code").value.trim()
+        })).filter(m => m.code);
+        if(methods.length === 0){
+            e.preventDefault(); alert("Please add at least one payment method"); const c = list.querySelector(".pm-code"); if(c) c.focus(); return;
+        }
+        document.getElementById("payment_methods_json").value = JSON.stringify(methods);
+        if(plan() === "paid" && (price.value === "" || parseFloat(price.value) < 0)){
+            e.preventDefault(); price.focus(); alert("Geli Monthly Fee (PAID plan)."); return;
+        }
+        const b = document.getElementById("submitBtn"); b.disabled = true; b.textContent = "⏳ Creating…";
+    });
+})();
+</script>
 </body>
 </html>

@@ -45,7 +45,8 @@
        WebAudio (loud + instant). Browsers only allow sound after
        the first tap on the page, so we unlock on any tap.
        ===================================================== */
-    const SOUND_URLS = { order: "/static/sounds/new_order.wav", ready: "/static/sounds/ready.wav", chat: "/static/sounds/chat.wav" };
+    const SV = "v3";
+    const SOUND_URLS = { order: "/static/sounds/new_order.wav?" + SV, ready: "/static/sounds/ready.wav?" + SV, chat: "/static/sounds/chat.wav?" + SV };
     let ctx = null; const buffers = {}; let unlocked = false;
     function soundOn(){ return LS.get("sa_sound", "on") !== "off"; }
     function ensureCtx(){
@@ -69,18 +70,37 @@
     }
     ["pointerdown", "touchstart", "keydown", "click"].forEach(ev => document.addEventListener(ev, unlock, { passive:true }));
 
+    // LOUD: the sound is amplified (x2.6) through a limiter, so it is much
+    // louder than a normal web sound but never distorts/crackles.
+    let master = null;
+    function out(c){
+        if(master) return master;
+        const comp = c.createDynamicsCompressor();
+        comp.threshold.value = -12; comp.knee.value = 6; comp.ratio.value = 14; comp.attack.value = 0.002; comp.release.value = 0.2;
+        const g = c.createGain(); g.gain.value = 2.6;
+        g.connect(comp); comp.connect(c.destination);
+        master = g; return master;
+    }
     function play(name){
         if(!soundOn()) return;
         const c = ensureCtx();
         if(c && buffers[name]){
             try{
-                const src = c.createBufferSource(), g = c.createGain();
-                g.gain.value = 1.0; src.buffer = buffers[name]; src.connect(g); g.connect(c.destination); src.start(0);
+                const src = c.createBufferSource();
+                src.buffer = buffers[name]; src.connect(out(c)); src.start(0);
                 return;
             }catch(e){}
         }
         try{ const a = new Audio(SOUND_URLS[name] || SOUND_URLS.order); a.volume = 1; a.play().catch(() => {}); }catch(e){}
     }
+    // New orders keep ringing (3×) until someone taps the screen / the alert.
+    let ringTimer = null, ringLeft = 0;
+    function stopRing(){ clearInterval(ringTimer); ringTimer = null; ringLeft = 0; }
+    function ring(){
+        stopRing(); play("order"); ringLeft = 2;
+        ringTimer = setInterval(() => { if(ringLeft-- <= 0){ stopRing(); return; } play("order"); }, 3200);
+    }
+    ["pointerdown", "keydown"].forEach(ev => document.addEventListener(ev, () => { if(ringTimer) stopRing(); }, { passive:true }));
 
     /* =====================================================
        🔔 BANNER ALERTS
@@ -130,16 +150,28 @@
         if(!("serviceWorker" in navigator)) return null;
         try{ return await navigator.serviceWorker.register("/sahal-sw.js", { scope: "/sahal-push/" }); }catch(e){ return null; }
     }
+    let pushError = "";
     async function subscribePush(){
-        if(!RID || !("PushManager" in window) || !("Notification" in window)) return false;
-        if(Notification.permission !== "granted") return false;
-        const reg = await getReg(); if(!reg) return false;
+        pushError = "";
+        if(!RID){ pushError = "no-rid"; return false; }
+        if(!("serviceWorker" in navigator) || !("PushManager" in window)){ pushError = "Browser-kan push ma taageero (iPhone: Add to Home Screen kadib app-ka ka fur)."; return false; }
+        if(Notification.permission !== "granted"){ pushError = "permission"; return false; }
+        const reg = await getReg(); if(!reg){ pushError = "Service worker (/sahal-sw.js) lama helin — hubi in static/sahal-sw.js la upload gareeyay."; return false; }
         try{
-            await navigator.serviceWorker.ready;
+            // NOTE: navigator.serviceWorker.ready only resolves for a worker that
+            // controls THIS page — ours lives at /sahal-push/, so wait for it directly.
+            if(!reg.active){
+                const sw = reg.installing || reg.waiting;
+                if(sw) await new Promise((res) => {
+                    if(sw.state === "activated") return res();
+                    sw.addEventListener("statechange", () => { if(sw.state === "activated") res(); });
+                    setTimeout(res, 8000);
+                });
+            }
             let sub = await reg.pushManager.getSubscription();
             if(!sub){
-                const k = await fetch("/api/push/vapid").then(r => r.json());
-                if(!k.success) return false;
+                const k = await fetch("/api/push/vapid").then(r => r.json()).catch(() => ({}));
+                if(!k.success){ pushError = "Server-ka: pywebpush kuma rakibna (ku dar requirements.txt kadib redeploy)."; return false; }
                 sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToUint8(k.public_key) });
             }
             const r = await fetch(`/api/push/subscribe/${encodeURIComponent(RID)}`, {
@@ -147,23 +179,44 @@
                 body: JSON.stringify({ subscription: sub.toJSON(), role: ROLE })
             }).then(r => r.json()).catch(() => ({}));
             pushActive = !!r.success;
+            if(!pushActive) pushError = r.error || "Server-ka ma diiwaan gelin qalabkan.";
             return pushActive;
-        }catch(e){ return false; }
+        }catch(e){
+            const m = String(e && e.message || e);
+            pushError = /permission denied|incognito|private/i.test(m)
+                ? "Incognito / Private window-ka push kuma shaqeeyo — ka fur Chrome caadi ah (ama app-ka la rakibay)."
+                : "Push subscribe failed: " + m;
+            return false;
+        }
     }
     async function enableNotifications(){
         unlock();
         if(!("Notification" in window)){ alert("Browser-kan notifications ma taageero. Isticmaal Chrome."); return false; }
         let perm = Notification.permission;
-        if(perm === "default"){ try{ perm = await Notification.requestPermission(); }catch(e){} }
+        if(perm === "default"){
+            try{
+                perm = await new Promise((res) => {
+                    const r = Notification.requestPermission(res);   // old Safari uses the callback
+                    if(r && r.then) r.then(res);
+                });
+            }catch(e){}
+        }
         if(perm !== "granted"){
-            alert("Notifications waa la xiray. Browser settings-ka ka oggolow (🔒 → Notifications → Allow).");
+            alert(perm === "denied"
+                ? "Notifications waa la xiray (Blocked).\n\nKombuyuutar: riix 🔒 ama 🔕 (bidixda/midigta URL-ka) → Notifications → Allow, kadib refresh.\nAndroid: ⋮ → Settings → Site settings → Notifications → Allow."
+                : "Browser-ku ma soo bandhigin su'aasha 'Allow'.\n\nRiix calaamadda 🔕 ama 🔒 ee ku taal URL-ka (address bar) → Notifications → Allow, kadib refresh bogga.");
+            refreshNotifyButtons();
             return false;
         }
         LS.set("sa_notify", "on");
-        const ok = await subscribePush();
+        const ok = await Promise.race([subscribePush(), new Promise(r => setTimeout(() => { pushError = pushError || "Push service-ka ma jawaabin (internet?)"; r(false); }, 15000))]);
         hideEnable();
         renderSheetExtras(); refreshNotifyButtons();
-        return ok || Notification.permission === "granted";
+        if(!ok && pushError && pushError !== "permission"){
+            banner("chat", "⚠️", "Notifications: qalabkan waa shidan yahay", "Laakiin marka browser-ku xiran yahay ma iman doonaan: " + pushError);
+            return true;
+        }
+        return true;
     }
     function notifyState(){
         if(!("Notification" in window)) return "unsupported";
@@ -192,8 +245,9 @@
         if(st === "on"){
             if(confirm("Ma rabtaa inaad damiso notifications-ka qalabkan?")) await disableNotifications();
         } else {
+            document.querySelectorAll("[data-sa-notify]").forEach(b => { b.innerHTML = '<span class="sa-n-ic">⏳</span><span class="sa-n-lb">Shidaya…</span>'; });
             const ok = await enableNotifications();
-            if(ok){ banner("ready", "🔔", "Notifications waa shidan yihiin", "Dalab cusub, diyaar iyo chat ayaa kuu imaanaya xitaa marka browser-ku xiran yahay"); play("ready"); }
+            if(ok && pushActive){ banner("ready", "🔔", "Notifications waa shidan yihiin ✅", "Dalab cusub, diyaar iyo chat ayaa kuu imaanaya xitaa marka browser-ku xiran yahay"); play("ready"); }
         }
         refreshNotifyButtons();
     }
@@ -421,8 +475,8 @@
     window.SahalApp = {
         play, banner, unlock, enableNotifications, disableNotifications,
         newOrderAlert(title, text, onClick){
-            play("order"); vibrate([200, 100, 200, 100, 300]);
-            banner("", "🔔", title || "Dalab cusub!", text || "", onClick);
+            ring(); vibrate([300, 120, 300, 120, 500]);
+            banner("", "🔔", title || "Dalab cusub!", text || "", () => { stopRing(); if(onClick) onClick(); });
             localNotify("🔔 " + (title || "Dalab cusub!"), text || "", "order");
         },
         readyAlert(title, text){
