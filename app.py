@@ -5133,7 +5133,7 @@ def create_order(rid):
         if existing_order_id:
             merged_cart = existing_cart + cart
             items_text  = ", ".join([f"{i.get('qty')}x {i.get('name')}" for i in merged_cart])
-            total_price = sum(float(i.get("price", 0)) * int(i.get("qty", 1)) for i in merged_cart)
+            total_price = round(sum(float(i.get("price", 0)) * int(i.get("qty", 1)) for i in merged_cart), 2)
 
             # The items sent in THIS request only — the delta the kitchen
             # actually needs to prepare, since everything else in
@@ -5165,7 +5165,7 @@ def create_order(rid):
             order_id = existing_order_id
         else:
             items_text  = ", ".join([f"{i.get('qty')}x {i.get('name')}" for i in cart])
-            total_price = sum(float(i.get("price", 0)) * int(i.get("qty", 1)) for i in cart)
+            total_price = round(sum(float(i.get("price", 0)) * int(i.get("qty", 1)) for i in cart), 2)
 
             order_data = {
                 "items":      items_text,
@@ -5395,6 +5395,11 @@ def kitchen(rid):
                 continue
 
             created_at = order.get("created_at")
+            # Minutes since the order (or its latest addition) arrived — the
+            # kitchen screen only AUTO-prints recent ones, so switching
+            # Auto-Print on never dumps dozens of old tickets on the printer.
+            _recent = _to_mogadishu(order.get("last_added_at") or created_at)
+            order["age_min"] = int((datetime.now(MOGADISHU_TZ) - _recent).total_seconds() // 60) if _recent else 99999
             if created_at:
                 try:
                     order["created_at"] = _to_mogadishu(created_at).strftime("%Y-%m-%d %I:%M:%S %p")

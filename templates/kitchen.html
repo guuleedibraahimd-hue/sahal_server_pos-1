@@ -252,7 +252,7 @@
             <button class="clear-btn" id="clearOrdersBtn">🧹 Clear Kitchen Orders</button>
             <button class="clear-btn" id="autoPrintBtn">🖨 Auto-Print: OFF</button>
         </div>
-        <p class="print-help">🖨️ Dalab kasta oo waiter-ku soo diro <b>si toos ah ayuu u daabacmayaa</b> (rasiidka jikada). Si aanu u soo bixin sanduuqa "Print", Chrome-ka jikada ku fur <b>--kiosk-printing</b> oo printer-ka ka dhig <b>Default</b>.<span class="print-queue" id="printQueueInfo"></span></p>
+        <p class="print-help">🖨️ Dalab kasta oo waiter-ku soo diro <b>isla markiiba ayuu printer-ka POS-ka ka soo baxayaa</b>. Kombuyuutarka jikada ka fur jikada adigoo isticmaalaya faylka <b>Sahal_Kitchen.bat</b> (printer-ka POS-ka ka dhig <b>Default</b>) — markaas sanduuqa "Print" ma soo baxayo.<span class="print-queue" id="printQueueInfo"></span></p>
 
         <div class="stats" id="statsBox">
             <div class="stat s1"><div class="s-ic">📋</div><div><div class="s-num">{{ stats.total }}</div><div class="s-lbl">Total Orders</div></div></div>
@@ -268,7 +268,7 @@
 
         <div id="ordersContainer">
         {% for o in orders %}
-        <div class="order" id="order{{ o.id }}" data-status="{{ o.get('status', 'pending') }}" data-last-added="{{ o.last_added_marker }}" data-kitchen-printed="{{ '1' if o.get('kitchen_printed') else '0' }}">
+        <div class="order" id="order{{ o.id }}" data-status="{{ o.get('status', 'pending') }}" data-last-added="{{ o.last_added_marker }}" data-kitchen-printed="{{ '1' if o.get('kitchen_printed') else '0' }}" data-age-min="{{ o.age_min }}">
             <div class="order-top">
                 <div class="o-title">📋 Order #{{ orders|length - loop.index0 }} <span class="o-ref">Ref: {{ o.receipt_ref or o.id[:6] }}</span>{% if o.new_display_items %}<span class="updated-badge">🆕 Updated</span>{% endif %}</div>
                 <span class="status-pill">{{ o.get('status', 'pending') }}</span>
@@ -320,7 +320,7 @@
                     </div>
                     <div class="meta-row">
                         <div class="m-l">💵 Price</div>
-                        <div class="m-v money">${{ o.get('price', 0) }}</div>
+                        <div class="m-v money">${{ "%.2f"|format((o.get('price', 0) or 0)|float) }}</div>
                     </div>
                     <div class="meta-row">
                         <div class="m-l">📍 Status</div>
@@ -331,7 +331,6 @@
 
             <div class="order-actions">
                 <a class="status-btn ticket-btn" href="/kitchen_ticket/{{ rid }}/{{ o.id }}?all=1" target="_blank">🍳 Ticket</a>
-                <a class="status-btn print-btn" href="/receipt/{{ rid }}/{{ o.id }}" target="_blank">🧾 Receipt</a>
                 <button class="preparing status-btn" data-id="{{ o.id }}" data-status="preparing">⏳ Preparing</button>
                 <button class="ready status-btn" data-id="{{ o.id }}" data-status="ready">✅ Ready</button>
             </div>
@@ -405,6 +404,11 @@ document.addEventListener("DOMContentLoaded", function(){
     function idOf(el){ return el.id.replace("order", ""); }
     function getMarker(id){ const el = document.getElementById("order" + id); return el ? el.dataset.lastAdded : ""; }
     function isPrinted(id){ const el = document.getElementById("order" + id); return el ? el.dataset.kitchenPrinted === "1" : true; }
+    // Auto-print only orders from the last hour — old unprinted orders
+    // (e.g. from before the printer was set up) never flood the printer.
+    // They can still be printed by hand with the 🍳 Ticket button.
+    const AUTO_PRINT_MAX_AGE_MIN = 60;
+    function isRecent(id){ const el = document.getElementById("order" + id); return el ? Number(el.dataset.ageMin) <= AUTO_PRINT_MAX_AGE_MIN : false; }
 
     /* ---------- Print queue: ONE ticket at a time ----------
        Each ticket loads in a hidden frame and calls print(). The frame
@@ -422,7 +426,7 @@ document.addEventListener("DOMContentLoaded", function(){
         document.getElementById("printQueueInfo").textContent = n ? ` — ${n} ticket(s) printing…` : "";
     }
     function enqueuePrint(id){
-        if(!isAutoPrintOn() || queued.has(id)) return;
+        if(!isAutoPrintOn() || queued.has(id) || !isRecent(id)) return;
         if(Object.prototype.hasOwnProperty.call(printedMarker, id) && printedMarker[id] === (getMarker(id) || "")) return;
         queued.add(id); queue.push(id); updateQueueInfo(); pump();
     }
