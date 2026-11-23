@@ -75,6 +75,7 @@ a{ color:inherit; }
 .cat-tab{ padding:9px 16px; border-radius:20px; border:1.5px solid #eee; background:#fff; font-size:13px; font-weight:700; cursor:pointer; color:var(--text); }
 .cat-tab.active{ background:var(--orange); border-color:var(--orange); color:#fff; }
 .table-input{ margin-bottom:14px; }
+.credit-hint{ width:100%; max-width:260px; padding:11px 14px; border-radius:10px; border:1.5px solid #f5c48f; background:#fff8f0; color:#92400e; font-size:14px; font-weight:700; font-family:inherit; }
 .table-input input{ width:100%; max-width:260px; padding:11px 14px; border-radius:10px; border:1px solid #ddd; font-size:14px; }
 
 .menu-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:14px; }
@@ -137,7 +138,7 @@ table.tx-tbl td{ padding:9px 6px; border-bottom:1px solid #f4f4f4; }
 .msg.ok{ background:#d4edda; color:#155724; }
 .msg.err{ background:#f8d7da; color:#721c24; }
 
-.modal-bg{ display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); align-items:center; justify-content:center; z-index:100; padding:16px; }
+.modal-bg{ display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); align-items:center; justify-content:center; z-index:1000; padding:16px; }
 .modal-bg.show{ display:flex; }
 .modal{ background:#fff; border-radius:18px; padding:26px; width:100%; max-width:340px; text-align:center; }
 .modal .ic{ font-size:38px; margin-bottom:8px; }
@@ -176,6 +177,7 @@ table.tx-tbl td{ padding:9px 6px; border-bottom:1px solid #f4f4f4; }
     .menu-grid{ grid-template-columns:repeat(2,1fr); gap:10px; }
     .menu-item .img-wrap{ height:96px; }
     .table-input input{ max-width:none; font-size:16px; }
+    .credit-hint{ max-width:none; font-size:16px; }
     .search-box input{ font-size:16px; }
     .cat-tabs{ flex-wrap:nowrap; overflow-x:auto; -webkit-overflow-scrolling:touch; padding-bottom:4px; }
     .cat-tab{ flex-shrink:0; }
@@ -311,6 +313,12 @@ table.tx-tbl td{ padding:9px 6px; border-bottom:1px solid #f4f4f4; }
                         <option value="{{ c.phone }}">{{ c.phone }} — {{ c.visits }} visits</option>
                         {% endfor %}
                     </datalist>
+                </div>
+
+                <div class="table-input" id="creditHintWrap" style="display:none;">
+                    <select id="creditHint" class="credit-hint">
+                        <option value="">📒 Deen? — maya (lacag caadi ah)</option>
+                    </select>
                 </div>
 
                 <div class="search-box">
@@ -654,6 +662,7 @@ async function sendOrder(){
                 order_type: orderType,
                 table,
                 customer_phone,
+                credit_customer_id: (document.getElementById("creditHint") || {}).value || "",
                 cart: cart.map(c => ({ name: c.name, price: c.price, qty: c.qty }))
             })
         });
@@ -665,6 +674,7 @@ async function sendOrder(){
             renderCart();
             document.getElementById("tableNo").value = "";
             document.getElementById("customerPhone").value = "";
+            if(document.getElementById("creditHint")) document.getElementById("creditHint").value = "";
             setOrderType("table");
             document.getElementById("existingOrderBanner").style.display = "none";
             lastReceiptUrl = data.receipt_url || null;
@@ -808,6 +818,21 @@ async function liveCheck(){
 liveCheck();
 setInterval(liveCheck, 3000);
 document.addEventListener("visibilitychange", () => { if(!document.hidden) liveRefresh(); });
+
+/* 📒 Deen: the waiter tags the order — the cashier puts the bill on the customer's book */
+(function loadCreditHints(){
+    const sel = document.getElementById("creditHint"); if(!sel) return;
+    fetch(`/api/credit/${RID}/customers`, { cache:"no-store", headers:{ "X-Sahal-Role":"waiter" } })
+        .then(r => r.json()).then(d => {
+            if(!d.success || !(d.customers || []).length) return;
+            const esc = v => String(v || "").replace(/[&<>"']/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
+            const keep = sel.value;
+            sel.innerHTML = `<option value="">📒 Deen? — maya (lacag caadi ah)</option>` +
+                d.customers.map(c => `<option value="${esc(c.id)}">📒 ${esc(c.name)}${c.phone ? " · " + esc(c.phone) : ""}</option>`).join("");
+            sel.value = keep;
+            document.getElementById("creditHintWrap").style.display = "";
+        }).catch(() => {});
+})();
 </script>
 
 <script src="/static/sahal_app.js?v={{ asset_v }}" defer></script>

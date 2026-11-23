@@ -4858,6 +4858,380 @@ def cashier_pay(rid, order_id):
         return jsonify({"success": False, "error": str(e)})
 
 
+# =====================================================================
+# 📒 BUUGGA DEENTA (CUSTOMER CREDIT BOOK)
+#   restaurants/<rid>/credit_customers/<cid>
+#       name, phone, note, unlimited, limit, balance,
+#       total_charged, total_paid, active, created_at, last_activity
+#   restaurants/<rid>/credit_tx/<txid>
+#       customer_id, customer_name, type ("charge" | "payment"),
+#       amount, balance_after, order_id, receipt_ref, items, cart,
+#       table, order_type, waiter_name, cashier_name, method, note,
+#       date, created_at
+#   A "charge" turns an unpaid bill into debt (order → status paid,
+#   payment_method "credit"). No money is collected, so it never goes
+#   into the shift's cash. A "payment" is money the customer brings
+#   back; it IS recorded in `payments`, so it counts in the shift.
+# =====================================================================
+CREDIT_METHODS = ("cash", "evc", "edahab", "card", "other")
+
+
+def _money(v):
+    try:
+        return round(float(v or 0) + 0.0, 2)
+    except (TypeError, ValueError):
+        return None
+
+
+def _credit_role(rid):
+    """cashier | manager | waiter | None — who is asking for the credit book."""
+    rid = str(rid)
+    if session.get("staff_ok") and str(session.get("staff_rid")) == rid:
+        if session.get("staff_role") == "cashier":
+            return "cashier"
+        if session.get("staff_role") == "waiter":
+            return "waiter"
+    if (session.get("restaurant_login") and str(session.get("restaurant_id")) == rid) \
+            or session.get("admin_" + rid) or session.get("admin_ok"):
+        return "manager"
+    return None
+
+
+def _credit_actor():
+    return {"id": session.get("staff_employee_id", "") or "owner",
+            "name": session.get("staff_name", "") or "Owner / Admin"}
+
+
+def _credit_public(cid, c, full=True):
+    unlimited = bool(c.get("unlimited"))
+    limit = _money(c.get("limit")) or 0.0
+    balance = _money(c.get("balance")) or 0.0
+    out = {
+        "id": cid,
+        "name": c.get("name", ""),
+        "phone": c.get("phone", ""),
+        "active": c.get("active", True) is not False,
+        "unlimited": unlimited,
+        "limit": None if unlimited else limit,
+        "balance": balance,
+        "available": None if unlimited else round(max(limit - balance, 0), 2),
+    }
+    if full:
+        out.update({
+            "note": c.get("note", ""),
+            "total_charged": _money(c.get("total_charged")) or 0.0,
+            "total_paid": _money(c.get("total_paid")) or 0.0,
+            "created_at": c.get("created_at", ""),
+            "last_activity": c.get("last_activity", ""),
+            "bills": int(c.get("bills", 0) or 0),
+        })
+    return out
+
+
+def _credit_col(rid):
+    return db.collection("restaurants").document(rid).collection("credit_customers")
+
+
+def _credit_limit_from(body):
+    """Returns (unlimited, limit, error)."""
+    unlimited = str(body.get("unlimited", "")).lower() in ("1", "true", "yes", "on")
+    if unlimited:
+        return True, 0.0, None
+    limit = _money(body.get("limit"))
+    if limit is None or limit <= 0:
+        return False, 0.0, "Geli xadka deenta (limit) — lacag ka weyn 0, ama dooro 'No limit' ❌"
+    return False, limit, None
+
+
+@app.route("/api/credit/<rid>/customers", methods=["GET"])
+def credit_customers_list(rid):
+    role = _credit_role(rid)
+    if not role:
+        return jsonify({"success": False, "error": "Unauthorized"}), 401
+    rows = []
+    for d in _credit_col(rid).stream():
+        c = d.to_dict() or {}
+        if role == "waiter" and c.get("active", True) is False:
+            continue
+        rows.append(_credit_public(d.id, c, full=(role != "waiter")))
+    rows.sort(key=lambda x: (-(x["balance"] or 0), x["name"].lower()))
+    summary = {
+        "customers": len(rows),
+        "owing": sum(1 for r in rows if r["balance"] > 0),
+        "total_balance": round(sum(r["balance"] for r in rows), 2),
+    }
+    if role == "waiter":
+        rows = [{"id": r["id"], "name": r["name"], "phone": r["phone"]} for r in rows]
+        summary = {}
+    return jsonify({"success": True, "role": role, "customers": rows, "summary": summary})
+
+
+@app.route("/api/credit/<rid>/customers", methods=["POST"])
+def credit_customer_create(rid):
+    role = _credit_role(rid)
+    if role not in ("cashier", "manager"):
+        return jsonify({"success": False, "error": "Cashier-ka kaliya ayaa abuuri kara buug deen ❌"}), 403
+    body = request.get_json(silent=True) or {}
+    name = str(body.get("name", "")).strip()
+    phone = re.sub(r"[^\d+]", "", str(body.get("phone", "")))
+    if not name:
+        return jsonify({"success": False, "error": "Geli magaca macmiilka ❌"})
+    unlimited, limit, err = _credit_limit_from(body)
+    if err:
+        return jsonify({"success": False, "error": err})
+    if phone:
+        for d in _credit_col(rid).where("phone", "==", phone).limit(1).stream():
+            return jsonify({"success": False, "error": f"Lambarkan {phone} horey ayuu buug ugu furan yahay ({(d.to_dict() or {}).get('name', '')}) ❌"})
+    now = datetime.now().isoformat()
+    actor = _credit_actor()
+    ref = _credit_col(rid).document()
+    ref.set({
+        "name": name, "phone": phone, "note": str(body.get("note", "")).strip()[:300],
+        "unlimited": unlimited, "limit": limit, "balance": 0.0,
+        "total_charged": 0.0, "total_paid": 0.0, "bills": 0,
+        "active": True, "created_at": now, "last_activity": now,
+        "created_by": actor["name"], "created_by_id": actor["id"],
+    })
+    return jsonify({"success": True, "customer": _credit_public(ref.id, ref.get().to_dict())})
+
+
+@app.route("/api/credit/<rid>/customers/<cid>", methods=["GET"])
+def credit_customer_detail(rid, cid):
+    role = _credit_role(rid)
+    if role not in ("cashier", "manager"):
+        return jsonify({"success": False, "error": "Unauthorized"}), 401
+    snap = _credit_col(rid).document(cid).get()
+    if not snap.exists:
+        return jsonify({"success": False, "error": "Macmiilka lama helin ❌"}), 404
+    txs = []
+    for d in db.collection("restaurants").document(rid).collection("credit_tx") \
+            .where("customer_id", "==", cid).stream():
+        t = d.to_dict() or {}
+        t["id"] = d.id
+        t.pop("cart_raw", None)
+        txs.append(t)
+    txs.sort(key=lambda t: t.get("created_at", ""), reverse=True)
+    return jsonify({"success": True, "customer": _credit_public(cid, snap.to_dict() or {}), "transactions": txs[:300]})
+
+
+@app.route("/api/credit/<rid>/customers/<cid>/update", methods=["POST"])
+def credit_customer_update(rid, cid):
+    role = _credit_role(rid)
+    if role not in ("cashier", "manager"):
+        return jsonify({"success": False, "error": "Unauthorized"}), 401
+    ref = _credit_col(rid).document(cid)
+    snap = ref.get()
+    if not snap.exists:
+        return jsonify({"success": False, "error": "Macmiilka lama helin ❌"}), 404
+    body = request.get_json(silent=True) or {}
+    upd = {}
+    if "name" in body:
+        name = str(body.get("name", "")).strip()
+        if not name:
+            return jsonify({"success": False, "error": "Geli magaca macmiilka ❌"})
+        upd["name"] = name
+    if "phone" in body:
+        phone = re.sub(r"[^\d+]", "", str(body.get("phone", "")))
+        if phone:
+            for d in _credit_col(rid).where("phone", "==", phone).limit(2).stream():
+                if d.id != cid:
+                    return jsonify({"success": False, "error": f"Lambarkan {phone} buug kale ayuu leeyahay ❌"})
+        upd["phone"] = phone
+    if "note" in body:
+        upd["note"] = str(body.get("note", "")).strip()[:300]
+    if "unlimited" in body or "limit" in body:
+        unlimited, limit, err = _credit_limit_from(body)
+        if err:
+            return jsonify({"success": False, "error": err})
+        upd["unlimited"] = unlimited
+        upd["limit"] = limit
+    if "active" in body:
+        upd["active"] = bool(body.get("active"))
+    if upd:
+        upd["updated_at"] = datetime.now().isoformat()
+        ref.update(upd)
+    c = ref.get().to_dict() or {}
+    warn = ""
+    if not c.get("unlimited") and (_money(c.get("balance")) or 0) > (_money(c.get("limit")) or 0):
+        warn = "⚠️ Deenta hadda waxay ka badan tahay xadka cusub — deen cusub lama siin karo ilaa uu bixiyo."
+    return jsonify({"success": True, "customer": _credit_public(cid, c), "warning": warn})
+
+
+@app.route("/api/credit/<rid>/charge", methods=["POST"])
+def credit_charge(rid):
+    """Put an unpaid bill on a customer's credit book."""
+    role = _credit_role(rid)
+    if role not in ("cashier", "manager"):
+        return jsonify({"success": False, "error": "Cashier-ka kaliya ayaa bill deen ka dhigi kara ❌"}), 403
+    body = request.get_json(silent=True) or {}
+    order_id = str(body.get("order_id", "")).strip()
+    cid = str(body.get("customer_id", "")).strip()
+    if not order_id or not cid:
+        return jsonify({"success": False, "error": "Dooro bill-ka iyo macmiilka ❌"})
+    restaurant_ref = db.collection("restaurants").document(rid)
+    order_ref = restaurant_ref.collection("orders").document(order_id)
+    cust_ref = _credit_col(rid).document(cid)
+    tx_ref = restaurant_ref.collection("credit_tx").document()
+    actor = _credit_actor()
+    now = datetime.now()
+    result = {}
+
+    def work(txn):
+        o_snap = order_ref.get(transaction=txn)
+        c_snap = cust_ref.get(transaction=txn)
+        if not o_snap.exists:
+            return "Bill-ka lama helin ❌"
+        if not c_snap.exists:
+            return "Macmiilka lama helin ❌"
+        o = o_snap.to_dict() or {}
+        c = c_snap.to_dict() or {}
+        if str(o.get("status", "")).lower() == "paid":
+            return "Bill-kan horey ayaa loo bixiyay ✅" if o.get("payment_method") != "credit" \
+                else f"Bill-kan horey ayaa deen loogu qoray ({o.get('credit_customer_name', '')}) 📒"
+        if c.get("active", True) is False:
+            return f"Buugga {c.get('name', '')} waa xiran yahay — deen cusub lama siin karo ❌"
+        amount = _money(o.get("price")) or 0.0
+        if amount <= 0:
+            return "Bill-kan lacag ma laha ❌"
+        balance = _money(c.get("balance")) or 0.0
+        new_balance = round(balance + amount, 2)
+        if not c.get("unlimited"):
+            limit = _money(c.get("limit")) or 0.0
+            if new_balance > limit + 1e-9:
+                avail = round(max(limit - balance, 0), 2)
+                result["limit_hit"] = {"limit": limit, "balance": balance, "available": avail, "amount": amount}
+                return (f"⛔ {c.get('name', '')} wuxuu gaaray xadka deenta! "
+                        f"Xadka: ${limit:.2f} · Deenta hadda: ${balance:.2f} · "
+                        f"Bill-kan: ${amount:.2f} · Waxa u bannaan: ${avail:.2f}")
+        cart = o.get("cart") or []
+        items = [{"name": i.get("name", ""), "qty": int(i.get("qty", 1) or 1),
+                  "price": _money(i.get("price")) or 0.0,
+                  "total": round((_money(i.get("price")) or 0.0) * int(i.get("qty", 1) or 1), 2)} for i in cart]
+        txn.set(tx_ref, {
+            "customer_id": cid, "customer_name": c.get("name", ""), "customer_phone": c.get("phone", ""),
+            "type": "charge", "amount": amount, "balance_before": balance, "balance_after": new_balance,
+            "order_id": order_id, "receipt_ref": o.get("receipt_ref", ""),
+            "items_text": o.get("items", ""), "items": items,
+            "table": o.get("table", ""), "order_type": o.get("order_type", "table"),
+            "waiter_name": o.get("employee_name", ""), "waiter_id": o.get("employee_id", ""),
+            "cashier_name": actor["name"], "cashier_id": actor["id"],
+            "note": str(body.get("note", "")).strip()[:200],
+            "date": now.strftime("%Y-%m-%d"), "time": now.strftime("%H:%M"),
+            "created_at": now.isoformat(),
+        })
+        txn.update(cust_ref, {
+            "balance": new_balance,
+            "total_charged": round((_money(c.get("total_charged")) or 0.0) + amount, 2),
+            "bills": int(c.get("bills", 0) or 0) + 1,
+            "last_activity": now.isoformat(),
+        })
+        txn.update(order_ref, {
+            "status": "paid", "payment_method": "credit",
+            "credit_customer_id": cid, "credit_customer_name": c.get("name", ""),
+            "credit_tx_id": tx_ref.id, "paid_by": actor["id"], "cashier_id": actor["id"],
+            "updated_at": datetime.utcnow(),
+        })
+        result.update({"amount": amount, "balance": new_balance, "name": c.get("name", ""),
+                       "available": None if c.get("unlimited") else round((_money(c.get("limit")) or 0) - new_balance, 2)})
+        return None
+
+    try:
+        err = firestore.transactional(work)(db.transaction())
+    except Exception as e:
+        print("CREDIT CHARGE ERROR:", e)
+        return jsonify({"success": False, "error": f"Khalad ayaa dhacay — isku day mar kale ({e})"}), 500
+    if err:
+        out = {"success": False, "error": err}
+        if result.get("limit_hit"):
+            out["limit_hit"] = result["limit_hit"]
+        return jsonify(out)
+    _bump_orders_version(rid)
+    return jsonify({"success": True, "tx_id": tx_ref.id, **result})
+
+
+@app.route("/api/credit/<rid>/customers/<cid>/pay", methods=["POST"])
+def credit_customer_pay(rid, cid):
+    """The customer pays back (all or part of) the debt."""
+    role = _credit_role(rid)
+    if role not in ("cashier", "manager"):
+        return jsonify({"success": False, "error": "Unauthorized"}), 401
+    body = request.get_json(silent=True) or {}
+    amount = _money(body.get("amount"))
+    method = str(body.get("method", "cash")).lower()
+    if method not in CREDIT_METHODS:
+        method = "other"
+    if amount is None or amount <= 0:
+        return jsonify({"success": False, "error": "Geli lacagta uu bixinayo ❌"})
+    shift_id = ""
+    if role == "cashier":
+        shift_id, shift = get_active_cashier_shift(rid, session.get("staff_employee_id", ""))
+        if not shift:
+            return jsonify({"success": False, "error": "Fur shift-ka marka hore ❌"})
+    restaurant_ref = db.collection("restaurants").document(rid)
+    cust_ref = _credit_col(rid).document(cid)
+    tx_ref = restaurant_ref.collection("credit_tx").document()
+    pay_ref = restaurant_ref.collection("payments").document()
+    actor = _credit_actor()
+    now = datetime.now()
+    result = {}
+    pre = cust_ref.get()
+    if not pre.exists:
+        return jsonify({"success": False, "error": "Macmiilka lama helin ❌"}), 404
+    pre_bal = _money((pre.to_dict() or {}).get("balance")) or 0.0
+    if pre_bal <= 0:
+        return jsonify({"success": False, "error": f"{(pre.to_dict() or {}).get('name', '')} deen ma laha ✅"})
+    if amount > pre_bal + 1e-9:
+        return jsonify({"success": False, "error": f"Lacagtu waxay ka badan tahay deenta (${pre_bal:.2f}) ❌"})
+    payment_id = get_next_payment_id(rid)
+
+    def work(txn):
+        c_snap = cust_ref.get(transaction=txn)
+        if not c_snap.exists:
+            return "Macmiilka lama helin ❌"
+        c = c_snap.to_dict() or {}
+        balance = _money(c.get("balance")) or 0.0
+        if balance <= 0:
+            return f"{c.get('name', '')} deen ma laha ✅"
+        if amount > balance + 1e-9:
+            return f"Lacagtu waxay ka badan tahay deenta (${balance:.2f}) ❌"
+        new_balance = round(balance - amount, 2)
+        result.update({"name": c.get("name", ""), "balance": new_balance, "amount": amount})
+        txn.set(tx_ref, {
+            "customer_id": cid, "customer_name": c.get("name", ""), "customer_phone": c.get("phone", ""),
+            "type": "payment", "amount": amount, "balance_before": balance, "balance_after": new_balance,
+            "method": method, "payment_doc": pay_ref.id, "payment_id": payment_id,
+            "cashier_name": actor["name"], "cashier_id": actor["id"],
+            "note": str(body.get("note", "")).strip()[:200],
+            "date": now.strftime("%Y-%m-%d"), "time": now.strftime("%H:%M"),
+            "created_at": now.isoformat(),
+        })
+        txn.update(cust_ref, {
+            "balance": new_balance,
+            "total_paid": round((_money(c.get("total_paid")) or 0.0) + amount, 2),
+            "last_activity": now.isoformat(),
+        })
+        txn.set(pay_ref, {
+            "payment_id": payment_id, "kind": "credit_repayment",
+            "order_id": "", "restaurant_id": rid, "table": "📒 Deen",
+            "credit_customer_id": cid, "credit_customer_name": c.get("name", ""), "credit_tx_id": tx_ref.id,
+            "cashier_id": actor["id"], "cashier_name": actor["name"],
+            "waiter_employee_id": "", "waiter_name": "",
+            "shift_id": shift_id, "amount": amount, "method": method, "status": "paid",
+            "date": now.strftime("%Y-%m-%d"), "time": now.strftime("%H:%M:%S"), "created_at": now.isoformat(),
+        })
+        return None
+
+    try:
+        err = firestore.transactional(work)(db.transaction())
+    except Exception as e:
+        print("CREDIT PAY ERROR:", e)
+        return jsonify({"success": False, "error": f"Khalad ayaa dhacay — isku day mar kale ({e})"}), 500
+    if err:
+        return jsonify({"success": False, "error": err})
+    _bump_orders_version(rid)
+    return jsonify({"success": True, "payment_id": payment_id, **result})
+
+
 @app.route("/cashier_logout")
 def cashier_logout():
     for k in ("staff_ok", "staff_role", "staff_rid", "staff_id", "staff_name", "staff_employee_id"):
@@ -5922,6 +6296,15 @@ def create_order(rid):
 
         restaurant_ref = db.collection("restaurants").document(rid)
 
+        # 📒 Optional: the waiter says "this customer eats on credit" —
+        # the cashier sees the tag and can put the bill on their book.
+        credit_hint = {}
+        _hint_id = str(data.get("credit_customer_id", "") or "").strip()
+        if _hint_id and staff_role:
+            _hs = restaurant_ref.collection("credit_customers").document(_hint_id).get()
+            if _hs.exists and (_hs.to_dict() or {}).get("active", True) is not False:
+                credit_hint = {"credit_hint_id": _hint_id, "credit_hint_name": (_hs.to_dict() or {}).get("name", "")}
+
         # If this same waiter has an OPEN (not-yet-paid, not kitchen-cleared)
         # order still on this table, add the new items to it instead of
         # creating a second separate ticket — matches "same table, same
@@ -5975,6 +6358,7 @@ def create_order(rid):
             }
             if customer_phone:
                 update_fields["customer_phone"] = customer_phone
+            update_fields.update(credit_hint)
             order_ref.update(update_fields)
             order_id = existing_order_id
         else:
@@ -5998,6 +6382,7 @@ def create_order(rid):
             }
             if customer_phone:
                 order_data["customer_phone"] = customer_phone
+            order_data.update(credit_hint)
             if waiter_employee_id:
                 order_data["employee_id"]   = waiter_employee_id
                 order_data["employee_name"] = session.get("staff_name", "")

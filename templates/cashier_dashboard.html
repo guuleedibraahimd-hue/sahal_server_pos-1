@@ -266,6 +266,104 @@ table.tx-tbl td{ padding:9px 6px; border-bottom:1px solid #f4f4f4; }
     .waiter-summary-right{ gap:12px; }
     .modal-actions button{ padding:14px; }
 }
+
+/* ===================== 📒 BUUGGA DEENTA ===================== */
+.cr-sum{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:14px; }
+.cr-sum div{ background:#f7f9fd; border:1px solid var(--border); border-radius:14px; padding:12px 14px; }
+.cr-sum .k{ font-size:11px; font-weight:800; color:var(--muted); text-transform:uppercase; letter-spacing:.4px; }
+.cr-sum .v{ font-size:20px; font-weight:900; margin-top:3px; }
+.cr-sum .v.red{ color:#d32f2f; }
+.cr-tools{ display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px; }
+.cr-tools input{ flex:1; min-width:180px; padding:12px 14px; border-radius:12px; border:1px solid #dde3ee; font-size:14px; font-family:inherit; }
+.cr-new-btn{ background:var(--blue); color:#fff; border:none; border-radius:12px; padding:12px 16px; font-weight:800; font-size:13.5px; cursor:pointer; }
+.cr-filter{ display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px; }
+.cr-filter button{ border:1.5px solid var(--border); background:#fff; border-radius:20px; padding:7px 12px; font-size:12px; font-weight:800; color:#4a5568; cursor:pointer; }
+.cr-filter button.on{ background:var(--navy); border-color:var(--navy); color:#fff; }
+.cr-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:12px; }
+.cr-card{ border:1px solid var(--border); border-radius:16px; padding:14px; background:#fff; cursor:pointer; transition:box-shadow .15s, transform .15s; text-align:left; font-family:inherit; width:100%; }
+.cr-card:hover{ box-shadow:0 10px 26px rgba(15,27,45,.10); transform:translateY(-2px); }
+.cr-card.off{ opacity:.6; }
+.cr-head{ display:flex; align-items:center; gap:10px; }
+.cr-av{ width:42px; height:42px; border-radius:13px; background:linear-gradient(135deg,#f5a623,#e0651f); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:17px; flex-shrink:0; }
+.cr-name{ font-weight:900; font-size:14.5px; }
+.cr-phone{ font-size:12px; color:var(--muted); font-weight:700; }
+.cr-bal{ margin-left:auto; text-align:right; }
+.cr-bal .k{ font-size:10.5px; color:var(--muted); font-weight:800; }
+.cr-bal .v{ font-size:17px; font-weight:900; }
+.cr-bal .v.owe{ color:#d32f2f; } .cr-bal .v.zero{ color:var(--green); }
+.cr-bar{ height:8px; border-radius:6px; background:#eef1f7; overflow:hidden; margin:12px 0 6px; }
+.cr-bar i{ display:block; height:100%; border-radius:6px; background:linear-gradient(90deg,#22c55e,#16a34a); }
+.cr-bar i.warn{ background:linear-gradient(90deg,#f59e0b,#d97706); } .cr-bar i.full{ background:linear-gradient(90deg,#ef4444,#b91c1c); }
+.cr-meta{ display:flex; justify-content:space-between; font-size:11.5px; font-weight:700; color:var(--muted); gap:8px; flex-wrap:wrap; }
+.cr-tag{ display:inline-flex; align-items:center; gap:4px; padding:3px 9px; border-radius:20px; font-size:11px; font-weight:800; }
+.cr-tag.unl{ background:#eef2ff; color:#4338ca; } .cr-tag.off{ background:#f1f5f9; color:#64748b; } .cr-tag.full{ background:#fef2f2; color:#b91c1c; }
+.cr-empty{ grid-column:1/-1; text-align:center; color:var(--muted); padding:26px 10px; font-weight:700; font-size:13.5px; }
+.credit-chip{ display:inline-flex; align-items:center; gap:4px; background:#fff7e6; color:#b45309; border:1px solid #fde3b0; border-radius:20px; padding:2px 8px; font-size:11px; font-weight:800; margin-top:4px; white-space:nowrap; }
+
+.modal.wide{ max-width:560px; text-align:left; max-height:90vh; overflow-y:auto; }
+.modal .lbl{ display:block; font-size:12px; font-weight:800; color:#555; margin:4px 0 6px; text-align:left; }
+.modal textarea{ width:100%; padding:12px; border-radius:10px; border:1px solid #ddd; font-size:14px; font-family:inherit; margin-bottom:10px; resize:vertical; }
+.cr-limit-pick{ display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px; }
+.cr-limit-pick label{ border:1.5px solid #ddd; border-radius:12px; padding:11px; cursor:pointer; font-size:13px; font-weight:800; text-align:center; }
+.cr-limit-pick input{ display:none; }
+.cr-limit-pick label.on{ border-color:var(--blue); background:#eef3ff; color:var(--blue); }
+.cr-msg{ display:none; padding:11px 12px; border-radius:12px; font-size:13px; font-weight:700; margin-bottom:10px; text-align:left; line-height:1.45; }
+.cr-msg.err{ display:block; background:#fdecea; color:#b71c1c; border:1px solid #f8c4c0; }
+.cr-msg.ok{ display:block; background:#eafaf1; color:#1b7a43; border:1px solid #bfe9d0; }
+.cr-msg.limit{ display:block; background:#b91c1c; color:#fff; border:none; font-size:13.5px; animation:crShake .45s; }
+@keyframes crShake{ 0%,100%{transform:none} 20%{transform:translateX(-7px)} 40%{transform:translateX(7px)} 60%{transform:translateX(-4px)} 80%{transform:translateX(4px)} }
+
+/* detail */
+.cd-top{ display:flex; gap:12px; align-items:center; margin-bottom:14px; }
+.cd-top .cr-av{ width:52px; height:52px; font-size:21px; border-radius:16px; }
+.cd-stats{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:12px; }
+.cd-stats div{ background:#f7f9fd; border-radius:12px; padding:10px; }
+.cd-stats .k{ font-size:10.5px; font-weight:800; color:var(--muted); text-transform:uppercase; }
+.cd-stats .v{ font-size:16px; font-weight:900; margin-top:2px; }
+.cd-actions{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:14px; }
+.cd-actions button{ border:none; border-radius:12px; padding:12px 6px; font-weight:800; font-size:12.5px; cursor:pointer; color:#fff; }
+.cd-tx{ border:1px solid var(--border); border-radius:14px; padding:12px; margin-bottom:8px; }
+.cd-tx.pay{ background:#f4fbf7; border-color:#cdebd9; }
+.cd-tx-top{ display:flex; justify-content:space-between; gap:10px; align-items:flex-start; }
+.cd-tx-t{ font-weight:900; font-size:13.5px; }
+.cd-tx-s{ font-size:11.5px; color:var(--muted); font-weight:700; margin-top:2px; }
+.cd-tx-amt{ font-weight:900; font-size:15px; white-space:nowrap; }
+.cd-tx-amt.plus{ color:#d32f2f; } .cd-tx-amt.minus{ color:var(--green); }
+.cd-items{ margin-top:8px; border-top:1px dashed var(--border); padding-top:8px; }
+.cd-items div{ display:flex; justify-content:space-between; gap:10px; font-size:12.5px; padding:2px 0; }
+.cd-items .tot{ font-weight:900; border-top:1px solid var(--border); margin-top:4px; padding-top:5px; }
+.cd-bal-after{ font-size:11px; color:var(--muted); font-weight:700; margin-top:6px; text-align:right; }
+
+/* picker inside pay modal */
+.cr-pick{ display:none; text-align:left; }
+.cr-pick.show{ display:block; }
+.cr-pick input{ margin-bottom:8px; }
+.cr-pick-list{ max-height:240px; overflow-y:auto; display:flex; flex-direction:column; gap:6px; margin-bottom:10px; }
+.cr-opt{ display:flex; align-items:center; gap:10px; border:1.5px solid #e3e8f2; border-radius:12px; padding:9px 10px; cursor:pointer; background:#fff; text-align:left; font-family:inherit; width:100%; }
+.cr-opt .cr-av{ width:34px; height:34px; font-size:14px; border-radius:10px; }
+.cr-opt .nm{ font-weight:800; font-size:13px; } .cr-opt .sb{ font-size:11px; color:var(--muted); font-weight:700; }
+.cr-opt .rt{ margin-left:auto; text-align:right; font-size:11px; font-weight:800; white-space:nowrap; }
+.cr-opt.sel{ border-color:#e0651f; background:#fff7ef; box-shadow:0 0 0 3px rgba(224,101,31,.12); }
+.cr-opt.over{ opacity:.55; }
+.cr-opt.over .rt{ color:#b91c1c; }
+.cr-pick-add{ width:100%; background:#f1f5fb; color:var(--blue); border:1.5px dashed #b9c8ea; border-radius:12px; padding:10px; font-weight:800; cursor:pointer; margin-bottom:10px; font-size:12.5px; }
+.method-opt.credit{ grid-column:1/-1; border-color:#f5c48f; background:#fff8f0; color:#b45309; }
+.method-opt.credit.selected{ border-color:#e0651f; background:#e0651f; color:#fff; }
+/* modals must sit above the phone bottom bar (z 900) */
+.modal-bg{ z-index:1000; }
+#credDetailModal{ z-index:1010; }
+#credPayModal, #credFormModal{ z-index:1020; }
+.modal{ max-height:92vh; overflow-y:auto; }
+.no-credit{ width:100%; }
+@media(max-width:800px){
+    .cr-sum{ grid-template-columns:1fr 1fr; } .cr-sum div:first-child{ grid-column:1/-1; }
+    .cr-grid{ grid-template-columns:1fr; }
+    .cd-stats{ grid-template-columns:1fr 1fr; }
+    .modal.wide{ max-height:92vh; }
+}
+.cr-filter-q{ border:1.5px solid var(--border); background:#fff; border-radius:20px; padding:6px 12px; font-size:12px; font-weight:800; color:#334155; cursor:pointer; }
+.cr-filter-q:hover{ border-color:var(--blue); color:var(--blue); }
+#payModal .modal{ max-width:430px; }
 </style>
 <link rel="stylesheet" href="/static/sahal_app.css?v={{ asset_v }}">
 <link rel="manifest" href="/app_manifest/{{ rid }}/cashier.webmanifest">
@@ -307,6 +405,7 @@ table.tx-tbl td{ padding:9px 6px; border-bottom:1px solid #f4f4f4; }
             {% if has_shift %}
             <li><button class="sb-link" data-page="neworder" onclick="showPage('neworder',this)">🍔 New Order</button></li>
             <li><button class="sb-link" id="sbOrdersLink" data-page="orders" onclick="showPage('orders',this)">🧾 Orders {% if pending_count %}<span class="badge">{{ pending_count }}</span>{% endif %}</button></li>
+            <li><button class="sb-link" data-page="credit" onclick="showPage('credit',this)">📒 Buugga Deenta</button></li>
             <li><button class="sb-link" data-page="payments" onclick="showPage('payments',this)">💳 Payments</button></li>
             <li><button class="sb-link" data-page="receipts" onclick="showPage('receipts',this)">📄 Receipt History</button></li>
             <li><button class="sb-link" data-page="addmenu" onclick="showPage('addmenu',this)">🍽️ Add Menu</button></li>
@@ -410,6 +509,7 @@ table.tx-tbl td{ padding:9px 6px; border-bottom:1px solid #f4f4f4; }
                 </div>
                 <input class="no-input" id="noTable" placeholder="Table number" inputmode="numeric">
                 <input class="no-input" id="noPhone" placeholder="Customer phone (optional)" inputmode="tel">
+                <select class="no-input no-credit" id="noCredit"><option value="">📒 Deen? — maya (lacag caadi ah)</option></select>
                 <input class="no-input" id="noSearch" placeholder="🔍 Search items..." oninput="noFilter()">
                 <div class="no-cats" id="noCats">
                     <button type="button" class="no-cat active" data-cat="all" onclick="noCat(this)">All</button>
@@ -454,7 +554,7 @@ table.tx-tbl td{ padding:9px 6px; border-bottom:1px solid #f4f4f4; }
                         {% for o in pending_orders %}
                         <tr data-oid="{{ o.id }}">
                             <td>#{{ o.receipt_ref or o.id[:6] }}</td>
-                            <td>{% if o.order_type == 'takeaway' %}<span class="otype-badge ta">🥡 Take Away</span>{% else %}<span class="otype-badge tb">🪑 {{ o.table }}</span>{% endif %}</td>
+                            <td>{% if o.order_type == 'takeaway' %}<span class="otype-badge ta">🥡 Take Away</span>{% else %}<span class="otype-badge tb">🪑 {{ o.table }}</span>{% endif %}{% if o.credit_hint_name %}<div class="credit-chip">📒 Deen: {{ o.credit_hint_name }}</div>{% endif %}</td>
                             <td>
                                 <div class="waiter-cell">
                                     <div class="w-avatar">{{ (o.employee_name or '—')[:1]|upper }}</div>
@@ -466,7 +566,7 @@ table.tx-tbl td{ padding:9px 6px; border-bottom:1px solid #f4f4f4; }
                             <td><span class="status-pill status-{{ (o.status or 'pending')|lower }}">{{ o.status }}</span></td>
                             <td>
                                 <div class="tbl-actions">
-                                    <button class="pay-btn" data-order-id="{{ o.id }}" data-order-total="{{ o.price or 0 }}" onclick="openPayModal(this)">Pay</button>
+                                    <button class="pay-btn" data-order-id="{{ o.id }}" data-order-total="{{ o.price or 0 }}" data-credit-id="{{ o.credit_hint_id or '' }}" onclick="openPayModal(this)">Pay</button>
                                     <a class="receipt-btn" href="/receipt/{{ rid }}/{{ o.id }}" target="_blank">Receipt</a>
                                 </div>
                             </td>
@@ -510,13 +610,13 @@ table.tx-tbl td{ padding:9px 6px; border-bottom:1px solid #f4f4f4; }
                                 {% for o in w.orders %}
                                 <tr>
                                     <td>#{{ o.receipt_ref or o.id[:6] }}</td>
-                                    <td>{% if o.order_type == 'takeaway' %}<span class="otype-badge ta">🥡 Take Away</span>{% else %}<span class="otype-badge tb">🪑 {{ o.table }}</span>{% endif %}</td>
+                                    <td>{% if o.order_type == 'takeaway' %}<span class="otype-badge ta">🥡 Take Away</span>{% else %}<span class="otype-badge tb">🪑 {{ o.table }}</span>{% endif %}{% if o.credit_hint_name %}<div class="credit-chip">📒 Deen: {{ o.credit_hint_name }}</div>{% endif %}</td>
                                     <td>{{ o['items'] }}</td>
                                     <td><b>${{ "%.2f"|format(o.price or 0) }}</b></td>
                                     <td><span class="status-pill status-{{ (o.status or 'pending')|lower }}">{{ o.status }}</span></td>
                                     <td>
                                         <div class="tbl-actions">
-                                            <button class="pay-btn" data-order-id="{{ o.id }}" data-order-total="{{ o.price or 0 }}" onclick="openPayModal(this)">Pay</button>
+                                            <button class="pay-btn" data-order-id="{{ o.id }}" data-order-total="{{ o.price or 0 }}" data-credit-id="{{ o.credit_hint_id or '' }}" onclick="openPayModal(this)">Pay</button>
                                             <a class="receipt-btn" href="/receipt/{{ rid }}/{{ o.id }}" target="_blank">Receipt</a>
                                         </div>
                                     </td>
@@ -529,6 +629,32 @@ table.tx-tbl td{ padding:9px 6px; border-bottom:1px solid #f4f4f4; }
                     <div style="color:var(--muted);font-size:13px;text-align:center;padding:16px;">No orders awaiting payment</div>
                     {% endfor %}
                 </div>
+            </div>
+        </div>
+
+        <!-- ============ 📒 BUUGGA DEENTA (CREDIT BOOK) ============ -->
+        <div class="page" id="page-credit">
+            <div class="section">
+                <div class="section-head">
+                    <h2>📒 Buugga Deenta</h2>
+                    <button class="cr-new-btn" onclick="crOpenForm()">➕ Macmiil cusub</button>
+                </div>
+                <div class="cr-sum">
+                    <div><div class="k">Deenta guud (laga rabo)</div><div class="v red" id="crSumTotal">$0.00</div></div>
+                    <div><div class="k">Macaamiil</div><div class="v" id="crSumCount">0</div></div>
+                    <div><div class="k">Kuwa deen leh</div><div class="v" id="crSumOwing">0</div></div>
+                </div>
+                <div class="cr-tools">
+                    <input type="text" id="crSearch" placeholder="🔍 Raadi magac ama telefoon..." oninput="crRender()">
+                </div>
+                <div class="cr-filter" id="crFilter">
+                    <button class="on" data-f="all" onclick="crSetFilter(this)">Dhammaan</button>
+                    <button data-f="owing" onclick="crSetFilter(this)">💸 Deen leh</button>
+                    <button data-f="full" onclick="crSetFilter(this)">⛔ Xadka gaaray</button>
+                    <button data-f="unl" onclick="crSetFilter(this)">∞ No limit</button>
+                    <button data-f="off" onclick="crSetFilter(this)">⏸ Xiran</button>
+                </div>
+                <div class="cr-grid" id="crGrid"><div class="cr-empty">⏳ Loading…</div></div>
             </div>
         </div>
 
@@ -711,6 +837,14 @@ table.tx-tbl td{ padding:9px 6px; border-bottom:1px solid #f4f4f4; }
             <div class="method-opt" data-method="edahab" onclick="selectMethod(this)">📱 eDahab</div>
             <div class="method-opt" data-method="card" onclick="selectMethod(this)">💳 Card</div>
             <div class="method-opt" data-method="other" onclick="selectMethod(this)">➕ Other</div>
+            <div class="method-opt credit" data-method="credit" onclick="selectMethod(this)">📒 Deen — ku dar buugga macmiilka</div>
+        </div>
+        <div class="cr-pick" id="crPick">
+            <div class="change-row"><span>Bill-ka</span><span id="crPickTotal">$0.00</span></div>
+            <input type="text" id="crPickSearch" placeholder="🔍 Raadi macmiilka deenta..." oninput="crRenderPick()" autocomplete="off">
+            <div class="cr-pick-list" id="crPickList"></div>
+            <button type="button" class="cr-pick-add" onclick="crOpenForm(null,true)">➕ Buug deen cusub</button>
+            <div class="cr-msg" id="crPickMsg"></div>
         </div>
         <div id="cashFields">
             <div class="change-row"><span>Total</span><span id="payTotal">$0.00</span></div>
@@ -720,6 +854,101 @@ table.tx-tbl td{ padding:9px 6px; border-bottom:1px solid #f4f4f4; }
         <div class="modal-actions">
             <button class="cancel-btn" onclick="closePayModal()">Cancel</button>
             <button class="confirm-btn" id="confirmPayBtn" onclick="confirmPayment()">Confirm Payment</button>
+        </div>
+    </div>
+</div>
+
+<!-- 📒 CREDIT: add / edit customer -->
+<div class="modal-bg" id="credFormModal">
+    <div class="modal wide">
+        <h3 id="cfTitle">➕ Buug deen cusub</h3>
+        <input type="hidden" id="cfId">
+        <label class="lbl">Magaca macmiilka *</label>
+        <input type="text" id="cfName" placeholder="e.g. Cabdi Xasan" autocomplete="off">
+        <label class="lbl">Telefoon</label>
+        <input type="text" id="cfPhone" placeholder="e.g. 0615xxxxxx" inputmode="tel" autocomplete="off">
+        <label class="lbl">Xadka deenta (limit)</label>
+        <div class="cr-limit-pick" id="cfLimitPick">
+            <label class="on" data-v="limited"><input type="radio" name="cfLim" value="limited" checked>💰 Xad leh</label>
+            <label data-v="unlimited"><input type="radio" name="cfLim" value="unlimited">∞ No limit</label>
+        </div>
+        <div id="cfLimitBox">
+            <input type="number" id="cfLimit" placeholder="Xadka ugu badan, e.g. 50" min="1" step="0.01">
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin:-2px 0 10px;">
+                <button type="button" class="cr-filter-q" onclick="crQuick(20)">$20</button>
+                <button type="button" class="cr-filter-q" onclick="crQuick(50)">$50</button>
+                <button type="button" class="cr-filter-q" onclick="crQuick(100)">$100</button>
+                <button type="button" class="cr-filter-q" onclick="crQuick(200)">$200</button>
+                <button type="button" class="cr-filter-q" onclick="crQuick(500)">$500</button>
+            </div>
+        </div>
+        <label class="lbl">Qoraal (optional)</label>
+        <textarea id="cfNote" rows="2" placeholder="e.g. Shaqaalaha dekedda — bishii mar ayuu bixiyaa"></textarea>
+        <label id="cfActiveRow" style="display:none;align-items:center;gap:8px;font-size:13px;font-weight:800;margin-bottom:12px;cursor:pointer;">
+            <input type="checkbox" id="cfActive" style="width:auto;margin:0;"> Buuggu wuu furan yahay (deen cusub waa la siin karaa)
+        </label>
+        <div class="cr-msg" id="cfMsg"></div>
+        <div class="modal-actions">
+            <button class="cancel-btn" onclick="crCloseForm()">Cancel</button>
+            <button class="confirm-btn" id="cfSave" onclick="crSaveForm()">💾 Save</button>
+        </div>
+    </div>
+</div>
+
+<!-- 📒 CREDIT: customer detail + history -->
+<div class="modal-bg" id="credDetailModal">
+    <div class="modal wide">
+        <div class="cd-top">
+            <div class="cr-av" id="cdAv">?</div>
+            <div style="min-width:0;flex:1;">
+                <div class="cr-name" id="cdName" style="font-size:17px;"></div>
+                <div class="cr-phone" id="cdPhone"></div>
+            </div>
+            <button class="close-plain-btn" style="width:auto;padding:9px 13px;" onclick="crCloseDetail()">✕</button>
+        </div>
+        <div class="cd-stats">
+            <div><div class="k">Deenta hadda</div><div class="v" id="cdBal" style="color:#d32f2f;">$0</div></div>
+            <div><div class="k">Xadka</div><div class="v" id="cdLimit">—</div></div>
+            <div><div class="k">U bannaan</div><div class="v" id="cdAvail">—</div></div>
+            <div><div class="k">Wadarta deen</div><div class="v" id="cdCharged">$0</div></div>
+            <div><div class="k">La bixiyay</div><div class="v" id="cdPaid" style="color:var(--green);">$0</div></div>
+            <div><div class="k">Bills</div><div class="v" id="cdBills">0</div></div>
+        </div>
+        <div class="cr-bar"><i id="cdBar" style="width:0%"></i></div>
+        <div style="font-size:12px;color:var(--muted);font-weight:700;margin-bottom:12px;" id="cdNote"></div>
+        <div class="cd-actions">
+            <button style="background:var(--green);" onclick="crOpenPay()">💵 Bixi deen</button>
+            <button style="background:var(--blue);" onclick="crEditCurrent()">✏️ Edit / Limit</button>
+            <button style="background:#0f1b2d;" onclick="crPrintStatement()">🖨 Statement</button>
+        </div>
+        <h3 style="margin:4px 0 10px;">🧾 Taariikhda (bills &amp; lacag-bixin)</h3>
+        <div id="cdTx"><div class="cr-empty">⏳ Loading…</div></div>
+    </div>
+</div>
+
+<!-- 📒 CREDIT: customer pays back -->
+<div class="modal-bg" id="credPayModal">
+    <div class="modal">
+        <h3>💵 Bixinta deenta</h3>
+        <div class="change-row"><span id="cpName"></span><span id="cpBal" style="color:#d32f2f;"></span></div>
+        <label class="lbl">Lacagta uu bixinayo ($)</label>
+        <input type="number" id="cpAmount" step="0.01" min="0.01">
+        <div style="display:flex;gap:6px;margin:-2px 0 10px;">
+            <button type="button" class="cr-filter-q" onclick="crPayAll()">Dhammaan</button>
+            <button type="button" class="cr-filter-q" onclick="crPayHalf()">Badh</button>
+        </div>
+        <div class="method-grid" id="cpMethods">
+            <div class="method-opt selected" data-method="cash" onclick="crPickPayMethod(this)">💵 Cash</div>
+            <div class="method-opt" data-method="evc" onclick="crPickPayMethod(this)">📱 EVC Plus</div>
+            <div class="method-opt" data-method="edahab" onclick="crPickPayMethod(this)">📱 eDahab</div>
+            <div class="method-opt" data-method="card" onclick="crPickPayMethod(this)">💳 Card</div>
+            <div class="method-opt" data-method="other" onclick="crPickPayMethod(this)">➕ Other</div>
+        </div>
+        <input type="text" id="cpNote" placeholder="Qoraal (optional)">
+        <div class="cr-msg" id="cpMsg"></div>
+        <div class="modal-actions">
+            <button class="cancel-btn" onclick="crClosePay()">Cancel</button>
+            <button class="confirm-btn" id="cpSave" onclick="crSavePay()">✅ Confirm</button>
         </div>
     </div>
 </div>
@@ -847,7 +1076,19 @@ function openPayModal(btn){
     document.getElementById("receivedAmount").value = "";
     document.getElementById("changeAmount").textContent = "$0.00";
     document.getElementById("cashFields").style.display = "block";
+    document.getElementById("crPick").classList.remove("show");
+    document.getElementById("confirmPayBtn").textContent = "Confirm Payment";
+    document.getElementById("crPickTotal").textContent = "$" + currentOrderTotal.toFixed(2);
+    document.getElementById("crPickSearch").value = "";
+    crMsg("crPickMsg", "");
+    CR.pickId = null;
+    if(btn.dataset.creditId){
+        CR.pickId = btn.dataset.creditId;
+        selectMethod(document.querySelector('.method-opt[data-method="credit"]'));
+    }
+    crRenderPick();
     document.getElementById("payModal").classList.add("show");
+    if(CR.pickId){ const c = CR.list.find(x => x.id === CR.pickId); if(c && !c.unlimited && c.balance + currentOrderTotal > c.limit + 0.0001) crLimitAlert(c, currentOrderTotal); }
 }
 function closePayModal(){ document.getElementById("payModal").classList.remove("show"); }
 
@@ -856,6 +1097,10 @@ function selectMethod(el){
     el.classList.add("selected");
     selectedMethod = el.dataset.method;
     document.getElementById("cashFields").style.display = (selectedMethod === "cash") ? "block" : "none";
+    const isCredit = selectedMethod === "credit";
+    document.getElementById("crPick").classList.toggle("show", isCredit);
+    document.getElementById("confirmPayBtn").textContent = isCredit ? "📒 Ku dar deenta" : "Confirm Payment";
+    if(isCredit){ crRenderPick(); if(!CR.loaded) crLoad(); }
 }
 
 function calcChange(){
@@ -870,6 +1115,12 @@ async function confirmPayment(){
     paying = true;
     const btn = document.getElementById("confirmPayBtn");
     btn.disabled = true; btn.textContent = "⏳ Processing...";
+    if(selectedMethod === "credit"){
+        try{ await crCharge(); }
+        catch(e){ crMsg("crPickMsg", "❌ Network error — isku day mar kale"); }
+        finally{ paying = false; btn.disabled = false; btn.textContent = "📒 Ku dar deenta"; }
+        return;
+    }
     try{
         const res = await fetch(`/cashier_pay/${RID}/${currentOrderId}`, {
             method: "POST", headers: {"Content-Type": "application/json"},
@@ -1425,11 +1676,12 @@ async function noSend(){
     try{
         const r = await fetch("/order/" + RID, { method:"POST", headers:{ "Content-Type":"application/json" },
             body: JSON.stringify({ order_type: noType, table, customer_phone: document.getElementById("noPhone").value.trim(),
+                credit_customer_id: (document.getElementById("noCredit") || {}).value || "",
                 cart: noCart.map(c => ({ name: c.name, price: c.price, qty: c.qty })) }) });
         const d = await r.json();
         if(d.success){
             noCart = []; noRender();
-            document.getElementById("noTable").value = ""; document.getElementById("noPhone").value = "";
+            document.getElementById("noTable").value = ""; document.getElementById("noPhone").value = ""; if(document.getElementById("noCredit")) document.getElementById("noCredit").value = "";
             showToast(d.merged ? "✅ Dalabka miiska waa lagu daray — jikada ayaa loo diray" : `✅ ${noType === "takeaway" ? "Take Away" : "Table " + table} — jikada ayaa loo diray`);
             noSetType("table");
             liveRefresh(true); loadTypeSplit();
@@ -1454,6 +1706,291 @@ function loadTypeSplit(){
     }).catch(() => {});
 }
 loadTypeSplit();
+
+/* =====================================================================
+   📒 BUUGGA DEENTA — credit book
+   ===================================================================== */
+let CR = { list: [], filter: "all", current: null, currentTx: [], pickId: null, loaded: false, payMethod: "cash", formFromPay: false };
+const crEsc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
+const crMoney = v => "$" + (Number(v) || 0).toFixed(2);
+function crMsg(id, text, kind){ const m = document.getElementById(id); if(!m) return; m.className = "cr-msg" + (text ? " " + (kind || "err") : ""); m.textContent = text || ""; }
+function crState(c){
+    if(!c.active) return "off";
+    if(c.unlimited) return "unl";
+    if(c.limit && c.balance >= c.limit - 0.0001) return "full";
+    return "ok";
+}
+
+async function crLoad(){
+    if(!document.getElementById("crGrid")) return;     // shift not open yet
+    try{
+        const r = await fetch(`/api/credit/${RID}/customers`, { cache:"no-store", headers:{ "X-Sahal-Role":"cashier" } });
+        const d = await r.json();
+        if(!d.success) throw new Error(d.error || "failed");
+        CR.list = d.customers || []; CR.loaded = true;
+        document.getElementById("crSumTotal").textContent = crMoney(d.summary.total_balance);
+        document.getElementById("crSumCount").textContent = d.summary.customers;
+        document.getElementById("crSumOwing").textContent = d.summary.owing;
+        crRender(); crRenderPick(); crFillHintSelect();
+    }catch(e){
+        const g = document.getElementById("crGrid"); if(g) g.innerHTML = `<div class="cr-empty">❌ Lama soo dejin karo buugga deenta — isku day mar kale.</div>`;
+    }
+}
+function crSetFilter(btn){
+    document.querySelectorAll("#crFilter button").forEach(b => b.classList.toggle("on", b === btn));
+    CR.filter = btn.dataset.f; crRender();
+}
+function crRender(){
+    const g = document.getElementById("crGrid"); if(!g) return;
+    const q = (document.getElementById("crSearch").value || "").trim().toLowerCase();
+    const rows = CR.list.filter(c => {
+        if(q && !(c.name.toLowerCase().includes(q) || (c.phone || "").includes(q))) return false;
+        const st = crState(c);
+        if(CR.filter === "owing") return c.balance > 0;
+        if(CR.filter === "full") return st === "full";
+        if(CR.filter === "unl") return c.unlimited && c.active;
+        if(CR.filter === "off") return st === "off";
+        return true;
+    });
+    if(!rows.length){
+        g.innerHTML = `<div class="cr-empty">${CR.list.length ? "Wax la helay ma jiraan." : "📒 Weli buug deen lama furin.<br>Riix “➕ Macmiil cusub” si aad u bilowdo."}</div>`;
+        return;
+    }
+    g.innerHTML = rows.map(c => {
+        const st = crState(c);
+        const pct = c.unlimited ? 0 : Math.min(100, c.limit ? (c.balance / c.limit) * 100 : 0);
+        const cls = pct >= 100 ? "full" : (pct >= 75 ? "warn" : "");
+        const tag = st === "off" ? `<span class="cr-tag off">⏸ Xiran</span>` : (c.unlimited ? `<span class="cr-tag unl">∞ No limit</span>` : (st === "full" ? `<span class="cr-tag full">⛔ Xadka waa gaaray</span>` : ""));
+        return `<button type="button" class="cr-card ${st === "off" ? "off" : ""}" onclick="crOpenDetail('${c.id}')">
+            <div class="cr-head">
+                <div class="cr-av">${crEsc((c.name || "?").slice(0, 1).toUpperCase())}</div>
+                <div style="min-width:0;"><div class="cr-name">${crEsc(c.name)}</div><div class="cr-phone">${c.phone ? "📞 " + crEsc(c.phone) : "—"}</div></div>
+                <div class="cr-bal"><div class="k">DEEN</div><div class="v ${c.balance > 0 ? "owe" : "zero"}">${crMoney(c.balance)}</div></div>
+            </div>
+            ${c.unlimited ? `<div style="height:12px"></div>` : `<div class="cr-bar"><i class="${cls}" style="width:${pct.toFixed(1)}%"></i></div>`}
+            <div class="cr-meta"><span>${c.unlimited ? "Xad ma leh" : "Xadka " + crMoney(c.limit) + " · u bannaan " + crMoney(c.available)}</span>${tag}</div>
+        </button>`;
+    }).join("");
+}
+
+/* ---------- add / edit ---------- */
+function crSetLimitMode(mode){
+    document.querySelectorAll("#cfLimitPick label").forEach(l => { const on = l.dataset.v === mode; l.classList.toggle("on", on); l.querySelector("input").checked = on; });
+    document.getElementById("cfLimitBox").style.display = mode === "limited" ? "" : "none";
+}
+document.querySelectorAll("#cfLimitPick label").forEach(l => l.addEventListener("click", () => crSetLimitMode(l.dataset.v)));
+function crQuick(v){ document.getElementById("cfLimit").value = v; }
+function crOpenForm(c, fromPay){
+    CR.formFromPay = !!fromPay;
+    document.getElementById("cfId").value = c ? c.id : "";
+    document.getElementById("cfTitle").textContent = c ? "✏️ Wax ka beddel — " + c.name : "➕ Buug deen cusub";
+    document.getElementById("cfName").value = c ? c.name : (fromPay ? (document.getElementById("crPickSearch").value || "") : "");
+    document.getElementById("cfPhone").value = c ? (c.phone || "") : "";
+    document.getElementById("cfNote").value = c ? (c.note || "") : "";
+    document.getElementById("cfLimit").value = c && !c.unlimited ? c.limit : "";
+    crSetLimitMode(c && c.unlimited ? "unlimited" : "limited");
+    document.getElementById("cfActiveRow").style.display = c ? "flex" : "none";
+    document.getElementById("cfActive").checked = c ? c.active : true;
+    crMsg("cfMsg", "");
+    document.getElementById("credFormModal").classList.add("show");
+    setTimeout(() => document.getElementById("cfName").focus(), 60);
+}
+function crCloseForm(){ document.getElementById("credFormModal").classList.remove("show"); }
+async function crSaveForm(){
+    const id = document.getElementById("cfId").value;
+    const unlimited = document.querySelector('input[name="cfLim"]:checked').value === "unlimited";
+    const body = {
+        name: document.getElementById("cfName").value.trim(),
+        phone: document.getElementById("cfPhone").value.trim(),
+        note: document.getElementById("cfNote").value.trim(),
+        unlimited, limit: unlimited ? 0 : parseFloat(document.getElementById("cfLimit").value)
+    };
+    if(!body.name){ crMsg("cfMsg", "❌ Geli magaca macmiilka"); return; }
+    if(!unlimited && !(body.limit > 0)){ crMsg("cfMsg", "❌ Geli xadka deenta (tusaale $50) — ama dooro ∞ No limit"); return; }
+    if(id) body.active = document.getElementById("cfActive").checked;
+    const btn = document.getElementById("cfSave"); btn.disabled = true;
+    try{
+        const r = await fetch(id ? `/api/credit/${RID}/customers/${id}/update` : `/api/credit/${RID}/customers`, {
+            method:"POST", headers:{ "Content-Type":"application/json", "X-Sahal-Role":"cashier" }, body: JSON.stringify(body) });
+        const d = await r.json();
+        if(!d.success){ crMsg("cfMsg", d.error || "❌ Failed"); return; }
+        crCloseForm();
+        showToast(id ? "✅ Waa la keydiyay" : `📒 Buugga ${d.customer.name} waa la furay`);
+        if(d.warning) setTimeout(() => alert(d.warning), 50);
+        await crLoad();
+        if(id && CR.current && CR.current.id === id) crOpenDetail(id);
+        if(CR.formFromPay && !id){ CR.pickId = d.customer.id; document.getElementById("crPickSearch").value = ""; crRenderPick(); }
+    }catch(e){ crMsg("cfMsg", "❌ Network error"); }
+    finally{ btn.disabled = false; }
+}
+
+/* ---------- detail ---------- */
+async function crOpenDetail(id){
+    const m = document.getElementById("credDetailModal");
+    document.getElementById("cdTx").innerHTML = `<div class="cr-empty">⏳ Loading…</div>`;
+    m.classList.add("show");
+    try{
+        const r = await fetch(`/api/credit/${RID}/customers/${id}`, { cache:"no-store", headers:{ "X-Sahal-Role":"cashier" } });
+        const d = await r.json();
+        if(!d.success){ document.getElementById("cdTx").innerHTML = `<div class="cr-empty">❌ ${crEsc(d.error || "Failed")}</div>`; return; }
+        CR.current = d.customer; CR.currentTx = d.transactions || [];
+        const c = d.customer;
+        document.getElementById("cdAv").textContent = (c.name || "?").slice(0, 1).toUpperCase();
+        document.getElementById("cdName").textContent = c.name + (c.active ? "" : "  (⏸ xiran)");
+        document.getElementById("cdPhone").textContent = c.phone ? "📞 " + c.phone : "—";
+        document.getElementById("cdBal").textContent = crMoney(c.balance);
+        document.getElementById("cdLimit").textContent = c.unlimited ? "∞" : crMoney(c.limit);
+        document.getElementById("cdAvail").textContent = c.unlimited ? "∞" : crMoney(c.available);
+        document.getElementById("cdCharged").textContent = crMoney(c.total_charged);
+        document.getElementById("cdPaid").textContent = crMoney(c.total_paid);
+        document.getElementById("cdBills").textContent = c.bills;
+        const pct = c.unlimited ? 0 : Math.min(100, c.limit ? c.balance / c.limit * 100 : 0);
+        const bar = document.getElementById("cdBar"); bar.style.width = pct + "%"; bar.className = pct >= 100 ? "full" : (pct >= 75 ? "warn" : "");
+        bar.parentElement.style.display = c.unlimited ? "none" : "";
+        document.getElementById("cdNote").textContent = c.note ? "📝 " + c.note : "";
+        document.getElementById("cdTx").innerHTML = CR.currentTx.length ? CR.currentTx.map(crTxHtml).join("") : `<div class="cr-empty">Weli wax lama qorin.</div>`;
+    }catch(e){ document.getElementById("cdTx").innerHTML = `<div class="cr-empty">❌ Network error</div>`; }
+}
+function crTxHtml(t){
+    const when = (t.date || "") + " " + (t.time || "");
+    if(t.type === "payment"){
+        return `<div class="cd-tx pay"><div class="cd-tx-top">
+            <div><div class="cd-tx-t">💵 Lacag la bixiyay · ${crEsc((t.method || "").toUpperCase())}</div>
+            <div class="cd-tx-s">${crEsc(when)} · ${crEsc(t.cashier_name || "")}${t.payment_id ? " · " + crEsc(t.payment_id) : ""}${t.note ? " · " + crEsc(t.note) : ""}</div></div>
+            <div class="cd-tx-amt minus">−${crMoney(t.amount)}</div></div>
+            <div class="cd-bal-after">Deenta kadib: ${crMoney(t.balance_after)}</div></div>`;
+    }
+    const items = (t.items || []).map(i => `<div><span>${i.qty}× ${crEsc(i.name)} <span style="color:var(--muted)">@ ${crMoney(i.price)}</span></span><b>${crMoney(i.total)}</b></div>`).join("");
+    const where = t.order_type === "takeaway" ? "🥡 Take Away" : "🪑 " + crEsc(t.table || "");
+    return `<div class="cd-tx"><div class="cd-tx-top">
+        <div><div class="cd-tx-t">🧾 Bill #${crEsc(t.receipt_ref || (t.order_id || "").slice(0, 6))} · ${where}</div>
+        <div class="cd-tx-s">${crEsc(when)}${t.waiter_name ? " · Waiter: " + crEsc(t.waiter_name) : ""} · Cashier: ${crEsc(t.cashier_name || "")}</div></div>
+        <div class="cd-tx-amt plus">+${crMoney(t.amount)}</div></div>
+        <div class="cd-items">${items || `<div><span>${crEsc(t.items_text || "")}</span></div>`}<div class="tot"><span>TOTAL</span><span>${crMoney(t.amount)}</span></div></div>
+        <div class="cd-bal-after">Deenta kadib: ${crMoney(t.balance_after)}</div></div>`;
+}
+function crCloseDetail(){ document.getElementById("credDetailModal").classList.remove("show"); }
+function crEditCurrent(){ if(CR.current) crOpenForm(CR.current); }
+
+/* ---------- pay back ---------- */
+function crOpenPay(){
+    const c = CR.current; if(!c) return;
+    if(!(c.balance > 0)){ alert(`✅ ${c.name} deen ma laha.`); return; }
+    document.getElementById("cpName").textContent = c.name;
+    document.getElementById("cpBal").textContent = "Deen: " + crMoney(c.balance);
+    document.getElementById("cpAmount").value = c.balance.toFixed(2);
+    document.getElementById("cpNote").value = "";
+    CR.payMethod = "cash";
+    document.querySelectorAll("#cpMethods .method-opt").forEach(m => m.classList.toggle("selected", m.dataset.method === "cash"));
+    crMsg("cpMsg", "");
+    document.getElementById("credPayModal").classList.add("show");
+}
+function crPayAll(){ if(CR.current) document.getElementById("cpAmount").value = CR.current.balance.toFixed(2); }
+function crPayHalf(){ if(CR.current) document.getElementById("cpAmount").value = (Math.round(CR.current.balance * 50) / 100).toFixed(2); }
+function crPickPayMethod(el){ document.querySelectorAll("#cpMethods .method-opt").forEach(m => m.classList.remove("selected")); el.classList.add("selected"); CR.payMethod = el.dataset.method; }
+function crClosePay(){ document.getElementById("credPayModal").classList.remove("show"); }
+async function crSavePay(){
+    const c = CR.current; if(!c) return;
+    const amount = parseFloat(document.getElementById("cpAmount").value);
+    if(!(amount > 0)){ crMsg("cpMsg", "❌ Geli lacagta"); return; }
+    if(amount > c.balance + 0.0001){ crMsg("cpMsg", `❌ Lacagtu waxay ka badan tahay deenta (${crMoney(c.balance)})`); return; }
+    const btn = document.getElementById("cpSave"); btn.disabled = true;
+    try{
+        const r = await fetch(`/api/credit/${RID}/customers/${c.id}/pay`, { method:"POST", headers:{ "Content-Type":"application/json", "X-Sahal-Role":"cashier" },
+            body: JSON.stringify({ amount, method: CR.payMethod, note: document.getElementById("cpNote").value.trim() }) });
+        const d = await r.json();
+        if(!d.success){ crMsg("cpMsg", d.error || "❌ Failed"); return; }
+        crClosePay();
+        showToast(`✅ ${d.name} wuxuu bixiyay ${crMoney(d.amount)} — deenta hadda: ${crMoney(d.balance)}`);
+        await crLoad(); crOpenDetail(c.id); liveRefresh(true);
+    }catch(e){ crMsg("cpMsg", "❌ Network error"); }
+    finally{ btn.disabled = false; }
+}
+
+/* ---------- statement ---------- */
+function crPrintStatement(){
+    const c = CR.current; if(!c) return;
+    const rows = CR.currentTx.slice().reverse().map(t => {
+        const items = t.type === "charge" ? (t.items || []).map(i => `${i.qty}× ${crEsc(i.name)} (${crMoney(i.total)})`).join(", ") : "Lacag la bixiyay — " + crEsc((t.method || "").toUpperCase());
+        return `<tr><td>${crEsc(t.date || "")}<br><small>${crEsc(t.time || "")}</small></td><td>${t.type === "charge" ? "Bill #" + crEsc(t.receipt_ref || "") : "Payment"}</td><td>${items}</td>
+            <td style="text-align:right;color:${t.type === "charge" ? "#b91c1c" : "#15803d"}">${t.type === "charge" ? "+" : "−"}${crMoney(t.amount)}</td><td style="text-align:right">${crMoney(t.balance_after)}</td></tr>`;
+    }).join("");
+    const w = window.open("", "_blank");
+    if(!w){ alert("Fadlan oggolow pop-ups si loo daabaco."); return; }
+    w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Statement — ${crEsc(c.name)}</title>
+        <style>body{font-family:Arial,sans-serif;padding:24px;color:#111}h1{margin:0;font-size:20px}table{width:100%;border-collapse:collapse;margin-top:16px;font-size:12.5px}
+        th,td{border-bottom:1px solid #ddd;padding:8px;text-align:left;vertical-align:top}th{background:#f3f4f6}.sum{display:flex;gap:24px;margin-top:10px;font-size:14px}
+        .sum b{font-size:18px}@media print{button{display:none}}</style></head><body>
+        <button onclick="print()" style="float:right;padding:10px 16px;font-weight:bold">🖨 Print</button>
+        <h1>📒 ${crEsc(document.querySelector(".tb-restaurant") ? document.querySelector(".tb-restaurant").textContent.replace("🏪", "").trim() : "")} — Deen Statement</h1>
+        <div style="margin-top:6px">${crEsc(c.name)} ${c.phone ? "· " + crEsc(c.phone) : ""} · ${new Date().toLocaleString()}</div>
+        <div class="sum"><div>Deenta hadda<br><b style="color:#b91c1c">${crMoney(c.balance)}</b></div><div>Xadka<br><b>${c.unlimited ? "∞" : crMoney(c.limit)}</b></div>
+        <div>Wadarta deen<br><b>${crMoney(c.total_charged)}</b></div><div>La bixiyay<br><b>${crMoney(c.total_paid)}</b></div></div>
+        <table><tr><th>Taariikh</th><th>Nooc</th><th>Faahfaahin</th><th style="text-align:right">Lacag</th><th style="text-align:right">Deenta kadib</th></tr>${rows || '<tr><td colspan="5">—</td></tr>'}</table>
+        </body></html>`);
+    w.document.close();
+}
+
+/* ---------- charge a bill from the Pay modal ---------- */
+function crRenderPick(){
+    const box = document.getElementById("crPickList"); if(!box) return;
+    const q = (document.getElementById("crPickSearch").value || "").trim().toLowerCase();
+    const total = typeof currentOrderTotal === "number" ? currentOrderTotal : 0;
+    const rows = CR.list.filter(c => c.active && (!q || c.name.toLowerCase().includes(q) || (c.phone || "").includes(q)));
+    if(!rows.length){
+        box.innerHTML = `<div class="cr-empty" style="padding:12px">${CR.loaded ? (CR.list.length ? "Wax la helay ma jiraan." : "Weli buug deen ma jiro — samee mid cusub.") : "⏳ Loading…"}</div>`;
+        return;
+    }
+    box.innerHTML = rows.map(c => {
+        const over = !c.unlimited && (c.balance + total > c.limit + 0.0001);
+        const right = c.unlimited ? `<span style="color:#4338ca">∞ No limit</span><br><span style="color:var(--muted)">deen ${crMoney(c.balance)}</span>`
+            : `${over ? "⛔ " : ""}u bannaan ${crMoney(c.available)}<br><span style="color:var(--muted)">deen ${crMoney(c.balance)} / ${crMoney(c.limit)}</span>`;
+        return `<button type="button" class="cr-opt ${CR.pickId === c.id ? "sel" : ""} ${over ? "over" : ""}" onclick="crSelectPick('${c.id}')">
+            <div class="cr-av">${crEsc(c.name.slice(0, 1).toUpperCase())}</div>
+            <div style="min-width:0"><div class="nm">${crEsc(c.name)}</div><div class="sb">${crEsc(c.phone || "—")}</div></div>
+            <div class="rt">${right}</div></button>`;
+    }).join("");
+}
+function crSelectPick(id){
+    CR.pickId = id; crRenderPick();
+    const c = CR.list.find(x => x.id === id); crMsg("crPickMsg", "");
+    if(c && !c.unlimited && c.balance + currentOrderTotal > c.limit + 0.0001) crLimitAlert(c, currentOrderTotal);
+}
+function crLimitAlert(c, amount){
+    crMsg("crPickMsg", `⛔ ${c.name} wuxuu gaaray xadka deenta! Xadka ${crMoney(c.limit)} · Deenta hadda ${crMoney(c.balance)} · Bill-kan ${crMoney(amount)} · U bannaan ${crMoney(Math.max(c.limit - c.balance, 0))}. Lacag kale laguma dari karo.`, "limit");
+    try{ if(navigator.vibrate) navigator.vibrate([120, 60, 120]); }catch(e){}
+    try{ if(window.SahalApp && SahalApp.play) SahalApp.play("ready"); else ding(); }catch(e){}
+}
+async function crCharge(){
+    const c = CR.list.find(x => x.id === CR.pickId);
+    if(!c){ crMsg("crPickMsg", "❌ Dooro macmiilka deenta lagu darayo"); return false; }
+    if(!c.unlimited && c.balance + currentOrderTotal > c.limit + 0.0001){ crLimitAlert(c, currentOrderTotal); return false; }
+    const r = await fetch(`/api/credit/${RID}/charge`, { method:"POST", headers:{ "Content-Type":"application/json", "X-Sahal-Role":"cashier" },
+        body: JSON.stringify({ order_id: currentOrderId, customer_id: c.id }) });
+    const d = await r.json();
+    if(!d.success){
+        if(d.limit_hit){ c.balance = d.limit_hit.balance; c.limit = d.limit_hit.limit; crLimitAlert(c, d.limit_hit.amount); }
+        else crMsg("crPickMsg", d.error || "❌ Failed");
+        crLoad();
+        return false;
+    }
+    closePayModal();
+    showToast(`📒 ${crMoney(d.amount)} waxaa lagu daray deenta ${d.name} — wadarta: ${crMoney(d.balance)}`);
+    liveRefresh(true); crLoad();
+    return true;
+}
+
+/* ---------- "eats on credit" tag when the cashier sends an order ---------- */
+function crFillHintSelect(){
+    const s = document.getElementById("noCredit"); if(!s) return;
+    const keep = s.value;
+    s.innerHTML = `<option value="">📒 Deen? — maya (lacag caadi ah)</option>` + CR.list.filter(c => c.active)
+        .map(c => `<option value="${c.id}">📒 ${crEsc(c.name)}${c.phone ? " · " + crEsc(c.phone) : ""}</option>`).join("");
+    s.value = keep;
+}
+
+crLoad();
+setInterval(() => { if(!anyModalOpen() && document.getElementById("page-credit") && document.getElementById("page-credit").classList.contains("active")) crLoad(); }, 30000);
 </script>
 
 <script src="/static/sahal_app.js?v={{ asset_v }}" defer></script>
