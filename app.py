@@ -1,4 +1,5 @@
 from flask import (
+    g,
     Flask,
     render_template,
     request,
@@ -87,7 +88,92 @@ app = Flask(
 # 🔐 SECRET KEY
 # =========================
 
-app.secret_key = "supersecretkey123"
+app.secret_key = os.environ.get("SECRET_KEY") or "supersecretkey123"
+
+# =========================
+# 🔒 LOGINS STAY LOGGED IN
+# Every login lasts 1 year and survives refresh, closing the tab,
+# closing the browser and restarting the phone — it only ends when
+# that person presses Logout. Each portal has its OWN login, so a waiter
+# and a cashier (or kitchen, admin…) can be logged in at the same time
+# in the same browser without kicking each other out.
+# =========================
+app.permanent_session_lifetime = timedelta(days=365)
+app.config.update(SESSION_COOKIE_SAMESITE="Lax", SESSION_COOKIE_HTTPONLY=True, SESSION_REFRESH_EACH_REQUEST=True)
+
+STAFF_SESSION_KEYS = ("staff_ok", "staff_role", "staff_rid", "staff_id", "staff_name", "staff_employee_id")
+
+
+def _requested_staff_role():
+    """Which staff portal is this request for? (waiter / cashier)"""
+    p = request.path
+    if p.startswith("/waiter_"):
+        return "waiter"
+    if p.startswith("/cashier_"):
+        return "cashier"
+    h = request.headers.get("X-Sahal-Role", "")
+    if h in ("waiter", "cashier"):
+        return h
+    a = request.args.get("as")
+    if not a and request.method == "POST":
+        if request.is_json:
+            j = request.get_json(silent=True) or {}
+            a = j.get("as") or j.get("role")
+        elif request.mimetype in ("multipart/form-data", "application/x-www-form-urlencoded"):
+            a = request.form.get("as")
+    if a in ("waiter", "cashier"):
+        return a
+    ref = request.headers.get("Referer", "")
+    if "/waiter_" in ref or "as=waiter" in ref:
+        return "waiter"
+    if "/cashier_" in ref or "as=cashier" in ref:
+        return "cashier"
+    return None
+
+
+@app.before_request
+def _sahal_session_slots():
+    if request.path.startswith("/static/"):
+        return
+    session.permanent = True
+    # older single-slot login → move it into its own slot
+    if session.get("staff_ok") and session.get("staff_role") in ("waiter", "cashier") \
+            and not session.get("staff_" + session["staff_role"]):
+        session["staff_" + session["staff_role"]] = {k: session.get(k) for k in STAFF_SESSION_KEYS}
+    role = _requested_staff_role()
+    g._sahal_role = role
+    data = None
+    if role:
+        data = session.get("staff_" + role)
+    else:
+        slots = [x for x in (session.get("staff_waiter"), session.get("staff_cashier")) if x]
+        if len(slots) != 1:
+            g._sahal_had_slot = False
+            return            # nothing to choose (or ambiguous) — leave as is
+        data = slots[0]
+    g._sahal_had_slot = bool(data)
+    for k in STAFF_SESSION_KEYS:
+        if data:
+            session[k] = data.get(k)
+        else:
+            session.pop(k, None)
+
+
+@app.after_request
+def _sahal_save_slot(resp):
+    try:
+        if request.path.startswith("/static/"):
+            return resp
+        flat_role = session.get("staff_role") if session.get("staff_ok") else None
+        if flat_role in ("waiter", "cashier"):
+            session["staff_" + flat_role] = {k: session.get(k) for k in STAFF_SESSION_KEYS}
+        else:
+            role = getattr(g, "_sahal_role", None)
+            if role and getattr(g, "_sahal_had_slot", False):
+                session.pop("staff_" + role, None)     # this portal logged out / was disabled
+    except Exception as e:
+        print("SESSION SLOT ERROR:", e)
+    return resp
 
 # =========================
 # 🔌 SOCKET IO
@@ -1421,8 +1507,19 @@ def logout_register():
 
 @app.route("/logout")
 def logout():
-    session.clear()
+    # Only the restaurant owner logs out — kitchen, waiter, cashier and
+    # admin logins in the same browser stay logged in.
+    for k in ("restaurant_login", "restaurant_id", "restaurant_name"):
+        session.pop(k, None)
     return redirect("/")
+
+
+@app.route("/logout_restaurant")
+def logout_restaurant():
+    # Restaurant Admin panel logout (was a missing route → error page).
+    for k in [k for k in list(session.keys()) if k.startswith("admin_") and k != "admin_ok"]:
+        session.pop(k, None)
+    return redirect("/login")
 
 
 # =========================
@@ -1815,6 +1912,8 @@ def register():
 @app.route("/login", methods=["GET", "POST"])
 def login():
     try:
+        if request.method == "GET" and session.get("restaurant_login") and session.get("restaurant_id"):
+            return redirect(f"/dashboard/{session.get('restaurant_id')}")
         if request.method == "POST":
             username = request.form.get("username", "").strip()
             password = request.form.get("password", "").strip()
@@ -3831,6 +3930,11 @@ def waiter_login(rid):
     if not active:
         return render_template("staff_suspended.html", restaurant_name=restaurant_name, portal="Waiter")
 
+    if request.method == "GET" and session.get("staff_ok") and session.get("staff_role") == "waiter" \
+            and session.get("staff_rid") == rid:
+        nxt = request.args.get("next", "")
+        return redirect(nxt if nxt.startswith("/") and not nxt.startswith("//") else f"/waiter_dashboard/{rid}")
+
     error = None
     if request.method == "POST":
         employee_id = request.form.get("employee_id", "").strip().upper()
@@ -4063,6 +4167,10 @@ def cashier_login(rid):
 
     if not active:
         return render_template("staff_suspended.html", restaurant_name=restaurant_name, portal="Cashier")
+
+    if request.method == "GET" and session.get("staff_ok") and session.get("staff_role") == "cashier" \
+            and session.get("staff_rid") == rid:
+        return redirect(f"/cashier_dashboard/{rid}")
 
     error = None
     if request.method == "POST":
