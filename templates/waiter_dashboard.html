@@ -183,14 +183,19 @@ table.tx-tbl td{ padding:9px 6px; border-bottom:1px solid #f4f4f4; }
     .order-row{ flex-wrap:wrap; gap:8px; }
 }
 </style>
+<link rel="stylesheet" href="/static/sahal_app.css">
+<link rel="manifest" href="/app_manifest/{{ rid }}/waiter.webmanifest">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="apple-touch-icon" href="/static/logo.png">
 </head>
-<body>
+<body data-rid="{{ rid }}" data-role="waiter" data-nav=".sidebar .sb-nav .sb-link" data-nav-logout=".tb-logout" data-nav-primary="dashboard,neworder,myorders,chat" data-accent="#ff5722">
 
 <div class="nav-overlay" onclick="toggleNav(false)"></div>
 <div class="toast" id="toast"></div>
 <div class="shell">
     <!-- ================= SIDEBAR ================= -->
-    <aside class="sidebar">
+    <aside class="sidebar sa-hide-mobile">
         <div class="sb-brand">
             <div class="logo">S</div>
             <div>
@@ -219,6 +224,7 @@ table.tx-tbl td{ padding:9px 6px; border-bottom:1px solid #f4f4f4; }
             <li><button class="sb-link" data-page="mycustomers" onclick="showPage('mycustomers',this)">👥 My Customers</button></li>
             <li><button class="sb-link" data-page="transactions" onclick="showPage('transactions',this)">💳 My Transactions</button></li>
             <li><a class="sb-link" href="/kitchen/{{ rid }}" target="_blank">🍳 Kitchen Orders</a></li>
+            <li><a class="sb-link" data-sa-key="chat" data-sa-label="Chat" data-chat-link href="/staff_chat/{{ rid }}?as=waiter">💬 Staff Chat</a></li>
         </ul>
     </aside>
 
@@ -226,7 +232,7 @@ table.tx-tbl td{ padding:9px 6px; border-bottom:1px solid #f4f4f4; }
     <div class="main">
         <div class="topbar">
             <div class="tb-left">
-                <button class="menu-toggle" onclick="toggleNav()" aria-label="Menu">☰</button>
+                <button class="menu-toggle sa-hide-mobile" onclick="toggleNav()" aria-label="Menu">☰</button>
                 <div class="tb-restaurant">🏪 {{ restaurant_name }}</div>
             </div>
             <div class="tb-right">
@@ -780,8 +786,8 @@ async function liveRefresh(){
             if(after[id].s === "ready" && before[id] && before[id].s !== "ready") readyTables.push(after[id].t);
         });
         if(readyTables.length){
-            ding();
-            showToast(`✅ Table ${readyTables.join(", ")} — cuntadu waa diyaar!`);
+            if(window.SahalApp) SahalApp.readyAlert(`Table ${readyTables.join(", ")} — diyaar!`, "Cuntadu waa diyaar — ka qaado jikada");
+            else { ding(); showToast(`✅ Table ${readyTables.join(", ")} — cuntadu waa diyaar!`); }
         }
         setLive(true);
     }catch(e){ setLive(false); }
@@ -803,5 +809,6 @@ setInterval(liveCheck, 3000);
 document.addEventListener("visibilitychange", () => { if(!document.hidden) liveRefresh(); });
 </script>
 
+<script src="/static/sahal_app.js" defer></script>
 </body>
 </html>

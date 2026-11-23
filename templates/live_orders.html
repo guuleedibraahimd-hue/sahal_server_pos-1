@@ -98,8 +98,13 @@ button{font-family:inherit;}
     .title h1{font-size:16px;}
 }
 </style>
+<link rel="stylesheet" href="/static/sahal_app.css">
+<link rel="manifest" href="/app_manifest/{{ rid }}/live.webmanifest">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="apple-touch-icon" href="/static/logo.png">
 </head>
-<body>
+<body data-rid="{{ rid }}" data-role="admin" data-accent="#2f6fed">
 
 <div class="top">
     <a class="back" href="{{ back_url }}">←</a>
@@ -278,7 +283,11 @@ async function load(){
                     flashIds.add(o.id); isNew = true;
                 }
             });
-            if(isNew){ ding(); document.title = "🔔 New order! · Live Orders"; setTimeout(() => document.title = "Live Orders · {{ restaurant_name|e }}", 4000); }
+            if(isNew){
+                const f = d.active.find(o => flashIds.has(o.id)) || {};
+                if(window.SahalApp && soundOn) SahalApp.newOrderAlert(`Dalab cusub — ${f.order_type === "takeaway" ? "Take Away" : "Table " + (f.table || "")}`, (f.items || []).map(i => i.qty + "× " + i.name).join(", "));
+                else ding();
+                document.title = "🔔 New order! · Live Orders"; setTimeout(() => document.title = "Live Orders · {{ restaurant_name|e }}", 4000); }
         }
         knownIds = ids;
         data = d; lastVersion = d.v;
@@ -304,5 +313,6 @@ setInterval(checkVersion, 3000);
 setInterval(load, 60000);                         // refresh ages / safety net
 document.addEventListener("visibilitychange", () => { if(!document.hidden) load(); });
 </script>
+<script src="/static/sahal_app.js" defer></script>
 </body>
 </html>

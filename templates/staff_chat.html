@@ -1,117 +1,484 @@
 <!DOCTYPE html>
-<html>
-
+<html lang="so">
 <head>
-
-<title>Staff Chat</title>
-
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+<meta name="theme-color" content="#075e54">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Staff Chat · {{ restaurant_name }}</title>
+<link rel="manifest" href="/app_manifest/{{ rid }}/chat.webmanifest">
+<link rel="icon" href="/static/logo.png">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/sahal_app.css">
 <style>
-
-body{
-font-family:Arial;
-background:#f4f4f4;
-padding:20px;
+:root{
+    --hdr:#075e54; --hdr2:#0b7a6d; --mine:#d9fdd3; --theirs:#ffffff; --bg:#efeae2; --text:#111b21; --muted:#667781;
+    --admin:#7c3aed; --cashier:#059669; --waiter:#ea580c; --kitchen:#0f172a; --danger:#dc2626;
 }
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;}
+body{font-family:'Plus Jakarta Sans',Arial,sans-serif;background:var(--bg);color:var(--text);display:flex;flex-direction:column;overflow:hidden;}
+button{font-family:inherit;}
 
-.chat{
-background:white;
-padding:15px;
-border-radius:10px;
-height:400px;
-overflow:auto;
-margin-bottom:10px;
-box-shadow:0 0 8px rgba(0,0,0,0.2);
+/* header */
+.hdr{flex-shrink:0;display:flex;align-items:center;gap:10px;padding:10px 12px;padding-top:max(10px,env(safe-area-inset-top));
+     background:linear-gradient(135deg,var(--hdr),var(--hdr2));color:#fff;box-shadow:0 2px 10px rgba(0,0,0,.15);z-index:5;}
+.hdr .back{color:#fff;text-decoration:none;font-size:22px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;border-radius:50%;}
+.hdr .back:active{background:rgba(255,255,255,.15);}
+.gav{width:44px;height:44px;border-radius:50%;background:#fff3;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:17px;overflow:hidden;flex-shrink:0;}
+.gav img{width:100%;height:100%;object-fit:cover;}
+.ginfo{flex:1;min-width:0;cursor:pointer;}
+.gname{font-weight:800;font-size:16.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.gsub{font-size:12px;opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.hbtn{background:none;border:none;color:#fff;font-size:20px;width:38px;height:38px;border-radius:50%;cursor:pointer;}
+.hbtn:active{background:rgba(255,255,255,.15);}
+
+/* messages */
+.msgs{flex:1;overflow-y:auto;padding:12px 10px 8px;-webkit-overflow-scrolling:touch;
+      background-image:radial-gradient(rgba(0,0,0,.035) 1px, transparent 1px);background-size:18px 18px;}
+.day{display:flex;justify-content:center;margin:10px 0;}
+.day span{background:#fff;color:var(--muted);font-size:12px;font-weight:700;padding:5px 12px;border-radius:8px;box-shadow:0 1px 1px rgba(0,0,0,.08);}
+.row{display:flex;margin:3px 0;}
+.row.mine{justify-content:flex-end;}
+.bub{position:relative;max-width:min(78%,520px);padding:7px 9px 6px;border-radius:12px;background:var(--theirs);
+     box-shadow:0 1px 1px rgba(0,0,0,.1);font-size:14.5px;line-height:1.4;word-wrap:break-word;overflow-wrap:anywhere;cursor:pointer;user-select:none;-webkit-user-select:none;}
+.row.mine .bub{background:var(--mine);}
+.row:not(.mine) .bub{border-top-left-radius:4px;}
+.row.mine .bub{border-top-right-radius:4px;}
+.row.cont .bub{border-radius:12px;}
+.who{display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:800;margin-bottom:2px;}
+.ttl{font-size:10px;font-weight:800;padding:1px 7px;border-radius:8px;color:#fff;letter-spacing:.3px;}
+.ttl.admin{background:var(--admin);} .ttl.cashier{background:var(--cashier);} .ttl.waiter{background:var(--waiter);} .ttl.kitchen{background:var(--kitchen);}
+.who.admin{color:var(--admin);} .who.cashier{color:var(--cashier);} .who.waiter{color:var(--waiter);} .who.kitchen{color:#334155;}
+.txt{white-space:pre-wrap;}
+.meta{float:right;margin:6px 0 -4px 10px;font-size:11px;color:var(--muted);display:flex;align-items:center;gap:4px;}
+.meta .ed{font-style:italic;}
+.del{color:var(--muted);font-style:italic;}
+.media{display:block;max-width:100%;width:280px;max-height:320px;object-fit:cover;border-radius:9px;margin:2px 0 2px;background:#0001;}
+video.media{background:#000;}
+.voice{display:flex;align-items:center;gap:10px;min-width:220px;padding:2px 0;}
+.vplay{width:40px;height:40px;border-radius:50%;border:none;background:var(--hdr);color:#fff;font-size:16px;cursor:pointer;flex-shrink:0;}
+.vbar{flex:1;height:4px;border-radius:2px;background:#0002;position:relative;cursor:pointer;}
+.vbar i{position:absolute;left:0;top:0;bottom:0;width:0;border-radius:2px;background:var(--hdr);}
+.vdur{font-size:11.5px;color:var(--muted);min-width:34px;text-align:right;}
+.sending{opacity:.6;}
+.progress{height:3px;background:#0001;border-radius:2px;margin-top:4px;overflow:hidden;}
+.progress i{display:block;height:100%;width:0;background:var(--hdr);transition:width .2s;}
+.empty{margin:30px auto;max-width:320px;text-align:center;background:#fffd;border-radius:14px;padding:18px;color:var(--muted);font-size:13.5px;}
+
+/* composer */
+.edit-bar{display:none;align-items:center;gap:10px;background:#fff;padding:8px 12px;border-top:1px solid #0001;font-size:13px;}
+.edit-bar.show{display:flex;}
+.edit-bar b{color:var(--hdr);}
+.edit-bar .et{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--muted);}
+.edit-bar button{background:none;border:none;font-size:18px;cursor:pointer;color:var(--muted);}
+.comp{flex-shrink:0;display:flex;align-items:flex-end;gap:8px;padding:8px 8px;padding-bottom:max(8px,env(safe-area-inset-bottom));background:var(--bg);}
+.inbox{flex:1;display:flex;align-items:flex-end;gap:4px;background:#fff;border-radius:24px;padding:4px 6px 4px 8px;box-shadow:0 1px 2px rgba(0,0,0,.08);min-height:48px;}
+.inbox textarea{flex:1;border:none;outline:none;resize:none;font:500 15.5px/1.4 inherit;font-family:inherit;padding:10px 4px;max-height:130px;background:transparent;color:var(--text);}
+.ibtn{width:40px;height:40px;border:none;background:none;font-size:21px;cursor:pointer;border-radius:50%;color:#54656f;flex-shrink:0;}
+.ibtn:active{background:#0001;}
+.sbtn{width:50px;height:50px;border-radius:50%;border:none;background:var(--hdr);color:#fff;font-size:21px;cursor:pointer;flex-shrink:0;box-shadow:0 2px 6px rgba(0,0,0,.2);display:flex;align-items:center;justify-content:center;}
+.sbtn:active{transform:scale(.94);}
+.rec{display:none;flex:1;align-items:center;gap:10px;background:#fff;border-radius:24px;padding:4px 8px 4px 14px;min-height:48px;box-shadow:0 1px 2px rgba(0,0,0,.08);}
+.rec.show{display:flex;}
+.rec .dot{width:11px;height:11px;border-radius:50%;background:var(--danger);animation:blink 1s infinite;}
+.rec .rt{font-weight:800;font-variant-numeric:tabular-nums;}
+.rec .rl{flex:1;color:var(--muted);font-size:13px;}
+@keyframes blink{50%{opacity:.25}}
+
+/* sheets / modals */
+.sheet-bg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:50;display:none;}
+.sheet-bg.open{display:block;}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:60;background:#fff;border-radius:20px 20px 0 0;padding:8px 12px max(14px,env(safe-area-inset-bottom));
+       transform:translateY(105%);transition:transform .22s ease;max-height:86vh;overflow-y:auto;}
+.sheet.open{transform:none;}
+.sheet .grip{width:40px;height:5px;border-radius:3px;background:#e2e8f0;margin:4px auto 10px;}
+.act{display:flex;align-items:center;gap:12px;width:100%;padding:14px 10px;border:none;background:none;font:700 15px inherit;font-family:inherit;color:var(--text);cursor:pointer;border-radius:12px;text-align:left;}
+.act:active{background:#f1f5f9;}
+.act.danger{color:var(--danger);}
+.act .ai{font-size:20px;width:26px;text-align:center;}
+.preview{background:var(--bg);border-radius:12px;padding:10px 12px;margin:0 4px 6px;font-size:13.5px;color:var(--muted);max-height:90px;overflow:hidden;}
+.ginfo-sheet .big{width:96px;height:96px;border-radius:50%;margin:6px auto 10px;background:var(--hdr);color:#fff;display:flex;align-items:center;justify-content:center;font-size:36px;font-weight:800;overflow:hidden;}
+.ginfo-sheet .big img{width:100%;height:100%;object-fit:cover;}
+.ginfo-sheet h3{text-align:center;font-size:19px;}
+.ginfo-sheet .cnt{text-align:center;color:var(--muted);font-size:13px;margin:3px 0 14px;}
+.gform{background:#f8fafc;border-radius:14px;padding:12px;margin-bottom:14px;}
+.gform label{font-size:12px;font-weight:800;color:var(--muted);display:block;margin-bottom:6px;}
+.gform input[type=text]{width:100%;padding:12px;border-radius:10px;border:1.5px solid #e2e8f0;font:600 15px inherit;font-family:inherit;margin-bottom:10px;}
+.gform .gb{display:flex;gap:8px;flex-wrap:wrap;}
+.gform .gb button,.gform .gb label.btn{padding:10px 14px;border-radius:10px;border:none;font:700 13.5px inherit;font-family:inherit;cursor:pointer;background:var(--hdr);color:#fff;display:inline-block;margin:0;}
+.gform .gb .alt{background:#e2e8f0;color:#0f172a;}
+.mem{display:flex;align-items:center;gap:12px;padding:10px 6px;border-bottom:1px solid #f1f5f9;}
+.mem .mav{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;}
+.mem .mn{flex:1;font-weight:700;font-size:14.5px;}
+.viewer{position:fixed;inset:0;background:#000e;z-index:80;display:none;align-items:center;justify-content:center;}
+.viewer.open{display:flex;}
+.viewer img{max-width:100%;max-height:100%;}
+.viewer button{position:absolute;top:max(12px,env(safe-area-inset-top));right:12px;background:#fff2;color:#fff;border:none;width:42px;height:42px;border-radius:50%;font-size:20px;cursor:pointer;}
+.toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:#111b21;color:#fff;padding:10px 16px;border-radius:12px;font-size:13.5px;font-weight:700;z-index:90;display:none;max-width:90vw;text-align:center;}
+.toast.show{display:block;}
+.newpill{position:fixed;right:16px;bottom:90px;background:#fff;color:var(--hdr);border:none;border-radius:20px;padding:8px 14px;font-weight:800;box-shadow:0 4px 14px rgba(0,0,0,.2);cursor:pointer;display:none;z-index:20;}
+.sa-enable{bottom:calc(88px + env(safe-area-inset-bottom)) !important;}
+@media (min-width:900px){
+    body{max-width:980px;margin:0 auto;box-shadow:0 0 40px rgba(0,0,0,.12);}
+    .sheet{max-width:520px;margin:0 auto;border-radius:20px 20px 0 0;}
 }
-
-.message{
-margin-bottom:10px;
-}
-
-input{
-padding:10px;
-width:80%;
-border:1px solid #ccc;
-border-radius:5px;
-}
-
-button{
-padding:10px;
-background:#007bff;
-color:white;
-border:none;
-border-radius:5px;
-cursor:pointer;
-}
-
 </style>
-
 </head>
+<body data-rid="{{ rid }}" data-role="{{ me.role }}">
 
-<body>
+<div class="hdr">
+    <a class="back" href="{{ back_url }}" aria-label="Back">←</a>
+    <div class="gav" id="gAv">💬</div>
+    <div class="ginfo" onclick="openGroup()">
+        <div class="gname" id="gName">Staff Chat</div>
+        <div class="gsub" id="gSub">{{ me.name }} · {{ {'admin':'Admin','cashier':'Cashier','waiter':'Waiter','kitchen':'Kitchen'}[me.role] }}</div>
+    </div>
+    <button class="hbtn" onclick="openGroup()" aria-label="Group info">ⓘ</button>
+</div>
 
-<h2>Restaurant Staff Chat</h2>
+<div class="msgs" id="msgs"><div class="empty">⏳ Loading…</div></div>
+<button class="newpill" id="newPill" onclick="scrollBottom(true)">⬇ Fariimo cusub</button>
 
-<div class="chat" id="chatBox"></div>
+<div class="edit-bar" id="editBar">✏️ <b>Edit</b><span class="et" id="editText"></span><button onclick="cancelEdit()">✕</button></div>
+<div class="comp">
+    <div class="inbox" id="inbox">
+        <button class="ibtn" onclick="document.getElementById('fileIn').click()" aria-label="Attach">📎</button>
+        <textarea id="txt" rows="1" placeholder="Qor fariin…" oninput="onType()"></textarea>
+        <button class="ibtn" onclick="document.getElementById('camIn').click()" aria-label="Camera">📷</button>
+    </div>
+    <div class="rec" id="recBox">
+        <span class="dot"></span><span class="rt" id="recTime">0:00</span><span class="rl">Duubaya… </span>
+        <button class="ibtn" onclick="cancelRec()" aria-label="Cancel">🗑️</button>
+    </div>
+    <button class="sbtn" id="sendBtn" onclick="onSendBtn()" aria-label="Send">🎤</button>
+</div>
+<input type="file" id="fileIn" accept="image/*,video/*" hidden>
+<input type="file" id="camIn" accept="image/*" capture="environment" hidden>
 
-<input id="msg" placeholder="Type message">
+<!-- message actions -->
+<div class="sheet-bg" id="sheetBg" onclick="closeSheets()"></div>
+<div class="sheet" id="actSheet">
+    <div class="grip"></div>
+    <div class="preview" id="actPreview"></div>
+    <button class="act" id="aCopy" onclick="doCopy()"><span class="ai">📋</span>Copy</button>
+    <button class="act" id="aEdit" onclick="startEdit()"><span class="ai">✏️</span>Edit</button>
+    <button class="act danger" id="aDelMe" onclick="doDelete('me')"><span class="ai">🗑️</span>Delete for me</button>
+    <button class="act danger" id="aDelAll" onclick="doDelete('all')"><span class="ai">🚫</span>Delete for everyone</button>
+    <button class="act" onclick="closeSheets()"><span class="ai">✕</span>Cancel</button>
+</div>
 
-<button onclick="send()">Send</button>
+<!-- group info -->
+<div class="sheet ginfo-sheet" id="groupSheet">
+    <div class="grip"></div>
+    <div class="big" id="gBig">💬</div>
+    <h3 id="gBigName">Staff Chat</h3>
+    <div class="cnt" id="gCount"></div>
+    {% if me.role == 'admin' %}
+    <div class="gform">
+        <label>Magaca group-ka</label>
+        <input type="text" id="gNameIn" maxlength="60">
+        <div class="gb">
+            <button onclick="saveGroupName()">💾 Save name</button>
+            <label class="btn">🖼️ Change photo<input type="file" id="gPhotoIn" accept="image/*" hidden></label>
+            <button class="alt" onclick="removeGroupPhoto()">Remove photo</button>
+        </div>
+    </div>
+    {% endif %}
+    <div id="memList"></div>
+    <button class="act" onclick="closeSheets()" style="justify-content:center;margin-top:8px;">Close</button>
+</div>
 
+<div class="viewer" id="viewer" onclick="closeViewer()"><img id="viewerImg" alt=""><button onclick="closeViewer()">✕</button></div>
+<div class="toast" id="toast"></div>
 
+<script src="/static/sahal_app.js" defer></script>
 <script>
+const RID = {{ rid|tojson }};
+const ME = {{ me|tojson }};
+const AS = encodeURIComponent(ME.role);
+const TITLES = { admin: "Admin", cashier: "Cashier", waiter: "Waiter", kitchen: "Kitchen" };
+const byId = new Map();
+let cursor = "", version = null, loading = false, editing = null, actMsg = null;
 
-function loadChat(){
+const $ = (id) => document.getElementById(id);
+function esc(s){ return String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+function linkify(s){ return esc(s).replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>'); }
+function toast(t){ const el = $("toast"); el.textContent = t; el.classList.add("show"); clearTimeout(el._h); el._h = setTimeout(() => el.classList.remove("show"), 2600); }
+function fmtDur(s){ s = Math.max(0, Math.round(s || 0)); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); }
+function dayLabel(d){
+    if(!d) return "";
+    const today = new Date(); const t = today.toISOString().slice(0, 10);
+    const y = new Date(today.getTime() - 864e5).toISOString().slice(0, 10);
+    if(d === t) return "Maanta"; if(d === y) return "Shalay";
+    const [Y, M, D] = d.split("-"); return `${D}/${M}/${Y}`;
+}
+function initials(n){ return String(n || "?").split(/\s+/).map(x => x[0]).join("").slice(0, 2).toUpperCase(); }
+function markRead(){ try{ localStorage.setItem(`sa_chat_read_${RID}`, new Date().toISOString()); }catch(e){} }
 
-fetch("/get_messages/{{rid}}")
+/* ---------------- render ---------------- */
+function nearBottom(){ const m = $("msgs"); return m.scrollHeight - m.scrollTop - m.clientHeight < 140; }
+function scrollBottom(smooth){ const m = $("msgs"); m.scrollTo({ top: m.scrollHeight, behavior: smooth ? "smooth" : "auto" }); $("newPill").style.display = "none"; }
 
-.then(r=>r.json())
-
-.then(data=>{
-
-let html=""
-
-data.forEach(m=>{
-
-html+=`<div class="message"><b>${m.sender}</b>: ${m.message}</div>`
-
-})
-
-document.getElementById("chatBox").innerHTML=html
-
-})
-
+function bubbleHTML(m, cont){
+    let inner = "";
+    if(!m.mine && !cont){
+        inner += `<div class="who ${esc(m.sender_role)}">${esc(m.sender_name)} <span class="ttl ${esc(m.sender_role)}">${esc(m.title)}</span></div>`;
+    }
+    const meta = `<span class="meta">${m.edited ? '<span class="ed">edited</span>' : ""}${esc(m.time)}</span>`;
+    if(m.type === "deleted"){
+        inner += `<span class="del">🚫 ${m.mine ? "Waad tirtirtay fariintan" : "Fariintan waa la tirtiray"}</span>${meta}`;
+    } else if(m.type === "image"){
+        inner += `<img class="media" src="${esc(m.media_url)}" alt="" loading="lazy" data-view="1">${m.text ? `<div class="txt">${linkify(m.text)}</div>` : ""}${meta}`;
+    } else if(m.type === "video"){
+        inner += `<video class="media" src="${esc(m.media_url)}" controls playsinline preload="metadata"></video>${m.text ? `<div class="txt">${linkify(m.text)}</div>` : ""}${meta}`;
+    } else if(m.type === "audio"){
+        inner += `<div class="voice" data-src="${esc(m.media_url)}"><button class="vplay" data-play="1">▶</button><div class="vbar"><i></i></div><span class="vdur">${fmtDur(m.duration)}</span></div>${meta}`;
+    } else {
+        inner += `<span class="txt">${linkify(m.text)}</span>${meta}`;
+    }
+    return `<div class="row${m.mine ? " mine" : ""}${cont ? " cont" : ""}" data-id="${esc(m.id)}"><div class="bub${m._sending ? " sending" : ""}">${inner}${m._sending ? `<div class="progress"><i style="width:${m._pct || 5}%"></i></div>` : ""}</div></div>`;
+}
+function render(keepPos){
+    const m = $("msgs");
+    const stick = !keepPos || nearBottom();
+    const list = [...byId.values()].filter(x => !x.hidden).sort((a, b) => (a.ts || "~").localeCompare(b.ts || "~"));
+    if(!list.length){ m.innerHTML = `<div class="empty">👋 Ku soo dhawoow group-ka shaqaalaha!<br>Halkan ku qor fariin, sawir, muuqaal ama cod.</div>`; return; }
+    let html = "", lastDay = "", lastSender = "", lastTs = 0;
+    list.forEach(x => {
+        if(x.date && x.date !== lastDay){ html += `<div class="day"><span>${esc(dayLabel(x.date))}</span></div>`; lastDay = x.date; lastSender = ""; }
+        const t = x.ts ? Date.parse(x.ts) : Date.now();
+        const cont = x.sender_id === lastSender && (t - lastTs) < 5 * 60 * 1000;
+        html += bubbleHTML(x, cont);
+        lastSender = x.sender_id; lastTs = t;
+    });
+    m.innerHTML = html;
+    if(stick) scrollBottom(false); else $("newPill").style.display = "block";
 }
 
-function send(){
-
-let msg=document.getElementById("msg").value
-
-fetch("/send_message/{{rid}}",{
-
-method:"POST",
-
-headers:{
-"Content-Type":"application/x-www-form-urlencoded"
-},
-
-body:`sender={{name}}&message=${msg}`
-
-}).then(()=>{
-
-document.getElementById("msg").value=""
-
-loadChat()
-
-})
-
+/* ---------------- data ---------------- */
+async function loadAll(){
+    const d = await fetch(`/api/chat/${encodeURIComponent(RID)}/messages?as=${AS}`, { cache: "no-store" }).then(r => r.json());
+    if(!d.success){ if(d.error === "Unauthorized") location.reload(); return; }
+    d.messages.forEach(m => byId.set(m.id, m));
+    cursor = d.cursor || ""; version = d.v; applyGroup(d.group);
+    render(false); markRead();
+}
+async function loadNew(){
+    if(loading) return; loading = true;
+    try{
+        const d = await fetch(`/api/chat/${encodeURIComponent(RID)}/messages?as=${AS}&since=${encodeURIComponent(cursor)}`, { cache: "no-store" }).then(r => r.json());
+        if(!d.success) return;
+        let incoming = false;
+        d.messages.forEach(m => {
+            if(!byId.has(m.id) && !m.mine && !m.hidden && m.type !== "deleted") incoming = true;
+            byId.set(m.id, m);
+        });
+        if(d.cursor) cursor = d.cursor;
+        version = d.v; applyGroup(d.group);
+        render(true);
+        if(incoming){
+            if(window.SahalApp) SahalApp.play("chat");
+            if(!document.hidden) markRead();
+        }
+    }finally{ loading = false; }
+}
+async function poll(){
+    try{
+        const d = await fetch(`/api/chat/${encodeURIComponent(RID)}/version?as=${AS}`, { cache: "no-store" }).then(r => r.json());
+        if(d.success && d.v !== version) await loadNew();
+    }catch(e){}
 }
 
-setInterval(loadChat,2000)
+/* ---------------- group ---------------- */
+let group = { name: "Staff Chat", photo: "" }, members = [];
+function applyGroup(g){
+    if(!g) return; group = g;
+    $("gName").textContent = g.name; $("gBigName").textContent = g.name; document.title = g.name;
+    const av = g.photo ? `<img src="${esc(g.photo)}" alt="">` : esc(initials(g.name));
+    $("gAv").innerHTML = av; $("gBig").innerHTML = av;
+    const inp = $("gNameIn"); if(inp && document.activeElement !== inp) inp.value = g.name;
+}
+async function openGroup(){
+    openSheet("groupSheet");
+    const d = await fetch(`/api/chat/${encodeURIComponent(RID)}/group?as=${AS}`, { cache: "no-store" }).then(r => r.json());
+    if(!d.success) return;
+    applyGroup(d.group); members = d.members;
+    $("gCount").textContent = `${members.length} xubnood · Group-ka shaqaalaha`;
+    $("gSub").textContent = members.map(x => x.name).join(", ");
+    const colors = { admin: "var(--admin)", cashier: "var(--cashier)", waiter: "var(--waiter)", kitchen: "var(--kitchen)" };
+    $("memList").innerHTML = members.map(x => `<div class="mem"><div class="mav" style="background:${colors[x.role]}">${esc(initials(x.name))}</div><div class="mn">${esc(x.name)}${x.id === ME.id ? " (adiga)" : ""}</div><span class="ttl ${esc(x.role)}">${esc(x.title)}</span></div>`).join("");
+}
+async function postGroup(fd){
+    fd.append("as", ME.role);
+    const d = await fetch(`/api/chat/${encodeURIComponent(RID)}/group`, { method: "POST", body: fd }).then(r => r.json()).catch(() => ({}));
+    if(d.success){ applyGroup(d.group); toast("✅ Waa la beddelay"); } else toast("❌ " + (d.error || "Failed"));
+}
+function saveGroupName(){ const n = $("gNameIn").value.trim(); if(!n) return; const fd = new FormData(); fd.append("name", n); postGroup(fd); }
+function removeGroupPhoto(){ const fd = new FormData(); fd.append("remove_photo", "1"); postGroup(fd); }
+const gp = $("gPhotoIn"); if(gp) gp.addEventListener("change", () => { const f = gp.files[0]; if(!f) return; const fd = new FormData(); fd.append("photo", f); postGroup(fd); gp.value = ""; });
 
-loadChat()
+/* ---------------- sending ---------------- */
+function autoGrow(){ const t = $("txt"); t.style.height = "auto"; t.style.height = Math.min(130, t.scrollHeight) + "px"; }
+function onType(){ autoGrow(); $("sendBtn").textContent = ($("txt").value.trim() || editing) ? "➤" : "🎤"; }
+$("txt").addEventListener("keydown", (e) => {
+    if(e.key === "Enter" && !e.shiftKey && window.matchMedia("(min-width: 860px)").matches){ e.preventDefault(); onSendBtn(); }
+});
+function onSendBtn(){
+    if(recorder){ stopRec(true); return; }
+    const t = $("txt").value.trim();
+    if(editing){ saveEdit(t); return; }
+    if(t){ sendText(t); return; }
+    startRec();
+}
+function tempId(){ return "tmp-" + Date.now() + "-" + Math.random().toString(36).slice(2, 7); }
+function sendForm(fd, temp){
+    fd.append("as", ME.role);
+    byId.set(temp.id, temp); render(false);
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", `/api/chat/${encodeURIComponent(RID)}/send`);
+    xhr.upload.onprogress = (e) => {
+        if(!e.lengthComputable) return;
+        temp._pct = Math.round(e.loaded / e.total * 95);
+        const bar = document.querySelector(`.row[data-id="${temp.id}"] .progress i`); if(bar) bar.style.width = temp._pct + "%";
+    };
+    xhr.onload = () => {
+        byId.delete(temp.id);
+        let d = {}; try{ d = JSON.parse(xhr.responseText); }catch(e){}
+        if(d.success){ byId.set(d.message.id, d.message); } else toast("❌ " + (d.error || "Lama dirin"));
+        render(false);
+    };
+    xhr.onerror = () => { byId.delete(temp.id); render(false); toast("❌ Internet-ka hubi, lama dirin"); };
+    xhr.send(fd);
+}
+function baseTemp(type, extra){
+    const now = new Date();
+    return Object.assign({ id: tempId(), sender_id: ME.id, sender_name: ME.name, sender_role: ME.role, title: TITLES[ME.role], type, text: "",
+        media_url: "", mine: true, _sending: true, time: now.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }),
+        date: now.toISOString().slice(0, 10), ts: now.toISOString() }, extra || {});
+}
+function sendText(t){
+    const fd = new FormData(); fd.append("text", t);
+    sendForm(fd, baseTemp("text", { text: t }));
+    $("txt").value = ""; onType(); $("txt").focus();
+}
+function sendFile(f, kind, duration){
+    if(!f) return;
+    const k = kind || (f.type.startsWith("image/") ? "image" : f.type.startsWith("video/") ? "video" : f.type.startsWith("audio/") ? "audio" : "");
+    if(!k){ toast("❌ Sawir, muuqaal ama cod keliya"); return; }
+    const limit = { image: 10, video: 50, audio: 15 }[k];
+    if(f.size > limit * 1024 * 1024){ toast(`❌ File-ku waa ka weyn yahay ${limit}MB`); return; }
+    const fd = new FormData(); fd.append("file", f, f.name || ("voice." + (f.type.includes("mp4") ? "m4a" : f.type.includes("ogg") ? "ogg" : "webm")));
+    const cap = $("txt").value.trim(); if(cap && k !== "audio"){ fd.append("text", cap); $("txt").value = ""; onType(); }
+    if(duration) fd.append("duration", duration);
+    sendForm(fd, baseTemp(k, { media_url: (k === "audio" ? "" : URL.createObjectURL(f)), text: k === "audio" ? "" : cap, duration }));
+}
+["fileIn", "camIn"].forEach(id => $(id).addEventListener("change", (e) => { [...e.target.files].forEach(f => sendFile(f)); e.target.value = ""; }));
 
+/* ---------------- voice notes ---------------- */
+let recorder = null, recChunks = [], recStart = 0, recTimer = null, recStream = null, recCancelled = false;
+async function startRec(){
+    if(!navigator.mediaDevices || !window.MediaRecorder){ toast("❌ Browser-kan cod ma duubi karo"); return; }
+    try{ recStream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
+    catch(e){ toast("🎤 Microphone-ka oggolow (browser settings)"); return; }
+    const types = ["audio/webm;codecs=opus", "audio/mp4", "audio/ogg;codecs=opus", "audio/webm"];
+    const type = types.find(t => MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(t)) || "";
+    recorder = new MediaRecorder(recStream, type ? { mimeType: type } : undefined);
+    recChunks = []; recCancelled = false;
+    recorder.ondataavailable = (e) => { if(e.data && e.data.size) recChunks.push(e.data); };
+    recorder.onstop = () => {
+        const secs = (Date.now() - recStart) / 1000;
+        recStream.getTracks().forEach(t => t.stop());
+        const mime = (recorder.mimeType || type || "audio/webm").split(";")[0];
+        recorder = null; clearInterval(recTimer);
+        $("recBox").classList.remove("show"); $("inbox").style.display = ""; onType();
+        if(recCancelled || secs < 0.8 || !recChunks.length){ if(!recCancelled) toast("Cod aad u gaaban"); return; }
+        const blob = new Blob(recChunks, { type: mime });
+        const ext = mime.includes("mp4") ? "m4a" : mime.includes("ogg") ? "ogg" : "webm";
+        sendFile(new File([blob], `voice_${Date.now()}.${ext}`, { type: mime }), "audio", Math.round(secs));
+    };
+    recorder.start(250); recStart = Date.now();
+    $("inbox").style.display = "none"; $("recBox").classList.add("show"); $("sendBtn").textContent = "➤";
+    recTimer = setInterval(() => { $("recTime").textContent = fmtDur((Date.now() - recStart) / 1000); if(Date.now() - recStart > 5 * 60 * 1000) stopRec(true); }, 250);
+}
+function stopRec(send){ if(!recorder) return; recCancelled = !send; recorder.stop(); }
+function cancelRec(){ stopRec(false); }
+
+/* voice playback */
+let curAudio = null, curBtn = null;
+let suppressClick = false;
+$("msgs").addEventListener("click", (e) => {
+    if(suppressClick){ suppressClick = false; e.stopPropagation(); e.preventDefault(); return; }
+    const play = e.target.closest("[data-play]");
+    if(play){
+        e.stopPropagation();
+        const box = play.closest(".voice"); const src = box.dataset.src; if(!src) return;
+        if(curAudio && curBtn === play){ if(curAudio.paused){ curAudio.play(); play.textContent = "⏸"; } else { curAudio.pause(); play.textContent = "▶"; } return; }
+        if(curAudio){ curAudio.pause(); if(curBtn) curBtn.textContent = "▶"; }
+        curAudio = new Audio(src); curBtn = play; play.textContent = "⏸";
+        const bar = box.querySelector(".vbar i"), dur = box.querySelector(".vdur");
+        curAudio.ontimeupdate = () => { if(curAudio.duration && isFinite(curAudio.duration)) bar.style.width = (curAudio.currentTime / curAudio.duration * 100) + "%"; dur.textContent = fmtDur(curAudio.currentTime); };
+        curAudio.onended = () => { play.textContent = "▶"; bar.style.width = "0"; curAudio = null; };
+        curAudio.play().catch(() => { toast("❌ Codka lama furi karo"); play.textContent = "▶"; });
+        return;
+    }
+    const img = e.target.closest("img[data-view]");
+    if(img){ e.stopPropagation(); $("viewerImg").src = img.src; $("viewer").classList.add("open"); return; }
+});
+function closeViewer(){ $("viewer").classList.remove("open"); }
+
+/* ---------------- long-press / tap actions ---------------- */
+let pressT = null, pressMoved = false;
+$("msgs").addEventListener("contextmenu", (e) => { const r = e.target.closest(".row"); if(r){ e.preventDefault(); openActions(r.dataset.id); } });
+$("msgs").addEventListener("pointerdown", (e) => {
+    const r = e.target.closest(".row"); if(!r || e.target.closest("[data-play],video,a")) return;
+    pressMoved = false; clearTimeout(pressT);
+    pressT = setTimeout(() => { if(!pressMoved){ suppressClick = true; openActions(r.dataset.id); setTimeout(() => { suppressClick = false; }, 700); } }, 450);
+});
+["pointerup", "pointercancel", "pointerleave"].forEach(ev => $("msgs").addEventListener(ev, () => clearTimeout(pressT)));
+$("msgs").addEventListener("pointermove", () => { pressMoved = true; });
+$("msgs").addEventListener("dblclick", (e) => { const r = e.target.closest(".row"); if(r) openActions(r.dataset.id); });
+
+function openActions(id){
+    const m = byId.get(id); if(!m || m._sending) return;
+    actMsg = m;
+    $("actPreview").textContent = m.type === "deleted" ? "🚫 Deleted" : (m.text || { image: "📷 Sawir", video: "🎬 Muuqaal", audio: "🎤 Cod" }[m.type] || "");
+    $("aCopy").style.display = m.text && m.type !== "deleted" ? "" : "none";
+    $("aEdit").style.display = m.can_edit ? "" : "none";
+    $("aDelAll").style.display = m.can_delete_all ? "" : "none";
+    if(navigator.vibrate) navigator.vibrate(25);
+    openSheet("actSheet");
+}
+function openSheet(id){ $("sheetBg").classList.add("open"); $(id).classList.add("open"); }
+function closeSheets(){ $("sheetBg").classList.remove("open"); document.querySelectorAll(".sheet").forEach(s => s.classList.remove("open")); }
+function doCopy(){ if(actMsg && navigator.clipboard) navigator.clipboard.writeText(actMsg.text).then(() => toast("📋 Copied")); closeSheets(); }
+function startEdit(){
+    if(!actMsg) return; editing = actMsg; closeSheets();
+    $("editBar").classList.add("show"); $("editText").textContent = actMsg.text;
+    $("txt").value = actMsg.text; onType(); $("txt").focus();
+}
+function cancelEdit(){ editing = null; $("editBar").classList.remove("show"); $("txt").value = ""; onType(); }
+async function saveEdit(t){
+    if(!t){ toast("Qoraal madhan"); return; }
+    const m = editing; cancelEdit();
+    const d = await fetch(`/api/chat/${encodeURIComponent(RID)}/edit/${encodeURIComponent(m.id)}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: t, as: ME.role }) }).then(r => r.json()).catch(() => ({}));
+    if(d.success){ m.text = t; m.edited = true; render(true); loadNew(); } else toast("❌ " + (d.error || "Failed"));
+}
+async function doDelete(scope){
+    const m = actMsg; closeSheets(); if(!m) return;
+    if(scope === "all" && !confirm("Ka tirtir qof walba?")) return;
+    const d = await fetch(`/api/chat/${encodeURIComponent(RID)}/delete/${encodeURIComponent(m.id)}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ scope, as: ME.role }) }).then(r => r.json()).catch(() => ({}));
+    if(d.success){
+        if(scope === "me") m.hidden = true; else { m.type = "deleted"; m.text = ""; m.media_url = ""; m.can_edit = false; m.can_delete_all = false; }
+        render(true); loadNew();
+    } else toast("❌ " + (d.error || "Failed"));
+}
+
+/* ---------------- start ---------------- */
+$("msgs").addEventListener("scroll", () => { if(nearBottom()) $("newPill").style.display = "none"; });
+document.addEventListener("visibilitychange", () => { if(!document.hidden){ markRead(); poll(); } });
+loadAll().then(() => { setInterval(poll, 2000); });
 </script>
-
 </body>
-
 </html>

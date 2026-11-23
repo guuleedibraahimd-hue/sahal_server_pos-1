@@ -5610,6 +5610,11 @@ def create_order(rid):
             order_ref.set(order_data)
 
         _bump_orders_version(rid)
+        try:
+            _push_new_order(rid, (restaurant_ref.collection("orders").document(order_id).get().to_dict() or {}),
+                            merged=bool(existing_order_id))
+        except Exception as _pe:
+            print("PUSH HOOK ERROR:", _pe)
         return jsonify({
             "success":     True,
             "message":     "Order sent ✅",
@@ -5650,6 +5655,8 @@ def update_status(rid, order_id, status):
             fields["status"] = status
         order_ref.update(fields)
         _bump_orders_version(rid)
+        if status == "ready":
+            _push_ready(rid, order_doc.to_dict() or {})
 
         updated_data = order_ref.get().to_dict()
 
@@ -8231,6 +8238,537 @@ def admin_delete_team_media(member_id):
         return jsonify({"success": True})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
+
+
+
+# =====================================================================
+# 📲 WEB PUSH NOTIFICATIONS
+# Every phone / computer that taps "🔔 Notifications" gets system
+# notifications — new orders (kitchen, cashier, admin), "food ready"
+# (the waiter/cashier who ordered) and staff-chat messages — even when
+# the browser/app is closed. Needs `pywebpush` in requirements.txt.
+# VAPID keys are created once and stored in Firestore (system/push_vapid),
+# or set VAPID_PRIVATE_KEY_PEM / VAPID_PUBLIC_KEY env vars to pin them.
+# =====================================================================
+try:
+    from pywebpush import webpush as _webpush, WebPushException as _WebPushException
+    from py_vapid import Vapid as _Vapid
+    _PUSH_AVAILABLE = True
+except Exception as _e:
+    print("⚠️ pywebpush not installed — push notifications disabled:", _e)
+    _PUSH_AVAILABLE = False
+
+import hashlib as _hashlib
+import threading as _threading
+
+_VAPID_CACHE = {}
+PUSH_CONTACT = os.environ.get("VAPID_CONTACT", "mailto:sahalserversupport@gmail.com")
+ROLE_TITLES = {"admin": "Admin", "cashier": "Cashier", "waiter": "Waiter", "kitchen": "Kitchen"}
+
+
+def _vapid_keys():
+    if _VAPID_CACHE.get("pem"):
+        return _VAPID_CACHE["pem"], _VAPID_CACHE["pub"]
+    pem = os.environ.get("VAPID_PRIVATE_KEY_PEM", "").replace("\\n", "\n").strip()
+    pub = os.environ.get("VAPID_PUBLIC_KEY", "").strip()
+    if not (pem and pub):
+        ref = db.collection("system").document("push_vapid")
+        snap = ref.get()
+        if snap.exists and (snap.to_dict() or {}).get("private_pem"):
+            d = snap.to_dict()
+            pem, pub = d["private_pem"], d["public_key"]
+        else:
+            from cryptography.hazmat.primitives.asymmetric import ec
+            from cryptography.hazmat.primitives import serialization
+            key = ec.generate_private_key(ec.SECP256R1())
+            pem = key.private_bytes(serialization.Encoding.PEM, serialization.PrivateFormat.PKCS8,
+                                    serialization.NoEncryption()).decode()
+            raw = key.public_key().public_bytes(serialization.Encoding.X962, serialization.PublicFormat.UncompressedPoint)
+            pub = _b64.urlsafe_b64encode(raw).decode().rstrip("=")
+            ref.set({"private_pem": pem, "public_key": pub, "created_at": datetime.now(timezone.utc)})
+    _VAPID_CACHE.update({"pem": pem, "pub": pub})
+    return pem, pub
+
+
+@app.route("/sahal-sw.js")
+def sahal_push_sw():
+    resp = send_from_directory("static", "sahal-sw.js")
+    resp.headers["Content-Type"] = "application/javascript"
+    resp.headers["Cache-Control"] = "no-cache"
+    resp.headers["Service-Worker-Allowed"] = "/"
+    return resp
+
+
+@app.route("/api/push/vapid")
+def push_vapid_public():
+    if not _PUSH_AVAILABLE:
+        return jsonify({"success": False, "error": "Push not available on server"})
+    try:
+        return jsonify({"success": True, "public_key": _vapid_keys()[1]})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+
+def _member_identity(rid, prefer=None):
+    """Who is this browser inside restaurant <rid>? (one browser can be
+    logged into several portals — `prefer` picks the portal's role)."""
+    rid = str(rid)
+    opts = []
+    if session.get("staff_ok") and str(session.get("staff_rid")) == rid and session.get("staff_role") in ("waiter", "cashier"):
+        opts.append({"id": "staff:" + str(session.get("staff_employee_id", "")), "role": session.get("staff_role"),
+                     "name": session.get("staff_name") or session.get("staff_employee_id") or "Staff"})
+    if session.get("admin_" + rid) or (session.get("restaurant_login") and str(session.get("restaurant_id")) == rid):
+        opts.append({"id": "admin", "role": "admin", "name": "Admin"})
+    if session.get("kitchen_" + rid):
+        opts.append({"id": "kitchen", "role": "kitchen", "name": "Kitchen"})
+    if prefer:
+        for o in opts:
+            if o["role"] == prefer:
+                return o
+    return opts[0] if opts else None
+
+
+@app.route("/api/push/subscribe/<rid>", methods=["POST"])
+def push_subscribe(rid):
+    d = request.get_json(silent=True) or {}
+    me = _member_identity(rid, d.get("role"))
+    if not me:
+        return jsonify({"success": False, "error": "Unauthorized"}), 401
+    sub = d.get("subscription") or {}
+    endpoint = str(sub.get("endpoint", ""))
+    keys = sub.get("keys") or {}
+    if not endpoint.startswith("https://") and not endpoint.startswith("http://localhost") and not endpoint.startswith("http://127.0.0.1"):
+        return jsonify({"success": False, "error": "Invalid subscription"})
+    if not keys.get("p256dh") or not keys.get("auth"):
+        return jsonify({"success": False, "error": "Invalid subscription keys"})
+    sid = _hashlib.sha256(endpoint.encode()).hexdigest()[:40]
+    db.collection("restaurants").document(rid).collection("push_subs").document(sid).set({
+        "endpoint": endpoint, "keys": {"p256dh": keys["p256dh"], "auth": keys["auth"]},
+        "member_id": me["id"], "role": me["role"], "name": me["name"],
+        "user_agent": (request.headers.get("User-Agent") or "")[:200],
+        "updated_at": datetime.now(timezone.utc)
+    })
+    return jsonify({"success": True, "role": me["role"]})
+
+
+@app.route("/api/push/unsubscribe/<rid>", methods=["POST"])
+def push_unsubscribe(rid):
+    endpoint = str((request.get_json(silent=True) or {}).get("endpoint", ""))
+    if endpoint:
+        sid = _hashlib.sha256(endpoint.encode()).hexdigest()[:40]
+        try:
+            db.collection("restaurants").document(rid).collection("push_subs").document(sid).delete()
+        except Exception:
+            pass
+    return jsonify({"success": True})
+
+
+def _push_send_now(rid, payload, roles=None, member_ids=None, exclude_member=None):
+    if not _PUSH_AVAILABLE:
+        return 0
+    try:
+        pem, _pub = _vapid_keys()
+        vapid = _Vapid.from_pem(pem.encode())
+    except Exception as e:
+        print("PUSH VAPID ERROR:", e)
+        return 0
+    sent = 0
+    subs_ref = db.collection("restaurants").document(rid).collection("push_subs")
+    for doc in subs_ref.limit(300).stream():
+        s = doc.to_dict() or {}
+        if roles and s.get("role") not in roles:
+            continue
+        if member_ids and s.get("member_id") not in member_ids:
+            continue
+        if exclude_member and s.get("member_id") == exclude_member:
+            continue
+        body = dict(payload)
+        if isinstance(payload.get("url"), dict):
+            body["url"] = payload["url"].get(s.get("role"), "/")
+        try:
+            _webpush(subscription_info={"endpoint": s["endpoint"], "keys": s["keys"]},
+                     data=json.dumps(body), vapid_private_key=vapid,
+                     vapid_claims={"sub": PUSH_CONTACT}, ttl=3600, timeout=8)
+            sent += 1
+        except _WebPushException as e:
+            code = getattr(getattr(e, "response", None), "status_code", None)
+            if code in (404, 410):
+                try:
+                    doc.reference.delete()
+                except Exception:
+                    pass
+            else:
+                print("PUSH ERROR:", code, str(e)[:200])
+        except Exception as e:
+            print("PUSH ERROR:", str(e)[:200])
+    return sent
+
+
+def _push_send(rid, payload, roles=None, member_ids=None, exclude_member=None):
+    """Fire-and-forget — never slows down the request that triggered it."""
+    if not _PUSH_AVAILABLE:
+        return
+    t = _threading.Thread(target=_push_send_now, args=(rid, payload, roles, member_ids, exclude_member), daemon=True)
+    t.start()
+    return t
+
+
+def _push_new_order(rid, o, merged=False):
+    try:
+        where = "Take Away" if _order_type(o) == "takeaway" else f"Table {o.get('table', '')}"
+        who = _staff_label(o) or "Customer QR"
+        lines = o.get("last_added_cart") if merged else o.get("cart")
+        items = ", ".join(f"{c.get('qty', 1)}× {c.get('name', '')}" for c in (lines or []))[:150]
+        _push_send(rid, {
+            "kind": "order", "sticky": True, "tag": f"order-{rid}",
+            "title": (f"➕ {where}: cunto lagu daray" if merged else f"🔔 Dalab cusub — {where}"),
+            "body": f"{items}\n{who}",
+            "url": {"kitchen": f"/kitchen/{rid}", "cashier": f"/cashier_dashboard/{rid}",
+                    "admin": f"/live_orders/{rid}", "waiter": f"/waiter_dashboard/{rid}"},
+        }, roles=["kitchen"] if merged else ["kitchen", "cashier", "admin"])
+    except Exception as e:
+        print("PUSH NEW ORDER ERROR:", e)
+
+
+def _push_ready(rid, o):
+    try:
+        emp = o.get("employee_id")
+        if not emp:
+            return
+        where = "Take Away" if _order_type(o) == "takeaway" else f"Table {o.get('table', '')}"
+        role = o.get("employee_role") or "waiter"
+        _push_send(rid, {
+            "kind": "ready", "tag": f"ready-{rid}",
+            "title": f"✅ {where} — cuntadu waa diyaar!",
+            "body": f"Ref {o.get('receipt_ref', '')} · ka qaado jikada",
+            "url": f"/{'cashier' if role == 'cashier' else 'waiter'}_dashboard/{rid}",
+        }, member_ids=["staff:" + str(emp)])
+    except Exception as e:
+        print("PUSH READY ERROR:", e)
+
+
+@app.route("/app_manifest/<rid>/<portal>.webmanifest")
+def app_manifest(rid, portal):
+    names = {"cashier": ("Cashier", f"/cashier_dashboard/{rid}", "#0f1b2d"),
+             "waiter": ("Waiter", f"/waiter_dashboard/{rid}", "#e8541a"),
+             "kitchen": ("Kitchen", f"/kitchen/{rid}", "#0f1523"),
+             "owner": ("Dashboard", f"/dashboard/{rid}", "#4F3CC9"),
+             "admin": ("Admin", f"/restaurant_admin/{rid}", "#12122b"),
+             "live": ("Live Orders", f"/live_orders/{rid}", "#0f1523"),
+             "chat": ("Staff Chat", f"/staff_chat/{rid}", "#075e54")}
+    label, start, color = names.get(portal, ("Sahal", "/", "#0a1128"))
+    rname = "Restaurant"
+    try:
+        snap = db.collection("restaurants").document(rid).get()
+        if snap.exists:
+            rname = (snap.to_dict() or {}).get("name", rname)
+    except Exception:
+        pass
+    m = {
+        "name": f"{rname} · {label}", "short_name": label, "start_url": start, "scope": "/",
+        "id": f"/app/{rid}/{portal}", "display": "standalone", "orientation": "any",
+        "background_color": "#ffffff", "theme_color": color,
+        "icons": [{"src": "/static/logo.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
+                  {"src": "/static/logo.png", "sizes": "512x512", "type": "image/png", "purpose": "any"}],
+    }
+    resp = make_response(json.dumps(m))
+    resp.headers["Content-Type"] = "application/manifest+json"
+    return resp
+
+
+# =====================================================================
+# 💬 STAFF CHAT — one group per restaurant. Everyone who works there is
+# in it automatically: every waiter & cashier account (new ones join the
+# moment they're created), the restaurant admin and the kitchen screen.
+# Text, photos, videos and voice notes · edit · delete for me / for all
+# · admin sets the group name and photo · role title + time on every
+# message · push notification to everyone else.
+# =====================================================================
+CHAT_MAX_BYTES = {"image": 10 * 1024 * 1024, "video": 50 * 1024 * 1024, "audio": 15 * 1024 * 1024}
+
+
+def _chat_ref(rid):
+    return db.collection("restaurants").document(rid)
+
+
+def _bump_chat_version(rid):
+    try:
+        _chat_ref(rid).collection("meta").document("chat_version") \
+            .set({"v": firestore.Increment(1), "updated_at": firestore.SERVER_TIMESTAMP}, merge=True)
+    except Exception as e:
+        print("CHAT VERSION ERROR:", e)
+
+
+def _chat_me(rid):
+    return _member_identity(rid, request.args.get("as"))
+
+
+def _chat_group(rid):
+    snap = _chat_ref(rid).collection("meta").document("chat_group").get()
+    g = snap.to_dict() if snap.exists else {}
+    if not g.get("name"):
+        rs = _chat_ref(rid).get()
+        g["name"] = f"{(rs.to_dict() or {}).get('name', 'Restaurant')} · Staff" if rs.exists else "Staff Chat"
+    return {"name": g.get("name"), "photo": g.get("photo") or ""}
+
+
+def _chat_members(rid):
+    members = [{"id": "admin", "name": "Admin", "role": "admin", "title": "Admin"}]
+    for doc in _chat_ref(rid).collection("staff_accounts").stream():
+        s = doc.to_dict() or {}
+        role = s.get("role")
+        if role not in ("waiter", "cashier") or s.get("active") is False:
+            continue
+        members.append({"id": "staff:" + str(s.get("employee_id", "")), "name": s.get("name") or s.get("employee_id"),
+                        "role": role, "title": ROLE_TITLES[role]})
+    members.append({"id": "kitchen", "name": "Kitchen", "role": "kitchen", "title": "Kitchen"})
+    return members
+
+
+def _chat_public(doc_id, m, me):
+    created = _to_mogadishu(m.get("created_at"))
+    mine = m.get("sender_id") == me["id"]
+    deleted = bool(m.get("deleted_all"))
+    return {
+        "id": doc_id,
+        "sender_id": m.get("sender_id"),
+        "sender_name": m.get("sender_name") or "",
+        "sender_role": m.get("sender_role") or "",
+        "title": ROLE_TITLES.get(m.get("sender_role"), ""),
+        "type": "deleted" if deleted else (m.get("type") or "text"),
+        "text": "" if deleted else (m.get("text") or ""),
+        "media_url": "" if deleted else (m.get("media_url") or ""),
+        "duration": m.get("duration") or 0,
+        "edited": bool(m.get("edited")) and not deleted,
+        "mine": mine,
+        "can_edit": mine and not deleted and (m.get("type") or "text") == "text",
+        "can_delete_all": (mine or me["role"] == "admin") and not deleted,
+        "time": created.strftime("%I:%M %p").lstrip("0") if created else "",
+        "date": created.strftime("%Y-%m-%d") if created else "",
+        "ts": created.isoformat() if created else "",
+        "hidden": me["id"] in (m.get("deleted_for") or []),
+    }
+
+
+def _parse_iso(s):
+    try:
+        s = str(s).strip()
+        if " " in s and "T" in s:          # "+" turned into " " in an unencoded query string
+            s = s.replace(" ", "+")
+        dt = datetime.fromisoformat(s.replace("Z", "+00:00"))
+        return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+    except Exception:
+        return None
+
+
+@app.route("/staff_chat/<rid>")
+def staff_chat_page(rid):
+    me = _member_identity(rid, request.args.get("as"))
+    if not me:
+        return redirect(f"/waiter_login/{rid}")
+    rs = _chat_ref(rid).get()
+    if not rs.exists:
+        return "Restaurant not found ❌", 404
+    back = {"cashier": f"/cashier_dashboard/{rid}", "waiter": f"/waiter_dashboard/{rid}",
+            "kitchen": f"/kitchen/{rid}", "admin": f"/dashboard/{rid}"}.get(me["role"], "/")
+    if me["role"] == "admin" and session.get("admin_" + str(rid)) and not session.get("restaurant_login"):
+        back = f"/restaurant_admin/{rid}"
+    return render_template("staff_chat.html", rid=rid, me=me, back_url=back,
+                           restaurant_name=(rs.to_dict() or {}).get("name", "Restaurant"))
+
+
+@app.route("/api/chat/<rid>/messages")
+def chat_messages(rid):
+    me = _chat_me(rid)
+    if not me:
+        return jsonify({"success": False, "error": "Unauthorized"}), 401
+    try:
+        col = _chat_ref(rid).collection("chat_messages")
+        since = _parse_iso(request.args.get("since") or "")
+        if since:
+            docs = list(col.where("updated_at", ">", since).order_by("updated_at").limit(300).stream())
+        else:
+            docs = list(col.order_by("created_at", direction=firestore.Query.DESCENDING).limit(150).stream())
+            docs.reverse()
+        msgs, newest = [], since
+        for d in docs:
+            m = d.to_dict() or {}
+            u = m.get("updated_at")
+            if hasattr(u, "isoformat"):
+                u = u if u.tzinfo else u.replace(tzinfo=timezone.utc)
+                if newest is None or u > newest:
+                    newest = u
+            msgs.append(_chat_public(d.id, m, me))
+        if not since:
+            msgs.sort(key=lambda x: x["ts"])
+        vs = _chat_ref(rid).collection("meta").document("chat_version").get()
+        resp = jsonify({"success": True, "me": me, "messages": msgs, "group": _chat_group(rid),
+                        "cursor": newest.isoformat() if newest else "",
+                        "v": (vs.to_dict() or {}).get("v", 0) if vs.exists else 0})
+        resp.headers["Cache-Control"] = "no-store"
+        return resp
+    except Exception as e:
+        print("CHAT MESSAGES ERROR:", e)
+        return jsonify({"success": False, "error": str(e)})
+
+
+@app.route("/api/chat/<rid>/version")
+def chat_version(rid):
+    if not _member_identity(rid, request.args.get("as")):
+        return jsonify({"success": False}), 401
+    vs = _chat_ref(rid).collection("meta").document("chat_version").get()
+    resp = jsonify({"success": True, "v": (vs.to_dict() or {}).get("v", 0) if vs.exists else 0})
+    resp.headers["Cache-Control"] = "no-store"
+    return resp
+
+
+@app.route("/api/chat/<rid>/unread")
+def chat_unread(rid):
+    me = _member_identity(rid, request.args.get("as"))
+    if not me:
+        return jsonify({"success": False}), 401
+    try:
+        now = datetime.now(timezone.utc)
+        since = _parse_iso(request.args.get("since") or "")
+        vs = _chat_ref(rid).collection("meta").document("chat_version").get()
+        v = (vs.to_dict() or {}).get("v", 0) if vs.exists else 0
+        unread, last = 0, None
+        if since:
+            docs = list(_chat_ref(rid).collection("chat_messages").where("created_at", ">", since)
+                        .order_by("created_at").limit(100).stream())
+            for d in docs:
+                m = d.to_dict() or {}
+                if m.get("sender_id") == me["id"] or m.get("deleted_all") or me["id"] in (m.get("deleted_for") or []):
+                    continue
+                unread += 1
+                kind = m.get("type") or "text"
+                preview = m.get("text") or {"image": "📷 Sawir", "video": "🎬 Muuqaal", "audio": "🎤 Cod (voice)"}.get(kind, "")
+                last = {"sender": f"{m.get('sender_name', '')} · {ROLE_TITLES.get(m.get('sender_role'), '')}",
+                        "preview": preview[:120], "mine": False}
+        resp = jsonify({"success": True, "v": v, "unread": unread, "last": last, "server_now": now.isoformat()})
+        resp.headers["Cache-Control"] = "no-store"
+        return resp
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+
+@app.route("/api/chat/<rid>/send", methods=["POST"])
+def chat_send(rid):
+    me = _member_identity(rid, request.form.get("as"))
+    if not me:
+        return jsonify({"success": False, "error": "Unauthorized"}), 401
+    try:
+        text = (request.form.get("text") or "").strip()[:4000]
+        f = request.files.get("file")
+        kind, media_url = "text", ""
+        if f and f.filename:
+            mt = (f.mimetype or "").lower()
+            kind = "image" if mt.startswith("image/") else "video" if mt.startswith("video/") else "audio" if mt.startswith("audio/") else ""
+            if not kind:
+                return jsonify({"success": False, "error": "File-kan lama oggola (sawir, muuqaal ama cod keliya)"})
+            f.stream.seek(0, 2); size = f.stream.tell(); f.stream.seek(0)
+            if size > CHAT_MAX_BYTES[kind]:
+                return jsonify({"success": False, "error": f"File-ku waa weyn yahay (ugu badnaan {CHAT_MAX_BYTES[kind] // (1024 * 1024)}MB)"})
+            media_url = upload_to_firebase_storage(f, folder=f"chat/{rid}")
+            if not media_url:
+                return jsonify({"success": False, "error": "Upload failed"})
+        elif not text:
+            return jsonify({"success": False, "error": "Fariin madhan"})
+        try:
+            duration = max(0, min(3600, int(float(request.form.get("duration") or 0))))
+        except Exception:
+            duration = 0
+        now = datetime.now(timezone.utc)
+        ref = _chat_ref(rid).collection("chat_messages").document()
+        data = {"sender_id": me["id"], "sender_name": me["name"], "sender_role": me["role"],
+                "type": kind, "text": text, "media_url": media_url, "duration": duration,
+                "created_at": now, "updated_at": now, "edited": False, "deleted_all": False, "deleted_for": []}
+        ref.set(data)
+        _bump_chat_version(rid)
+        preview = text or {"image": "📷 Sawir", "video": "🎬 Muuqaal", "audio": "🎤 Cod (voice)"}[kind]
+        _push_send(rid, {"kind": "chat", "tag": f"chat-{rid}",
+                         "title": f"💬 {me['name']} · {ROLE_TITLES.get(me['role'], '')}",
+                         "body": preview[:140], "url": f"/staff_chat/{rid}"}, exclude_member=me["id"])
+        return jsonify({"success": True, "message": _chat_public(ref.id, data, me)})
+    except Exception as e:
+        print("CHAT SEND ERROR:", e)
+        return jsonify({"success": False, "error": str(e)})
+
+
+@app.route("/api/chat/<rid>/edit/<mid>", methods=["POST"])
+def chat_edit(rid, mid):
+    d = request.get_json(silent=True) or {}
+    me = _member_identity(rid, d.get("as"))
+    if not me:
+        return jsonify({"success": False, "error": "Unauthorized"}), 401
+    text = str(d.get("text", "")).strip()[:4000]
+    if not text:
+        return jsonify({"success": False, "error": "Qoraal madhan"})
+    ref = _chat_ref(rid).collection("chat_messages").document(mid)
+    snap = ref.get()
+    if not snap.exists:
+        return jsonify({"success": False, "error": "Not found"})
+    m = snap.to_dict() or {}
+    if m.get("sender_id") != me["id"] or m.get("deleted_all") or (m.get("type") or "text") != "text":
+        return jsonify({"success": False, "error": "Fariintan ma beddeli kartid"})
+    ref.update({"text": text, "edited": True, "edited_at": datetime.now(timezone.utc), "updated_at": datetime.now(timezone.utc)})
+    _bump_chat_version(rid)
+    return jsonify({"success": True})
+
+
+@app.route("/api/chat/<rid>/delete/<mid>", methods=["POST"])
+def chat_delete(rid, mid):
+    d = request.get_json(silent=True) or {}
+    me = _member_identity(rid, d.get("as"))
+    if not me:
+        return jsonify({"success": False, "error": "Unauthorized"}), 401
+    ref = _chat_ref(rid).collection("chat_messages").document(mid)
+    snap = ref.get()
+    if not snap.exists:
+        return jsonify({"success": False, "error": "Not found"})
+    m = snap.to_dict() or {}
+    now = datetime.now(timezone.utc)
+    if d.get("scope") == "all":
+        if not (m.get("sender_id") == me["id"] or me["role"] == "admin"):
+            return jsonify({"success": False, "error": "Fariinta qof kale dhammaan ugama tirtiri kartid"})
+        if m.get("media_url"):
+            delete_from_firebase_storage(m.get("media_url"))
+        ref.update({"deleted_all": True, "text": "", "media_url": "", "deleted_by": me["id"], "updated_at": now})
+    else:
+        ref.update({"deleted_for": firestore.ArrayUnion([me["id"]]), "updated_at": now})
+    _bump_chat_version(rid)
+    return jsonify({"success": True})
+
+
+@app.route("/api/chat/<rid>/group", methods=["GET", "POST"])
+def chat_group(rid):
+    me = _member_identity(rid, request.args.get("as") or request.form.get("as"))
+    if not me:
+        return jsonify({"success": False, "error": "Unauthorized"}), 401
+    if request.method == "GET":
+        return jsonify({"success": True, "group": _chat_group(rid), "members": _chat_members(rid), "me": me})
+    if me["role"] != "admin":
+        return jsonify({"success": False, "error": "Admin-ka keliya ayaa beddeli kara"}), 403
+    ref = _chat_ref(rid).collection("meta").document("chat_group")
+    cur = (ref.get().to_dict() or {}) if ref.get().exists else {}
+    upd = {"updated_at": datetime.now(timezone.utc)}
+    name = (request.form.get("name") or "").strip()[:60]
+    if name:
+        upd["name"] = name
+    f = request.files.get("photo")
+    if f and f.filename:
+        if not (f.mimetype or "").startswith("image/"):
+            return jsonify({"success": False, "error": "Sawir keliya"})
+        if cur.get("photo"):
+            delete_from_firebase_storage(cur["photo"])
+        upd["photo"] = upload_to_firebase_storage(f, folder=f"chat/{rid}/group")
+    elif request.form.get("remove_photo") == "1":
+        if cur.get("photo"):
+            delete_from_firebase_storage(cur["photo"])
+        upd["photo"] = ""
+    ref.set(upd, merge=True)
+    _bump_chat_version(rid)
+    return jsonify({"success": True, "group": _chat_group(rid)})
 
 
 # =====================================

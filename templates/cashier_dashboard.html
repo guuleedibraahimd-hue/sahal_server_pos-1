@@ -267,14 +267,19 @@ table.tx-tbl td{ padding:9px 6px; border-bottom:1px solid #f4f4f4; }
     .modal-actions button{ padding:14px; }
 }
 </style>
+<link rel="stylesheet" href="/static/sahal_app.css">
+<link rel="manifest" href="/app_manifest/{{ rid }}/cashier.webmanifest">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="apple-touch-icon" href="/static/logo.png">
 </head>
-<body>
+<body data-rid="{{ rid }}" data-role="cashier" data-nav=".sidebar .sb-nav .sb-link" data-nav-logout=".sb-logout" data-nav-primary="dashboard,neworder,orders,chat" data-accent="#2f6fed">
 
 <div class="nav-overlay" onclick="toggleNav(false)"></div>
 <div class="toast" id="toast"></div>
 <div class="shell">
     <!-- ================= SIDEBAR ================= -->
-    <aside class="sidebar">
+    <aside class="sidebar sa-hide-mobile">
         <div class="sb-brand">
             <div class="logo">S</div>
             <div>
@@ -298,6 +303,7 @@ table.tx-tbl td{ padding:9px 6px; border-bottom:1px solid #f4f4f4; }
         <div class="sb-label">POS Management</div>
         <ul class="sb-nav">
             <li><button class="sb-link active" data-page="dashboard" onclick="showPage('dashboard',this)">📊 Dashboard</button></li>
+            <li><a class="sb-link" data-sa-key="chat" data-sa-label="Chat" data-chat-link href="/staff_chat/{{ rid }}?as=cashier">💬 Staff Chat</a></li>
             {% if has_shift %}
             <li><button class="sb-link" data-page="neworder" onclick="showPage('neworder',this)">🍔 New Order</button></li>
             <li><button class="sb-link" id="sbOrdersLink" data-page="orders" onclick="showPage('orders',this)">🧾 Orders {% if pending_count %}<span class="badge">{{ pending_count }}</span>{% endif %}</button></li>
@@ -332,7 +338,7 @@ table.tx-tbl td{ padding:9px 6px; border-bottom:1px solid #f4f4f4; }
     <div class="main">
         <div class="topbar">
             <div class="tb-left">
-                <button class="menu-toggle" onclick="toggleNav()" aria-label="Menu">☰</button>
+                <button class="menu-toggle sa-hide-mobile" onclick="toggleNav()" aria-label="Menu">☰</button>
                 <div class="tb-restaurant">🏪 {{ restaurant_name }}</div>
             </div>
             <div class="tb-right">
@@ -1339,8 +1345,8 @@ async function liveRefresh(force){
             if(!oldIds.has(tr.dataset.oid)){ tr.classList.add("row-new"); newCount++; }
         });
         if(newCount && liveVersion !== null){
-            ding();
-            showToast(`🔔 ${newCount} dalab cusub ayaa yimid`);
+            if(window.SahalApp) SahalApp.newOrderAlert(`${newCount} dalab cusub ayaa yimid`, "Riix si aad u aragto — Orders Awaiting Payment", () => showPage("orders"));
+            else { ding(); showToast(`🔔 ${newCount} dalab cusub ayaa yimid`); }
         }
         loadTypeSplit();
         setLive(true);
@@ -1449,5 +1455,6 @@ function loadTypeSplit(){
 loadTypeSplit();
 </script>
 
+<script src="/static/sahal_app.js" defer></script>
 </body>
 </html>

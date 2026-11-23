@@ -239,12 +239,17 @@
             .main-title h2{font-size:24px;}
         }
     </style>
+<link rel="stylesheet" href="/static/sahal_app.css">
+<link rel="manifest" href="/app_manifest/{{ rid }}/kitchen.webmanifest">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="apple-touch-icon" href="/static/logo.png">
 </head>
-<body>
+<body data-rid="{{ rid }}" data-role="kitchen" data-nav=".sidebar .side-nav a" data-accent="#f59e0b">
 
 <div class="layout">
 
-    <aside class="sidebar">
+    <aside class="sidebar sa-hide-mobile">
         <div class="brand">
             <div class="logo">👨‍🍳</div>
             <div>
@@ -253,9 +258,11 @@
             </div>
         </div>
         <nav class="side-nav">
-            <a href="#" class="active"><span class="ic">📋</span> Kitchen Orders</a>
-            <a href="/dashboard/{{ rid }}"><span class="ic">🍽️</span> Menu Items</a>
-            <a href="/sales/{{ rid }}"><span class="ic">📊</span> Statistics</a>
+            <a href="#" class="active" data-sa-key="orders" onclick="window.scrollTo({top:0,behavior:'smooth'});return false;"><span class="ic">📋</span> Orders</a>
+            <a href="#" data-sa-key="printer" onclick="togglePrinterSettings();return false;"><span class="ic">🖨️</span> Printer</a>
+            <a href="/staff_chat/{{ rid }}?as=kitchen" data-sa-key="chat" data-sa-label="Chat" data-chat-link><span class="ic">💬</span> Staff Chat</a>
+            <a href="/dashboard/{{ rid }}" data-sa-label="Menu"><span class="ic">🍽️</span> Menu Items</a>
+            <a href="/sales/{{ rid }}" data-sa-label="Stats"><span class="ic">📊</span> Statistics</a>
         </nav>
         <div class="chef-card">
             <div class="chef">👨‍🍳</div>
@@ -340,7 +347,7 @@
             </ol>
         </div>
 
-        <div class="mobile-nav">
+        <div class="mobile-nav sa-hide-mobile">
             <a href="#" onclick="location.reload();return false;">📋 Orders</a>
             <a href="/dashboard/{{ rid }}">🍽️ Menu</a>
         </div>
@@ -666,7 +673,12 @@ document.addEventListener("DOMContentLoaded", function(){
                     enqueuePrint(id);
                 }
             });
-            if(hasNew) ding();
+            if(hasNew){
+                const first = orderEls().find(e => e.classList.contains("new-flash"));
+                const where = first ? (first.querySelector(".type-badge") || {}).textContent || "" : "";
+                if(window.SahalApp) SahalApp.newOrderAlert("Dalab cusub ayaa yimid!", where.trim(), () => window.scrollTo({ top: 0, behavior: "smooth" }));
+                else ding();
+            }
             setLive(true);
         }).catch(() => setLive(false)).finally(() => { refreshing = false; });
     }
@@ -796,5 +808,6 @@ function testPrint(){
     });
 }
 </script>
+<script src="/static/sahal_app.js" defer></script>
 </body>
 </html>

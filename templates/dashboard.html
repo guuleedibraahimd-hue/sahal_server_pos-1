@@ -609,7 +609,15 @@ hr{border:none;border-top:1px solid var(--border);margin:0;}
 /* ── MOBILE DRAWER ── */
 .menu-toggle{display:none;width:40px;height:40px;border-radius:12px;border:1px solid var(--border);background:#fff;font-size:20px;cursor:pointer;align-items:center;justify-content:center;flex-shrink:0;}
 .nav-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:190;}
+html,body{max-width:100%;overflow-x:hidden;}
+body.sa-mobile .fab-group{bottom:calc(var(--sa-nav-h) + 22px + env(safe-area-inset-bottom));}
 @media(max-width:860px){
+    .stats-row{grid-template-columns:repeat(2,minmax(0,1fr)) !important;}
+    .menu-grid{grid-template-columns:repeat(2,minmax(0,1fr)) !important;}
+    .menu-card-body h3{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .section-card{padding:16px 14px;}
+    .live-row{gap:10px;padding:9px 10px;}
+    .live-row .amt{font-size:13px;}
     .sidebar{transform:translateX(-105%);transition:transform .25s ease;width:260px;max-width:85vw;overflow-y:auto;}
     body.nav-open .sidebar{transform:none;}
     body.nav-open .nav-overlay{display:block;}
@@ -635,13 +643,18 @@ hr{border:none;border-top:1px solid var(--border);margin:0;}
     .popup-box{width:92vw;}
 }
 </style>
+<link rel="stylesheet" href="/static/sahal_app.css">
+<link rel="manifest" href="/app_manifest/{{ rid }}/owner.webmanifest">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="apple-touch-icon" href="/static/logo.png">
 </head>
 
-<body>
+<body data-rid="{{ rid }}" data-role="admin" data-nav=".sidebar .sidebar-nav .nav-link" data-nav-logout=".logout-btn" data-nav-primary="#top,/live_orders/{{ rid }},chat,#menuListSection" data-accent="#4F3CC9">
 <div class="nav-overlay" onclick="toggleNav(false)"></div>
 
 <!-- ── SIDEBAR ── -->
-<aside class="sidebar">
+<aside class="sidebar sa-hide-mobile">
     <div class="sidebar-logo">
         <svg viewBox="0 0 24 24" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
     </div>
@@ -652,9 +665,13 @@ hr{border:none;border-top:1px solid var(--border);margin:0;}
             <svg viewBox="0 0 24 24" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
             Dashboard
         </a>
-        <a class="nav-link" href="/live_orders/{{ rid }}">
+        <a class="nav-link" href="/live_orders/{{ rid }}" data-sa-label="Live">
             <svg viewBox="0 0 24 24" stroke-width="2"><circle cx="12" cy="12" r="2"/><path d="M16.24 7.76a6 6 0 0 1 0 8.49M7.76 16.24a6 6 0 0 1 0-8.49M19.07 4.93a10 10 0 0 1 0 14.14M4.93 19.07a10 10 0 0 1 0-14.14"/></svg>
             Live Orders
+        </a>
+        <a class="nav-link" href="/staff_chat/{{ rid }}?as=admin" data-sa-key="chat" data-sa-label="Chat" data-chat-link>
+            <svg viewBox="0 0 24 24" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            Staff Chat
         </a>
         <a class="nav-link" href="#menuListSection">
             <svg viewBox="0 0 24 24" stroke-width="2"><path d="M3 11l19-9-9 19-2-8-8-2z"/></svg>
@@ -699,7 +716,7 @@ hr{border:none;border-top:1px solid var(--border);margin:0;}
     <!-- TOPBAR -->
     <div class="topbar">
         <div class="topbar-left">
-            <button class="menu-toggle" onclick="toggleNav()" aria-label="Menu">☰</button>
+            <button class="menu-toggle sa-hide-mobile" onclick="toggleNav()" aria-label="Menu">☰</button>
             <div>
                 <h1>{{restaurant}} <span>Dashboard</span></h1>
                 <p>Manage your menu, ads and restaurant easily</p>
@@ -1152,7 +1169,11 @@ async function loadLive(){
                 </div>`).join("") + (d.active.length > 8 ? `<a class="view-all-link" style="justify-content:center;padding:6px;" href="/live_orders/${RID}">+${d.active.length - 8} more ›</a>` : "");
         }
         if(fresh.length){
-            ding();
+            if(window.SahalApp){
+                const f = d.active.find(o => o.id === fresh[0]) || {};
+                SahalApp.newOrderAlert(fresh.length > 1 ? `${fresh.length} dalab cusub` : `Dalab cusub — ${f.order_type === "takeaway" ? "Take Away" : "Table " + (f.table || "")}`,
+                    (f.items || []).map(i => i.qty + "× " + i.name).join(", "), () => location.href = "/live_orders/" + RID);
+            } else ding();
             document.title = "🔔 NEW ORDER! - Dashboard";
             setTimeout(() => { document.title = "{{restaurant|e}} Dashboard"; }, 5000);
         }
@@ -1175,5 +1196,6 @@ setInterval(checkLive, 3000);
 document.addEventListener("visibilitychange", () => { if(!document.hidden) loadLive(); });
 </script>
 
+<script src="/static/sahal_app.js" defer></script>
 </body>
 </html>

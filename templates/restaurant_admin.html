@@ -487,13 +487,18 @@ select, .range-select{
 
 canvas{max-width:100%;}
 </style>
+<link rel="stylesheet" href="/static/sahal_app.css">
+<link rel="manifest" href="/app_manifest/{{ rid }}/admin.webmanifest">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="apple-touch-icon" href="/static/logo.png">
 </head>
-<body>
+<body data-rid="{{ rid }}" data-role="admin" data-nav=".sidebar > .nav-item" data-nav-logout=".sidebar div a.nav-item" data-nav-primary="dashboard,orders,/live_orders/{{ rid }},chat" data-accent="#7c5cff">
 
 <div class="layout">
 
     <!-- ============ SIDEBAR ============ -->
-    <div class="sidebar">
+    <div class="sidebar sa-hide-mobile">
         <div class="brand">
             <div class="logo">🍽</div>
             <div>
@@ -508,8 +513,11 @@ canvas{max-width:100%;}
         <a class="nav-item" data-page="orders" onclick="showPage('orders', this); return false;" href="#">
             <span class="icon">📦</span> Orders
         </a>
-        <a class="nav-item" href="/live_orders/{{ rid }}">
+        <a class="nav-item" href="/live_orders/{{ rid }}" data-sa-label="Live">
             <span class="icon">📡</span> Live Orders
+        </a>
+        <a class="nav-item" href="/staff_chat/{{ rid }}?as=admin" data-sa-key="chat" data-sa-label="Chat" data-chat-link>
+            <span class="icon">💬</span> Staff Chat
         </a>
         <a class="nav-item" data-page="menu" onclick="showPage('menu', this); return false;" href="#">
             <span class="icon">🍽</span> Menu Items
@@ -950,6 +958,32 @@ function loadTypeSplit(){
 loadTypeSplit();
 setInterval(loadTypeSplit, 30000);
 
+/* ── 🔔 New-order alert on the admin panel (polls a tiny version counter) ── */
+(function(){
+    let v = null, known = null;
+    async function check(){
+        try{
+            const d = await fetch(`/api/orders_version/${RID_BROADCAST}`, { cache:"no-store" }).then(r => r.json());
+            if(!d.success || d.v === v) return;
+            v = d.v;
+            const l = await fetch(`/api/live_orders/${RID_BROADCAST}`, { cache:"no-store" }).then(r => r.json());
+            if(!l.success) return;
+            const ids = new Set(l.active.map(o => o.id));
+            if(known){
+                const fresh = l.active.filter(o => !known.has(o.id));
+                if(fresh.length && window.SahalApp){
+                    const f = fresh[0];
+                    SahalApp.newOrderAlert(fresh.length > 1 ? `${fresh.length} dalab cusub` : `Dalab cusub — ${f.order_type === "takeaway" ? "Take Away" : "Table " + f.table}`,
+                        f.items.map(i => i.qty + "× " + i.name).join(", "), () => location.href = "/live_orders/" + RID_BROADCAST);
+                    loadTypeSplit();
+                }
+            }
+            known = ids;
+        }catch(e){}
+    }
+    check(); setInterval(check, 3000);
+})();
+
 function changeRange(){
     let value = document.getElementById("rangeFilter").value;
     window.location.href = "?range=" + value;
@@ -1387,5 +1421,6 @@ async function deleteStaff(btn){
 }
 </script>
 
+<script src="/static/sahal_app.js" defer></script>
 </body>
 </html>
