@@ -138,6 +138,7 @@ input:focus,select:focus{ outline:none; border-color:#93c5fd; background:#fff; b
 </div>
 
 <script>
+try{ if(/[?&]_t=/.test(location.search)) history.replaceState(null, "", location.pathname + location.hash); }catch(e){}
 (function(){
     const pick = document.getElementById("planPick");
     const price = document.getElementById("price"), months = document.getElementById("months");

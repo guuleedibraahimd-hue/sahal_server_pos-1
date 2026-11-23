@@ -1475,20 +1475,21 @@ def ai_video_status(job_id):
 @app.route("/admin", methods=["GET", "POST"])
 def admin():
 
-    if request.method == "POST" and not session.get("admin_ok"):
+    if request.method == "POST":
         try:
             passwords = get_system_passwords()
             real_pass = passwords.get("admin_password")
             entered   = request.form.get("password", "").strip()
 
-            if entered != real_pass:
+            if not real_pass or entered != real_pass:
                 return render_template(
                     "admin_login.html",
                     error="Wrong password ❌"
                 )
 
             session["admin_ok"] = True
-            return redirect("/admin")
+            token, url = _admin_grant_tab("/admin")
+            return render_template("admin_login.html", grant_token=token, grant_url=url)
 
         except Exception as e:
             print("ADMIN LOGIN ERROR:", e)
@@ -1499,6 +1500,11 @@ def admin():
 
     if not session.get("admin_ok"):
         return render_template("admin_login.html")
+
+    # Logged in — but every new browser tab / window must unlock itself
+    # with the password (the proof lives in that tab's sessionStorage).
+    if not _admin_tab_ok():
+        return _admin_unlock_page("/admin")
 
     try:
         restaurants  = get_restaurants_firestore()
@@ -1640,10 +1646,82 @@ def admin_set_plan(entity_type, entity_id):
     return jsonify({"success": False, "error": "Plan must be free or paid"}), 400
 
 
+
+# =====================================
+# 🔐 ADMIN — ONE LOGIN PER TAB / WINDOW
+# A new browser always needs the password (no cookie). Inside the same
+# browser, every NEW tab or window must also type the password: the tab
+# keeps a secret in sessionStorage and swaps it for a one-time ticket
+# before any admin page is rendered.
+# =====================================
+ADMIN_TAB_PAGES = ("/admin", "/register", "/supermarket_register")
+ADMIN_TICKET_TTL = 90          # seconds a one-time ticket stays valid
+ADMIN_MAX_TABS = 25
+
+
+def _admin_safe_next(nxt):
+    nxt = (nxt or "/admin").split("?")[0].split("#")[0]
+    return nxt if nxt in ADMIN_TAB_PAGES else "/admin"
+
+
+def _admin_new_ticket(nxt):
+    now = time.time()
+    tickets = {k: v for k, v in (session.get("admin_tickets") or {}).items() if v > now}
+    t = _secrets.token_urlsafe(18)
+    tickets[t] = now + ADMIN_TICKET_TTL
+    session["admin_tickets"] = dict(list(tickets.items())[-20:])
+    return f"{_admin_safe_next(nxt)}?_t={t}"
+
+
+def _admin_grant_tab(nxt):
+    token = _secrets.token_urlsafe(24)
+    tabs = list(session.get("admin_tabs") or [])
+    tabs.append(token)
+    session["admin_tabs"] = tabs[-ADMIN_MAX_TABS:]
+    return token, _admin_new_ticket(nxt)
+
+
+def _admin_tab_ok():
+    t = request.args.get("_t", "")
+    if not t:
+        return False
+    tickets = dict(session.get("admin_tickets") or {})
+    exp = tickets.pop(t, None)
+    session["admin_tickets"] = tickets
+    return bool(exp and exp > time.time())
+
+
+def _admin_unlock_page(nxt):
+    return render_template("admin_login.html", unlock=True, next_url=_admin_safe_next(nxt))
+
+
+@app.route("/admin/unlock", methods=["POST"])
+def admin_unlock():
+    body = request.get_json(silent=True) or {}
+    try:
+        real_pass = get_system_passwords().get("admin_password")
+    except Exception as e:
+        return jsonify({"success": False, "error": f"System Error ❌ {e}"}), 500
+    if not real_pass or str(body.get("password", "")).strip() != real_pass:
+        return jsonify({"success": False, "error": "Wrong password ❌"}), 401
+    session["admin_ok"] = True
+    token, url = _admin_grant_tab(body.get("next"))
+    return jsonify({"success": True, "token": token, "url": url})
+
+
+@app.route("/admin/tab_ticket", methods=["POST"])
+def admin_tab_ticket():
+    body = request.get_json(silent=True) or {}
+    tok = str(body.get("token", ""))
+    if not session.get("admin_ok") or not tok or tok not in (session.get("admin_tabs") or []):
+        return jsonify({"success": False}), 401
+    return jsonify({"success": True, "url": _admin_new_ticket(body.get("next"))})
+
+
 @app.route("/logout_admin")
 def logout_admin():
-    session.pop("admin_ok",      None)
-    session.pop("register_ok",   None)
+    for k in ("admin_ok", "register_ok", "admin_tabs", "admin_tickets"):
+        session.pop(k, None)
     return redirect("/admin")
 
 
@@ -1993,6 +2071,8 @@ def register():
     try:
         if session.get("admin_ok"):
             session["register_ok"] = True     # system admin is already verified
+            if request.method == "GET" and not _admin_tab_ok():
+                return _admin_unlock_page("/register")
         if not session.get("register_ok"):
             if request.method == "POST":
                 passwords = get_system_passwords()
@@ -2693,6 +2773,8 @@ def supermarket_register():
         # open to anyone on the internet).
         if not session.get("admin_ok"):
             return redirect("/admin")
+        if request.method == "GET" and not _admin_tab_ok():
+            return _admin_unlock_page("/supermarket_register")
         if request.method == "POST":
             f = request.form
             plan = "free" if f.get("plan") == "free" else "paid"

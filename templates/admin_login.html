@@ -96,7 +96,23 @@ button[disabled] .spin{ display:block; }
 .pills{ display:flex; justify-content:center; gap:8px; margin-top:12px; flex-wrap:wrap; }
 .pills span{ background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.10); color:#cbd5e1; padding:6px 11px; border-radius:20px; font-size:11.5px; font-weight:700; }
 @media(max-width:420px){ .card{ padding:24px 18px 20px; border-radius:22px; } }
+.opening{ display:none; text-align:center; padding:18px 0 6px; color:var(--soft); font-weight:700; font-size:14px; }
+.opening .big{ width:42px; height:42px; border-radius:50%; border:4px solid #fde68a; border-top-color:#f59e0b; margin:0 auto 14px; animation:sp .8s linear infinite; }
+html.auto .opening{ display:block; } html.auto #loginForm, html.auto .card h2, html.auto .card .sub, html.auto .error, html.auto .lockinfo{ display:none; }
+.lockinfo{ display:flex; gap:10px; align-items:flex-start; background:#fffbeb; color:#92400e; border:1px solid #fde68a; padding:11px 13px; border-radius:14px; font-size:12.5px; font-weight:700; margin-bottom:16px; line-height:1.45; }
+.logout-link{ display:block; text-align:center; margin-top:12px; color:var(--soft); font-size:12.5px; font-weight:700; text-decoration:none; }
+.logout-link:hover{ color:var(--red); }
 </style>
+<script>
+/* Runs before paint: a tab that already unlocked opens straight away. */
+(function(){
+    try{
+        var hasTok = !!sessionStorage.getItem("sahal_admin_tab");
+        var mode = "{{ 'grant' if grant_token else ('unlock' if unlock else 'login') }}";
+        if(mode === "grant" || (mode === "unlock" && hasTok)) document.documentElement.classList.add("auto");
+    }catch(e){}
+})();
+</script>
 </head>
 <body>
 <div class="grid-bg"></div>
@@ -112,11 +128,14 @@ button[disabled] .spin{ display:block; }
         <h2>Welcome back 👋</h2>
         <div class="sub">Geli password-ka admin-ka si aad u gasho.</div>
 
-        {% if error %}
-        <div class="error">⚠️ <span>{{ error }}</span></div>
-        {% endif %}
+        <div class="opening"><div class="big"></div>Admin panel-ka ayaa furmaya…</div>
 
-        <form method="POST" id="loginForm" autocomplete="off">
+        {% if unlock %}
+        <div class="lockinfo">🔒 <span>Daaqad / tab cusub ayaad ka furtay admin-ka. Ammaan awgeed, geli password-ka mar kale.</span></div>
+        {% endif %}
+        <div class="error" id="errBox" {% if not error %}style="display:none"{% endif %}>⚠️ <span id="errText">{{ error or '' }}</span></div>
+
+        <form method="POST" action="/admin" id="loginForm" autocomplete="off">
             <label for="pw">ADMIN PASSWORD</label>
             <div class="field">
                 <span class="lead">🔐</span>
@@ -128,7 +147,8 @@ button[disabled] .spin{ display:block; }
             <button type="submit" id="go"><span class="spin"></span><span id="goText">Login</span> <span>→</span></button>
         </form>
 
-        <div class="secure">🛡️ Xiriir sugan · Session-ku wuu ku xasuustaa</div>
+        <div class="secure">🛡️ Xiriir sugan · tab kasta oo cusub password ayuu weydiinayaa</div>
+        {% if unlock %}<a href="/logout_admin" class="logout-link">🚪 Logout (ka bax meel walba)</a>{% endif %}
     </div>
 
     <div class="foot">
@@ -151,9 +171,47 @@ button[disabled] .spin{ display:block; }
     ["keyup","keydown"].forEach(ev => pw.addEventListener(ev, e => {
         if(e.getModifierState) caps.classList.toggle("show", e.getModifierState("CapsLock"));
     }));
-    document.getElementById("loginForm").addEventListener("submit", () => {
-        const b = document.getElementById("go"); b.disabled = true;
-        document.getElementById("goText").textContent = "Checking…";
+    const KEY = "sahal_admin_tab";
+    const NEXT = {{ (next_url or '/admin')|tojson }};
+    const form = document.getElementById("loginForm"), go = document.getElementById("go"), goText = document.getElementById("goText");
+    const errBox = document.getElementById("errBox"), errText = document.getElementById("errText");
+    function store(t){ try{ sessionStorage.setItem(KEY, t); }catch(e){} }
+    function open(url){ location.replace(url + (location.hash || "")); }
+    function showForm(msg){
+        document.documentElement.classList.remove("auto");
+        if(msg){ errText.textContent = msg; errBox.style.display = ""; }
+        go.disabled = false; goText.textContent = "Login";
+        setTimeout(() => pw.focus(), 50);
+    }
+
+    {% if grant_token %}
+    store({{ grant_token|tojson }}); open({{ grant_url|tojson }});
+    {% elif unlock %}
+    (async () => {
+        let tok = null; try{ tok = sessionStorage.getItem(KEY); }catch(e){}
+        if(!tok) return;
+        try{
+            const r = await fetch("/admin/tab_ticket", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ token: tok, next: NEXT }) });
+            const d = await r.json().catch(() => ({}));
+            if(d.success){ open(d.url); return; }
+        }catch(e){}
+        try{ sessionStorage.removeItem(KEY); }catch(e){}
+        showForm("");
+    })();
+    {% endif %}
+
+    form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        if(!pw.value.trim()){ pw.focus(); return; }
+        go.disabled = true; goText.textContent = "Checking…"; errBox.style.display = "none";
+        try{
+            const r = await fetch("/admin/unlock", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ password: pw.value, next: NEXT }) });
+            const d = await r.json().catch(() => ({}));
+            if(d.success){ store(d.token); goText.textContent = "Opening…"; open(d.url); return; }
+            showForm(d.error || "Wrong password ❌"); pw.select();
+        }catch(err){
+            showForm("Server-ka lama gaarin — isku day mar kale.");
+        }
     });
 })();
 </script>

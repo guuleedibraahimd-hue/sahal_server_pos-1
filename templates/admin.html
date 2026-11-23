@@ -403,6 +403,59 @@ textarea:focus,input:focus,select:focus{ outline:none; border-color:#93c5fd; box
     .plan-pick{ grid-template-columns:1fr 1fr; }
     .plan-opt{ padding:12px; }
 }
+
+/* ---- mobile polish ---- */
+.adm-sheet-bg, .adm-sheet{ display:none; }
+@media(max-width:860px){
+    .topbar{ gap:10px; }
+    .tb-left{ min-width:0; gap:10px; }
+    .tb-icon{ width:38px; height:38px; font-size:17px; flex-shrink:0; }
+    .tb-title{ font-size:15.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .tb-right{ gap:8px; flex-shrink:0; }
+    .tb-admin{ display:none; }
+    .tb-round{ width:38px; height:38px; }
+    .logout{ padding:8px 12px; font-size:13px; }
+    .ai-grid{ grid-template-columns:1fr !important; }
+    .registerBtns{ display:grid !important; grid-template-columns:1fr 1fr; gap:10px; }
+    .registerBtns a{ margin:0 !important; text-align:center; padding:14px 10px !important; border-radius:14px !important; }
+    .sectionTitle h2{ font-size:17px; }
+    .acct-actions .btn{ padding:10px 8px; font-size:12.5px; min-height:40px; }
+    .acct-tools input{ max-width:none; min-width:0; width:100%; }
+    .chips-filter{ flex-wrap:nowrap; overflow-x:auto; -webkit-overflow-scrolling:touch; padding-bottom:4px; margin:0 -2px; scrollbar-width:none; }
+    .chips-filter::-webkit-scrollbar{ display:none; }
+    .chips-filter button{ flex-shrink:0; }
+    input, select, textarea{ font-size:16px; }   /* no iOS zoom on focus */
+    .content{ padding-bottom:calc(100px + env(safe-area-inset-bottom)); }
+
+    /* tables become cards */
+    table.m-cards{ min-width:0 !important; width:100%; border-collapse:separate; border-spacing:0; }
+    table.m-cards, table.m-cards tbody, table.m-cards tr, table.m-cards td{ display:block; width:100%; }
+    table.m-cards tr.m-head{ display:none !important; }
+    table.m-cards th{ display:none; }
+    table.m-cards tr{ background:#fff; border:1px solid var(--line); border-radius:16px; padding:8px 12px; margin-bottom:10px; box-shadow:0 1px 2px rgba(15,23,42,.04); }
+    table.m-cards tr:hover td{ background:transparent; }
+    table.m-cards td{ border:none !important; padding:7px 0 !important; display:flex; justify-content:space-between; align-items:center; gap:12px; text-align:right; font-size:13.5px; max-width:none !important; }
+    table.m-cards td + td{ border-top:1px dashed var(--line) !important; }
+    table.m-cards td::before{ content:attr(data-label); font-size:11px; font-weight:800; color:var(--soft); text-transform:uppercase; letter-spacing:.4px; text-align:left; flex-shrink:0; }
+    table.m-cards td[colspan]{ justify-content:center; text-align:center; }
+    table.m-cards td[colspan]::before{ display:none; }
+    table.m-cards td .btn{ margin:2px 0 2px 6px; }
+
+    /* "More" bottom sheet */
+    .adm-sheet-bg{ display:block; position:fixed; inset:0; background:rgba(2,6,23,.5); z-index:60; opacity:0; pointer-events:none; transition:opacity .2s; }
+    .adm-sheet-bg.open{ opacity:1; pointer-events:auto; }
+    .adm-sheet{ display:block; position:fixed; left:0; right:0; bottom:0; z-index:61; background:#fff; border-radius:24px 24px 0 0; padding:8px 16px calc(18px + env(safe-area-inset-bottom)); max-height:85vh; overflow-y:auto; transform:translateY(105%); transition:transform .25s cubic-bezier(.2,.8,.2,1); box-shadow:0 -20px 50px rgba(2,6,23,.25); }
+    .adm-sheet.open{ transform:none; }
+    .adm-sheet .grip{ width:42px; height:5px; border-radius:3px; background:#cbd5e1; margin:6px auto 10px; }
+    .adm-sheet h4{ margin:10px 4px 10px; font-size:12px; color:var(--soft); text-transform:uppercase; letter-spacing:1px; }
+    .adm-sgrid{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+    .adm-sgrid a, .adm-sgrid button{ position:relative; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; text-align:center; min-height:82px; padding:10px 6px; border-radius:16px; border:1px solid var(--line); background:#f8fafc; color:var(--ink); text-decoration:none; font:700 12px 'Plus Jakarta Sans',sans-serif; cursor:pointer; line-height:1.2; }
+    .adm-sgrid a span, .adm-sgrid button span{ font-size:22px; }
+    .adm-sgrid .on{ background:linear-gradient(135deg,var(--gold),var(--gold-2)); border-color:transparent; color:#111827; }
+    .adm-sgrid i{ position:absolute; top:6px; right:8px; background:#ef4444; color:#fff; font-style:normal; font-size:10px; min-width:18px; height:18px; border-radius:9px; display:flex; align-items:center; justify-content:center; padding:0 5px; }
+    .adm-sheet-logout{ display:block; margin-top:14px; text-align:center; padding:14px; border-radius:16px; background:#fef2f2; color:#b91c1c; font-weight:800; text-decoration:none; border:1px solid #fecaca; }
+}
+@media(max-width:380px){ .adm-bnav button{ font-size:9.5px; } .tb-title{ font-size:14px; } }
 </style>
 </head>
 <body>
@@ -531,7 +584,7 @@ textarea:focus,input:focus,select:focus{ outline:none; border-color:#93c5fd; box
                         <div class="an2">System Administrator</div>
                     </div>
                 </div>
-                <a href="/logout_admin" class="logout">Logout</a>
+                <a href="/logout_admin" class="logout" onclick="try{sessionStorage.removeItem('sahal_admin_tab')}catch(e){}">Logout</a>
             </div>
         </div>
 
@@ -636,7 +689,7 @@ textarea:focus,input:focus,select:focus{ outline:none; border-color:#93c5fd; box
                         These are the old manual "I've paid" claims (kept for any account still on that flow). Most renewals now go through the push-payment button in each account's own section (Restaurants / Supermarkets) — enter months there and it charges + reactivates automatically.
                     </p>
                     <div style="overflow-x:auto;">
-                        <table>
+                        <table class="m-cards">
                             <tr><th>Type</th><th>Business</th><th>Sender Name</th><th>Paid From</th><th>Submitted</th><th>Actions</th></tr>
                             {% for req in renewal_requests %}
                             <tr>
@@ -703,7 +756,7 @@ textarea:focus,input:focus,select:focus{ outline:none; border-color:#93c5fd; box
 
                     <h3 style="margin-top:28px;margin-bottom:4px;color:#6f42c1;">📜 Sent History</h3>
                     <div style="overflow-x:auto;">
-                        <table style="min-width:auto;">
+                        <table class="m-cards" style="min-width:auto;">
                             <tr><th>Message</th><th>Sent To</th><th>When</th><th>Actions</th></tr>
                             {% for b in sent_broadcasts %}
                             <tr>
@@ -739,7 +792,7 @@ textarea:focus,input:focus,select:focus{ outline:none; border-color:#93c5fd; box
                 <div class="section">
                     <div class="sectionTitle"><h2>💰 Payment Dashboard</h2></div>
                     <div style="overflow-x:auto;">
-                        <table>
+                        <table class="m-cards">
                             <tr><th>Department</th><th>Name</th><th>Plan</th><th>Fee</th><th>Payment</th><th>Status</th><th>Expiry</th></tr>
                             {% for k, lst in [('restaurant', restaurants), ('supermarket', supermarkets), ('pharmacy', pharmacies)] %}
                             {% for a in lst %}
@@ -905,7 +958,7 @@ textarea:focus,input:focus,select:focus{ outline:none; border-color:#93c5fd; box
             <br><small>Current model limit: up to 50 seconds per clip.</small>
         </div>
 
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;">
+        <div class="ai-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:18px;">
             <div class="card" style="padding:18px;">
                 <h3 style="margin-top:0;">1️⃣ Upload Video</h3>
                 <input type="file" id="aiVideoInput" accept="video/mp4,video/webm,video/quicktime">
@@ -1018,13 +1071,31 @@ textarea:focus,input:focus,select:focus{ outline:none; border-color:#93c5fd; box
     </div>
 </div>
 
+<!-- MOBILE "MORE" SHEET -->
+<div class="adm-sheet-bg" id="admSheetBg" onclick="closeMore()"></div>
+<div class="adm-sheet" id="admSheet" role="dialog" aria-label="Menu">
+    <div class="grip"></div>
+    <h4>Menu</h4>
+    <div class="adm-sgrid" id="admSheetPages"></div>
+    <h4>Quick actions</h4>
+    <div class="adm-sgrid">
+        <a href="/register"><span>🍽️</span>New Restaurant</a>
+        <a href="/supermarket_register"><span>🛒</span>New Supermarket</a>
+        <button type="button" onclick="closeMore();showPage('pharmacy');setTimeout(()=>document.getElementById('ph_pharmacy_name').focus(),350)"><span>💊</span>New Pharmacy</button>
+        <a href="/payment_qr"><span>💳</span>Payment QR</a>
+        <a href="/create_id_card"><span>🪪</span>ID Card</a>
+        <a href="/pharmacy_login" target="_blank"><span>🔗</span>Pharmacy Login</a>
+    </div>
+    <a href="/logout_admin" class="adm-sheet-logout" onclick="try{sessionStorage.removeItem('sahal_admin_tab')}catch(e){}">🚪 Logout</a>
+</div>
+
 <!-- MOBILE BOTTOM NAV -->
 <nav class="adm-bnav" id="admBnav">
     <button data-page="dashboard" onclick="showPage('dashboard')"><span>🏠</span>Home</button>
     <button data-page="restaurants" onclick="showPage('restaurants')"><span>🍽️</span>Restaurants</button>
     <button data-page="supermarkets" onclick="showPage('supermarkets')"><span>🛒</span>Markets</button>
     <button data-page="pharmacy" onclick="showPage('pharmacy')"><span>💊</span>Pharmacy</button>
-    <button data-page="__more" onclick="openSidebar()"><span>☰</span>More{% if renewal_requests %}<i>{{ renewal_requests|length }}</i>{% endif %}</button>
+    <button data-page="__more" onclick="openMore()"><span>☰</span>More{% if renewal_requests %}<i>{{ renewal_requests|length }}</i>{% endif %}</button>
 </nav>
 
 <!-- EDIT ENTITY MODAL (Restaurant / Supermarket — name, all passwords, fee, admin info) -->
@@ -1118,6 +1189,44 @@ textarea:focus,input:focus,select:focus{ outline:none; border-color:#93c5fd; box
 </div>
 
 <script>
+/* drop the one-time "?_t=" ticket from the address bar (keeps #tab) */
+try{ if(/[?&]_t=/.test(location.search)) history.replaceState(null, "", location.pathname + location.hash); }catch(e){}
+
+/* ---------- 📱 "More" sheet (mobile) ---------- */
+function buildMoreSheet(){
+    const box = document.getElementById("admSheetPages"); if(!box) return;
+    const inBar = ["dashboard", "restaurants", "supermarkets", "pharmacy"];
+    box.innerHTML = "";
+    document.querySelectorAll(".sidebar .sb-link").forEach(l => {
+        const id = l.dataset.page; if(!id || inBar.includes(id)) return;
+        const b = document.createElement("button"); b.type = "button";
+        if(l.classList.contains("active")) b.className = "on";
+        const ic = (l.querySelector(".ic") || {}).textContent || "•";
+        const c = l.cloneNode(true); c.querySelectorAll(".ic,.arrow,.nav-badge").forEach(n => n.remove());
+        const badge = l.querySelector(".nav-badge");
+        b.innerHTML = `<span>${ic}</span>`;
+        b.appendChild(document.createTextNode(c.textContent.replace(/\s+/g, " ").trim()));
+        if(badge){ const i = document.createElement("i"); i.textContent = badge.textContent.trim(); b.appendChild(i); }
+        b.addEventListener("click", () => { closeMore(); showPage(id); });
+        box.appendChild(b);
+    });
+}
+function openMore(){ buildMoreSheet(); document.getElementById("admSheetBg").classList.add("open"); document.getElementById("admSheet").classList.add("open"); }
+function closeMore(){ const a = document.getElementById("admSheetBg"), b = document.getElementById("admSheet"); if(a) a.classList.remove("open"); if(b) b.classList.remove("open"); }
+document.addEventListener("keydown", e => { if(e.key === "Escape"){ closeMore(); if(typeof closePlan === "function") closePlan(); } });
+
+/* ---------- 📱 tables → cards: copy each header into its cells ---------- */
+function labelTables(root){
+    (root || document).querySelectorAll("table.m-cards").forEach(t => {
+        const heads = Array.from(t.querySelectorAll("th")).map(th => th.textContent.trim());
+        t.querySelectorAll("tr").forEach(tr => {
+            if(tr.querySelector("th")) tr.classList.add("m-head");
+            Array.from(tr.children).forEach((td, i) => { if(td.tagName === "TD" && !td.hasAttribute("data-label")) td.setAttribute("data-label", heads[i] || ""); });
+        });
+    });
+}
+document.addEventListener("DOMContentLoaded", () => labelTables());
+
 let infoData = [];
 
 /* ================================
@@ -1220,7 +1329,8 @@ function showPage(id, el){
     document.querySelectorAll(".sb-link").forEach(l => l.classList.remove("active"));
     const link = el || document.querySelector('.sb-link[data-page="' + id + '"]');
     if(link) link.classList.add("active");
-    document.querySelectorAll("#admBnav button").forEach(b => b.classList.toggle("active", b.dataset.page === id));
+    const inBar = ["dashboard", "restaurants", "supermarkets", "pharmacy"];
+    document.querySelectorAll("#admBnav button").forEach(b => b.classList.toggle("active", b.dataset.page === id || (b.dataset.page === "__more" && !inBar.includes(id))));
     try{ history.replaceState(null, "", "#" + id); }catch(e){}
 
     closeSidebar();

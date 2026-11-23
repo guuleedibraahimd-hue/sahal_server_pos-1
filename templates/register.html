@@ -165,6 +165,7 @@ input:focus,select:focus{ outline:none; border-color:#93c5fd; background:#fff; b
 </div>
 
 <script>
+try{ if(/[?&]_t=/.test(location.search)) history.replaceState(null, "", location.pathname + location.hash); }catch(e){}
 (function(){
     /* ---------- plan picker ---------- */
     const pick = document.getElementById("planPick");
