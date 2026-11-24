@@ -1,637 +1,659 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sahal Server POS | All-in-One POS System</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sahal Server POS | All-in-One POS System</title>
+<meta name="description" content="Sahal Server POS waa nidaam casri ah oo maamulka ganacsiga: makhaayado, supermarket, farmasi iyo ganacsiyo kale — meel keliya.">
+<meta name="keywords" content="Sahal Server POS, Somalia POS, Restaurant POS, Supermarket POS, Pharmacy POS, Inventory System">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://sahalserver.com/">
+<meta name="theme-color" content="#070d1f">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://sahalserver.com/">
+<meta property="og:title" content="Sahal Server POS">
+<meta property="og:description" content="All-in-One POS for Restaurants, Supermarkets, Pharmacies and more.">
+<meta property="og:image" content="https://sahalserver.com/static/logo.png">
+<link rel="icon" type="image/png" href="/static/logo.png">
+<link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800;900&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-    <meta name="description" content="Sahal Server POS waa nidaam casri ah oo maamulka ganacsiga: makhaayado, supermarket, farmasi iyo ganacsiyo kale — meel keliya.">
-    <meta name="theme-color" content="#0a1128">
-    <link rel="icon" type="image/png" href="/static/logo.png">
+<style>
+:root{
+    --bg:#070d1f; --bg-2:#0b1430; --panel:#0e1836; --line:rgba(255,255,255,.09);
+    --gold:#ffc21a; --gold-2:#ff9f0a; --gold-3:#ffdd6b;
+    --txt:#fff; --soft:rgba(255,255,255,.66); --dim:rgba(255,255,255,.45);
+    --head:'Montserrat','DM Sans',sans-serif; --body:'DM Sans',system-ui,sans-serif;
+}
+*{ margin:0; padding:0; box-sizing:border-box; }
+html{ scroll-behavior:smooth; }
+body{
+    font-family:var(--body); color:var(--txt); background:var(--bg); overflow-x:hidden;
+    -webkit-font-smoothing:antialiased; min-height:100vh;
+}
+main{ overflow-x:clip; }
+a{ color:inherit; text-decoration:none; }
+button{ font-family:inherit; }
+img{ display:block; }
 
-    <!-- Kani waa xiriiriyaha rasmiga ah ee PWA -->
-    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+/* ---------- background ---------- */
+.bg{ position:fixed; inset:0; z-index:0; pointer-events:none; overflow:hidden; }
+.bg::before{
+    content:""; position:absolute; inset:0;
+    background:
+        radial-gradient(60% 50% at 70% 18%, rgba(37,99,235,.28) 0%, transparent 60%),
+        radial-gradient(40% 40% at 0% 0%, rgba(37,99,235,.18) 0%, transparent 60%),
+        radial-gradient(45% 40% at 100% 100%, rgba(124,58,237,.16) 0%, transparent 60%),
+        linear-gradient(180deg,#070d1f 0%,#081029 60%,#070d1f 100%);
+}
+.bg .grid{
+    position:absolute; inset:-50% -50% 0; transform:perspective(600px) rotateX(62deg);
+    background-image:linear-gradient(rgba(255,255,255,.045) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.045) 1px, transparent 1px);
+    background-size:64px 64px; top:55%;
+    -webkit-mask-image:linear-gradient(to bottom, transparent, #000 30%, transparent 85%); mask-image:linear-gradient(to bottom, transparent, #000 30%, transparent 85%);
+    animation:gridMove 14s linear infinite;
+}
+@keyframes gridMove{ to{ background-position:0 64px, 64px 0; } }
+.bg .orb{ position:absolute; border-radius:50%; filter:blur(70px); opacity:.5; animation:orb 16s ease-in-out infinite alternate; }
+.bg .o1{ width:420px; height:420px; background:#1d4ed8; top:-120px; right:8%; }
+.bg .o2{ width:360px; height:360px; background:#7c3aed; bottom:-140px; left:-80px; opacity:.28; animation-delay:-6s; }
+.bg .o3{ width:280px; height:280px; background:#f59e0b; top:40%; right:-90px; opacity:.16; animation-delay:-10s; }
+@keyframes orb{ to{ transform:translate(-40px,30px) scale(1.12); } }
 
-    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+.wrap{ position:relative; z-index:2; max-width:1320px; margin:0 auto; padding:0 32px; }
 
-    <style>
-        :root{
-            --gold:#f5a623;
-            --gold-2:#e0a800;
-            --teal:#009688;
-            --dark:#0a1128;
-            --dark-2:#0d1a3a;
-            --card:#ffffff;
-            --text:#111;
-            --muted:#666;
-            --radius:16px;
-        }
-        *{margin:0;padding:0;box-sizing:border-box;}
+/* ---------- NAV ---------- */
+.nav{ position:sticky; top:0; z-index:50; transition:background .25s, box-shadow .25s, backdrop-filter .25s; }
+.nav.scrolled{ background:rgba(7,13,31,.78); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); box-shadow:0 1px 0 var(--line); }
+.nav-in{ display:flex; align-items:center; gap:22px; height:78px; }
 
-        body{
-            font-family:'DM Sans',sans-serif;
-            background:
-                radial-gradient(circle at 92% 8%, rgba(47,111,237,0.22) 0%, transparent 45%),
-                radial-gradient(circle at 4% 4%, rgba(47,111,237,0.14) 0%, transparent 40%),
-                linear-gradient(180deg,#0a1128 0%,#0a1024 100%);
-            min-height:100vh;
-            overflow-x:hidden;
-            color:white;
-            position:relative;
-        }
-        body::after{
-            content:'';
-            position:fixed;
-            bottom:-200px;right:-100px;
-            width:600px;height:600px;
-            background:radial-gradient(circle,rgba(245,166,35,0.06) 0%,transparent 70%);
-            pointer-events:none;
-            z-index:0;
-        }
+/* 3D logo */
+.brand{ display:flex; align-items:center; gap:14px; flex-shrink:0; }
+.cube-wrap{ width:44px; height:44px; perspective:420px; }
+.cube{ position:relative; width:44px; height:44px; transform-style:preserve-3d; animation:cubeSpin 9s cubic-bezier(.65,.05,.36,1) infinite; }
+.cube .f{
+    position:absolute; inset:0; border-radius:11px; display:flex; align-items:center; justify-content:center;
+    font:900 22px var(--head); color:#1a1000;
+    background:linear-gradient(135deg,var(--gold-3),var(--gold) 45%,var(--gold-2));
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.6), inset 0 -3px 6px rgba(160,80,0,.35);
+    backface-visibility:hidden; overflow:hidden;
+}
+.cube .f img{ width:100%; height:100%; object-fit:cover; }
+.cube .f::after{ content:""; position:absolute; inset:0; background:linear-gradient(120deg, transparent 30%, rgba(255,255,255,.55) 48%, transparent 62%); transform:translateX(-120%); animation:shine 4.5s ease-in-out infinite; }
+.cube .front{ transform:translateZ(22px); }
+.cube .back{ transform:rotateY(180deg) translateZ(22px); }
+.cube .right{ transform:rotateY(90deg) translateZ(22px); filter:brightness(.82); }
+.cube .left{ transform:rotateY(-90deg) translateZ(22px); filter:brightness(.82); }
+.cube .top{ transform:rotateX(90deg) translateZ(22px); filter:brightness(1.08); }
+.cube .bottom{ transform:rotateX(-90deg) translateZ(22px); filter:brightness(.7); }
+@keyframes cubeSpin{
+    0%,18%{ transform:rotateX(-14deg) rotateY(-22deg); }
+    32%,50%{ transform:rotateX(-14deg) rotateY(158deg); }
+    64%,82%{ transform:rotateX(76deg) rotateY(338deg); }
+    100%{ transform:rotateX(-14deg) rotateY(338deg); }
+}
+@keyframes shine{ 0%,55%{ transform:translateX(-120%); } 80%,100%{ transform:translateX(120%); } }
+.wordmark{ font:900 21px var(--head); letter-spacing:.3px; white-space:nowrap; display:flex; gap:7px; }
+.wordmark .w{ display:inline-flex; }
+.wordmark .w span{ display:inline-block; animation:letterIn .7s cubic-bezier(.2,.9,.3,1.3) both; }
+.wordmark .gold span{
+    background:linear-gradient(100deg,var(--gold-2) 0%,var(--gold) 30%,#fff3c4 50%,var(--gold) 70%,var(--gold-2) 100%);
+    background-size:300% 100%; -webkit-background-clip:text; background-clip:text; color:transparent;
+    animation:letterIn .7s cubic-bezier(.2,.9,.3,1.3) both, goldFlow 5s linear infinite;
+}
+@keyframes letterIn{ from{ opacity:0; transform:translateY(14px) rotateX(70deg); } to{ opacity:1; transform:none; } }
+@keyframes goldFlow{ to{ background-position:-300% 0; } }
 
-        /* ===== NAVBAR ===== */
-        .nav{
-            display:flex;
-            align-items:center;
-            justify-content:space-between;
-            padding:18px 40px;
-            position:relative;
-            z-index:20;
-            max-width:1320px;
-            margin:0 auto;
-        }
-        .nav-logo{
-            display:flex;
-            align-items:center;
-            gap:12px;
-            font-family:'Syne',sans-serif;
-            font-weight:800;
-            font-size:22px;
-            letter-spacing:0.5px;
-        }
-        .nav-logo .mark{
-            width:42px;height:42px;
-            border-radius:11px;
-            background:linear-gradient(135deg,var(--gold),var(--gold-2));
-            display:flex;align-items:center;justify-content:center;
-            font-size:22px;color:#1a1000;
-        }
-        .nav-logo .mark img{width:42px;height:42px;object-fit:contain;border-radius:11px;}
-        .nav-logo .accent{color:var(--gold);}
+.links{ display:flex; align-items:center; gap:6px; margin-left:auto; list-style:none; }
+.links > li{ position:relative; }
+.links a, .links button.lk{
+    display:inline-flex; align-items:center; gap:5px; padding:10px 16px; border-radius:24px;
+    font-size:15px; font-weight:600; color:rgba(255,255,255,.82); background:none; border:none; cursor:pointer; transition:color .2s, background .2s;
+}
+.links a:hover, .links button.lk:hover{ color:#fff; background:rgba(255,255,255,.06); }
+.links a.on{ color:#1a1000; background:linear-gradient(135deg,var(--gold),var(--gold-2)); box-shadow:0 6px 18px rgba(255,170,0,.35); }
+.links .car{ font-size:10px; transition:transform .2s; }
+.dd{ position:absolute; top:calc(100% + 10px); left:50%; transform:translate(-50%,8px); min-width:230px; background:#0f1a3a; border:1px solid var(--line); border-radius:16px; padding:8px; box-shadow:0 20px 50px rgba(0,0,0,.45); opacity:0; pointer-events:none; transition:.18s; }
+.has-dd.open .dd{ opacity:1; pointer-events:auto; transform:translate(-50%,0); }
+.has-dd.open .car{ transform:rotate(180deg); }
+.dd a, .dd button{ display:flex; width:100%; gap:10px; align-items:center; padding:11px 12px; border-radius:11px; font-size:14px; color:#e2e8f0; background:none; border:none; cursor:pointer; text-align:left; }
+.dd a:hover, .dd button:hover{ background:rgba(255,255,255,.07); }
+.dd small{ display:block; color:var(--dim); font-size:12px; font-weight:500; }
 
-        .nav-links{
-            display:flex;
-            align-items:center;
-            gap:34px;
-            list-style:none;
-        }
-        .nav-links a{
-            color:rgba(255,255,255,0.75);
-            text-decoration:none;
-            font-size:15px;
-            font-weight:500;
-            cursor:pointer;
-            transition:.2s;
-            position:relative;
-        }
-        .nav-links a:hover{color:white;}
-        .nav-links a.active{color:var(--gold);}
-        .nav-links a.active::after{
-            content:'';
-            position:absolute;
-            left:0;bottom:-8px;
-            width:100%;height:2px;
-            background:var(--gold);
-            border-radius:2px;
-        }
+.nav-r{ display:flex; align-items:center; gap:10px; flex-shrink:0; }
+.round{ width:44px; height:44px; border-radius:50%; border:1px solid var(--line); background:rgba(255,255,255,.04); color:#fff; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:17px; transition:.2s; position:relative; }
+.round:hover{ background:rgba(255,255,255,.1); }
+.pill{ display:inline-flex; align-items:center; gap:8px; height:44px; padding:0 18px; border-radius:24px; border:1px solid var(--line); background:rgba(255,255,255,.04); color:#fff; font-weight:600; font-size:14.5px; cursor:pointer; transition:.2s; }
+.pill:hover{ background:rgba(255,255,255,.1); }
+.btn-gold{
+    display:inline-flex; align-items:center; gap:10px; height:46px; padding:0 22px; border-radius:26px; border:none; cursor:pointer;
+    font:700 15px var(--body); color:#1a1000; background:linear-gradient(135deg,var(--gold-3),var(--gold) 40%,var(--gold-2));
+    box-shadow:0 10px 26px rgba(255,170,0,.33), inset 0 1px 0 rgba(255,255,255,.5); transition:transform .15s, box-shadow .2s; position:relative; overflow:hidden;
+}
+.btn-gold::after{ content:""; position:absolute; inset:0; background:linear-gradient(120deg,transparent 35%,rgba(255,255,255,.55) 50%,transparent 65%); transform:translateX(-120%); animation:shine 4s ease-in-out infinite; }
+.btn-gold:hover{ transform:translateY(-2px); box-shadow:0 14px 32px rgba(255,170,0,.45); }
+.btn-gold .ar{ transition:transform .2s; } .btn-gold:hover .ar{ transform:translateX(4px); }
+.admin-menu{ position:absolute; top:54px; right:0; min-width:220px; background:#fff; border-radius:16px; padding:6px; box-shadow:0 20px 50px rgba(0,0,0,.45); display:none; z-index:60; }
+.admin-menu.show{ display:block; animation:pop .16s ease-out; }
+.admin-menu a{ display:flex; gap:10px; align-items:center; padding:12px 14px; border-radius:11px; color:#0f172a; font-weight:600; font-size:14px; }
+.admin-menu a:hover{ background:#f1f5f9; }
+@keyframes pop{ from{ opacity:0; transform:translateY(-6px) scale(.97); } }
+.burger{ display:none; }
 
-        .nav-right{display:flex;align-items:center;gap:14px;}
-        .theme-toggle{
-            display:flex;align-items:center;gap:7px;
-            padding:9px 16px;
-            border-radius:22px;
-            background:rgba(255,255,255,0.06);
-            border:1px solid rgba(255,255,255,0.1);
-            color:white;font-size:13px;font-weight:600;cursor:pointer;transition:.2s;
-        }
-        .theme-toggle:hover{background:rgba(255,255,255,0.12);}
+/* ---------- HERO ---------- */
+.hero{ display:grid; grid-template-columns:1fr 1.08fr; gap:30px; align-items:center; padding:46px 0 40px; min-height:calc(100vh - 210px); }
+.chip{ display:inline-flex; align-items:center; gap:9px; padding:9px 18px; border-radius:24px; border:1px solid rgba(255,194,26,.45); background:rgba(255,194,26,.10); color:#fff; font-weight:700; font-size:13.5px; letter-spacing:.4px; text-transform:uppercase; }
+.chip b{ color:var(--gold); font-size:15px; }
+.hero h1{ font:900 clamp(36px,4.7vw,70px)/1.04 var(--head); letter-spacing:-1.5px; margin:24px 0 22px; }
+.hero h1 .line{ display:block; overflow:hidden; padding-bottom:4px; white-space:nowrap; }
+.hero h1 .line > span{ display:inline-block; animation:rise .9s cubic-bezier(.2,.8,.2,1) both; }
+.hero h1 .line:nth-child(2) > span{ animation-delay:.1s; } .hero h1 .line:nth-child(3) > span{ animation-delay:.2s; }
+@keyframes rise{ from{ transform:translateY(105%); opacity:0; } to{ transform:none; opacity:1; } }
+.hero h1 .biz{ position:relative; color:var(--gold); background:linear-gradient(100deg,var(--gold-2),var(--gold) 40%,#fff1b8 55%,var(--gold) 70%,var(--gold-2)); background-size:300% 100%; -webkit-background-clip:text; background-clip:text; color:transparent; animation:rise .9s .2s cubic-bezier(.2,.8,.2,1) both, goldFlow 6s linear infinite; }
+.hero h1 .swoosh{ position:absolute; left:52%; bottom:-10px; width:46%; height:16px; }
+.hero h1 .swoosh path{ stroke-dasharray:240; stroke-dashoffset:240; animation:draw 1s 1s ease-out forwards; }
+@keyframes draw{ to{ stroke-dashoffset:0; } }
+.lead{ color:var(--soft); font-size:18px; line-height:1.65; max-width:560px; }
+.checks{ display:flex; gap:22px; margin:28px 0 32px; flex-wrap:wrap; }
+.checks div{ display:flex; align-items:center; gap:10px; font-size:14px; font-weight:700; line-height:1.3; }
+.checks div small{ display:block; font-weight:500; color:var(--soft); }
+.checks i{ width:30px; height:30px; border-radius:50%; background:linear-gradient(135deg,var(--gold),var(--gold-2)); color:#1a1000; display:flex; align-items:center; justify-content:center; font-style:normal; font-weight:900; font-size:14px; flex-shrink:0; box-shadow:0 6px 14px rgba(255,170,0,.3); }
+.checks div + div{ padding-left:22px; border-left:1px solid var(--line); }
+.cta{ display:flex; gap:16px; flex-wrap:wrap; align-items:center; }
+.cta .btn-gold{ height:58px; padding:0 30px; font-size:17px; border-radius:30px; }
+.btn-line{ display:inline-flex; align-items:center; gap:12px; height:58px; padding:0 26px 0 12px; border-radius:30px; border:1.5px solid rgba(255,255,255,.28); background:rgba(255,255,255,.03); color:#fff; font:700 16px var(--body); cursor:pointer; transition:.2s; }
+.btn-line:hover{ border-color:var(--gold); background:rgba(255,194,26,.06); }
+.btn-line .pl{ width:36px; height:36px; border-radius:50%; border:1.5px solid rgba(255,255,255,.7); display:flex; align-items:center; justify-content:center; font-size:12px; padding-left:2px; }
+.trust{ display:flex; gap:26px; margin-top:30px; align-items:center; flex-wrap:wrap; color:var(--soft); font-size:13.5px; font-weight:600; }
+.trust .it{ display:flex; align-items:center; gap:10px; }
+.trust .ic3{ display:flex; }
+.trust .ic3 span{ width:36px; height:36px; border-radius:50%; border:2px solid var(--bg); margin-left:-9px; display:flex; align-items:center; justify-content:center; font-size:16px; }
+.trust .ic3 span:first-child{ margin-left:0; }
+.trust b{ color:#fff; display:block; font-size:14.5px; }
 
-        /* three-dots admin (only admin now) */
-        .admin-wrap{position:relative;}
-        .menu-btn{
-            width:40px;height:40px;border-radius:11px;
-            background:rgba(255,255,255,0.06);
-            border:1px solid rgba(255,255,255,0.1);
-            display:flex;align-items:center;justify-content:center;
-            font-size:18px;cursor:pointer;color:white;transition:.2s;
-        }
-        .menu-btn:hover{background:rgba(255,255,255,0.12);}
-        .admin-menu{
-            display:none;position:absolute;top:50px;right:0;
-            background:white;border-radius:14px;
-            box-shadow:0 8px 30px rgba(0,0,0,0.35);
-            min-width:190px;z-index:9999;overflow:hidden;
-        }
-        .admin-menu a{
-            display:flex;align-items:center;gap:10px;
-            padding:14px 18px;color:#111;text-decoration:none;
-            font-weight:600;font-size:14px;transition:.15s;
-        }
-        .admin-menu a:hover{background:#f4f4f4;}
+/* hero visual */
+.stage{ position:relative; height:560px; perspective:1400px; }
+.halo{ position:absolute; width:520px; height:520px; right:6%; top:-2%; border-radius:50%; border-top:3px solid rgba(255,180,40,.85); border-left:2px solid rgba(255,180,40,.25); filter:drop-shadow(0 0 22px rgba(255,170,0,.7)); animation:halo 12s linear infinite; }
+.halo::after{ content:""; position:absolute; inset:40px; border-radius:50%; background:radial-gradient(circle at 50% 40%, rgba(255,160,20,.14), transparent 60%); }
+@keyframes halo{ to{ transform:rotate(360deg); } }
+.laptop{ position:absolute; right:8%; top:70px; width:74%; transform:rotateY(-16deg) rotateX(6deg); transform-style:preserve-3d; animation:floatA 7s ease-in-out infinite; }
+@keyframes floatA{ 0%,100%{ transform:rotateY(-16deg) rotateX(6deg) translateY(0); } 50%{ transform:rotateY(-13deg) rotateX(5deg) translateY(-10px); } }
+.screen{ background:#05070f; border-radius:18px 18px 6px 6px; padding:12px; border:2px solid #2a3350; box-shadow:0 40px 80px rgba(0,0,0,.55), 0 0 0 1px rgba(255,255,255,.04) inset; }
+.dash{ display:grid; grid-template-columns:24% 1fr; height:300px; border-radius:10px; overflow:hidden; background:linear-gradient(160deg,#0f1a3c,#0a1230); }
+.dash-side{ padding:14px 10px; border-right:1px solid rgba(255,255,255,.06); }
+.dash-logo{ font:900 10px var(--head); color:var(--gold); line-height:1.1; margin-bottom:14px; }
+.dash-logo small{ display:block; color:#fff; }
+.dash-nav span{ display:flex; gap:6px; align-items:center; font-size:9px; color:rgba(255,255,255,.6); padding:7px 8px; border-radius:7px; margin-bottom:3px; }
+.dash-nav span.on{ background:linear-gradient(135deg,var(--gold),var(--gold-2)); color:#1a1000; font-weight:800; }
+.dash-main{ padding:14px; display:flex; flex-direction:column; gap:10px; min-width:0; }
+.dash-top{ display:flex; justify-content:space-between; align-items:flex-start; }
+.dash-top h5{ font:800 14px var(--head); } .dash-top p{ font-size:8.5px; color:var(--dim); }
+.dash-date{ font-size:8px; padding:5px 8px; border-radius:7px; background:rgba(255,255,255,.06); color:#cbd5e1; }
+.stats{ display:grid; grid-template-columns:repeat(4,1fr); gap:7px; }
+.st{ background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.06); border-radius:9px; padding:8px; display:flex; gap:6px; align-items:center; }
+.st .si{ width:20px; height:20px; border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:10px; flex-shrink:0; }
+.st .k{ font-size:6.8px; color:var(--dim); } .st .v{ font:800 11px var(--head); } .st .u{ font-size:6.5px; color:#22c55e; font-weight:700; }
+.charts{ display:grid; grid-template-columns:1.6fr 1fr; gap:8px; flex:1; min-height:0; }
+.cbox{ background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.06); border-radius:10px; padding:9px; position:relative; min-height:0; }
+.cbox h6{ font-size:8.5px; font-weight:700; margin-bottom:4px; }
+.cbox svg{ width:100%; height:calc(100% - 14px); }
+.line-path{ stroke-dasharray:520; stroke-dashoffset:520; animation:draw 2.2s .6s ease-out forwards, none; }
+.area-path{ opacity:0; animation:fadeIn 1s 1.8s forwards; }
+@keyframes fadeIn{ to{ opacity:1; } }
+.pt{ opacity:0; animation:fadeIn .3s forwards; }
+.donut circle.seg{ stroke-dasharray:0 200; animation:seg 1.4s cubic-bezier(.3,.8,.3,1) forwards; }
+@keyframes seg{ to{ stroke-dasharray:var(--d) 200; } }
+.legend{ position:absolute; right:8px; top:26px; font-size:6.5px; line-height:1.9; color:#cbd5e1; }
+.legend i{ display:inline-block; width:5px; height:5px; border-radius:50%; margin-right:4px; }
+.base{ height:16px; margin:0 -5%; background:linear-gradient(180deg,#c9d0de,#7d8699); border-radius:0 0 18px 18px; box-shadow:0 30px 50px rgba(0,0,0,.6); position:relative; }
+.base::before{ content:""; position:absolute; left:42%; right:42%; top:0; height:6px; background:#5e6679; border-radius:0 0 8px 8px; }
+.kbd-glow{ position:absolute; left:10%; right:10%; bottom:-40px; height:40px; background:radial-gradient(ellipse at center, rgba(59,130,246,.45), transparent 70%); filter:blur(10px); }
 
-        .mobile-nav-toggle{display:none;}
+.phone{ position:absolute; right:-1%; top:150px; width:22%; min-width:130px; aspect-ratio:9/19; border-radius:28px; background:#05070f; border:3px solid #2a3350; padding:8px; box-shadow:0 40px 70px rgba(0,0,0,.6); transform:rotateY(-18deg) rotateZ(3deg); animation:floatB 6s ease-in-out infinite; }
+@keyframes floatB{ 0%,100%{ transform:rotateY(-18deg) rotateZ(3deg) translateY(0); } 50%{ transform:rotateY(-14deg) rotateZ(2deg) translateY(-14px); } }
+.phone-in{ height:100%; border-radius:21px; background:linear-gradient(170deg,#121c3e 0%,#0b1330 60%,#3a2800 100%); padding:22px 10px 10px; display:flex; flex-direction:column; align-items:center; position:relative; overflow:hidden; }
+.phone-in::before{ content:""; position:absolute; top:6px; width:40px; height:5px; border-radius:4px; background:#000; }
+.phone-in .pl{ font:900 9px var(--head); text-align:center; color:var(--gold); line-height:1.15; margin:8px 0 12px; } .phone-in .pl small{ color:#fff; display:block; }
+.ptiles{ display:grid; grid-template-columns:1fr 1fr; gap:7px; width:100%; }
+.ptiles span{ aspect-ratio:1; border-radius:11px; background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.07); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; font-size:18px; }
+.ptiles span small{ font-size:7px; color:#e2e8f0; font-weight:700; }
+.phone-in .glow{ position:absolute; bottom:-30px; right:-30px; width:110px; height:110px; background:radial-gradient(circle,rgba(255,170,0,.6),transparent 70%); }
 
-        /* ===== HERO ===== */
-        .hero{
-            max-width:1320px;
-            margin:0 auto;
-            padding:40px 40px 20px;
-            display:grid;
-            grid-template-columns:1.05fr 1fr;
-            gap:40px;
-            align-items:center;
-            position:relative;
-            z-index:5;
-        }
-        .badge-pill{
-            display:inline-flex;align-items:center;gap:8px;
-            padding:8px 16px;border-radius:22px;
-            background:rgba(245,166,35,0.12);
-            border:1px solid rgba(245,166,35,0.3);
-            color:var(--gold);font-size:12.5px;font-weight:700;
-            letter-spacing:0.5px;text-transform:uppercase;
-            margin-bottom:26px;
-        }
-        .hero h1{
-            font-family:'Syne',sans-serif;
-            font-weight:800;
-            font-size:56px;
-            line-height:1.05;
-            letter-spacing:-0.5px;
-            margin-bottom:22px;
-        }
-        .hero h1 .accent{color:var(--gold);}
-        .hero-sub{
-            color:rgba(255,255,255,0.6);
-            font-size:17px;
-            line-height:1.7;
-            max-width:480px;
-            margin-bottom:34px;
-        }
-        .hero-cta{display:flex;align-items:center;gap:20px;flex-wrap:wrap;}
-        .btn-primary{
-            display:inline-flex;align-items:center;gap:12px;
-            padding:15px 30px;border-radius:30px;
-            background:linear-gradient(135deg,#f5c842,var(--gold-2));
-            color:#1a1000;font-weight:700;font-size:16px;
-            text-decoration:none;border:none;cursor:pointer;
-            font-family:'DM Sans',sans-serif;transition:.2s;
-            box-shadow:0 8px 24px rgba(245,166,35,0.3);
-        }
-        .btn-primary:hover{transform:translateY(-2px);box-shadow:0 12px 30px rgba(245,166,35,0.4);}
-        .btn-ghost{
-            display:inline-flex;align-items:center;gap:12px;
-            background:none;border:none;color:white;cursor:pointer;
-            font-family:'DM Sans',sans-serif;font-size:16px;font-weight:600;
-        }
-        .btn-ghost .play{
-            width:44px;height:44px;border-radius:50%;
-            border:1.5px solid rgba(255,255,255,0.3);
-            display:flex;align-items:center;justify-content:center;
-            font-size:15px;transition:.2s;
-        }
-        .btn-ghost:hover .play{background:rgba(255,255,255,0.1);border-color:var(--gold);}
+.printer{ position:absolute; left:4%; bottom:40px; width:150px; animation:floatC 6.5s ease-in-out infinite; }
+@keyframes floatC{ 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(-8px); } }
+.paper{ position:absolute; left:26px; right:26px; bottom:78px; height:96px; background:#fff; border-radius:3px 3px 0 0; transform-origin:bottom; animation:printOut 3.6s ease-in-out infinite; padding:9px 8px; overflow:hidden; box-shadow:0 -4px 14px rgba(0,0,0,.25); }
+.paper b{ display:block; font:900 8px var(--head); color:#111; text-align:center; margin-bottom:5px; }
+.paper i{ display:block; height:3px; background:#d4d7de; border-radius:2px; margin:4px 0; }
+.paper i:nth-child(odd){ width:80%; }
+@keyframes printOut{ 0%{ transform:scaleY(.15); } 45%,85%{ transform:scaleY(1); } 100%{ transform:scaleY(.15); } }
+.pbody{ position:relative; height:96px; border-radius:20px 20px 14px 14px; background:linear-gradient(160deg,#2b2f3a,#101218); box-shadow:0 26px 40px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.12); }
+.pbody::before{ content:""; position:absolute; left:20px; right:20px; top:12px; height:8px; border-radius:4px; background:#05060a; }
+.pbody .led{ position:absolute; right:22px; bottom:18px; width:7px; height:7px; border-radius:50%; background:#22c55e; box-shadow:0 0 10px #22c55e; animation:blink 1.6s infinite; }
+.pbody .led.y{ right:36px; background:#f59e0b; box-shadow:0 0 10px #f59e0b; animation-delay:.8s; }
+@keyframes blink{ 50%{ opacity:.25; } }
+.toast-mock{ position:absolute; right:30%; bottom:34px; display:flex; gap:10px; align-items:center; padding:10px 14px 10px 10px; border-radius:16px; background:rgba(255,255,255,.96); color:#0f172a; box-shadow:0 20px 40px rgba(0,0,0,.45); animation:toastIn 6s ease-in-out infinite; }
+.toast-mock .tb{ width:34px; height:34px; border-radius:10px; background:linear-gradient(135deg,var(--gold),var(--gold-2)); display:flex; align-items:center; justify-content:center; font-size:16px; animation:ringBell 6s ease-in-out infinite; }
+.toast-mock b{ display:block; font-size:12.5px; } .toast-mock small{ font-size:11px; color:#64748b; font-weight:600; }
+@keyframes toastIn{ 0%,8%{ opacity:0; transform:translateY(16px) scale(.96); } 14%,80%{ opacity:1; transform:none; } 88%,100%{ opacity:0; transform:translateY(-8px); } }
+@keyframes ringBell{ 14%,26%{ transform:rotate(0); } 17%{ transform:rotate(-16deg); } 20%{ transform:rotate(14deg); } 23%{ transform:rotate(-8deg); } }
+.scanner{ position:absolute; right:22%; bottom:22px; font-size:56px; transform:rotate(-24deg); filter:drop-shadow(0 18px 18px rgba(0,0,0,.5)); animation:floatC 5s ease-in-out infinite; }
+.beam{ position:absolute; right:calc(22% + 50px); bottom:84px; width:70px; height:3px; background:linear-gradient(90deg,transparent,#ef4444,transparent); filter:drop-shadow(0 0 6px #ef4444); animation:beam 1.8s ease-in-out infinite; transform:rotate(-24deg); }
+@keyframes beam{ 0%,100%{ opacity:.2; } 50%{ opacity:1; } }
 
-        /* HERO MOCKUP */
-        .hero-visual{position:relative;}
-        .mock{
-            background:#0f1c3d;
-            border:1px solid rgba(255,255,255,0.1);
-            border-radius:16px;
-            padding:14px;
-            box-shadow:0 30px 70px rgba(0,0,0,0.5);
-        }
-        .mock-inner{
-            background:#f4f6fb;
-            border-radius:11px;
-            display:grid;
-            grid-template-columns:96px 1fr;
-            overflow:hidden;
-            min-height:300px;
-        }
-        .mock-side{background:#0e1730;padding:16px 10px;}
-        .mock-side .brand{display:flex;align-items:center;gap:6px;color:white;font-size:11px;font-weight:700;margin-bottom:16px;}
-        .mock-side .dot{width:16px;height:16px;border-radius:5px;background:var(--gold);}
-        .mock-nav{display:flex;flex-direction:column;gap:9px;}
-        .mock-nav span{font-size:9.5px;color:rgba(255,255,255,0.5);padding:6px 8px;border-radius:6px;}
-        .mock-nav span.on{background:var(--gold);color:#1a1000;font-weight:700;}
-        .mock-main{padding:16px;color:#1a2340;}
-        .mock-main h4{font-size:13px;font-weight:800;margin-bottom:12px;color:#0e1730;}
-        .mock-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px;}
-        .mock-stat{background:white;border-radius:8px;padding:9px;box-shadow:0 2px 8px rgba(0,0,0,0.05);}
-        .mock-stat .lbl{font-size:7.5px;color:#8a93a8;font-weight:600;}
-        .mock-stat .val{font-size:14px;font-weight:800;color:#0e1730;margin:2px 0;}
-        .mock-stat .up{font-size:7.5px;color:#1f9d55;font-weight:700;}
-        .mock-chart{background:white;border-radius:8px;padding:10px;box-shadow:0 2px 8px rgba(0,0,0,0.05);}
-        .mock-chart .ctitle{font-size:8.5px;color:#8a93a8;font-weight:700;margin-bottom:6px;}
-        .mock-bars{display:flex;align-items:flex-end;gap:5px;height:56px;}
-        .mock-bars i{flex:1;background:linear-gradient(180deg,#2f6fed,#7aa5f5);border-radius:3px 3px 0 0;display:block;}
+/* category strip */
+.cats{ margin:8px 0 0; display:grid; grid-template-columns:repeat(6,1fr); background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.02)); border:1px solid var(--line); border-radius:24px; padding:22px 10px; position:relative; overflow:hidden; }
+.cats::after{ content:""; position:absolute; left:10%; right:10%; bottom:0; height:2px; background:linear-gradient(90deg,transparent,var(--gold),transparent); opacity:.8; }
+.cat{ display:flex; align-items:center; gap:14px; padding:4px 16px; border-left:1px solid var(--line); }
+.cat:first-child{ border-left:none; }
+.cat .ci{ width:54px; height:54px; border-radius:14px; background:rgba(255,194,26,.12); border:1px solid rgba(255,194,26,.25); display:flex; align-items:center; justify-content:center; font-size:24px; flex-shrink:0; transition:transform .25s; }
+.cat:hover .ci{ transform:translateY(-4px) rotate(-6deg); }
+.cat b{ display:block; font-size:15px; } .cat small{ color:var(--soft); font-size:13px; }
 
-        /* ===== PORTAL SECTION ===== */
-        .section-head{text-align:center;margin:60px auto 8px;position:relative;z-index:5;}
-        .section-head .eyebrow{
-            display:inline-flex;align-items:center;gap:12px;
-            font-family:'Syne',sans-serif;font-weight:800;font-size:30px;
-            justify-content:center;
-        }
-        .section-head .eyebrow .rule{width:34px;height:3px;background:var(--gold);border-radius:3px;}
-        .section-head .eyebrow .grid-ic{color:var(--gold);font-size:24px;}
-        .section-head p{color:rgba(255,255,255,0.55);font-size:15px;margin-top:12px;}
+/* ---------- PORTALS ---------- */
+.sec{ padding:90px 0 20px; }
+.sec-head{ text-align:center; margin-bottom:46px; }
+.sec-chip{ display:inline-flex; align-items:center; gap:10px; padding:10px 20px; border-radius:24px; background:rgba(255,255,255,.06); border:1px solid var(--line); font-weight:700; font-size:16px; }
+.sec-chip b{ color:var(--gold); font-size:18px; }
+.sec-head h2{ font:900 clamp(34px,4.5vw,62px)/1.08 var(--head); letter-spacing:-1px; margin:16px 0 10px; }
+.sec-head h2 .g{ color:var(--gold); }
+.sec-head p{ color:var(--soft); font-size:18px; }
+.sec-head .bar{ width:130px; height:3px; margin:18px auto 0; border-radius:3px; background:linear-gradient(90deg,transparent,var(--gold),transparent); }
 
-        .portals{
-            max-width:1320px;margin:36px auto 0;
-            padding:0 40px;
-            display:grid;
-            grid-template-columns:repeat(3,1fr);
-            gap:22px;
-            position:relative;z-index:5;
-        }
-        .portal{
-            position:relative;
-            border-radius:20px;
-            padding:26px 22px 24px;
-            min-height:290px;
-            overflow:hidden;
-            text-decoration:none;
-            color:white;
-            border:none;cursor:pointer;
-            font-family:'DM Sans',sans-serif;
-            text-align:left;
-            display:flex;flex-direction:column;
-            transition:transform .18s ease, box-shadow .18s ease;
-        }
-        .portal:hover{transform:translateY(-6px);box-shadow:0 20px 44px rgba(0,0,0,0.4);}
-        .p-restaurant{background:linear-gradient(160deg,#d0682e 0%,#9a3d14 100%);}
-        .p-supermarket{background:linear-gradient(160deg,#1f9a52 0%,#0f5c30 100%);}
-        .p-pharmacy{background:linear-gradient(160deg,#7b3fb5 0%,#4a1f7a 100%);}
-        .p-dhibic{background:linear-gradient(160deg,#1f6fd0 0%,#123a80 100%);}
-        .p-cashier{background:linear-gradient(160deg,#0e9488 0%,#065f56 100%);}
-        .p-waiter{background:linear-gradient(160deg,#c0392b 0%,#7b1f14 100%);}
-        .portal .p-ic{
-            width:60px;height:60px;border-radius:50%;
-            background:#fff;display:flex;align-items:center;justify-content:center;
-            font-size:26px;margin-bottom:64px;
-            box-shadow:0 6px 18px rgba(0,0,0,0.28);
-        }
-        .portal h3{font-family:'Syne',sans-serif;font-size:21px;font-weight:800;margin-bottom:10px;}
-        .portal p{font-size:13.5px;color:rgba(255,255,255,0.85);line-height:1.5;flex:1;}
-        .portal .access{
-            display:inline-flex;align-items:center;gap:8px;
-            margin-top:16px;padding:10px 18px;
-            background:rgba(255,255,255,0.95);
-            color:#1a1a1a;border-radius:24px;
-            font-size:13px;font-weight:700;width:fit-content;
-        }
-        .portal .access .arr{transition:.2s;}
-        .portal:hover .access .arr{transform:translateX(4px);}
+.portals{ display:grid; grid-template-columns:repeat(3,1fr); gap:28px; }
+.portal{
+    --c1:#f97316; --c2:#7c2d12; --glow:rgba(249,115,22,.55); --btn:#ffc21a; --btn-t:#1a1000;
+    position:relative; display:flex; min-height:280px; padding:30px 28px; border-radius:22px; overflow:hidden; cursor:pointer; text-align:left; border:none;
+    background:
+        radial-gradient(120% 120% at 100% 0%, rgba(255,255,255,.12) 0%, transparent 40%),
+        linear-gradient(135deg, var(--c1) -20%, var(--c2) 65%, #0a0f22 120%);
+    box-shadow:0 0 0 1.5px color-mix(in srgb, var(--c1) 70%, white 10%), 0 20px 50px -18px var(--glow);
+    transition:transform .35s cubic-bezier(.2,.8,.2,1), box-shadow .35s; transform-style:preserve-3d; will-change:transform;
+    color:#fff; font-family:var(--body);
+}
+.portal::before{ content:""; position:absolute; top:-40%; right:-30%; width:80%; height:120%; background:linear-gradient(200deg,rgba(255,255,255,.22),transparent 55%); transform:rotate(18deg); pointer-events:none; }
+.portal::after{ content:""; position:absolute; inset:0; background:linear-gradient(115deg,transparent 30%,rgba(255,255,255,.16) 48%,transparent 60%); transform:translateX(-120%); transition:transform .9s; pointer-events:none; }
+.portal:hover{ box-shadow:0 0 0 1.5px color-mix(in srgb, var(--c1) 85%, white 15%), 0 30px 70px -18px var(--glow), 0 0 40px -10px var(--glow); }
+.portal:hover::after{ transform:translateX(120%); }
+.portal .txt{ position:relative; z-index:2; display:flex; flex-direction:column; max-width:62%; transform:translateZ(30px); }
+.portal .pi{ width:60px; height:60px; border-radius:16px; display:flex; align-items:center; justify-content:center; font-size:28px; background:linear-gradient(135deg, color-mix(in srgb, var(--c1) 85%, white 15%), var(--c1)); box-shadow:0 10px 24px -6px var(--glow), inset 0 1px 0 rgba(255,255,255,.4); margin-bottom:22px; }
+.portal h3{ font:900 28px/1.08 var(--head); letter-spacing:-.4px; margin-bottom:12px; }
+.portal p{ font-size:15.5px; color:rgba(255,255,255,.86); line-height:1.5; flex:1; }
+.portal .go{ margin-top:22px; display:inline-flex; align-items:center; gap:10px; width:fit-content; padding:13px 22px; border-radius:26px; background:var(--btn); color:var(--btn-t); font-weight:800; font-size:15.5px; box-shadow:0 10px 22px -8px rgba(0,0,0,.5); transition:transform .2s; }
+.portal:hover .go{ transform:translateX(4px); }
+.portal .art{ position:absolute; right:4%; top:50%; transform:translateY(-50%) translateZ(60px); width:42%; height:80%; display:flex; align-items:center; justify-content:center; z-index:1; pointer-events:none; }
+.portal .art .big{ font-size:clamp(86px,8.5vw,128px); line-height:1; filter:drop-shadow(0 22px 26px rgba(0,0,0,.5)); animation:bob 5s ease-in-out infinite; position:relative; }
+.portal .art .sm{ position:absolute; font-size:clamp(34px,3.2vw,48px); filter:drop-shadow(0 12px 14px rgba(0,0,0,.45)); animation:bob 4s ease-in-out infinite; }
+.portal .art .sm.a{ right:2%; top:4%; animation-delay:-1.2s; }
+.portal .art .sm.b{ left:2%; bottom:6%; animation-delay:-2.4s; }
+.portal .art .plate{ position:absolute; bottom:6%; width:80%; height:18px; border-radius:50%; background:radial-gradient(ellipse at center, rgba(0,0,0,.5), transparent 70%); }
+@keyframes bob{ 0%,100%{ transform:translateY(0) rotate(0); } 50%{ transform:translateY(-12px) rotate(-3deg); } }
+.portal:nth-child(2) .art .big{ animation-delay:-.8s; } .portal:nth-child(3) .art .big{ animation-delay:-1.6s; }
+.portal:nth-child(4) .art .big{ animation-delay:-2.4s; } .portal:nth-child(5) .art .big{ animation-delay:-3.2s; } .portal:nth-child(6) .art .big{ animation-delay:-4s; }
+.steam{ position:absolute; top:-4%; left:42%; display:flex; gap:8px; }
+.steam i{ width:6px; height:34px; border-radius:6px; background:linear-gradient(to top, rgba(255,255,255,.5), transparent); filter:blur(2px); animation:steam 2.6s ease-in-out infinite; }
+.steam i:nth-child(2){ animation-delay:-.9s; } .steam i:nth-child(3){ animation-delay:-1.7s; }
+@keyframes steam{ 0%{ transform:translateY(10px) scaleY(.6); opacity:0; } 40%{ opacity:.9; } 100%{ transform:translateY(-22px) scaleY(1.1); opacity:0; } }
 
-        /* ===== FEATURE STRIP ===== */
-        .features{
-            max-width:1320px;margin:34px auto 0;
-            padding:0 40px;position:relative;z-index:5;
-        }
-        .features-inner{
-            display:grid;grid-template-columns:repeat(4,1fr);gap:14px;
-            background:rgba(255,255,255,0.04);
-            border:1px solid rgba(255,255,255,0.08);
-            border-radius:20px;padding:26px 30px;
-        }
-        .feat{display:flex;align-items:center;gap:14px;}
-        .feat .fic{
-            width:48px;height:48px;border-radius:12px;flex-shrink:0;
-            display:flex;align-items:center;justify-content:center;font-size:20px;
-        }
-        .feat.f1 .fic{background:rgba(31,111,208,0.2);}
-        .feat.f2 .fic{background:rgba(245,166,35,0.2);}
-        .feat.f3 .fic{background:rgba(123,63,181,0.2);}
-        .feat.f4 .fic{background:rgba(31,154,82,0.2);}
-        .feat h4{font-size:14.5px;font-weight:700;margin-bottom:3px;}
-        .feat p{font-size:12px;color:rgba(255,255,255,0.5);line-height:1.4;}
+.p-rest{ --c1:#f97316; --c2:#7c2d12; --glow:rgba(249,115,22,.6); --btn:linear-gradient(135deg,#ffd84d,#ffb300); }
+.p-super{ --c1:#16a34a; --c2:#064e1f; --glow:rgba(34,197,94,.55); --btn:#7ef0a0; --btn-t:#05310f; }
+.p-pharm{ --c1:#8b5cf6; --c2:#3b0f7a; --glow:rgba(139,92,246,.6); --btn:#d9c6ff; --btn-t:#2b0a5c; }
+.p-dhibic{ --c1:#2563eb; --c2:#0c2a7a; --glow:rgba(59,130,246,.6); --btn:#a8d4ff; --btn-t:#06214d; }
+.p-waiter{ --c1:#e11d48; --c2:#6b0d1c; --glow:rgba(239,68,68,.55); --btn:#ffc4c4; --btn-t:#5c0a12; }
+.p-cash{ --c1:#0d9488; --c2:#05463f; --glow:rgba(20,184,166,.55); --btn:#9ff5e6; --btn-t:#043b33; }
 
-        /* ===== CONTACT BAR ===== */
-        .contact-bar{
-            max-width:1320px;margin:22px auto 40px;
-            padding:0 40px;position:relative;z-index:5;
-        }
-        .contact-inner{
-            display:grid;grid-template-columns:repeat(4,1fr);gap:20px;
-            background:#ffffff;border-radius:18px;padding:22px 30px;
-        }
-        .cinfo{display:flex;align-items:center;gap:14px;}
-        .cinfo .cic{
-            width:46px;height:46px;border-radius:50%;flex-shrink:0;
-            display:flex;align-items:center;justify-content:center;font-size:19px;color:white;
-        }
-        .cinfo.c1 .cic{background:#1565c0;}
-        .cinfo.c2 .cic{background:#6a3fb5;}
-        .cinfo.c3 .cic{background:#1f9a52;}
-        .cinfo.c4 .cic{background:#e0651f;}
-        .cinfo .clbl{font-size:12px;color:#8a93a8;font-weight:600;}
-        .cinfo .cval{font-size:14px;color:#1a1a2e;font-weight:700;}
-        .cinfo a{color:inherit;text-decoration:none;}
+/* feature strip */
+.feats{ margin:46px 0 0; display:grid; grid-template-columns:repeat(4,1fr); background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.02)); border:1px solid var(--line); border-radius:24px; padding:24px 12px; }
+.feat{ display:flex; align-items:center; gap:16px; padding:4px 22px; border-left:1px solid var(--line); }
+.feat:first-child{ border-left:none; }
+.feat .fi{ width:60px; height:60px; border-radius:16px; background:rgba(255,255,255,.06); border:1px solid var(--line); display:flex; align-items:center; justify-content:center; font-size:28px; flex-shrink:0; }
+.feat b{ display:block; font-size:17px; margin-bottom:3px; } .feat small{ color:var(--soft); font-size:13.5px; }
 
-        .page-footer{text-align:center;padding:8px 20px 34px;position:relative;z-index:5;}
-        .page-footer p{color:rgba(255,255,255,0.4);font-size:12.5px;line-height:1.7;}
+/* contact */
+.contact{ margin:30px 0 0; display:grid; grid-template-columns:repeat(4,1fr); gap:16px; }
+.ci2{ display:flex; gap:14px; align-items:center; padding:18px; border-radius:18px; background:rgba(255,255,255,.04); border:1px solid var(--line); transition:.2s; }
+.ci2:hover{ background:rgba(255,255,255,.07); transform:translateY(-3px); }
+.ci2 .ic{ width:46px; height:46px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:19px; flex-shrink:0; }
+.ci2 small{ display:block; color:var(--dim); font-size:12px; font-weight:600; } .ci2 b{ font-size:14px; word-break:break-word; }
+footer{ text-align:center; padding:40px 0 34px; color:var(--dim); font-size:13px; line-height:1.7; }
 
-        /* ===== OVERLAY + POPUPS ===== */
-        .overlay{
-            display:none;position:fixed;inset:0;
-            background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);z-index:100;
-        }
-        .overlay.show{display:block;}
-        .popup{
-            display:none;position:fixed;top:50%;left:50%;
-            transform:translate(-50%,-50%) scale(0.95);
-            background:white;padding:28px 26px;border-radius:22px;
-            width:92%;max-width:380px;
-            box-shadow:0 20px 60px rgba(0,0,0,0.4);
-            z-index:200;color:#111;opacity:0;
-            transition:transform .2s ease, opacity .2s ease;
-        }
-        .popup.show{display:block;transform:translate(-50%,-50%) scale(1);opacity:1;}
-        .popup.wide{max-width:520px;}
-        .popup h3{font-family:'Syne',sans-serif;font-weight:800;font-size:21px;margin-bottom:16px;color:#111;}
-        .popup input{
-            width:100%;padding:13px 15px;margin:6px 0;
-            border:1.5px solid #e0e0e0;border-radius:10px;box-sizing:border-box;
-            font-size:15px;font-family:'DM Sans',sans-serif;outline:none;
-            color:#111;background:#fafafa;transition:.2s;
-        }
-        .popup input:focus{border-color:var(--teal);background:white;box-shadow:0 0 0 3px rgba(0,150,136,0.1);}
-        .popup-btn{
-            display:block;text-decoration:none;padding:13px;margin:8px 0;
-            border-radius:10px;color:white;font-weight:600;font-size:15px;
-            text-align:center;border:none;width:100%;cursor:pointer;transition:.2s;
-            font-family:'DM Sans',sans-serif;
-        }
-        .popup-btn:hover{opacity:.9;}
-        .p-blue{background:#1565c0;}
-        .p-green{background:#25D366;}
-        .p-purple{background:#6a1b9a;}
-        .p-orange{background:#e0651f;}
-        .p-gold{background:linear-gradient(135deg,#f5c842,#e0a800);color:#1a1000;}
-        .close-btn{
-            display:block;width:100%;padding:11px;margin-top:10px;
-            background:none;border:1.5px solid #ddd;border-radius:10px;
-            color:#666;font-size:14px;font-weight:600;cursor:pointer;
-            font-family:'DM Sans',sans-serif;transition:.2s;
-        }
-        .close-btn:hover{background:#f5f5f5;}
-        .msg-box{padding:10px 14px;border-radius:8px;font-size:13px;margin-top:8px;display:none;}
-        .msg-error{background:#fff0f0;color:#c62828;border-left:4px solid #c62828;}
-        .msg-success{background:#f0fff4;color:#2e7d32;border-left:4px solid #2e7d32;}
-        .msg-info{background:#f0f8ff;color:#1565c0;border-left:4px solid #1565c0;}
-        .spinner{
-            display:inline-block;width:16px;height:16px;
-            border:2px solid rgba(255,255,255,0.3);border-top:2px solid white;
-            border-radius:50%;animation:spin .7s linear infinite;margin-right:6px;vertical-align:middle;
-        }
-        @keyframes spin{to{transform:rotate(360deg);}}
+/* reveal */
+.rv{ opacity:0; transform:translateY(34px); transition:opacity .8s cubic-bezier(.2,.8,.2,1), transform .8s cubic-bezier(.2,.8,.2,1); }
+.rv.in{ opacity:1; transform:none; }
+.portal.rv{ transform:translateY(40px) scale(.97); }
+.portal.rv.in{ transform:none; }
 
-        /* INFO MODAL SOMALI CONTENT */
-        .info-body{color:#333;font-size:14.5px;line-height:1.75;max-height:60vh;overflow-y:auto;}
-        .info-body p{margin-bottom:12px;}
-        .info-body ul{margin:6px 0 14px 20px;}
-        .info-body li{margin-bottom:7px;}
-        .info-body .tag{
-            display:inline-block;background:#f0f4ff;color:#1565c0;
-            padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700;margin-bottom:14px;
-        }
-        .info-choose{display:flex;flex-direction:column;gap:10px;}
-        .info-choice{
-            display:flex;align-items:center;gap:14px;
-            padding:16px;border-radius:14px;border:1.5px solid #eee;
-            cursor:pointer;transition:.15s;background:#fafafa;text-align:left;width:100%;
-            font-family:'DM Sans',sans-serif;
-        }
-        .info-choice:hover{border-color:var(--teal);background:#f4fdfb;transform:translateX(3px);}
-        .info-choice .ci{width:44px;height:44px;border-radius:12px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:22px;color:white;}
-        .info-choice.r .ci{background:#d0682e;}
-        .info-choice.s .ci{background:#1f9a52;}
-        .info-choice.p .ci{background:#7b3fb5;}
-        .info-choice .ctxt h4{font-size:15px;font-weight:700;color:#1a1a2e;margin-bottom:2px;}
-        .info-choice .ctxt p{font-size:12.5px;color:#888;}
+/* ---------- popups (kept from the old page) ---------- */
+.overlay{ display:none; position:fixed; inset:0; background:rgba(2,6,23,.65); backdrop-filter:blur(5px); -webkit-backdrop-filter:blur(5px); z-index:100; }
+.overlay.show{ display:block; }
+.popup{ display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%) scale(.95); background:#fff; padding:28px 26px; border-radius:24px; width:92%; max-width:390px; max-height:90vh; overflow-y:auto; box-shadow:0 30px 80px rgba(0,0,0,.5); z-index:200; color:#111; opacity:0; transition:transform .2s, opacity .2s; }
+.popup.show{ display:block; transform:translate(-50%,-50%) scale(1); opacity:1; }
+.popup.wide{ max-width:540px; }
+.popup h3{ font:900 21px var(--head); margin-bottom:16px; color:#0f172a; }
+.popup input{ width:100%; padding:13px 15px; margin:6px 0; border:1.5px solid #e2e8f0; border-radius:12px; font-size:15px; font-family:var(--body); outline:none; color:#111; background:#f8fafc; transition:.2s; }
+.popup input:focus{ border-color:#f59e0b; background:#fff; box-shadow:0 0 0 4px rgba(245,158,11,.15); }
+.popup-btn{ display:block; padding:13px; margin:8px 0; border-radius:12px; color:#fff; font-weight:700; font-size:15px; text-align:center; border:none; width:100%; cursor:pointer; transition:.2s; font-family:var(--body); }
+.popup-btn:hover{ filter:brightness(1.05); }
+.p-blue{ background:#1565c0; } .p-green{ background:#25D366; } .p-purple{ background:#6a1b9a; } .p-orange{ background:#e0651f; }
+.p-gold{ background:linear-gradient(135deg,#ffd84d,#ffb300); color:#1a1000; }
+.close-btn{ display:block; width:100%; padding:12px; margin-top:10px; background:none; border:1.5px solid #e2e8f0; border-radius:12px; color:#475569; font-size:14px; font-weight:700; cursor:pointer; font-family:var(--body); }
+.close-btn:hover{ background:#f8fafc; }
+.msg-box{ padding:10px 14px; border-radius:10px; font-size:13px; margin-top:8px; display:none; }
+.msg-error{ background:#fff0f0; color:#c62828; border-left:4px solid #c62828; }
+.msg-success{ background:#f0fff4; color:#2e7d32; border-left:4px solid #2e7d32; }
+.msg-info{ background:#f0f8ff; color:#1565c0; border-left:4px solid #1565c0; }
+.spinner{ display:inline-block; width:16px; height:16px; border:2px solid rgba(0,0,0,.2); border-top-color:#1a1000; border-radius:50%; animation:spin .7s linear infinite; margin-right:6px; vertical-align:middle; }
+@keyframes spin{ to{ transform:rotate(360deg); } }
+.info-body{ color:#334155; font-size:14.5px; line-height:1.75; }
+.info-body p{ margin-bottom:12px; } .info-body ul{ margin:6px 0 14px 20px; } .info-body li{ margin-bottom:7px; }
+.info-body .tag{ display:inline-block; background:#fff7e0; color:#b45309; padding:3px 11px; border-radius:20px; font-size:12px; font-weight:800; margin-bottom:14px; }
+.info-choose{ display:flex; flex-direction:column; gap:10px; }
+.info-choice{ display:flex; align-items:center; gap:14px; padding:15px; border-radius:16px; border:1.5px solid #eef2f7; cursor:pointer; background:#f8fafc; text-align:left; width:100%; font-family:var(--body); transition:.15s; }
+.info-choice:hover{ border-color:#f59e0b; background:#fffbeb; transform:translateX(3px); }
+.info-choice .ci{ width:46px; height:46px; border-radius:13px; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:22px; }
+.info-choice.r .ci{ background:#ffedd5; } .info-choice.s .ci{ background:#dcfce7; } .info-choice.p .ci{ background:#ede9fe; }
+.info-choice h4{ font-size:15px; color:#0f172a; } .info-choice p{ font-size:12.5px; color:#64748b; }
+.plans{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:8px; }
+.plan{ border:1.5px solid #e2e8f0; border-radius:16px; padding:16px; }
+.plan h4{ font:900 17px var(--head); color:#0f172a; } .plan p{ font-size:13px; color:#64748b; margin-top:6px; line-height:1.5; }
+.plan.f{ border-color:#86efac; background:#f0fdf4; } .plan.p{ border-color:#c7d2fe; background:#eef2ff; }
 
-        /* ===== FAB ===== */
-        .fab{
-            position:fixed;bottom:24px;right:24px;
-            width:56px;height:56px;border-radius:50%;
-            color:white;font-size:22px;border:none;cursor:pointer;
-            box-shadow:0 4px 16px rgba(0,0,0,0.35);z-index:50;
-            background:#25D366;transition:.2s;
-        }
-        .fab:hover{transform:scale(1.08);}
-        .fab-popup{
-            display:none;position:fixed;bottom:90px;right:24px;
-            background:white;padding:18px;border-radius:16px;width:240px;
-            box-shadow:0 8px 30px rgba(0,0,0,0.25);z-index:200;color:#111;
-        }
-        .fab-popup.show{display:block;}
+.fab{ position:fixed; bottom:22px; right:22px; width:58px; height:58px; border-radius:50%; color:#fff; font-size:24px; border:none; cursor:pointer; box-shadow:0 10px 26px rgba(37,211,102,.45); z-index:60; background:#25D366; transition:.2s; }
+.fab::before{ content:""; position:absolute; inset:0; border-radius:50%; border:2px solid #25D366; animation:ring 2.2s ease-out infinite; }
+@keyframes ring{ from{ transform:scale(1); opacity:.8; } to{ transform:scale(1.7); opacity:0; } }
+.fab:hover{ transform:scale(1.08); }
+.fab-popup{ display:none; position:fixed; bottom:92px; right:22px; background:#fff; padding:16px; border-radius:18px; width:250px; box-shadow:0 20px 50px rgba(0,0,0,.35); z-index:200; color:#111; }
+.fab-popup.show{ display:block; animation:pop .16s ease-out; }
 
-        /* ===== RESPONSIVE ===== */
-        @media (max-width:1024px){
-            .portals{grid-template-columns:1fr 1fr;}
-            .features-inner{grid-template-columns:1fr 1fr;}
-            .contact-inner{grid-template-columns:1fr 1fr;}
-        }
-        @media (max-width:860px){
-            .hero{grid-template-columns:1fr;padding-top:24px;}
-            .hero-visual{order:-1;}
-            .hero h1{font-size:42px;}
-            .nav-links{
-                display:none;position:absolute;top:70px;right:20px;left:20px;
-                flex-direction:column;gap:0;align-items:stretch;
-                background:#0f1c3d;border:1px solid rgba(255,255,255,0.1);
-                border-radius:14px;padding:8px;z-index:9998;
-            }
-            .nav-links.open{display:flex;}
-            .nav-links a{padding:14px 16px;border-radius:10px;}
-            .nav-links a.active::after{display:none;}
-            .nav-links a:hover{background:rgba(255,255,255,0.06);}
-            .mobile-nav-toggle{display:flex;}
-        }
-        @media (max-width:560px){
-            .nav{padding:16px 20px;}
-            .hero{padding:20px;}
-            .hero h1{font-size:34px;}
-            .portals,.features,.contact-bar{padding:0 20px;}
-            .portals{grid-template-columns:1fr;}
-            .features-inner,.contact-inner{grid-template-columns:1fr;}
-            .section-head .eyebrow{font-size:23px;}
-            .theme-toggle span{display:none;}
-        }
-    </style>
+/* ---------- responsive ---------- */
+@media (max-width:1180px){
+    .links a, .links button.lk{ padding:9px 11px; font-size:14px; }
+    .pill span.t{ display:none; } .pill{ padding:0 13px; }
+    .cats{ grid-template-columns:repeat(3,1fr); row-gap:18px; } .cat:nth-child(4){ border-left:none; }
+    .portals{ grid-template-columns:1fr 1fr; }
+    .feats{ grid-template-columns:1fr 1fr; row-gap:18px; } .feat:nth-child(3){ border-left:none; }
+    .contact{ grid-template-columns:1fr 1fr; }
+}
+@media (max-width:980px){
+    .links{ position:fixed; top:78px; left:14px; right:14px; flex-direction:column; align-items:stretch; gap:2px; background:#0d1733; border:1px solid var(--line); border-radius:20px; padding:10px; box-shadow:0 30px 60px rgba(0,0,0,.5); display:none; max-height:calc(100vh - 100px); overflow-y:auto; }
+    .links.open{ display:flex; animation:pop .18s ease-out; }
+    .links a, .links button.lk{ width:100%; justify-content:space-between; padding:14px 16px; font-size:15.5px; }
+    .dd{ position:static; transform:none; opacity:1; pointer-events:auto; display:none; box-shadow:none; background:rgba(255,255,255,.03); margin:4px 0 6px; min-width:0; }
+    .has-dd.open .dd{ display:block; transform:none; }
+    .burger{ display:flex; }
+    .hero{ grid-template-columns:1fr; min-height:0; padding-top:20px; }
+    .stage{ height:430px; margin:10px -10px 0; }
+    .hero-txt{ text-align:left; }
+}
+@media (max-width:360px){ .wordmark .w:last-child{ display:none; } }
+@media (max-width:640px){
+    .wrap{ padding:0 14px; }
+    .nav-in{ height:66px; gap:10px; }
+    .links{ top:66px; }
+    .wordmark{ font-size:14.5px; gap:5px; letter-spacing:0; }
+    .brand{ gap:10px; min-width:0; }
+    .nav-r{ gap:8px; margin-left:auto; }
+    .cube-wrap, .cube{ width:38px; height:38px; } .cube .f{ font-size:19px; }
+    .cube .front{ transform:translateZ(19px); } .cube .back{ transform:rotateY(180deg) translateZ(19px); }
+    .cube .right{ transform:rotateY(90deg) translateZ(19px); } .cube .left{ transform:rotateY(-90deg) translateZ(19px); }
+    .cube .top{ transform:rotateX(90deg) translateZ(19px); } .cube .bottom{ transform:rotateX(-90deg) translateZ(19px); }
+    .nav-r .pill, .nav-r .round.moon{ display:none; }
+    .nav-r .btn-gold{ display:none; }
+    .round{ width:40px; height:40px; }
+    .stage{ height:310px; }
+    .halo{ width:300px; height:300px; right:2%; }
+    .laptop{ width:86%; right:9%; top:30px; }
+    .dash{ height:205px; } .dash-side{ display:none; } .dash{ grid-template-columns:1fr; }
+    .dash-main{ padding:10px; gap:7px; }
+    .stats{ grid-template-columns:1fr 1fr; } .st:nth-child(n+3){ display:none; }
+    .phone{ width:26%; min-width:90px; top:96px; border-radius:20px; padding:5px; } .phone-in{ border-radius:15px; padding:16px 6px 6px; }
+    .ptiles span{ font-size:13px; } .ptiles span small{ font-size:5.5px; }
+    .printer{ width:96px; bottom:14px; left:0; } .paper{ left:16px; right:16px; height:60px; bottom:52px; } .pbody{ height:62px; }
+    .toast-mock{ right:4%; bottom:6px; transform-origin:right; } .toast-mock b{ font-size:10.5px; } .toast-mock small{ font-size:9px; } .toast-mock .tb{ width:26px; height:26px; font-size:13px; }
+    .hero h1{ letter-spacing:-1px; margin:18px 0 16px; }
+    .lead{ font-size:16px; }
+    .checks{ gap:12px; flex-direction:column; margin:22px 0 26px; } .checks div + div{ padding-left:0; border-left:none; }
+    .cta .btn-gold, .btn-line{ width:100%; justify-content:center; height:54px; }
+    .cats{ grid-template-columns:1fr 1fr; padding:16px 6px; } .cat{ border-left:none; padding:6px 10px; } .cat .ci{ width:44px; height:44px; font-size:20px; }
+    .cat b{ font-size:14px; } .cat small{ font-size:12px; }
+    .sec{ padding:64px 0 10px; }
+    .sec-head p{ font-size:15.5px; }
+    .portals{ grid-template-columns:1fr; gap:18px; }
+    .portal{ min-height:230px; padding:24px 20px; }
+    .portal h3{ font-size:24px; } .portal p{ font-size:14.5px; }
+    .portal .art .big{ font-size:92px; }
+    .feats{ grid-template-columns:1fr; padding:14px; row-gap:12px; } .feat{ border-left:none; padding:6px; }
+    .contact{ grid-template-columns:1fr; }
+    .plans{ grid-template-columns:1fr; }
+}
+@media (hover:none){ .portal{ transform:none !important; } }
+@media (prefers-reduced-motion:reduce){
+    *, *::before, *::after{ animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important; }
+    .rv{ opacity:1; transform:none; }
+}
+</style>
 </head>
-
 <body>
-
-<!-- OVERLAY -->
+<div class="bg" aria-hidden="true"><div class="grid"></div><div class="orb o1"></div><div class="orb o2"></div><div class="orb o3"></div></div>
 <div class="overlay" id="overlay" onclick="closeAll()"></div>
 
-<!-- ===== NAVBAR ===== -->
-<nav class="nav">
-    <div class="nav-logo">
-        <div class="mark"><img src="{{ url_for('static', filename='logo.png') }}" onerror="this.parentNode.innerHTML='S'"></div>
-        <span><span class="accent">SAHAL</span> SERVER POS</span>
+<!-- ================= NAV ================= -->
+<header class="nav" id="nav">
+    <div class="wrap nav-in">
+        <a href="/" class="brand" aria-label="Sahal Server POS home">
+            <div class="cube-wrap"><div class="cube">
+                <div class="f front"><img src="{{ url_for('static', filename='logo.png') }}" alt="" onerror="this.replaceWith(document.createTextNode('S'))"></div>
+                <div class="f back">S</div><div class="f right">S</div><div class="f left">S</div><div class="f top"></div><div class="f bottom"></div>
+            </div></div>
+            <div class="wordmark" aria-label="Sahal Server POS">
+                <span class="w gold"><span>S</span><span>A</span><span>H</span><span>A</span><span>L</span></span>
+                <span class="w"><span>S</span><span>E</span><span>R</span><span>V</span><span>E</span><span>R</span></span>
+                <span class="w"><span>P</span><span>O</span><span>S</span></span>
+            </div>
+        </a>
+
+        <ul class="links" id="navLinks">
+            <li><a href="#top" class="on">Home</a></li>
+            <li class="has-dd">
+                <button class="lk" onclick="toggleDD(this)">Features <span class="car">▼</span></button>
+                <div class="dd">
+                    <a href="#features" onclick="closeNav()">⚡ <span>All features<small>Waxa nidaamku kuu qabto</small></span></a>
+                    <button onclick="openPopup('aboutPopup')">ℹ️ <span>Ku saabsan<small>Sahal Server POS</small></span></button>
+                </div>
+            </li>
+            <li class="has-dd">
+                <button class="lk" onclick="toggleDD(this)">Solutions <span class="car">▼</span></button>
+                <div class="dd">
+                    <button onclick="openPopup('infoRestaurant')">🍽️ <span>Restaurants<small>Waiter · Kitchen · Cashier</small></span></button>
+                    <button onclick="openPopup('infoSupermarket')">🛒 <span>Supermarkets<small>Barcode · Stock</small></span></button>
+                    <button onclick="openPopup('infoPharmacy')">💊 <span>Pharmacies<small>Daawo · Deyn · Expiry</small></span></button>
+                    <button onclick="openPopup('dashboardPopup')">💎 <span>Dhibic Dahab<small>E-commerce</small></span></button>
+                </div>
+            </li>
+            <li><button class="lk" onclick="openPopup('pricingPopup')">Pricing</button></li>
+            <li><button class="lk" onclick="openPopup('aboutPopup')">About</button></li>
+            <li><button class="lk" onclick="openPopup('contactPopup')">Contact</button></li>
+        </ul>
+
+        <div class="nav-r">
+            <button class="pill" onclick="toggleFab('supportPopup')">🎧 <span class="t">Support</span></button>
+            <div style="position:relative;">
+                <button class="round" onclick="toggleAdminMenu(event)" aria-label="More">⠿</button>
+                <div class="admin-menu" id="adminMenu">
+                    <a href="/admin">🛠️ System Admin</a>
+                    <a href="/create_id_card">🪪 Create ID Card</a>
+                    <a href="/imam_media_login">🕌 Imam Media</a>
+                    <a href="/become_media_team">🎥 Become Media Team</a>
+                </div>
+            </div>
+            <a href="#portals" class="btn-gold">Get <span class="t2">Started</span> <span class="ar">→</span></a>
+            <button class="round burger" onclick="toggleNav()" aria-label="Menu">☰</button>
+        </div>
     </div>
+</header>
 
-    <ul class="nav-links" id="navLinks">
-        <li><a href="/" class="active">Home</a></li>
-        <li><a onclick="openPopup('aboutPopup')">About</a></li>
-        <li><a onclick="openPopup('infoChoosePopup')">Info</a></li>
-        <li><a onclick="openPopup('contactPopup')">Contact</a></li>
-    </ul>
-
-    <div class="nav-right">
-        <div class="theme-toggle" onclick="toggleFab('supportPopup')">🌙 <span>Support</span></div>
-        <div class="admin-wrap">
-            <div class="menu-btn" onclick="toggleAdminMenu()">⠿</div>
-            <div class="admin-menu" id="adminMenu">
-                <a href="/admin">🛠️ System Admin</a>
-                <a href="/create_id_card">🪪 Create ID Card</a>
-                <a href="/imam_media_login">🕌 Imam Media</a>
-                <a href="/become_media_team">🎥 Become Media Team</a>
+<main id="top">
+<div class="wrap">
+    <!-- ================= HERO ================= -->
+    <section class="hero">
+        <div class="hero-txt">
+            <div class="chip"><b>⚡</b> Smart POS Solution</div>
+            <h1>
+                <span class="line"><span>All-in-One</span></span>
+                <span class="line"><span>POS System for</span></span>
+                <span class="line"><span>Your <span class="biz">Business</span></span></span>
+            </h1>
+            <p class="lead">Sahal Server POS wuxuu kaa caawiyaa maamulka makhaayadaha, farmasiyada, iyo dukaamada waaweyn si sahal, deg deg ah, ammaan ah oo casri ah.</p>
+            <div class="checks">
+                <div><i>✓</i><span>Maamulka Iibka<small>(POS)</small></span></div>
+                <div><i>✓</i><span>Kaydka &amp; Alaabta<small>(Inventory)</small></span></div>
+                <div><i>✓</i><span>Warbixinno Faa'iido leh<small>(Reports &amp; Analytics)</small></span></div>
+            </div>
+            <div class="cta">
+                <a href="#portals" class="btn-gold">Get Started Free <span class="ar">→</span></a>
+                <button class="btn-line" onclick="openPopup('aboutPopup')"><span class="pl">▶</span> Watch Demo</button>
+            </div>
+            <div class="trust">
+                <div class="it">
+                    <div class="ic3"><span style="background:#ffedd5">🍽️</span><span style="background:#dcfce7">🛒</span><span style="background:#ede9fe">💊</span></div>
+                    <span><b>Hal nidaam · ganacsi kasta</b>Makhaayad, supermarket, farmasi</span>
+                </div>
+                <div class="it"><span style="font-size:24px">☁️</span><span><b>Cloud · 24/7</b>Taleefan, kombiyuutar, tablet</span></div>
             </div>
         </div>
-        <div class="menu-btn mobile-nav-toggle" onclick="toggleMobileNav()">☰</div>
-    </div>
-</nav>
 
-<!-- ===== HERO ===== -->
-<section class="hero">
-    <div class="hero-text">
-        <div class="badge-pill">✦ Smart POS Solution</div>
-        <h1>All-in-One POS<br>System for Your<br><span class="accent">Business</span></h1>
-        <p class="hero-sub">Sahal Server POS wuxuu kaa caawiyaa maamulka makhaayadaha, farmasiyada, iyo dukaamada waaweyn si sahal iyo hufan. Deg deg, ammaan iyo la isku halleyn karo.</p>
-        <div class="hero-cta">
-            <a href="#portals" class="btn-primary">Get Started <span>→</span></a>
-            <button class="btn-ghost" onclick="openPopup('aboutPopup')"><span class="play">▶</span> Watch Demo</button>
-        </div>
-    </div>
-
-    <div class="hero-visual">
-        <div class="mock">
-            <div class="mock-inner">
-                <div class="mock-side">
-                    <div class="brand"><div class="dot"></div> Dashboard</div>
-                    <div class="mock-nav">
-                        <span class="on">Overview</span>
-                        <span>Orders</span>
-                        <span>Products</span>
-                        <span>Customers</span>
-                        <span>Reports</span>
-                        <span>Settings</span>
-                    </div>
-                </div>
-                <div class="mock-main">
-                    <h4>Dashboard</h4>
-                    <div class="mock-stats">
-                        <div class="mock-stat"><div class="lbl">Today's Sales</div><div class="val">$2,350</div><div class="up">▲ 12.5%</div></div>
-                        <div class="mock-stat"><div class="lbl">Orders</div><div class="val">48</div><div class="up">▲ 8.3%</div></div>
-                        <div class="mock-stat"><div class="lbl">Products</div><div class="val">128</div><div class="up">▲ 6.1%</div></div>
-                    </div>
-                    <div class="mock-chart">
-                        <div class="ctitle">Sales Overview</div>
-                        <div class="mock-bars">
-                            <i style="height:40%"></i><i style="height:62%"></i><i style="height:48%"></i>
-                            <i style="height:78%"></i><i style="height:58%"></i><i style="height:88%"></i><i style="height:70%"></i>
+        <div class="stage" aria-hidden="true">
+            <div class="halo"></div>
+            <div class="laptop">
+                <div class="screen">
+                    <div class="dash">
+                        <div class="dash-side">
+                            <div class="dash-logo">SAHAL<small>SERVER POS</small></div>
+                            <div class="dash-nav">
+                                <span class="on">▦ Dashboard</span><span>🧾 Sales</span><span>📦 Products</span><span>🗂️ Inventory</span>
+                                <span>👥 Customers</span><span>📊 Reports</span><span>🧑‍💼 Staff</span><span>⚙️ Settings</span>
+                            </div>
+                        </div>
+                        <div class="dash-main">
+                            <div class="dash-top"><div><h5>Dashboard</h5><p>Ku soo dhowow, Manager 👋</p></div><div class="dash-date" id="mockDate">📅 Today</div></div>
+                            <div class="stats">
+                                <div class="st"><div class="si" style="background:#2563eb">🛒</div><div><div class="k">Total Sales</div><div class="v" data-count="2350" data-pre="$">$0</div><div class="u">↗ +12.5%</div></div></div>
+                                <div class="st"><div class="si" style="background:#f59e0b">🛍️</div><div><div class="k">Total Orders</div><div class="v" data-count="48">0</div><div class="u">↗ +8.3%</div></div></div>
+                                <div class="st"><div class="si" style="background:#16a34a">📦</div><div><div class="k">Products</div><div class="v" data-count="128">0</div><div class="u">↗ +6.1%</div></div></div>
+                                <div class="st"><div class="si" style="background:#0d9488">📈</div><div><div class="k">Profit</div><div class="v" data-count="615" data-pre="$">$0</div><div class="u">↗ +14.2%</div></div></div>
+                            </div>
+                            <div class="charts">
+                                <div class="cbox"><h6>Sales Overview</h6>
+                                    <svg viewBox="0 0 300 110" preserveAspectRatio="none">
+                                        <defs><linearGradient id="ga" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffb300" stop-opacity=".45"/><stop offset="1" stop-color="#ffb300" stop-opacity="0"/></linearGradient></defs>
+                                        <g stroke="rgba(255,255,255,.06)"><line x1="0" y1="25" x2="300" y2="25"/><line x1="0" y1="55" x2="300" y2="55"/><line x1="0" y1="85" x2="300" y2="85"/></g>
+                                        <path class="area-path" d="M5,95 L45,72 L85,80 L125,50 L165,58 L205,40 L245,46 L295,12 L295,110 L5,110 Z" fill="url(#ga)"/>
+                                        <path class="line-path" d="M5,95 L45,72 L85,80 L125,50 L165,58 L205,40 L245,46 L295,12" fill="none" stroke="#ffc21a" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+                                        <g fill="#ffc21a"><circle class="pt" style="animation-delay:.9s" cx="45" cy="72" r="3.5"/><circle class="pt" style="animation-delay:1.2s" cx="125" cy="50" r="3.5"/><circle class="pt" style="animation-delay:1.5s" cx="205" cy="40" r="3.5"/><circle class="pt" style="animation-delay:1.9s" cx="295" cy="12" r="4"/></g>
+                                    </svg>
+                                </div>
+                                <div class="cbox"><h6>Top Categories</h6>
+                                    <svg class="donut" viewBox="0 0 80 80" style="width:62%;">
+                                        <circle cx="40" cy="40" r="28" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="11"/>
+                                        <g transform="rotate(-90 40 40)" fill="none" stroke-width="11">
+                                            <circle class="seg" cx="40" cy="40" r="28" stroke="#ffb300" style="--d:79" pathLength="176"/>
+                                            <circle class="seg" cx="40" cy="40" r="28" stroke="#22c55e" style="--d:35;stroke-dashoffset:-79;animation-delay:.2s" pathLength="176"/>
+                                            <circle class="seg" cx="40" cy="40" r="28" stroke="#3b82f6" style="--d:32;stroke-dashoffset:-114;animation-delay:.4s" pathLength="176"/>
+                                            <circle class="seg" cx="40" cy="40" r="28" stroke="#ec4899" style="--d:30;stroke-dashoffset:-146;animation-delay:.6s" pathLength="176"/>
+                                        </g>
+                                    </svg>
+                                    <div class="legend"><div><i style="background:#ffb300"></i>Restaurant</div><div><i style="background:#22c55e"></i>Pharmacy</div><div><i style="background:#3b82f6"></i>Supermarket</div><div><i style="background:#ec4899"></i>Others</div></div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
+                <div class="base"></div>
+                <div class="kbd-glow"></div>
             </div>
+            <div class="phone">
+                <div class="phone-in">
+                    <div class="pl">SAHAL<small>SERVER POS</small></div>
+                    <div class="ptiles"><span>🛒<small>Sales</small></span><span>📦<small>Products</small></span><span>🗂️<small>Inventory</small></span><span>📊<small>Reports</small></span></div>
+                    <div class="glow"></div>
+                </div>
+            </div>
+            <div class="printer"><div class="paper"><b>SAHAL<br>SERVER POS</b><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="pbody"><span class="led"></span><span class="led y"></span></div></div>
+            <div class="toast-mock"><span class="tb">🔔</span><div><b>Dalab cusub · Miiska 7</b><small>3× Bariis · 2× Shaah — $16.00</small></div></div>
         </div>
+    </section>
+
+    <!-- category strip -->
+    <div class="cats rv">
+        <div class="cat"><div class="ci">🏪</div><div><b>Makhaayado</b><small>Restaurants</small></div></div>
+        <div class="cat"><div class="ci">💊</div><div><b>Farmasiyo</b><small>Pharmacies</small></div></div>
+        <div class="cat"><div class="ci">🛒</div><div><b>Dukaamo</b><small>Retail Stores</small></div></div>
+        <div class="cat"><div class="ci">🧺</div><div><b>Supermarket</b><small>Supermarkets</small></div></div>
+        <div class="cat"><div class="ci">🏛️</div><div><b>Dugsiyo / Hay'ado</b><small>Schools &amp; Institutions</small></div></div>
+        <div class="cat"><div class="ci">🔳</div><div><b>Ganacsi Kale</b><small>Other Businesses</small></div></div>
     </div>
-</section>
 
-<!-- ===== CHOOSE YOUR PORTAL ===== -->
-<div class="section-head" id="portals">
-    <div class="eyebrow"><span class="rule"></span><span class="grid-ic">▦</span> Choose Your Portal <span class="rule"></span></div>
-    <p>Select a portal to access your management system</p>
+    <!-- ================= PORTALS ================= -->
+    <section class="sec" id="portals">
+        <div class="sec-head rv">
+            <div class="sec-chip"><b>▦</b> Access Portals</div>
+            <h2>Choose <span class="g">Your Portal</span></h2>
+            <p>Select a portal to access your management system</p>
+            <div class="bar"></div>
+        </div>
+
+        <div class="portals">
+            <a href="/login" class="portal p-rest rv" data-tilt>
+                <div class="txt"><div class="pi">🍴</div><h3>Restaurant<br>Portal</h3><p>Manage your restaurant, menu, orders and staff efficiently.</p><span class="go">Access Portal →</span></div>
+                <div class="art"><span class="big">🍔</span><span class="sm a">🥤</span><span class="sm b">🍟</span><div class="plate"></div></div>
+            </a>
+            <a href="/supermarket_login" class="portal p-super rv" data-tilt>
+                <div class="txt"><div class="pi">🛒</div><h3>Supermarket<br>Portal</h3><p>Manage products, stock, sales and inventory easily.</p><span class="go">Access Portal →</span></div>
+                <div class="art"><span class="big">🛒</span><span class="sm a">🥦</span><span class="sm b">🥛</span><div class="plate"></div></div>
+            </a>
+            <a href="/pharmacy_login" class="portal p-pharm rv" data-tilt>
+                <div class="txt"><div class="pi">💊</div><h3>Pharmacy<br>Portal</h3><p>Manage medicines, prescriptions, sales and inventory with ease.</p><span class="go">Access Portal →</span></div>
+                <div class="art"><span class="big">💊</span><span class="sm a">🧪</span><span class="sm b">🩺</span><div class="plate"></div></div>
+            </a>
+            <button type="button" class="portal p-dhibic rv" data-tilt onclick="openPopup('dashboardPopup')">
+                <div class="txt"><div class="pi">💎</div><h3>Dhibic Dahab<br>Dashboard</h3><p>Access your e-commerce dashboard and manage your online business.</p><span class="go">Go to Dashboard →</span></div>
+                <div class="art"><span class="big">💻</span><span class="sm a">🛍️</span><span class="sm b">💳</span><div class="plate"></div></div>
+            </button>
+            <a href="/waiter_login" class="portal p-waiter rv" data-tilt>
+                <div class="txt"><div class="pi">🧑‍🍳</div><h3>Waiter<br>Portal</h3><p>Take table orders and send them straight to the kitchen.</p><span class="go">Access Portal →</span></div>
+                <div class="art"><span class="big" style="position:relative">🍽️<span class="steam"><i></i><i></i><i></i></span></span><span class="sm a">🛎️</span><div class="plate"></div></div>
+            </a>
+            <a href="/cashier_login" class="portal p-cash rv" data-tilt>
+                <div class="txt"><div class="pi">🖨️</div><h3>Cashier<br>Portal</h3><p>Collect payments, close orders and print receipts.</p><span class="go">Access Portal →</span></div>
+                <div class="art"><span class="big">🧾</span><span class="sm a">💵</span><span class="sm b">💳</span><div class="plate"></div></div>
+            </a>
+        </div>
+
+        <div class="feats rv" id="features">
+            <div class="feat"><div class="fi">⚡</div><div><b>All-in-One POS</b><small>One platform for your business</small></div></div>
+            <div class="feat"><div class="fi">🛡️</div><div><b>Secure &amp; Reliable</b><small>Your data is always protected</small></div></div>
+            <div class="feat"><div class="fi">📊</div><div><b>Real-time Reports</b><small>Track sales, stock and performance</small></div></div>
+            <div class="feat"><div class="fi">☁️</div><div><b>Cloud Based</b><small>Access anytime, anywhere</small></div></div>
+        </div>
+
+        <div class="contact rv">
+            <a class="ci2" href="tel:+252628276993"><div class="ic" style="background:#1565c0">📞</div><div><small>Call Us</small><b>+252 628276993</b></div></a>
+            <a class="ci2" href="mailto:sahalserversupport@gmail.com"><div class="ic" style="background:#6a3fb5">✉️</div><div><small>Email Us</small><b>sahalserversupport@gmail.com</b></div></a>
+            <a class="ci2" href="https://sahalserver.com"><div class="ic" style="background:#1f9a52">🌐</div><div><small>Website</small><b>www.sahalserver.com</b></div></a>
+            <div class="ci2"><div class="ic" style="background:#e0651f">📍</div><div><small>Our Location</small><b>Mogadishu, Somalia</b></div></div>
+        </div>
+    </section>
+
+    <footer>© {{ 2026 }} Sahal Server POS. Dhammaan xuquuqda way dhowran tahay.<br>Ganacsigaaga, waxbarashadaada iyo e-commerce-kaaga hal goob.</footer>
 </div>
+</main>
 
-<div class="portals">
-    <a href="/login" class="portal p-restaurant">
-        <div class="p-ic">🍽️</div>
-        <h3>Restaurant Login</h3>
-        <p>Manage your restaurant, menu, orders and staff efficiently.</p>
-        <span class="access">Access Portal <span class="arr">→</span></span>
-    </a>
-
-    <a href="/supermarket_login" class="portal p-supermarket">
-        <div class="p-ic">🛒</div>
-        <h3>Supermarket Login</h3>
-        <p>Manage products, stock, sales and inventory easily.</p>
-        <span class="access">Access Portal <span class="arr">→</span></span>
-    </a>
-
-    <a href="/pharmacy_login" class="portal p-pharmacy">
-        <div class="p-ic">💊</div>
-        <h3>Pharmacy Login</h3>
-        <p>Manage medicines, prescriptions, sales and inventory with ease.</p>
-        <span class="access">Access Portal <span class="arr">→</span></span>
-    </a>
-
-    <button class="portal p-dhibic" onclick="openPopup('dashboardPopup')">
-        <div class="p-ic">💎</div>
-        <h3>Dhibic Dahab Dashboard</h3>
-        <p>Access your e-commerce dashboard and manage your online business.</p>
-        <span class="access">Go to Dashboard <span class="arr">→</span></span>
-    </button>
-
-    <a href="/waiter_login" class="portal p-waiter">
-        <div class="p-ic">🧑‍🍳</div>
-        <h3>Waiter Login</h3>
-        <p>Take table orders and send them straight to the kitchen.</p>
-        <span class="access">Access Portal <span class="arr">→</span></span>
-    </a>
-
-    <a href="/cashier_login" class="portal p-cashier">
-        <div class="p-ic">💰</div>
-        <h3>Cashier Login</h3>
-        <p>Collect payments, close orders and print receipts.</p>
-        <span class="access">Access Portal <span class="arr">→</span></span>
-    </a>
-</div>
-
-<!-- ===== FEATURE STRIP ===== -->
-<div class="features">
-    <div class="features-inner">
-        <div class="feat f1"><div class="fic">🛡️</div><div><h4>Secure &amp; Reliable</h4><p>Your data is protected with advanced security.</p></div></div>
-        <div class="feat f2"><div class="fic">⚡</div><div><h4>Fast &amp; Efficient</h4><p>Save time and manage your business more efficiently.</p></div></div>
-        <div class="feat f3"><div class="fic">📊</div><div><h4>Real-time Reports</h4><p>Get real-time insights and grow your business.</p></div></div>
-        <div class="feat f4"><div class="fic">🎧</div><div><h4>24/7 Support</h4><p>We're here to support you anytime, anywhere.</p></div></div>
-    </div>
-</div>
-
-<!-- ===== CONTACT BAR ===== -->
-<div class="contact-bar">
-    <div class="contact-inner">
-        <div class="cinfo c1"><div class="cic">📞</div><div><div class="clbl">Call Us</div><div class="cval"><a href="tel:+252628276993">+252 628276993</a></div></div></div>
-        <div class="cinfo c2"><div class="cic">✉️</div><div><div class="clbl">Email Us</div><div class="cval"><a href="mailto:sahalserversupport@gmail.com">sahalserversupport@gmail.com</a></div></div></div>
-        <div class="cinfo c3"><div class="cic">🌐</div><div><div class="clbl">Visit Our Website</div><div class="cval"><a href="https://sahalserver.com">www.sahalserver.com</a></div></div></div>
-        <div class="cinfo c4"><div class="cic">📍</div><div><div class="clbl">Our Location</div><div class="cval">Mogadishu, Somalia</div></div></div>
-    </div>
-</div>
-
-<div class="page-footer">
-    <p>© 2026 Sahal Server POS. Dhammaan xuquuqda way dhowran tahay.<br>Ganacsigaaga, waxbarashadaada iyo e-commerce-kaaga hal goob.</p>
-</div>
-
-<!-- ===== ABOUT POPUP (Somali) ===== -->
+<!-- ================= POPUPS ================= -->
 <div class="popup wide" id="aboutPopup">
     <h3>ℹ️ Ku saabsan Sahal Server POS</h3>
     <div class="info-body">
-        <span class="tag">Nidaamka Maamulka Ganacsiga #1 ee Soomaaliya</span>
+        <span class="tag">Nidaamka Maamulka Ganacsiga ee Soomaaliya</span>
         <p><strong>Sahal Server POS</strong> waa nidaam casri ah oo Soomaali u dhashay, loogu talagalay in uu fududeeyo maamulka ganacsiga. Hal goob ayaad ka maamuli kartaa makhaayado, dukaamada waaweyn (supermarket), farmasiyada, iyo dugsiyada.</p>
         <p>Nidaamku wuxuu si buuxda ugu shaqeeyaa internet-ka (cloud), taasoo kuu ogolaanaysa inaad ka maamusho ganacsigaaga meel kasta oo aad joogto, adigoo isticmaalaya taleefan, kombuyuutar ama tablet.</p>
         <p><strong>Waxa uu kuu qabtaa:</strong></p>
@@ -647,27 +669,16 @@
     <button class="close-btn" onclick="closePopup('aboutPopup')">Xir</button>
 </div>
 
-<!-- ===== INFO CHOOSE POPUP ===== -->
 <div class="popup" id="infoChoosePopup">
     <h3>📚 Dooro macluumaadka aad rabto</h3>
     <div class="info-choose">
-        <button class="info-choice r" onclick="openPopup('infoRestaurant')">
-            <div class="ci">🍽️</div>
-            <div class="ctxt"><h4>Restaurant Info</h4><p>Nidaamka makhaayadaha</p></div>
-        </button>
-        <button class="info-choice s" onclick="openPopup('infoSupermarket')">
-            <div class="ci">🛒</div>
-            <div class="ctxt"><h4>Supermarket Info</h4><p>Nidaamka dukaanka weyn</p></div>
-        </button>
-        <button class="info-choice p" onclick="openPopup('infoPharmacy')">
-            <div class="ci">💊</div>
-            <div class="ctxt"><h4>Pharmacy Info</h4><p>Nidaamka farmasiga</p></div>
-        </button>
+        <button class="info-choice r" onclick="openPopup('infoRestaurant')"><div class="ci">🍽️</div><div><h4>Restaurant Info</h4><p>Nidaamka makhaayadaha</p></div></button>
+        <button class="info-choice s" onclick="openPopup('infoSupermarket')"><div class="ci">🛒</div><div><h4>Supermarket Info</h4><p>Nidaamka dukaanka weyn</p></div></button>
+        <button class="info-choice p" onclick="openPopup('infoPharmacy')"><div class="ci">💊</div><div><h4>Pharmacy Info</h4><p>Nidaamka farmasiga</p></div></button>
     </div>
     <button class="close-btn" onclick="closePopup('infoChoosePopup')">Xir</button>
 </div>
 
-<!-- ===== INFO: RESTAURANT (Somali) ===== -->
 <div class="popup wide" id="infoRestaurant">
     <h3>🍽️ Nidaamka Makhaayadaha</h3>
     <div class="info-body">
@@ -676,9 +687,9 @@
         <ul>
             <li><strong>QR Ordering:</strong> Macaamiishu waxay dalab ku bixin karaan iyagoo QR code ka sawiraya miiska.</li>
             <li><strong>Kitchen Screen:</strong> Dalabku si toos ah ayuu u gaaraa shaashadda jikada, taasoo yareysa qaladaadka.</li>
-            <li><strong>Maamulka Menu-ga:</strong> Si fudud u kordhi, u tafatir, ama u tirtir cuntooyinka iyo qiimahooda.</li>
+            <li><strong>Waiter &amp; Cashier:</strong> Waiter-ku dalabka ayuu diraa, cashier-ku lacagta ayuu qaadaa oo rasiidh ayuu bixiyaa.</li>
+            <li><strong>Buugga Deenta:</strong> Macaamiisha deenta qaata — xad (limit) iyo taariikh bill kasta.</li>
             <li><strong>Warbixin maalinle ah:</strong> Arag iibka, faa'iidada, iyo cuntooyinka ugu iibka badan.</li>
-            <li><strong>Maamulka shaqaalaha:</strong> La soco shaqada iyo waxqabadka kooxda.</li>
         </ul>
         <p>Ku habboon makhaayado yaryar iyo kuwa waaweynba.</p>
     </div>
@@ -686,7 +697,6 @@
     <button class="close-btn" onclick="closePopup('infoRestaurant')">Dib u noqo</button>
 </div>
 
-<!-- ===== INFO: SUPERMARKET (Somali) ===== -->
 <div class="popup wide" id="infoSupermarket">
     <h3>🛒 Nidaamka Dukaanka Weyn</h3>
     <div class="info-body">
@@ -694,49 +704,53 @@
         <p>Nidaamkan wuxuu kuu fududeeyaa maamulka alaabta, kaydka, iibka, iyo inventory-ga si sahlan oo saxsan.</p>
         <ul>
             <li><strong>Barcode Scanner:</strong> Si degdeg ah u iibi alaabta adigoo isticmaalaya barcode.</li>
-            <li><strong>Digniinta Kaydka:</strong> Ogow marka alaab dhammaanayso (low-stock alert) ka hor inta aysan ku dhammaan.</li>
+            <li><strong>Digniinta Kaydka:</strong> Ogow marka alaab dhammaanayso (low-stock alert).</li>
             <li><strong>Rasiidh Daabacaad:</strong> Sii macaamiisha rasiidh rasmi ah oo iib kasta ka dib.</li>
-            <li><strong>Bulk Import:</strong> Hal mar ku dar alaab tiro badan (Excel/CSV) si aad waqti u badbaadiso.</li>
+            <li><strong>Bulk Import:</strong> Hal mar ku dar alaab tiro badan (Excel/CSV).</li>
             <li><strong>Xisaabaadka Faa'iidada:</strong> Arag faa'iidada iib kasta iyo isu-geynta maalinlaha ah.</li>
         </ul>
-        <p>Wuxuu ku habboon yahay dukaamada waaweyn iyo mini-market-yada.</p>
     </div>
     <a href="/supermarket_login" class="popup-btn p-green">Gal Supermarket Portal →</a>
     <button class="close-btn" onclick="closePopup('infoSupermarket')">Dib u noqo</button>
 </div>
 
-<!-- ===== INFO: PHARMACY (Somali) ===== -->
 <div class="popup wide" id="infoPharmacy">
     <h3>💊 Nidaamka Farmasiga</h3>
     <div class="info-body">
         <span class="tag">Pharmacy POS</span>
         <p>Nidaamkan waxaa loogu talagalay farmasiyada si ay u maamulaan daawooyinka, iibka, deynta, iyo kaydka si ammaan ah.</p>
         <ul>
-            <li><strong>Maamulka Daawooyinka:</strong> Kayd Firestore ah oo ammaan ah ayaad ku keydisaa daawooyinka iyo faahfaahintooda.</li>
-            <li><strong>Tafatiraha Qiimaha:</strong> Beddel qiimaha adigoo isla markaana arkaya faa'iido/khasaare (profit/loss preview).</li>
-            <li><strong>La socodka Deynta:</strong> Diiwaan geli oo la soco macaamiisha wax deyn ku qaata.</li>
-            <li><strong>Digniinta Daawada:</strong> Ogow marka daawo dhammaanayso ama dhicitaanka taariikhda (expiry).</li>
-            <li><strong>Warbixin Iib:</strong> Arag iibka iyo faa'iidada maalin, toddobaad, ama bil kasta.</li>
+            <li><strong>Maamulka Daawooyinka:</strong> Kayd ammaan ah oo daawooyinka iyo faahfaahintooda.</li>
+            <li><strong>Tafatiraha Qiimaha:</strong> Beddel qiimaha adigoo arkaya faa'iido/khasaare.</li>
+            <li><strong>La socodka Deynta:</strong> Diiwaan geli oo la soco macaamiisha deyn qaata.</li>
+            <li><strong>Digniinta Daawada:</strong> Ogow marka daawo dhammaanayso ama expiry-gu soo dhowaado.</li>
+            <li><strong>Warbixin Iib:</strong> Iibka iyo faa'iidada maalin, toddobaad, ama bil kasta.</li>
         </ul>
-        <p>Wuxuu farmasiyaha ka caawiyaa in ay xogtooda si hufan u maamulaan.</p>
     </div>
     <a href="/pharmacy_login" class="popup-btn p-purple">Gal Pharmacy Portal →</a>
     <button class="close-btn" onclick="closePopup('infoPharmacy')">Dib u noqo</button>
 </div>
 
-<!-- ===== CONTACT POPUP ===== -->
+<div class="popup wide" id="pricingPopup">
+    <h3>💳 Pricing</h3>
+    <div class="plans">
+        <div class="plan f"><h4>🎁 Free</h4><p>Bilow bilaash — portal-ka oo dhan, waiter, cashier, kitchen iyo warbixinno.</p></div>
+        <div class="plan p"><h4>💎 Paid</h4><p>Qorshe bille ah oo ku habboon ganacsigaaga — la xiriir si aad u hesho qiimaha.</p></div>
+    </div>
+    <a href="https://wa.me/252628276993" target="_blank" rel="noopener" class="popup-btn p-green">💬 WhatsApp — weydii qiimaha</a>
+    <a href="tel:+252628276993" class="popup-btn p-gold">📞 +252 628276993</a>
+    <button class="close-btn" onclick="closePopup('pricingPopup')">Xir</button>
+</div>
+
 <div class="popup" id="contactPopup">
     <h3>📞 Nala soo xiriir</h3>
-    <div class="info-body">
-        <p>Su'aal ma qabtaa ama caawimaad ma u baahan tahay? Waan diyaar u nahay 24/7.</p>
-    </div>
-    <a href="https://wa.me/252628276993" target="_blank" class="popup-btn p-green">💬 WhatsApp Support</a>
+    <div class="info-body"><p>Su'aal ma qabtaa ama caawimaad ma u baahan tahay? Waan diyaar u nahay 24/7.</p></div>
+    <a href="https://wa.me/252628276993" target="_blank" rel="noopener" class="popup-btn p-green">💬 WhatsApp Support</a>
     <a href="mailto:sahalserversupport@gmail.com" class="popup-btn p-blue">✉️ Email Us</a>
     <a href="tel:+252628276993" class="popup-btn p-gold">📞 +252 628276993</a>
     <button class="close-btn" onclick="closePopup('contactPopup')">Xir</button>
 </div>
 
-<!-- ===== DHIBIC DAHAB LOGIN POPUP ===== -->
 <div class="popup" id="dashboardPopup">
     <h3>💎 Dhibic Dahab Login</h3>
     <input id="dashboard_email" type="email" placeholder="Email Address" autocomplete="email">
@@ -746,10 +760,9 @@
     <button class="close-btn" onclick="closePopup('dashboardPopup')">Cancel</button>
 </div>
 
-<!-- ===== SUPPORT FAB ===== -->
-<button class="fab" onclick="toggleFab('supportPopup')">💬</button>
+<button class="fab" onclick="toggleFab('supportPopup')" aria-label="Support">💬</button>
 <div class="fab-popup" id="supportPopup">
-    <a href="https://wa.me/252628276993" target="_blank" class="popup-btn p-green">💬 WhatsApp Support</a>
+    <a href="https://wa.me/252628276993" target="_blank" rel="noopener" class="popup-btn p-green">💬 WhatsApp Support</a>
     <a href="mailto:sahalserversupport@gmail.com" class="popup-btn p-blue">✉️ Send Email</a>
 </div>
 
@@ -764,69 +777,126 @@ function closePopup(id){
     document.getElementById('overlay').classList.remove('show');
 }
 function closeAll(){
-    document.querySelectorAll('.popup').forEach(p=>p.classList.remove('show'));
-    document.querySelectorAll('.fab-popup').forEach(p=>p.classList.remove('show'));
+    document.querySelectorAll('.popup,.fab-popup').forEach(p => p.classList.remove('show'));
     document.getElementById('overlay').classList.remove('show');
-    document.getElementById('adminMenu').style.display='none';
+    document.getElementById('adminMenu').classList.remove('show');
+    closeNav();
 }
 function toggleFab(id){
-    let p=document.getElementById(id);
-    let isOpen=p.classList.contains('show');
-    document.querySelectorAll('.fab-popup').forEach(x=>x.classList.remove('show'));
-    if(!isOpen) p.classList.add('show');
+    const p = document.getElementById(id), open = p.classList.contains('show');
+    document.querySelectorAll('.fab-popup').forEach(x => x.classList.remove('show'));
+    if(!open) p.classList.add('show');
 }
-function toggleAdminMenu(){
-    let m=document.getElementById('adminMenu');
-    m.style.display = m.style.display==='block' ? 'none' : 'block';
+function toggleAdminMenu(e){ e.stopPropagation(); document.getElementById('adminMenu').classList.toggle('show'); }
+function toggleNav(){ document.getElementById('navLinks').classList.toggle('open'); }
+function closeNav(){ document.getElementById('navLinks').classList.remove('open'); document.querySelectorAll('.has-dd.open').forEach(d => d.classList.remove('open')); }
+function toggleDD(btn){
+    const li = btn.parentElement, was = li.classList.contains('open');
+    document.querySelectorAll('.has-dd.open').forEach(d => d.classList.remove('open'));
+    if(!was) li.classList.add('open');
 }
-function toggleMobileNav(){
-    document.getElementById('navLinks').classList.toggle('open');
-}
-function showMsg(id,text,type){
-    let el=document.getElementById(id);
-    el.className='msg-box msg-'+type;
-    el.innerHTML=text;
-    el.style.display='block';
-}
+document.addEventListener('click', e => {
+    if(!e.target.closest('.has-dd')) document.querySelectorAll('.has-dd.open').forEach(d => d.classList.remove('open'));
+    if(!e.target.closest('#adminMenu')) document.getElementById('adminMenu').classList.remove('show');
+    if(!e.target.closest('.fab') && !e.target.closest('.fab-popup') && !e.target.closest('.pill')) document.querySelectorAll('.fab-popup').forEach(x => x.classList.remove('show'));
+    if(!e.target.closest('#navLinks') && !e.target.closest('.burger')) document.getElementById('navLinks').classList.remove('open');
+});
+document.querySelectorAll('#navLinks a[href^="#"]').forEach(a => a.addEventListener('click', closeNav));
+document.addEventListener('keydown', e => { if(e.key === 'Escape') closeAll(); });
 
+function showMsg(id, text, type){
+    const el = document.getElementById(id);
+    el.className = 'msg-box msg-' + type; el.innerHTML = text; el.style.display = 'block';
+}
 async function dashboardLogin(){
-    let email=document.getElementById('dashboard_email').value.trim();
-    let password=document.getElementById('dashboard_password').value.trim();
-    let btn=document.getElementById('dashboardLoginBtn');
-    if(!email||!password){
-        showMsg('dashboardMsg','⚠️ Please enter email and password.','error');
-        return;
-    }
-    btn.disabled=true;
-    btn.innerHTML='<span class="spinner"></span> Checking...';
-    showMsg('dashboardMsg','Verifying your credentials...','info');
-    let fd=new FormData();
-    fd.append('email',email);
-    fd.append('password',password);
+    const email = document.getElementById('dashboard_email').value.trim();
+    const password = document.getElementById('dashboard_password').value.trim();
+    const btn = document.getElementById('dashboardLoginBtn');
+    if(!email || !password){ showMsg('dashboardMsg', '⚠️ Please enter email and password.', 'error'); return; }
+    btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Checking...';
+    showMsg('dashboardMsg', 'Verifying your credentials...', 'info');
+    const fd = new FormData(); fd.append('email', email); fd.append('password', password);
     try{
-        let res=await fetch('/dashboard_login',{method:'POST',body:fd});
-        let data=await res.json();
+        const res = await fetch('/dashboard_login', { method:'POST', body:fd });
+        const data = await res.json();
         if(data.success){
-            showMsg('dashboardMsg','✅ Login successful! Redirecting...','success');
-            setTimeout(()=>{window.location.href=data.redirect;},600);
+            showMsg('dashboardMsg', '✅ Login successful! Redirecting...', 'success');
+            setTimeout(() => { window.location.href = data.redirect; }, 600);
         }else{
-            showMsg('dashboardMsg','❌ '+(data.error||'Invalid credentials'),'error');
-            btn.disabled=false;btn.innerHTML='Login to Dashboard';
+            showMsg('dashboardMsg', '❌ ' + (data.error || 'Invalid credentials'), 'error');
+            btn.disabled = false; btn.innerHTML = 'Login to Dashboard';
         }
     }catch(e){
-        showMsg('dashboardMsg','⚠️ Server error. Please try again.','error');
-        btn.disabled=false;btn.innerHTML='Login to Dashboard';
+        showMsg('dashboardMsg', '⚠️ Server error. Please try again.', 'error');
+        btn.disabled = false; btn.innerHTML = 'Login to Dashboard';
     }
 }
-document.getElementById('dashboard_password').addEventListener('keydown',function(e){if(e.key==='Enter')dashboardLogin();});
-document.getElementById('dashboard_email').addEventListener('keydown',function(e){if(e.key==='Enter')document.getElementById('dashboard_password').focus();});
+document.getElementById('dashboard_password').addEventListener('keydown', e => { if(e.key === 'Enter') dashboardLogin(); });
+document.getElementById('dashboard_email').addEventListener('keydown', e => { if(e.key === 'Enter') document.getElementById('dashboard_password').focus(); });
 
-// PWA service worker
+/* ---------- motion ---------- */
+(function(){
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    // staggered letters in the wordmark
+    document.querySelectorAll('.wordmark .w span').forEach((s, i) => s.style.animationDelay = (i * 0.045) + 's' + (s.parentElement.classList.contains('gold') ? ', 0s' : ''));
+
+    // sticky nav style
+    const nav = document.getElementById('nav');
+    const onScroll = () => nav.classList.toggle('scrolled', window.scrollY > 10);
+    window.addEventListener('scroll', onScroll, { passive:true }); onScroll();
+
+    // date in the mock dashboard
+    try{ document.getElementById('mockDate').textContent = '📅 Today, ' + new Date().toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' }); }catch(e){}
+
+    // count-up numbers
+    document.querySelectorAll('[data-count]').forEach(el => {
+        const to = +el.dataset.count, pre = el.dataset.pre || '';
+        if(reduce){ el.textContent = pre + to.toLocaleString(); return; }
+        const t0 = performance.now() + 500, dur = 1600;
+        const step = now => {
+            const p = Math.min(Math.max((now - t0) / dur, 0), 1), e = 1 - Math.pow(1 - p, 3);
+            el.textContent = pre + Math.round(to * e).toLocaleString();
+            if(p < 1) requestAnimationFrame(step);
+        };
+        requestAnimationFrame(step);
+    });
+
+    // reveal on scroll
+    const items = document.querySelectorAll('.rv');
+    if('IntersectionObserver' in window && !reduce){
+        const io = new IntersectionObserver(ents => ents.forEach(en => {
+            if(en.isIntersecting){ en.target.classList.add('in'); io.unobserve(en.target); }
+        }), { threshold:.12, rootMargin:'0px 0px -40px 0px' });
+        document.querySelectorAll('.portals .portal').forEach((p, i) => p.style.transitionDelay = (i % 3) * 0.09 + 's');
+        items.forEach(el => io.observe(el));
+    } else items.forEach(el => el.classList.add('in'));
+
+    // 3D tilt on portal cards (mouse only)
+    if(!reduce && window.matchMedia('(hover:hover) and (pointer:fine)').matches){
+        document.querySelectorAll('[data-tilt]').forEach(card => {
+            let raf = 0;
+            card.addEventListener('pointermove', e => {
+                const r = card.getBoundingClientRect(), x = (e.clientX - r.left) / r.width - .5, y = (e.clientY - r.top) / r.height - .5;
+                cancelAnimationFrame(raf);
+                raf = requestAnimationFrame(() => { card.style.transitionDelay = '0s'; card.style.transform = `perspective(900px) rotateX(${(-y * 8).toFixed(2)}deg) rotateY(${(x * 10).toFixed(2)}deg) translateY(-6px)`; });
+            });
+            card.addEventListener('pointerleave', () => { cancelAnimationFrame(raf); card.style.transform = ''; });
+        });
+        // gentle parallax on the hero devices
+        const stage = document.querySelector('.stage');
+        if(stage){
+            stage.parentElement.addEventListener('pointermove', e => {
+                const x = e.clientX / innerWidth - .5, y = e.clientY / innerHeight - .5;
+                stage.style.transform = `translate3d(${x * -14}px, ${y * -10}px, 0)`;
+            });
+        }
+    }
+})();
+
 if('serviceWorker' in navigator){
-    window.addEventListener('load',()=>{
-        navigator.serviceWorker.register("/static/sw.js")
-            .then(reg=>console.log("Service Worker Registered!",reg))
-            .catch(err=>console.error("Service Worker Failed!",err));
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/static/sw.js').catch(err => console.error('Service Worker Failed!', err));
     });
 }
 </script>
